@@ -1,4 +1,4 @@
-module artelad
+module artela
 
 go 1.19
 

@@ -1,7 +1,0 @@
-syntax = "proto3";
-package artelad.artelad;
-
-option go_package = "artelad/x/artelad/types";
-
-// Msg defines the Msg service.
-service Msg {}

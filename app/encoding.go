@@ -6,7 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 
-	"artelad/app/params"
+	"artela/app/params"
 )
 
 // makeEncodingConfig creates an EncodingConfig for an amino based test configuration.

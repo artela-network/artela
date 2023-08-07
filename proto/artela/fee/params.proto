@@ -1,0 +1,12 @@
+syntax = "proto3";
+package artela.fee;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "artela/x/fee/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+}

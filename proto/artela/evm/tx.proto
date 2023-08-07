@@ -1,0 +1,7 @@
+syntax = "proto3";
+package artela.evm;
+
+option go_package = "artela/x/evm/types";
+
+// Msg defines the Msg service.
+service Msg {}

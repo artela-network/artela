@@ -1,0 +1,7 @@
+syntax = "proto3";
+package artela.fee;
+
+option go_package = "artela/x/fee/types";
+
+// Msg defines the Msg service.
+service Msg {}
