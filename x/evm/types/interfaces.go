@@ -9,7 +9,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	feemarkettypes "github.com/artela-network/artela/x/feemarket/types"
+	feetypes "github.com/artela-network/artela/x/fee/types"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
@@ -42,10 +42,10 @@ type StakingKeeper interface {
 	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
 }
 
-// FeeMarketKeeper
-type FeeMarketKeeper interface {
+// FeeKeeper
+type FeeKeeper interface {
 	GetBaseFee(ctx sdk.Context) *big.Int
-	GetParams(ctx sdk.Context) feemarkettypes.Params
+	GetParams(ctx sdk.Context) feetypes.Params
 	AddTransientGasWanted(ctx sdk.Context, gasWanted uint64) (uint64, error)
 }
 

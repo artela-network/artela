@@ -44,7 +44,7 @@ type Keeper struct {
 	// access historical headers for EVM state transition execution
 	stakingKeeper types.StakingKeeper
 	// fetch EIP1559 base fee and parameters
-	feeMarketKeeper types.FeeMarketKeeper
+	feeKeeper types.FeeKeeper
 
 	// chain ID number obtained from the context's chain id
 	eip155ChainID *big.Int
@@ -66,7 +66,7 @@ func NewKeeper(
 	ak types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	sk types.StakingKeeper,
-	fmk types.FeeMarketKeeper,
+	fmk types.FeeKeeper,
 	tracer string,
 	ss paramstypes.Subspace,
 ) *Keeper {
@@ -82,16 +82,16 @@ func NewKeeper(
 
 	// NOTE: we pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	return &Keeper{
-		cdc:             cdc,
-		authority:       authority,
-		accountKeeper:   ak,
-		bankKeeper:      bankKeeper,
-		stakingKeeper:   sk,
-		feeMarketKeeper: fmk,
-		storeKey:        storeKey,
-		transientKey:    transientKey,
-		tracer:          tracer,
-		ss:              ss,
+		cdc:           cdc,
+		authority:     authority,
+		accountKeeper: ak,
+		bankKeeper:    bankKeeper,
+		stakingKeeper: sk,
+		feeKeeper:     fmk,
+		storeKey:      storeKey,
+		transientKey:  transientKey,
+		tracer:        tracer,
+		ss:            ss,
 	}
 }
 
@@ -318,8 +318,8 @@ func (k *Keeper) GetBalance(ctx sdk.Context, addr common.Address) *big.Int {
 
 // GetBaseFee returns current base fee, return values:
 // - `nil`: london hardfork not enabled.
-// - `0`: london hardfork enabled but feemarket is not enabled.
-// - `n`: both london hardfork and feemarket are enabled.
+// - `0`: london hardfork enabled but fee is not enabled.
+// - `n`: both london hardfork and fee are enabled.
 func (k Keeper) GetBaseFee(ctx sdk.Context, ethCfg *params.ChainConfig) *big.Int {
 	return k.getBaseFee(ctx, types.IsLondon(ethCfg, ctx.BlockHeight()))
 }
@@ -328,9 +328,9 @@ func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {
 	if !london {
 		return nil
 	}
-	baseFee := k.feeMarketKeeper.GetBaseFee(ctx)
+	baseFee := k.feeKeeper.GetBaseFee(ctx)
 	if baseFee == nil {
-		// return 0 if feemarket not enabled.
+		// return 0 if fee not enabled.
 		baseFee = big.NewInt(0)
 	}
 	return baseFee
@@ -338,7 +338,7 @@ func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {
 
 // GetMinGasMultiplier returns the MinGasMultiplier param from the fee market module
 func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) sdk.Dec {
-	fmkParmas := k.feeMarketKeeper.GetParams(ctx)
+	fmkParmas := k.feeKeeper.GetParams(ctx)
 	if fmkParmas.MinGasMultiplier.IsNil() {
 		// in case we are executing eth_call on a legacy block, returns a zero value.
 		return sdk.ZeroDec()
