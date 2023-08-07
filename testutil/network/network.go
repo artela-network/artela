@@ -18,7 +18,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
 
-	"artela/app"
+	"github.com/artela-network/artela/app"
 )
 
 type (

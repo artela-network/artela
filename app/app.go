@@ -110,16 +110,16 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
-	evmmodule "artela/x/evm"
-	evmmodulekeeper "artela/x/evm/keeper"
-	evmmoduletypes "artela/x/evm/types"
-	feemodule "artela/x/fee"
-	feemodulekeeper "artela/x/fee/keeper"
-	feemoduletypes "artela/x/fee/types"
+	evmmodule "github.com/artela-network/artela/x/evm"
+	evmmodulekeeper "github.com/artela-network/artela/x/evm/keeper"
+	evmmoduletypes "github.com/artela-network/artela/x/evm/types"
+	feemodule "github.com/artela-network/artela/x/fee"
+	feemodulekeeper "github.com/artela-network/artela/x/fee/keeper"
+	feemoduletypes "github.com/artela-network/artela/x/fee/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
-	appparams "artela/app/params"
-	"artela/docs"
+	appparams "github.com/artela-network/artela/app/params"
+	"github.com/artela-network/artela/docs"
 )
 
 const (

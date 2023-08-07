@@ -38,8 +38,8 @@ import (
 	"github.com/spf13/pflag"
 	// this line is used by starport scaffolding # root/moduleImport
 
-	"artela/app"
-	appparams "artela/app/params"
+	"github.com/artela-network/artela/app"
+	appparams "github.com/artela-network/artela/app/params"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application

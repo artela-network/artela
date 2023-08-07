@@ -3,8 +3,8 @@ package keeper
 import (
 	"testing"
 
-	"artela/x/fee/keeper"
-	"artela/x/fee/types"
+	"github.com/artela-network/artela/x/fee/keeper"
+	"github.com/artela-network/artela/x/fee/types"
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
