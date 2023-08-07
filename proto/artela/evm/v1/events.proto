@@ -1,7 +1,7 @@
 syntax = "proto3";
 package artela.evm.v1;
 
-option go_package = "github.com/artela-network/artela/x/evm/types";
+option go_package = "github.com/artela-network/artela/v1/x/evm/types";
 
 // EventEthereumTx defines the event for an Ethereum transaction
 message EventEthereumTx {
