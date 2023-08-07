@@ -1,18 +1,3 @@
-// Copyright 2022 Evmos Foundation
-// This file is part of the Evmos Network packages.
-//
-// Evmos is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The Evmos packages are distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
 package types
 
 import (
@@ -22,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	evmostypes "github.com/evmos/evmos/v12/types"
+	artelatypes "github.com/artela-network/artela/types"
 )
 
 // NewTransactionLogs creates a new NewTransactionLogs instance.
@@ -43,7 +28,7 @@ func NewTransactionLogsFromEth(hash common.Hash, ethlogs []*ethtypes.Log) Transa
 
 // Validate performs a basic validation of a GenesisAccount fields.
 func (tx TransactionLogs) Validate() error {
-	if evmostypes.IsEmptyHash(tx.Hash) {
+	if artelatypes.IsEmptyHash(tx.Hash) {
 		return fmt.Errorf("hash cannot be the empty %s", tx.Hash)
 	}
 
@@ -68,16 +53,16 @@ func (tx TransactionLogs) EthLogs() []*ethtypes.Log {
 
 // Validate performs a basic validation of an ethereum Log fields.
 func (log *Log) Validate() error {
-	if err := evmostypes.ValidateAddress(log.Address); err != nil {
+	if err := artelatypes.ValidateAddress(log.Address); err != nil {
 		return fmt.Errorf("invalid log address %w", err)
 	}
-	if evmostypes.IsEmptyHash(log.BlockHash) {
+	if artelatypes.IsEmptyHash(log.BlockHash) {
 		return fmt.Errorf("block hash cannot be the empty %s", log.BlockHash)
 	}
 	if log.BlockNumber == 0 {
 		return errors.New("block number cannot be zero")
 	}
-	if evmostypes.IsEmptyHash(log.TxHash) {
+	if artelatypes.IsEmptyHash(log.TxHash) {
 		return fmt.Errorf("tx hash cannot be the empty %s", log.TxHash)
 	}
 	return nil
