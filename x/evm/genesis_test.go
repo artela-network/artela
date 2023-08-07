@@ -1,12 +1,12 @@
-package artelad_test
+package evm_test
 
 import (
 	"testing"
 
 	keepertest "artelad/testutil/keeper"
 	"artelad/testutil/nullify"
-	"artelad/x/artelad"
-	"artelad/x/artelad/types"
+	"artelad/x/evm"
+	"artelad/x/evm/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,8 +18,8 @@ func TestGenesis(t *testing.T) {
 	}
 
 	k, ctx := keepertest.ArteladKeeper(t)
-	artelad.InitGenesis(ctx, *k, genesisState)
-	got := artelad.ExportGenesis(ctx, *k)
+	evm.InitGenesis(ctx, *k, genesisState)
+	got := evm.ExportGenesis(ctx, *k)
 	require.NotNil(t, got)
 
 	nullify.Fill(&genesisState)

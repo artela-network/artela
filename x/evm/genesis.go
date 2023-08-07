@@ -1,8 +1,8 @@
-package artelad
+package evm
 
 import (
-	"artelad/x/artelad/keeper"
-	"artelad/x/artelad/types"
+	"artelad/x/evm/keeper"
+	"artelad/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

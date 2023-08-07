@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	keepertest "artelad/testutil/keeper"
-	"artelad/x/artelad/keeper"
-	"artelad/x/artelad/types"
+	"artelad/x/evm/keeper"
+	"artelad/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )

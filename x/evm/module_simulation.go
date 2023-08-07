@@ -1,11 +1,11 @@
-package artelad
+package evm
 
 import (
 	"math/rand"
 
 	"artelad/testutil/sample"
-	arteladsimulation "artelad/x/artelad/simulation"
-	"artelad/x/artelad/types"
+	arteladsimulation "artelad/x/evm/simulation"
+	"artelad/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"

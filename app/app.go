@@ -1,6 +1,7 @@
 package app
 
 import (
+	artelaevm "artelad/x/evm"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -110,9 +111,8 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
-	arteladmodule "artelad/x/artelad"
-	arteladmodulekeeper "artelad/x/artelad/keeper"
-	arteladmoduletypes "artelad/x/artelad/types"
+	arteladmodulekeeper "artelad/x/evm/keeper"
+	arteladmoduletypes "artelad/x/evm/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
 	appparams "artelad/app/params"
@@ -121,7 +121,7 @@ import (
 
 const (
 	AccountAddressPrefix = "cosmos"
-	Name                 = "artelad"
+	Name                 = "evm"
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -173,7 +173,7 @@ var (
 		ica.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		consensus.AppModuleBasic{},
-		arteladmodule.AppModuleBasic{},
+		artelaevm.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 

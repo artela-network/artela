@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"artelad/x/artelad/types"
+	"artelad/x/evm/types"
 	"github.com/stretchr/testify/require"
 )
 

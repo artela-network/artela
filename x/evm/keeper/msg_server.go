@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"artelad/x/artelad/types"
+	"artelad/x/evm/types"
 )
 
 type msgServer struct {

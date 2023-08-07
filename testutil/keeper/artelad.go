@@ -3,8 +3,8 @@ package keeper
 import (
 	"testing"
 
-	"artelad/x/artelad/keeper"
-	"artelad/x/artelad/types"
+	"artelad/x/evm/keeper"
+	"artelad/x/evm/types"
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"

@@ -2,9 +2,9 @@ syntax = "proto3";
 package artelad.artelad;
 
 import "gogoproto/gogo.proto";
-import "artelad/artelad/params.proto";
+import "evm/evm/params.proto";
 
-option go_package = "artelad/x/artelad/types";
+option go_package = "evm/x/evm/types";
 
 // GenesisState defines the artelad module's genesis state.
 message GenesisState {

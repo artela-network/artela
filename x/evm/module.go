@@ -1,4 +1,4 @@
-package artelad
+package evm
 
 import (
 	"context"
@@ -11,9 +11,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"artelad/x/artelad/client/cli"
-	"artelad/x/artelad/keeper"
-	"artelad/x/artelad/types"
+	"artelad/x/evm/client/cli"
+	"artelad/x/evm/keeper"
+	"artelad/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
