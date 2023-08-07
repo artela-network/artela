@@ -4,9 +4,9 @@ package artela.evm;
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
-import "artela/evm/params.proto";
+import "artela/evm/v1/params.proto";
 
-option go_package = "artela/x/evm/types";
+option go_package = "github.com/artela-network/artela/v1/x/evm/types";
 
 // Query defines the gRPC querier service.
 service Query {

@@ -2,9 +2,9 @@ syntax = "proto3";
 package artela.evm;
 
 import "gogoproto/gogo.proto";
-import "artela/evm/params.proto";
+import "artela/evm/v1/params.proto";
 
-option go_package = "artela/x/evm/types";
+option go_package = "github.com/artela-network/artela/v1/x/evm/types";
 
 // GenesisState defines the evm module's genesis state.
 message GenesisState {

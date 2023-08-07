@@ -3,7 +3,7 @@ package artela.evm;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "artela/x/evm/types";
+option go_package = "github.com/artela-network/artela/v1/x/evm/types";
 
 // Params defines the parameters for the module.
 message Params {
