@@ -255,7 +255,7 @@ type App struct {
 	// mm is the module manager
 	mm *module.Manager
 
-	// sm is the simulation manager
+	// sm is the statedb manager
 	sm           *module.SimulationManager
 	configurator module.Configurator
 }
@@ -698,7 +698,7 @@ func New(
 	}
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
-	// create the simulation manager and define the order of the modules for deterministic simulations
+	// create the statedb manager and define the order of the modules for deterministic simulations
 	overrideModules := map[string]module.AppModuleSimulation{
 		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 	}

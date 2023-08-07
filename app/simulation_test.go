@@ -51,12 +51,12 @@ func init() {
 }
 
 // fauxMerkleModeOpt returns a BaseApp option to use a dbStoreAdapter instead of
-// an IAVLStore for faster simulation speed.
+// an IAVLStore for faster statedb speed.
 func fauxMerkleModeOpt(bapp *baseapp.BaseApp) {
 	bapp.SetFauxMerkleMode()
 }
 
-// BenchmarkSimulation run the chain simulation
+// BenchmarkSimulation run the chain statedb
 // Running using starport command:
 // `starport chain simulate -v --numBlocks 200 --blockSize 50`
 // Running as go benchmark test:
@@ -76,7 +76,7 @@ func BenchmarkSimulation(b *testing.B) {
 		simcli.FlagVerboseValue,
 		simcli.FlagEnabledValue,
 	)
-	require.NoError(b, err, "simulation setup failed")
+	require.NoError(b, err, "statedb setup failed")
 
 	b.Cleanup(func() {
 		require.NoError(b, db.Close())
@@ -101,7 +101,7 @@ func BenchmarkSimulation(b *testing.B) {
 	)
 	require.Equal(b, app.Name, bApp.Name())
 
-	// run randomized simulation
+	// run randomized statedb
 	_, simParams, simErr := simulation.SimulateFromSeed(
 		b,
 		os.Stdout,
@@ -118,7 +118,7 @@ func BenchmarkSimulation(b *testing.B) {
 		bApp.AppCodec(),
 	)
 
-	// export state and simParams before the simulation error is checked
+	// export state and simParams before the statedb error is checked
 	err = simtestutil.CheckExportSimulation(bApp, config, simParams)
 	require.NoError(b, err)
 	require.NoError(b, simErr)
@@ -130,7 +130,7 @@ func BenchmarkSimulation(b *testing.B) {
 
 func TestAppStateDeterminism(t *testing.T) {
 	if !simcli.FlagEnabledValue {
-		t.Skip("skipping application simulation")
+		t.Skip("skipping application statedb")
 	}
 
 	config := simcli.NewConfigFromFlags()
@@ -178,7 +178,7 @@ func TestAppStateDeterminism(t *testing.T) {
 			)
 
 			fmt.Printf(
-				"running non-determinism simulation; seed %d: %d/%d, attempt: %d/%d\n",
+				"running non-determinism statedb; seed %d: %d/%d, attempt: %d/%d\n",
 				config.Seed, i+1, numSeeds, j+1, numTimesToRunPerSeed,
 			)
 
@@ -228,9 +228,9 @@ func TestAppImportExport(t *testing.T) {
 		simcli.FlagEnabledValue,
 	)
 	if skip {
-		t.Skip("skipping application import/export simulation")
+		t.Skip("skipping application import/export statedb")
 	}
-	require.NoError(t, err, "simulation setup failed")
+	require.NoError(t, err, "statedb setup failed")
 
 	defer func() {
 		require.NoError(t, db.Close())
@@ -255,7 +255,7 @@ func TestAppImportExport(t *testing.T) {
 	)
 	require.Equal(t, app.Name, bApp.Name())
 
-	// run randomized simulation
+	// run randomized statedb
 	_, simParams, simErr := simulation.SimulateFromSeed(
 		t,
 		os.Stdout,
@@ -273,7 +273,7 @@ func TestAppImportExport(t *testing.T) {
 	)
 	require.NoError(t, simErr)
 
-	// export state and simParams before the simulation error is checked
+	// export state and simParams before the statedb error is checked
 	err = simtestutil.CheckExportSimulation(bApp, config, simParams)
 	require.NoError(t, err)
 
@@ -295,7 +295,7 @@ func TestAppImportExport(t *testing.T) {
 		simcli.FlagVerboseValue,
 		simcli.FlagEnabledValue,
 	)
-	require.NoError(t, err, "simulation setup failed")
+	require.NoError(t, err, "statedb setup failed")
 
 	defer func() {
 		require.NoError(t, newDB.Close())
@@ -326,7 +326,7 @@ func TestAppImportExport(t *testing.T) {
 			if !strings.Contains(err, "validator set is empty after InitGenesis") {
 				panic(r)
 			}
-			logger.Info("Skipping simulation as all validators have been unbonded")
+			logger.Info("Skipping statedb as all validators have been unbonded")
 			logger.Info("err", err, "stacktrace", string(debug.Stack()))
 		}
 	}()
@@ -382,9 +382,9 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		simcli.FlagEnabledValue,
 	)
 	if skip {
-		t.Skip("skipping application simulation after import")
+		t.Skip("skipping application statedb after import")
 	}
-	require.NoError(t, err, "simulation setup failed")
+	require.NoError(t, err, "statedb setup failed")
 
 	defer func() {
 		require.NoError(t, db.Close())
@@ -410,7 +410,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	)
 	require.Equal(t, app.Name, bApp.Name())
 
-	// run randomized simulation
+	// run randomized statedb
 	stopEarly, simParams, simErr := simulation.SimulateFromSeed(
 		t,
 		os.Stdout,
@@ -428,7 +428,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	)
 	require.NoError(t, simErr)
 
-	// export state and simParams before the simulation error is checked
+	// export state and simParams before the statedb error is checked
 	err = simtestutil.CheckExportSimulation(bApp, config, simParams)
 	require.NoError(t, err)
 
@@ -455,7 +455,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		simcli.FlagVerboseValue,
 		simcli.FlagEnabledValue,
 	)
-	require.NoError(t, err, "simulation setup failed")
+	require.NoError(t, err, "statedb setup failed")
 
 	defer func() {
 		require.NoError(t, newDB.Close())
