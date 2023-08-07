@@ -16,40 +16,29 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/core"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/evmos/v12/x/evm/types"
 )
 
-// GetParams returns the total set of evm parameters.
-func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.KeyPrefixParams)
-	if len(bz) == 0 {
-		return k.GetLegacyParams(ctx)
-	}
-	k.cdc.MustUnmarshal(bz, &params)
-	return
+var _ types.EvmHooks = MultiEvmHooks{}
+
+// MultiEvmHooks combine multiple evm hooks, all hook functions are run in array sequence
+type MultiEvmHooks []types.EvmHooks
+
+// NewMultiEvmHooks combine multiple evm hooks
+func NewMultiEvmHooks(hooks ...types.EvmHooks) MultiEvmHooks {
+	return hooks
 }
 
-// SetParams sets the EVM params each in their individual key for better get performance
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
-	if err := params.Validate(); err != nil {
-		return err
+// PostTxProcessing delegate the call to underlying hooks
+func (mh MultiEvmHooks) PostTxProcessing(ctx sdk.Context, msg core.Message, receipt *ethtypes.Receipt) error {
+	for i := range mh {
+		if err := mh[i].PostTxProcessing(ctx, msg, receipt); err != nil {
+			return errorsmod.Wrapf(err, "EVM hook %T failed", mh[i])
+		}
 	}
-
-	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(&params)
-	if err != nil {
-		return err
-	}
-
-	store.Set(types.KeyPrefixParams, bz)
 	return nil
-}
-
-// GetLegacyParams returns param set for version before migrate
-func (k Keeper) GetLegacyParams(ctx sdk.Context) types.Params {
-	var params types.Params
-	k.ss.GetParamSetIfExists(ctx, &params)
-	return params
 }

@@ -17,39 +17,31 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	v4 "github.com/evmos/evmos/v12/x/evm/migrations/v4"
+	v5 "github.com/evmos/evmos/v12/x/evm/migrations/v5"
 	"github.com/evmos/evmos/v12/x/evm/types"
 )
 
-// GetParams returns the total set of evm parameters.
-func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.KeyPrefixParams)
-	if len(bz) == 0 {
-		return k.GetLegacyParams(ctx)
-	}
-	k.cdc.MustUnmarshal(bz, &params)
-	return
+// Migrator is a struct for handling in-place store migrations.
+type Migrator struct {
+	keeper         Keeper
+	legacySubspace types.Subspace
 }
 
-// SetParams sets the EVM params each in their individual key for better get performance
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
-	if err := params.Validate(); err != nil {
-		return err
+// NewMigrator returns a new Migrator.
+func NewMigrator(keeper Keeper, legacySubspace types.Subspace) Migrator {
+	return Migrator{
+		keeper:         keeper,
+		legacySubspace: legacySubspace,
 	}
-
-	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(&params)
-	if err != nil {
-		return err
-	}
-
-	store.Set(types.KeyPrefixParams, bz)
-	return nil
 }
 
-// GetLegacyParams returns param set for version before migrate
-func (k Keeper) GetLegacyParams(ctx sdk.Context) types.Params {
-	var params types.Params
-	k.ss.GetParamSetIfExists(ctx, &params)
-	return params
+// Migrate3to4 migrates the store from consensus version 3 to 4
+func (m Migrator) Migrate3to4(ctx sdk.Context) error {
+	return v4.MigrateStore(ctx, m.keeper.storeKey, m.legacySubspace, m.keeper.cdc)
+}
+
+// Migrate4to5 migrates the store from consensus version 4 to 5
+func (m Migrator) Migrate4to5(ctx sdk.Context) error {
+	return v5.MigrateStore(ctx, m.keeper.storeKey, m.keeper.cdc)
 }
