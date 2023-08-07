@@ -1,31 +1,116 @@
 package cli
 
 import (
-	"fmt"
-	// "strings"
-
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	// "github.com/cosmos/cosmos-sdk/client/flags"
-	// sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 
-	"artela/x/fee/types"
+	"github.com/artela-network/artela/x/fee/types"
 )
 
-// GetQueryCmd returns the cli query commands for this module
-func GetQueryCmd(queryRoute string) *cobra.Command {
-	// Group fee queries under a subcommand
+// GetQueryCmd returns the parent command for all x/fee CLI query commands.
+func GetQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        types.ModuleName,
-		Short:                      fmt.Sprintf("Querying commands for the %s module", types.ModuleName),
+		Short:                      "Querying commands for the fee market module",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
 
-	cmd.AddCommand(CmdQueryParams())
-	// this line is used by starport scaffolding # 1
+	cmd.AddCommand(
+		GetBlockGasCmd(),
+		GetBaseFeeCmd(),
+		GetParamsCmd(),
+	)
+	return cmd
+}
 
+// GetBlockGasCmd queries the gas used in a block
+func GetBlockGasCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "block-gas",
+		Short: "Get the block gas used at a given block height",
+		Long: `Get the block gas used at a given block height.
+If the height is not provided, it will use the latest height from context`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+
+			ctx := cmd.Context()
+			res, err := queryClient.BlockGas(ctx, &types.QueryBlockGasRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+// GetParamsCmd queries the fee market params
+func GetParamsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Short: "Get the fee market params",
+		Long:  "Get the fee market parameter values.",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.Params(cmd.Context(), &types.QueryParamsRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+// GetBaseFeeCmd queries the base fee at a given height
+func GetBaseFeeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "base-fee",
+		Short: "Get the base fee amount at a given block height",
+		Long: `Get the base fee amount at a given block height.
+If the height is not provided, it will use the latest height from context.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+
+			ctx := cmd.Context()
+			res, err := queryClient.BaseFee(ctx, &types.QueryBaseFeeRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
 }

@@ -1,23 +1,34 @@
 package fee
 
 import (
-	"artela/x/fee/keeper"
-	"artela/x/fee/types"
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/artela-network/artela/x/fee/keeper"
+	"github.com/artela-network/artela/x/fee/types"
 )
 
-// InitGenesis initializes the module's state from a provided genesis state.
-func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
-	// this line is used by starport scaffolding # genesis/module/init
-	k.SetParams(ctx, genState.Params)
+// InitGenesis initializes genesis state based on exported genesis
+func InitGenesis(
+	ctx sdk.Context,
+	k keeper.Keeper,
+	data types.GenesisState,
+) []abci.ValidatorUpdate {
+	err := k.SetParams(ctx, data.Params)
+	if err != nil {
+		panic(errorsmod.Wrap(err, "could not set parameters at genesis"))
+	}
+
+	k.SetBlockGasWanted(ctx, data.BlockGas)
+
+	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the module's exported genesis
+// ExportGenesis exports genesis state of the fee market module
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
-	genesis := types.DefaultGenesis()
-	genesis.Params = k.GetParams(ctx)
-
-	// this line is used by starport scaffolding # genesis/module/export
-
-	return genesis
+	return &types.GenesisState{
+		Params:   k.GetParams(ctx),
+		BlockGas: k.GetBlockGasWanted(ctx),
+	}
 }
