@@ -1,12 +1,20 @@
 syntax = "proto3";
-package artela.fee;
+package artela.fee.v1;
 
+import "artela/fee/v1/fee.proto";
 import "gogoproto/gogo.proto";
-import "artela/fee/v1/params.proto";
 
 option go_package = "github.com/artela-network/artela/v1/x/fee/types";
 
 // GenesisState defines the fee module's genesis state.
 message GenesisState {
+  // params defines all the parameters of the fee module.
   Params params = 1 [(gogoproto.nullable) = false];
+  // DEPRECATED: base fee is the exported value from previous software version.
+  // Zero by default.
+  reserved 2;
+  reserved "base_fee";
+  // block_gas is the amount of gas wanted on the last block before the upgrade.
+  // Zero by default.
+  uint64 block_gas = 3;
 }
