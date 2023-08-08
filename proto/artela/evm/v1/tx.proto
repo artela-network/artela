@@ -1,7 +1,0 @@
-syntax = "proto3";
-package artela.evm;
-
-option go_package = "github.com/artela-network/artela/v1/x/evm/types";
-
-// Msg defines the Msg service.
-service Msg {}

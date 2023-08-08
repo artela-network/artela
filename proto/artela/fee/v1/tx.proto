@@ -1,7 +1,0 @@
-syntax = "proto3";
-package artela.fee;
-
-option go_package = "github.com/artela-network/artela/v1/x/fee/types";
-
-// Msg defines the Msg service.
-service Msg {}
