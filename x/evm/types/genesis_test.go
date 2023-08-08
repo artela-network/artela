@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"artela/x/evm/types"
+	"github.com/artela-network/artela/x/evm/types"
 	"github.com/stretchr/testify/require"
 )
 

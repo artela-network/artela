@@ -110,16 +110,17 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
-	evmmodule "artela/x/evm"
-	evmmodulekeeper "artela/x/evm/keeper"
-	evmmoduletypes "artela/x/evm/types"
-	feemodule "artela/x/fee"
-	feemodulekeeper "artela/x/fee/keeper"
-	feemoduletypes "artela/x/fee/types"
+	// evmmodule "github.com/artela-network/artela/x/evm"
+	// evmmodulekeeper "github.com/artela-network/artela/x/evm/keeper"
+	// evmmoduletypes "github.com/artela-network/artela/x/evm/types"
+	// feemodule "github.com/artela-network/artela/x/fee"
+	// feemodulekeeper "github.com/artela-network/artela/x/fee/keeper"
+	// feemoduletypes "github.com/artela-network/artela/x/fee/types"
+
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
-	appparams "artela/app/params"
-	"artela/docs"
+	appparams "github.com/artela-network/artela/app/params"
+	"github.com/artela-network/artela/docs"
 )
 
 const (
@@ -176,8 +177,8 @@ var (
 		ica.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		consensus.AppModuleBasic{},
-		evmmodule.AppModuleBasic{},
-		feemodule.AppModuleBasic{},
+		// evmmodule.AppModuleBasic{},
+		// feemodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -253,9 +254,9 @@ type App struct {
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper  capabilitykeeper.ScopedKeeper
 
-	EvmKeeper evmmodulekeeper.Keeper
+	// EvmKeeper evmmodulekeeper.Keeper
 
-	FeeKeeper feemodulekeeper.Keeper
+	// FeeKeeper feemodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -302,8 +303,8 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, icahosttypes.StoreKey,
 		capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey, consensusparamtypes.StoreKey,
-		evmmoduletypes.StoreKey,
-		feemoduletypes.StoreKey,
+		// evmmoduletypes.StoreKey,
+		// feemoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -526,21 +527,21 @@ func New(
 		),
 	)
 
-	app.EvmKeeper = *evmmodulekeeper.NewKeeper(
-		appCodec,
-		keys[evmmoduletypes.StoreKey],
-		keys[evmmoduletypes.MemStoreKey],
-		app.GetSubspace(evmmoduletypes.ModuleName),
-	)
-	evmModule := evmmodule.NewAppModule(appCodec, app.EvmKeeper, app.AccountKeeper, app.BankKeeper)
+	// app.EvmKeeper = *evmmodulekeeper.NewKeeper(
+	// 	appCodec,
+	// 	keys[evmmoduletypes.StoreKey],
+	// 	keys[evmmoduletypes.MemStoreKey],
+	// 	app.GetSubspace(evmmoduletypes.ModuleName),
+	// )
+	// evmModule := evmmodule.NewAppModule(appCodec, app.EvmKeeper, app.AccountKeeper, app.BankKeeper)
 
-	app.FeeKeeper = *feemodulekeeper.NewKeeper(
-		appCodec,
-		keys[feemoduletypes.StoreKey],
-		keys[feemoduletypes.MemStoreKey],
-		app.GetSubspace(feemoduletypes.ModuleName),
-	)
-	feeModule := feemodule.NewAppModule(appCodec, app.FeeKeeper, app.AccountKeeper, app.BankKeeper)
+	// app.FeeKeeper = *feemodulekeeper.NewKeeper(
+	// 	appCodec,
+	// 	keys[feemoduletypes.StoreKey],
+	// 	keys[feemoduletypes.MemStoreKey],
+	// 	app.GetSubspace(feemoduletypes.ModuleName),
+	// )
+	// feeModule := feemodule.NewAppModule(appCodec, app.FeeKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
@@ -603,8 +604,8 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		icaModule,
-		evmModule,
-		feeModule,
+		// evmModule,
+		// feeModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)), // always be last to make sure that it checks for all invariants and not only part of them
@@ -637,8 +638,8 @@ func New(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		evmmoduletypes.ModuleName,
-		feemoduletypes.ModuleName,
+		// evmmoduletypes.ModuleName,
+		// feemoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/beginBlockers
 	)
 
@@ -664,8 +665,8 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		evmmoduletypes.ModuleName,
-		feemoduletypes.ModuleName,
+		// evmmoduletypes.ModuleName,
+		// feemoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/endBlockers
 	)
 
@@ -696,8 +697,8 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		evmmoduletypes.ModuleName,
-		feemoduletypes.ModuleName,
+		// evmmoduletypes.ModuleName,
+		// feemoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	}
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
@@ -922,8 +923,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
-	paramsKeeper.Subspace(evmmoduletypes.ModuleName)
-	paramsKeeper.Subspace(feemoduletypes.ModuleName)
+	// paramsKeeper.Subspace(evmmoduletypes.ModuleName)
+	// paramsKeeper.Subspace(feemoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
