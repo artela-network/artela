@@ -16,6 +16,8 @@ import (
 )
 
 const (
+	// FlagKeyAlgorithm defines the key of algorithm
+	FlagKeyAlgorithm = "algo"
 	// PrivKeySize defines the size of the PrivKey bytes
 	PrivKeySize = 32
 	// PubKeySize defines the size of the PubKey bytes

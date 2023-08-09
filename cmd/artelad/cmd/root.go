@@ -275,7 +275,7 @@ func (a appCreator) newApp(
 		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
 	)
 
-	return app.New(
+	return app.NewArtela(
 		logger,
 		db,
 		traceStore,
@@ -316,7 +316,7 @@ func (a appCreator) appExport(
 		return servertypes.ExportedApp{}, errors.New("application home not set")
 	}
 
-	app := app.New(
+	app := app.NewArtela(
 		logger,
 		db,
 		traceStore,

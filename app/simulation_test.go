@@ -87,7 +87,7 @@ func BenchmarkSimulation(b *testing.B) {
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	bApp := app.New(
+	bApp := app.NewArtela(
 		logger,
 		db,
 		nil,
@@ -163,7 +163,7 @@ func TestAppStateDeterminism(t *testing.T) {
 			config.ChainID = chainID
 
 			db := dbm.NewMemDB()
-			bApp := app.New(
+			bApp := app.NewArtela(
 				logger,
 				db,
 				nil,
@@ -241,7 +241,7 @@ func TestAppImportExport(t *testing.T) {
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	bApp := app.New(
+	bApp := app.NewArtela(
 		logger,
 		db,
 		nil,
@@ -302,7 +302,7 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
-	newApp := app.New(
+	newApp := app.NewArtela(
 		log.NewNopLogger(),
 		newDB,
 		nil,
@@ -395,7 +395,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	bApp := app.New(
+	bApp := app.NewArtela(
 		logger,
 		db,
 		nil,
@@ -462,7 +462,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
-	newApp := app.New(
+	newApp := app.NewArtela(
 		log.NewNopLogger(),
 		newDB,
 		nil,
