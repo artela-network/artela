@@ -19,7 +19,7 @@ var (
 
 const (
 	// Amino names
-	updateParamsName = "ethermint/fee/MsgUpdateParams"
+	updateParamsName = "artela/fee/MsgUpdateParams"
 )
 
 // NOTE: This is required for the GetSignBytes function
