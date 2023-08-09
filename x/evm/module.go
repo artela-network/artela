@@ -79,7 +79,7 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 
 // GetQueryCmd returns no root query command for the evm module.
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.GetQueryCmd("") // TODO mark-artela
+	return cli.GetQueryCmd()
 }
 
 // RegisterInterfaces registers interfaces and implementations of the evm module.
@@ -124,15 +124,15 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-	m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
-	err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
-		panic(err)
-	}
+	//m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
+	//err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
+	//	panic(err)
+	//}
 }
 
 // Route returns the message routing key for the evm module.
