@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"math/big"
 	"strings"
@@ -77,23 +76,23 @@ func EthHeaderFromTendermint(header tmtypes.Header, bloom ethtypes.Bloom, baseFe
 }
 
 // BlockMaxGasFromConsensusParams returns the gas limit for the current block from the chain consensus params.
-func BlockMaxGasFromConsensusParams(goCtx context.Context, clientCtx client.Context, blockHeight int64) (int64, error) {
-	resConsParams, err := clientCtx.Client.ConsensusParams(goCtx, &blockHeight)
-	defaultGasLimit := int64(^uint32(0)) // #nosec G701
-	if err != nil {
-		return defaultGasLimit, err
-	}
-
-	gasLimit := resConsParams.ConsensusParams.Block.MaxGas
-	if gasLimit == -1 {
-		// Sets gas limit to max uint32 to not error with javascript dev tooling
-		// This -1 value indicating no block gas limit is set to max uint64 with geth hexutils
-		// which errors certain javascript dev tooling which only supports up to 53 bits
-		gasLimit = defaultGasLimit
-	}
-
-	return gasLimit, nil
-}
+//func BlockMaxGasFromConsensusParams(goCtx context.Context, clientCtx client.Context, blockHeight int64) (int64, error) {
+//	resConsParams, err := clientCtx.Client.ConsensusParams(goCtx, &blockHeight)
+//	defaultGasLimit := int64(^uint32(0)) // #nosec G701
+//	if err != nil {
+//		return defaultGasLimit, err
+//	}
+//
+//	gasLimit := resConsParams.ConsensusParams.Block.MaxGas
+//	if gasLimit == -1 {
+//		// Sets gas limit to max uint32 to not error with javascript dev tooling
+//		// This -1 value indicating no block gas limit is set to max uint64 with geth hexutils
+//		// which errors certain javascript dev tooling which only supports up to 53 bits
+//		gasLimit = defaultGasLimit
+//	}
+//
+//	return gasLimit, nil
+//}
 
 // FormatBlock creates an ethereum block from a tendermint header and ethereum-formatted
 // transactions.
@@ -222,7 +221,7 @@ func BaseFeeFromEvents(events []abci.Event) *big.Int {
 		}
 
 		for _, attr := range event.Attributes {
-			if bytes.Equal(attr.Key, []byte(feetypes.AttributeKeyBaseFee)) {
+			if bytes.Equal([]byte(attr.Key), []byte(feetypes.AttributeKeyBaseFee)) {
 				result, success := new(big.Int).SetString(string(attr.Value), 10)
 				if success {
 					return result

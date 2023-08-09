@@ -526,21 +526,20 @@ func New(
 		),
 	)
 
-	app.EvmKeeper = *evmmodulekeeper.NewKeeper(
-		appCodec,
-		keys[evmmoduletypes.StoreKey],
-		keys[evmmoduletypes.MemStoreKey],
-		app.GetSubspace(evmmoduletypes.ModuleName),
-	)
-	evmModule := evmmodule.NewAppModule(appCodec, app.EvmKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.FeeKeeper = *feemodulekeeper.NewKeeper(
-		appCodec,
+	app.FeeKeeper = feemodulekeeper.NewKeeper(
+		appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
 		keys[feemoduletypes.StoreKey],
-		keys[feemoduletypes.MemStoreKey],
+		tkeys[feemoduletypes.TransientKey],
 		app.GetSubspace(feemoduletypes.ModuleName),
 	)
-	feeModule := feemodule.NewAppModule(appCodec, app.FeeKeeper, app.AccountKeeper, app.BankKeeper)
+	feeModule := feemodule.NewAppModule(app.FeeKeeper, app.GetSubspace(feemoduletypes.ModuleName))
+
+	app.EvmKeeper = evmmodulekeeper.NewKeeper(
+		appCodec, keys[evmmoduletypes.StoreKey], tkeys[evmmoduletypes.TransientKey], authtypes.NewModuleAddress(govtypes.ModuleName),
+		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeKeeper,
+		"1", app.GetSubspace(evmmoduletypes.ModuleName),
+	)
+	evmModule := evmmodule.NewAppModule(&app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmmoduletypes.ModuleName))
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 

@@ -1,13 +1,12 @@
 package cli
 
 import (
-	"github.com/cosmos/cosmos-sdk/client/flags"
+	rpctypes "github.com/artela-network/artela/rpc/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	// sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 
-	"github.com/artela-network/artela/rpc/types"
 	"github.com/artela-network/artela/x/evm/types"
 )
 
