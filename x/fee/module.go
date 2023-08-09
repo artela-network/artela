@@ -135,12 +135,6 @@ func (am AppModule) Route() string {
 // QuerierRoute returns the fee market module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
 
-// LegacyQuerierHandler returns nil as the fee market module doesn't expose a legacy
-// Querier.
-//func (am AppModule) LegacyQuerierHandler(_ *codec.LegacyAmino) sdk.Querier {
-//	return nil
-//}
-
 // BeginBlock returns the begin block for the fee market module.
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	am.keeper.BeginBlock(ctx, req)
@@ -169,11 +163,6 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	gs := ExportGenesis(ctx, am.keeper)
 	return cdc.MustMarshalJSON(gs)
 }
-
-// RandomizedParams creates randomized fee market param changes for the simulator.
-//func (AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
-//	return nil
-//}
 
 // RegisterStoreDecoder registers a decoder for fee market module's types
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
