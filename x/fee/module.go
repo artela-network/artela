@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -21,6 +20,9 @@ import (
 	"github.com/artela-network/artela/x/fee/keeper"
 	"github.com/artela-network/artela/x/fee/types"
 )
+
+// ConsensusVersion defines the current x/fee module consensus version.
+const ConsensusVersion = 4
 
 var (
 	_ module.AppModule      = AppModule{}
@@ -42,7 +44,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // ConsensusVersion returns the consensus state-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
-	return 4
+	return ConsensusVersion
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the fee market
@@ -59,11 +61,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 	}
 
 	return genesisState.Validate()
-}
-
-// RegisterRESTRoutes performs a no-op as the EVM module doesn't expose REST
-// endpoints
-func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {
 }
 
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *runtime.ServeMux) {
@@ -87,12 +84,12 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 	types.RegisterInterfaces(registry)
 }
 
-// ____________________________________________________________________________
-
 // AppModule implements an application module for the fee market module.
 type AppModule struct {
 	AppModuleBasic
+
 	keeper keeper.Keeper
+
 	// legacySubspace is used solely for migration of x/params managed parameters
 	legacySubspace types.Subspace
 }
@@ -121,30 +118,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 	types.RegisterMsgServer(cfg.MsgServer(), &am.keeper)
 
+	// TODO mark
 	//m := keeper.NewMigrator(am.keeper, am.legacySubspace)
 	//if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
 	//	panic(err)
 	//}
-}
-
-// Route returns the message routing key for the fee market module.
-func (am AppModule) Route() string {
-	return types.RouterKey
-}
-
-// QuerierRoute returns the fee market module's querier route name.
-func (AppModule) QuerierRoute() string { return types.RouterKey }
-
-// BeginBlock returns the begin block for the fee market module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	am.keeper.BeginBlock(ctx, req)
-}
-
-// EndBlock returns the end blocker for the fee market module. It returns no validator
-// updates.
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	am.keeper.EndBlock(ctx, req)
-	return []abci.ValidatorUpdate{}
 }
 
 // InitGenesis performs genesis initialization for the fee market module. It returns
@@ -179,4 +157,16 @@ func (AppModule) GenerateGenesisState(_ *module.SimulationState) {
 // WeightedOperations returns the all the fee market module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
 	return nil
+}
+
+// BeginBlock returns the begin block for the fee market module.
+func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	am.keeper.BeginBlock(ctx, req)
+}
+
+// EndBlock returns the end blocker for the fee market module. It returns no validator
+// updates.
+func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	am.keeper.EndBlock(ctx, req)
+	return []abci.ValidatorUpdate{}
 }
