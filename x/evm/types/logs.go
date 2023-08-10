@@ -68,7 +68,7 @@ func (log *Log) Validate() error {
 	return nil
 }
 
-// ToEthereum returns the Ethereum type Log from a Ethermint proto compatible Log.
+// ToEthereum returns the Ethereum type Log from a artela proto compatible Log.
 func (log *Log) ToEthereum() *ethtypes.Log {
 	topics := make([]common.Hash, len(log.Topics))
 	for i, topic := range log.Topics {

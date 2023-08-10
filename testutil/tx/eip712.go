@@ -191,14 +191,14 @@ func createTypedData(args typedDataArgs, useLegacy bool) (apitypes.TypedData, er
 		registry := codectypes.NewInterfaceRegistry()
 		types.RegisterInterfaces(registry)
 		cryptocodec.RegisterInterfaces(registry)
-		evmosCodec := codec.NewProtoCodec(registry)
+		artelaCodec := codec.NewProtoCodec(registry)
 
 		feeDelegation := &eip712.FeeDelegationOptions{
 			FeePayer: args.legacyFeePayer,
 		}
 
 		return eip712.LegacyWrapTxToTypedData(
-			evmosCodec,
+			artelaCodec,
 			args.chainID,
 			args.legacyMsg,
 			args.data,

@@ -109,9 +109,9 @@ func DefaultConfig() Config {
 		AppConstructor:    NewAppConstructor(encCfg),
 		GenesisState:      app.ModuleBasics.DefaultGenesis(encCfg.Marshaler),
 		TimeoutCommit:     3 * time.Second,
-		ChainID:           fmt.Sprintf("evmos_%d-1", tmrand.Int63n(9999999999999)+1),
+		ChainID:           fmt.Sprintf("artela_%d-1", tmrand.Int63n(9999999999999)+1),
 		NumValidators:     4,
-		BondDenom:         "aevmos",
+		BondDenom:         "aartela",
 		MinGasPrices:      fmt.Sprintf("0.000006%s", artelatypes.AttoArtela),
 		AccountTokens:     sdk.TokensFromConsensusPower(1000000000000000000, artelatypes.PowerReduction),
 		StakingTokens:     sdk.TokensFromConsensusPower(500000000000000000, artelatypes.PowerReduction),
@@ -124,7 +124,7 @@ func DefaultConfig() Config {
 	}
 }
 
-// NewAppConstructor returns a new Evmos AppConstructor
+// NewAppConstructor returns a new Artela AppConstructor
 func NewAppConstructor(encodingCfg params.EncodingConfig) AppConstructor {
 	return func(val Validator) servertypes.Application {
 		return app.NewArtela(
@@ -333,8 +333,8 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		ctx.Logger = logger
 
 		nodeDirName := fmt.Sprintf("node%d", i)
-		nodeDir := filepath.Join(network.BaseDir, nodeDirName, "evmosd")
-		clientDir := filepath.Join(network.BaseDir, nodeDirName, "evmoscli")
+		nodeDir := filepath.Join(network.BaseDir, nodeDirName, "artelad")
+		clientDir := filepath.Join(network.BaseDir, nodeDirName, "artelacli")
 		gentxsDir := filepath.Join(network.BaseDir, "gentxs")
 
 		err := os.MkdirAll(filepath.Join(nodeDir, "config"), 0o750)

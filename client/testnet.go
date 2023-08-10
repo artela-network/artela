@@ -128,7 +128,7 @@ or a similar setup where each node has a manually configurable IP address.
 Note, strict routability for addresses is turned off in the config file.
 
 Example:
-	evmosd testnet init-files --v 4 --output-dir ./.testnets --starting-ip-address 192.168.10.2
+	artelad testnet init-files --v 4 --output-dir ./.testnets --starting-ip-address 192.168.10.2
 	`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -155,7 +155,7 @@ Example:
 
 	addTestnetFlagsToCmd(cmd)
 	cmd.Flags().String(flagNodeDirPrefix, "node", "Prefix the directory name for each node with (node results in node0, node1, ...)")
-	cmd.Flags().String(flagNodeDaemonHome, "ethermintd", "Home directory of the node's daemon configuration")
+	cmd.Flags().String(flagNodeDaemonHome, "artelad", "Home directory of the node's daemon configuration")
 	cmd.Flags().String(flagStartingIPAddress,
 		"192.168.0.1",
 		"Starting IP address (192.168.0.1 results in persistent peers list ID0@192.168.0.1:46656, ID1@192.168.0.2:46656, ...)")
@@ -174,7 +174,7 @@ and generate "v" directories, populated with necessary validator configuration f
 (private validator, genesis, config, etc.).
 
 Example:
-	evmosd testnet --v 4 --output-dir ./.testnets
+	artelad testnet --v 4 --output-dir ./.testnets
 	`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			args := startArgs{}
@@ -216,7 +216,7 @@ func initTestnetFiles(
 	args initArgs,
 ) error {
 	if args.chainID == "" {
-		args.chainID = fmt.Sprintf("ethermint_%d-1", tmrand.Int63n(9999999999999)+1)
+		args.chainID = fmt.Sprintf("artela_%d-1", tmrand.Int63n(9999999999999)+1)
 	}
 
 	nodeIDs := make([]string, args.numValidators)

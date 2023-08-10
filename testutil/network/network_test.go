@@ -14,7 +14,7 @@ import (
 	"github.com/artela-network/artela/testutil/network"
 	"github.com/ethereum/go-ethereum/ethclient"
 
-	evmosnetwork "github.com/artela-network/artela/testutil/network"
+	artelanetwork "github.com/artela-network/artela/testutil/network"
 )
 
 type IntegrationTestSuite struct {
@@ -27,7 +27,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.T().Log("setting up integration test suite")
 
 	var err error
-	cfg := evmosnetwork.DefaultConfig()
+	cfg := artelanetwork.DefaultConfig()
 	cfg.JSONRPCAddress = config.DefaultJSONRPCAddress
 	cfg.NumValidators = 1
 

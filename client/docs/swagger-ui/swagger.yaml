@@ -1,10 +1,10 @@
 swagger: '2.0'
 info:
-  title: Evmos Chain - gRPC Gateway docs
+  title: artela Chain - gRPC Gateway docs
   description: A REST interface for state queries and transactions
   version: 1.0.0
 paths:
-  /evmos/claims/v1/claims_records:
+  /artela/claims/v1/claims_records:
     get:
       summary: ClaimsRecords returns all claims records
       operationId: ClaimsRecords
@@ -143,7 +143,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /evmos/claims/v1/claims_records/{address}:
+  /artela/claims/v1/claims_records/{address}:
     get:
       summary: ClaimsRecord returns the claims record for a given address
       operationId: ClaimsRecord
@@ -229,7 +229,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/claims/v1/params:
+  /artela/claims/v1/params:
     get:
       summary: Params returns the claims module parameters
       operationId: ClaimsParams
@@ -306,7 +306,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/claims/v1/total_unclaimed:
+  /artela/claims/v1/total_unclaimed:
     get:
       summary: TotalUnclaimed queries the total unclaimed tokens from the airdrop
       operationId: TotalUnclaimed
@@ -363,7 +363,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/epochs/v1/current_epoch:
+  /artela/epochs/v1/current_epoch:
     get:
       summary: CurrentEpoch provide current epoch of specified identifier
       operationId: CurrentEpoch
@@ -412,7 +412,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/epochs/v1/epochs:
+  /artela/epochs/v1/epochs:
     get:
       summary: EpochInfos provide running epochInfos
       operationId: EpochInfos
@@ -567,7 +567,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /evmos/erc20/v1/params:
+  /artela/erc20/v1/params:
     get:
       summary: Params retrieves the erc20 module params
       operationId: ERC20Params
@@ -621,7 +621,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/erc20/v1/token_pairs:
+  /artela/erc20/v1/token_pairs:
     get:
       summary: TokenPairs retrieves registered token pairs
       operationId: TokenPairs
@@ -776,7 +776,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /evmos/erc20/v1/token_pairs/{token}:
+  /artela/erc20/v1/token_pairs/{token}:
     get:
       summary: TokenPair retrieves a registered token pair
       operationId: TokenPair
@@ -860,7 +860,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/incentives/v1/allocation_meters:
+  /artela/incentives/v1/allocation_meters:
     get:
       summary: |-
         AllocationMeters retrieves active allocation meters for a given
@@ -994,7 +994,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /evmos/incentives/v1/allocation_meters/{denom}:
+  /artela/incentives/v1/allocation_meters/{denom}:
     get:
       summary: AllocationMeter retrieves a active gas meter
       operationId: AllocationMeter
@@ -1054,7 +1054,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/incentives/v1/gas_meters/{contract}:
+  /artela/incentives/v1/gas_meters/{contract}:
     get:
       summary: GasMeters retrieves active gas meters for a given contract
       operationId: GasMeters
@@ -1199,7 +1199,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /evmos/incentives/v1/gas_meters/{contract}/{participant}:
+  /artela/incentives/v1/gas_meters/{contract}/{participant}:
     get:
       summary: GasMeter retrieves a active gas meter
       operationId: GasMeter
@@ -1255,7 +1255,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/incentives/v1/incentives:
+  /artela/incentives/v1/incentives:
     get:
       summary: Incentives retrieves registered incentives
       operationId: Incentives
@@ -1423,7 +1423,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /evmos/incentives/v1/incentives/{contract}:
+  /artela/incentives/v1/incentives/{contract}:
     get:
       summary: Incentive retrieves a registered incentive
       operationId: Incentive
@@ -1518,7 +1518,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/incentives/v1/params:
+  /artela/incentives/v1/params:
     get:
       summary: Params retrieves the incentives module params
       operationId: IncentivesParams
@@ -1573,7 +1573,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/inflation/v1/circulating_supply:
+  /artela/inflation/v1/circulating_supply:
     get:
       summary: |-
         CirculatingSupply retrieves the total number of tokens that are in
@@ -1629,7 +1629,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/inflation/v1/epoch_mint_provision:
+  /artela/inflation/v1/epoch_mint_provision:
     get:
       summary: EpochMintProvision retrieves current minting epoch provision value.
       operationId: EpochMintProvision
@@ -1676,7 +1676,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/inflation/v1/inflation_rate:
+  /artela/inflation/v1/inflation_rate:
     get:
       summary: InflationRate retrieves the inflation rate of the current period.
       operationId: InflationRate
@@ -1720,7 +1720,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/inflation/v1/params:
+  /artela/inflation/v1/params:
     get:
       summary: Params retrieves the total set of minting parameters.
       operationId: InflationParams
@@ -1815,7 +1815,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/inflation/v1/period:
+  /artela/inflation/v1/period:
     get:
       summary: Period retrieves current period.
       operationId: Period
@@ -1856,7 +1856,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/inflation/v1/skipped_epochs:
+  /artela/inflation/v1/skipped_epochs:
     get:
       summary: SkippedEpochs retrieves the total number of skipped epochs.
       operationId: SkippedEpochs
@@ -1901,7 +1901,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/vesting/v1/balances/{address}:
+  /artela/vesting/v1/balances/{address}:
     get:
       summary: >-
         Balances retrieves the unvested, vested and locked tokens for a vesting
@@ -2002,7 +2002,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/recovery/v1/params:
+  /artela/recovery/v1/params:
     get:
       summary: Params retrieves the total set of recovery parameters.
       operationId: RecoveryParams
@@ -2052,7 +2052,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/evm/v1/account/{address}:
+  /artela/evm/v1/account/{address}:
     get:
       summary: Account queries an Ethereum account.
       operationId: Account
@@ -2274,7 +2274,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/evm/v1/balances/{address}:
+  /artela/evm/v1/balances/{address}:
     get:
       summary: |-
         Balance queries the balance of a the EVM denomination for a single
@@ -2491,12 +2491,12 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/evm/v1/base_fee:
+  /artela/evm/v1/base_fee:
     get:
       summary: >-
         BaseFee queries the base fee of the parent block of the current block,
 
-        it's similar to feemarket module's method, but also checks london
+        it's similar to fee module's method, but also checks london
         hardfork status.
       operationId: BaseFee
       responses:
@@ -2702,7 +2702,7 @@ paths:
                         }
       tags:
         - Query
-  /evmos/evm/v1/codes/{address}:
+  /artela/evm/v1/codes/{address}:
     get:
       summary: Code queries the balance of all coins for a single account.
       operationId: Code
@@ -2918,7 +2918,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/evm/v1/cosmos_account/{address}:
+  /artela/evm/v1/cosmos_account/{address}:
     get:
       summary: CosmosAccount queries an Ethereum account's Cosmos Address.
       operationId: CosmosAccount
@@ -3143,7 +3143,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/evm/v1/estimate_gas:
+  /artela/evm/v1/estimate_gas:
     get:
       summary: EstimateGas implements the `eth_estimateGas` rpc api
       operationId: EstimateGas
@@ -3378,7 +3378,7 @@ paths:
           format: int64
       tags:
         - Query
-  /evmos/evm/v1/eth_call:
+  /artela/evm/v1/eth_call:
     get:
       summary: EthCall implements the `eth_call` rpc api
       operationId: EthCall
@@ -3706,7 +3706,7 @@ paths:
           format: int64
       tags:
         - Query
-  /evmos/evm/v1/params:
+  /artela/evm/v1/params:
     get:
       summary: Params queries the parameters of x/evm module.
       operationId: EvmParams
@@ -4055,7 +4055,7 @@ paths:
                         }
       tags:
         - Query
-  /evmos/evm/v1/storage/{address}/{key}:
+  /artela/evm/v1/storage/{address}/{key}:
     get:
       summary: Storage queries the balance of all coins for a single account.
       operationId: Storage
@@ -4279,7 +4279,7 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/evm/v1/trace_block:
+  /artela/evm/v1/trace_block:
     get:
       summary: >-
         TraceBlock implements the `debug_traceBlockByNumber` and
@@ -4708,7 +4708,7 @@ paths:
           format: int64
       tags:
         - Query
-  /evmos/evm/v1/trace_tx:
+  /artela/evm/v1/trace_tx:
     get:
       summary: TraceTx implements the `debug_traceTransaction` rpc api
       operationId: TraceTx
@@ -5217,7 +5217,7 @@ paths:
           format: int64
       tags:
         - Query
-  /evmos/evm/v1/validator_account/{cons_address}:
+  /artela/evm/v1/validator_account/{cons_address}:
     get:
       summary: >-
         ValidatorAccount queries an Ethereum account's from a validator
@@ -5446,10 +5446,10 @@ paths:
           type: string
       tags:
         - Query
-  /evmos/feemarket/v1/base_fee:
+  /artela/fee/v1/base_fee:
     get:
       summary: BaseFee queries the base fee of the parent block of the current block.
-      operationId: FeeMarketBaseFee
+      operationId: feeBaseFee
       responses:
         '200':
           description: A successful response.
@@ -5484,7 +5484,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/feemarket/v1/block_gas:
+  /artela/fee/v1/block_gas:
     get:
       summary: BlockGas queries the gas used at a given block height
       operationId: BlockGas
@@ -5523,10 +5523,10 @@ paths:
                       format: byte
       tags:
         - Query
-  /evmos/feemarket/v1/params:
+  /artela/fee/v1/params:
     get:
-      summary: Params queries the parameters of x/feemarket module.
-      operationId: FeeMarketParams
+      summary: Params queries the parameters of x/fee module.
+      operationId: feeParams
       responses:
         '200':
           description: A successful response.
@@ -43450,7 +43450,7 @@ definitions:
 
       NOTE: The amount field is an Int which implements the custom method
       signatures required by gogoproto.
-  evmos.claims.v1.Action:
+  artela.claims.v1.Action:
     type: string
     enum:
       - ACTION_UNSPECIFIED
@@ -43467,7 +43467,7 @@ definitions:
        - ACTION_DELEGATE: ACTION_DELEGATE defines an staking delegation.
        - ACTION_EVM: ACTION_EVM defines an EVM transaction.
        - ACTION_IBC_TRANSFER: ACTION_IBC_TRANSFER defines a fungible token transfer transaction via IBC.
-  evmos.claims.v1.Claim:
+  artela.claims.v1.Claim:
     type: object
     properties:
       action:
@@ -43500,7 +43500,7 @@ definitions:
       amount
 
       for a given user. This is only used during client queries.
-  evmos.claims.v1.ClaimsRecordAddress:
+  artela.claims.v1.ClaimsRecordAddress:
     type: object
     properties:
       address:
@@ -43519,7 +43519,7 @@ definitions:
     description: |-
       ClaimsRecordAddress is the claims metadata per address that is used at
       Genesis.
-  evmos.claims.v1.Params:
+  artela.claims.v1.Params:
     type: object
     properties:
       enable_claims:
@@ -43555,7 +43555,7 @@ definitions:
           evm_channels is the list of channel identifiers from EVM compatible
           chains
     description: Params defines the claims module's parameters.
-  evmos.claims.v1.QueryClaimsRecordResponse:
+  artela.claims.v1.QueryClaimsRecordResponse:
     type: object
     properties:
       initial_claimable_amount:
@@ -43602,7 +43602,7 @@ definitions:
       RPC
 
       method.
-  evmos.claims.v1.QueryClaimsRecordsResponse:
+  artela.claims.v1.QueryClaimsRecordsResponse:
     type: object
     properties:
       claims:
@@ -43653,7 +43653,7 @@ definitions:
       Query/ClaimsRecords
 
       RPC method.
-  evmos.claims.v1.QueryParamsResponse:
+  artela.claims.v1.QueryParamsResponse:
     type: object
     properties:
       params:
@@ -43693,7 +43693,7 @@ definitions:
               evm_channels is the list of channel identifiers from EVM
               compatible chains
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
-  evmos.claims.v1.QueryTotalUnclaimedResponse:
+  artela.claims.v1.QueryTotalUnclaimedResponse:
     type: object
     properties:
       coins:
@@ -44049,7 +44049,7 @@ definitions:
                   "@type": "type.googleapis.com/google.protobuf.Duration",
                   "value": "1.212s"
                 }
-  evmos.epochs.v1.EpochInfo:
+  artela.epochs.v1.EpochInfo:
     type: object
     properties:
       identifier:
@@ -44086,7 +44086,7 @@ definitions:
       informations about
 
       an epoch.
-  evmos.epochs.v1.QueryCurrentEpochResponse:
+  artela.epochs.v1.QueryCurrentEpochResponse:
     type: object
     properties:
       current_epoch:
@@ -44098,7 +44098,7 @@ definitions:
       RPC
 
       method.
-  evmos.epochs.v1.QueryEpochsInfoResponse:
+  artela.epochs.v1.QueryEpochsInfoResponse:
     type: object
     properties:
       epochs:
@@ -44163,7 +44163,7 @@ definitions:
     description: |-
       QueryEpochsInfoResponse is the response type for the Query/EpochInfos RPC
       method.
-  evmos.erc20.v1.Owner:
+  artela.erc20.v1.Owner:
     type: string
     enum:
       - OWNER_UNSPECIFIED
@@ -44176,7 +44176,7 @@ definitions:
        - OWNER_UNSPECIFIED: OWNER_UNSPECIFIED defines an invalid/undefined owner.
        - OWNER_MODULE: OWNER_MODULE - erc20 is owned by the erc20 module account.
        - OWNER_EXTERNAL: OWNER_EXTERNAL - erc20 is owned by an external account.
-  evmos.erc20.v1.Params:
+  artela.erc20.v1.Params:
     type: object
     properties:
       enable_erc20:
@@ -44193,7 +44193,7 @@ definitions:
           Coin by transferring the Tokens through a MsgEthereumTx to the
           ModuleAddress Ethereum address.
     title: Params defines the erc20 module params
-  evmos.erc20.v1.QueryParamsResponse:
+  artela.erc20.v1.QueryParamsResponse:
     type: object
     properties:
       params:
@@ -44216,7 +44216,7 @@ definitions:
     description: |-
       QueryParamsResponse is the response type for the Query/Params RPC
       method.
-  evmos.erc20.v1.QueryTokenPairResponse:
+  artela.erc20.v1.QueryTokenPairResponse:
     type: object
     properties:
       token_pair:
@@ -44257,7 +44257,7 @@ definitions:
     description: |-
       QueryTokenPairResponse is the response type for the Query/TokenPair RPC
       method.
-  evmos.erc20.v1.QueryTokenPairsResponse:
+  artela.erc20.v1.QueryTokenPairsResponse:
     type: object
     properties:
       token_pairs:
@@ -44317,7 +44317,7 @@ definitions:
     description: |-
       QueryTokenPairsResponse is the response type for the Query/TokenPairs RPC
       method.
-  evmos.erc20.v1.TokenPair:
+  artela.erc20.v1.TokenPair:
     type: object
     properties:
       erc20_address:
@@ -44361,7 +44361,7 @@ definitions:
 
       NOTE: The amount field is an Dec which implements the custom method
       signatures required by gogoproto.
-  evmos.incentives.v1.GasMeter:
+  artela.incentives.v1.GasMeter:
     type: object
     properties:
       contract:
@@ -44375,7 +44375,7 @@ definitions:
         format: uint64
         title: cumulative_gas spent during the epoch
     title: GasMeter tracks the cumulative gas spent per participant in one epoch
-  evmos.incentives.v1.Incentive:
+  artela.incentives.v1.Incentive:
     type: object
     properties:
       contract:
@@ -44415,7 +44415,7 @@ definitions:
     title: |-
       Incentive defines an instance that organizes distribution conditions for a
       given smart contract
-  evmos.incentives.v1.Params:
+  artela.incentives.v1.Params:
     type: object
     properties:
       enable_incentives:
@@ -44433,7 +44433,7 @@ definitions:
         type: string
         title: reward_scaler is the scaling factor for capping rewards
     title: Params defines the incentives module params
-  evmos.incentives.v1.QueryAllocationMeterResponse:
+  artela.incentives.v1.QueryAllocationMeterResponse:
     type: object
     properties:
       allocation_meter:
@@ -44452,7 +44452,7 @@ definitions:
     description: |-
       QueryAllocationMeterResponse is the response type for the
       Query/AllocationMeter RPC method.
-  evmos.incentives.v1.QueryAllocationMetersResponse:
+  artela.incentives.v1.QueryAllocationMetersResponse:
     type: object
     properties:
       allocation_meters:
@@ -44492,7 +44492,7 @@ definitions:
     description: |-
       QueryAllocationMetersResponse is the response type for the
       Query/AllocationMeters RPC method.
-  evmos.incentives.v1.QueryGasMeterResponse:
+  artela.incentives.v1.QueryGasMeterResponse:
     type: object
     properties:
       gas_meter:
@@ -44504,7 +44504,7 @@ definitions:
     description: |-
       QueryGasMeterResponse is the response type for the Query/Incentive RPC
       method.
-  evmos.incentives.v1.QueryGasMetersResponse:
+  artela.incentives.v1.QueryGasMetersResponse:
     type: object
     properties:
       gas_meters:
@@ -44550,7 +44550,7 @@ definitions:
     description: |-
       QueryGasMetersResponse is the response type for the Query/Incentives RPC
       method.
-  evmos.incentives.v1.QueryIncentiveResponse:
+  artela.incentives.v1.QueryIncentiveResponse:
     type: object
     properties:
       incentive:
@@ -44602,7 +44602,7 @@ definitions:
     description: |-
       QueryIncentiveResponse is the response type for the Query/Incentive RPC
       method.
-  evmos.incentives.v1.QueryIncentivesResponse:
+  artela.incentives.v1.QueryIncentivesResponse:
     type: object
     properties:
       incentives:
@@ -44676,7 +44676,7 @@ definitions:
     description: |-
       QueryIncentivesResponse is the response type for the Query/Incentives RPC
       method.
-  evmos.incentives.v1.QueryParamsResponse:
+  artela.incentives.v1.QueryParamsResponse:
     type: object
     properties:
       params:
@@ -44700,7 +44700,7 @@ definitions:
     description: |-
       QueryParamsResponse is the response type for the Query/Params RPC
       method.
-  evmos.inflation.v1.ExponentialCalculation:
+  artela.inflation.v1.ExponentialCalculation:
     type: object
     properties:
       a:
@@ -44729,7 +44729,7 @@ definitions:
       bondedRatio *
 
       (max_variance / bonding_target))
-  evmos.inflation.v1.InflationDistribution:
+  artela.inflation.v1.InflationDistribution:
     type: object
     properties:
       staking_rewards:
@@ -44761,14 +44761,14 @@ definitions:
 
       excludes the team vesting distribution, as this is minted once at genesis.
 
-      The initial InflationDistribution can be calculated from the Evmos Token
+      The initial InflationDistribution can be calculated from the artela Token
 
       Model like this:
 
       mintDistribution1 = distribution1 / (1 - teamVestingDistribution)
 
       0.5333333         = 40%           / (1 - 25%)
-  evmos.inflation.v1.Params:
+  artela.inflation.v1.Params:
     type: object
     properties:
       mint_denom:
@@ -44826,7 +44826,7 @@ definitions:
           enable_inflation is the parameter that enables inflation and halts
           increasing the skipped_epochs
     description: Params holds parameters for the inflation module.
-  evmos.inflation.v1.QueryCirculatingSupplyResponse:
+  artela.inflation.v1.QueryCirculatingSupplyResponse:
     type: object
     properties:
       circulating_supply:
@@ -44845,7 +44845,7 @@ definitions:
     description: |-
       QueryCirculatingSupplyResponse is the response type for the
       Query/CirculatingSupply RPC method.
-  evmos.inflation.v1.QueryEpochMintProvisionResponse:
+  artela.inflation.v1.QueryEpochMintProvisionResponse:
     type: object
     properties:
       epoch_mint_provision:
@@ -44859,7 +44859,7 @@ definitions:
     description: |-
       QueryEpochMintProvisionResponse is the response type for the
       Query/EpochMintProvision RPC method.
-  evmos.inflation.v1.QueryInflationRateResponse:
+  artela.inflation.v1.QueryInflationRateResponse:
     type: object
     properties:
       inflation_rate:
@@ -44870,7 +44870,7 @@ definitions:
       Query/InflationRate
 
       RPC method.
-  evmos.inflation.v1.QueryParamsResponse:
+  artela.inflation.v1.QueryParamsResponse:
     type: object
     properties:
       params:
@@ -44932,7 +44932,7 @@ definitions:
               enable_inflation is the parameter that enables inflation and halts
               increasing the skipped_epochs
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
-  evmos.inflation.v1.QueryPeriodResponse:
+  artela.inflation.v1.QueryPeriodResponse:
     type: object
     properties:
       period:
@@ -44940,7 +44940,7 @@ definitions:
         format: uint64
         description: period is the current minting per epoch provision value.
     description: QueryPeriodResponse is the response type for the Query/Period RPC method.
-  evmos.inflation.v1.QuerySkippedEpochsResponse:
+  artela.inflation.v1.QuerySkippedEpochsResponse:
     type: object
     properties:
       skipped_epochs:
@@ -44954,7 +44954,7 @@ definitions:
       Query/SkippedEpochs
 
       RPC method.
-  evmos.vesting.v1.QueryBalancesResponse:
+  artela.vesting.v1.QueryBalancesResponse:
     type: object
     properties:
       locked:
@@ -45005,7 +45005,7 @@ definitions:
     description: |-
       QueryBalancesResponse is the response type for the Query/Balances RPC
       method.
-  evmos.recovery.v1.Params:
+  artela.recovery.v1.Params:
     type: object
     properties:
       enable_recovery:
@@ -45017,7 +45017,7 @@ definitions:
           packet_timeout_duration is the duration added to timeout timestamp for
           balances recovered via IBC packets
     title: Params holds parameters for the recovery module
-  evmos.recovery.v1.QueryParamsResponse:
+  artela.recovery.v1.QueryParamsResponse:
     type: object
     properties:
       params:
@@ -45034,7 +45034,7 @@ definitions:
               for balances recovered via IBC packets
         title: Params holds parameters for the recovery module
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
-  ethermint.evm.v1.ChainConfig:
+  artela.evm.v1.ChainConfig:
     type: object
     properties:
       homestead_block:
@@ -45127,7 +45127,7 @@ definitions:
       values
 
       instead of *big.Int.
-  ethermint.evm.v1.EstimateGasResponse:
+  artela.evm.v1.EstimateGasResponse:
     type: object
     properties:
       gas:
@@ -45135,7 +45135,7 @@ definitions:
         format: uint64
         title: gas returns the estimated gas
     title: EstimateGasResponse defines EstimateGas response
-  ethermint.evm.v1.ExtraEIPs:
+  artela.evm.v1.ExtraEIPs:
     type: object
     properties:
       eips:
@@ -45145,7 +45145,7 @@ definitions:
           format: int64
         title: eips defines the additional EIPs for the vm.Config
     title: ExtraEIPs represents extra EIPs for the vm.Config
-  ethermint.evm.v1.Log:
+  artela.evm.v1.Log:
     type: object
     properties:
       address:
@@ -45200,7 +45200,7 @@ definitions:
       fields
 
       are derived, i.e. filled in by the nodes, but not secured by consensus.
-  ethermint.evm.v1.MsgEthereumTx:
+  artela.evm.v1.MsgEthereumTx:
     type: object
     properties:
       data:
@@ -45382,7 +45382,7 @@ definitions:
 
           secp256k1 elliptic curve
     description: MsgEthereumTx encapsulates an Ethereum transaction as an SDK message.
-  ethermint.evm.v1.MsgEthereumTxResponse:
+  artela.evm.v1.MsgEthereumTxResponse:
     type: object
     properties:
       hash:
@@ -45472,7 +45472,7 @@ definitions:
         format: uint64
         title: gas_used specifies how much gas was consumed by the transaction
     description: MsgEthereumTxResponse defines the Msg/EthereumTx response type.
-  ethermint.evm.v1.Params:
+  artela.evm.v1.Params:
     type: object
     properties:
       evm_denom:
@@ -45602,7 +45602,7 @@ definitions:
           allow_unprotected_txs defines if replay-protected (i.e non EIP155
           signed) transactions can be executed on the state machine.
     title: Params defines the EVM module parameters
-  ethermint.evm.v1.QueryAccountResponse:
+  artela.evm.v1.QueryAccountResponse:
     type: object
     properties:
       balance:
@@ -45618,7 +45618,7 @@ definitions:
     description: >-
       QueryAccountResponse is the response type for the Query/Account RPC
       method.
-  ethermint.evm.v1.QueryBalanceResponse:
+  artela.evm.v1.QueryBalanceResponse:
     type: object
     properties:
       balance:
@@ -45627,14 +45627,14 @@ definitions:
     description: >-
       QueryBalanceResponse is the response type for the Query/Balance RPC
       method.
-  ethermint.evm.v1.QueryBaseFeeResponse:
+  artela.evm.v1.QueryBaseFeeResponse:
     type: object
     properties:
       base_fee:
         type: string
         title: base_fee is the EIP1559 base fee
     description: QueryBaseFeeResponse returns the EIP1559 base fee.
-  ethermint.evm.v1.QueryCodeResponse:
+  artela.evm.v1.QueryCodeResponse:
     type: object
     properties:
       code:
@@ -45644,7 +45644,7 @@ definitions:
     description: |-
       QueryCodeResponse is the response type for the Query/Code RPC
       method.
-  ethermint.evm.v1.QueryCosmosAccountResponse:
+  artela.evm.v1.QueryCosmosAccountResponse:
     type: object
     properties:
       cosmos_address:
@@ -45663,7 +45663,7 @@ definitions:
       Query/CosmosAccount
 
       RPC method.
-  ethermint.evm.v1.QueryParamsResponse:
+  artela.evm.v1.QueryParamsResponse:
     type: object
     properties:
       params:
@@ -45806,7 +45806,7 @@ definitions:
     description: >-
       QueryParamsResponse defines the response type for querying x/evm
       parameters.
-  ethermint.evm.v1.QueryStorageResponse:
+  artela.evm.v1.QueryStorageResponse:
     type: object
     properties:
       value:
@@ -45817,7 +45817,7 @@ definitions:
     description: |-
       QueryStorageResponse is the response type for the Query/Storage RPC
       method.
-  ethermint.evm.v1.QueryTraceBlockResponse:
+  artela.evm.v1.QueryTraceBlockResponse:
     type: object
     properties:
       data:
@@ -45825,7 +45825,7 @@ definitions:
         format: byte
         title: data is the response serialized in bytes
     title: QueryTraceBlockResponse defines TraceBlock response
-  ethermint.evm.v1.QueryTraceTxResponse:
+  artela.evm.v1.QueryTraceTxResponse:
     type: object
     properties:
       data:
@@ -45833,7 +45833,7 @@ definitions:
         format: byte
         title: data is the response serialized in bytes
     title: QueryTraceTxResponse defines TraceTx response
-  ethermint.evm.v1.QueryValidatorAccountResponse:
+  artela.evm.v1.QueryValidatorAccountResponse:
     type: object
     properties:
       account_address:
@@ -45850,7 +45850,7 @@ definitions:
     description: |-
       QueryValidatorAccountResponse is the response type for the
       Query/ValidatorAccount RPC method.
-  ethermint.evm.v1.TraceConfig:
+  artela.evm.v1.TraceConfig:
     type: object
     properties:
       tracer:
@@ -45988,7 +45988,7 @@ definitions:
         type: string
         title: tracer_json_config configures the tracer using a JSON string
     description: TraceConfig holds extra parameters to trace functions.
-  ethermint.feemarket.v1.Params:
+  artela.fee.v1.Params:
     type: object
     properties:
       no_base_fee:
@@ -46030,14 +46030,14 @@ definitions:
           min_gas_multiplier bounds the minimum gas used to be charged
           to senders based on gas limit
     title: Params defines the EVM module parameters
-  ethermint.feemarket.v1.QueryBaseFeeResponse:
+  artela.fee.v1.QueryBaseFeeResponse:
     type: object
     properties:
       base_fee:
         type: string
         title: base_fee is the EIP1559 base fee
     description: QueryBaseFeeResponse returns the EIP1559 base fee.
-  ethermint.feemarket.v1.QueryBlockGasResponse:
+  artela.fee.v1.QueryBlockGasResponse:
     type: object
     properties:
       gas:
@@ -46045,7 +46045,7 @@ definitions:
         format: int64
         title: gas is the returned block gas
     description: QueryBlockGasResponse returns block gas used for a given height.
-  ethermint.feemarket.v1.QueryParamsResponse:
+  artela.fee.v1.QueryParamsResponse:
     type: object
     properties:
       params:

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/artela-network/artela/ethereum/eip712"
-	evmos "github.com/artela-network/artela/types"
+	artela "github.com/artela-network/artela/types"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	"github.com/pkg/errors"
 
@@ -138,7 +138,7 @@ func LegacyEIP712Cmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "legacy-eip712 [file]",
 		Short:   "Output types of legacy eip712 typed data according to the given transaction",
-		Example: fmt.Sprintf(`$ %s debug legacy-eip712 tx.json --chain-id evmosd_9000-1`, version.AppName),
+		Example: fmt.Sprintf(`$ %s debug legacy-eip712 tx.json --chain-id artelad_9000-1`, version.AppName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -156,7 +156,7 @@ func LegacyEIP712Cmd() *cobra.Command {
 				return errors.Wrap(err, "encode tx")
 			}
 
-			chainID, err := evmos.ParseChainID(clientCtx.ChainID)
+			chainID, err := artela.ParseChainID(clientCtx.ChainID)
 			if err != nil {
 				return errors.Wrap(err, "invalid chain ID passed as argument")
 			}

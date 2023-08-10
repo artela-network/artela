@@ -1,13 +1,13 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Evmos Chain - gRPC Gateway docs",
+    "title": "Artela Chain - gRPC Gateway docs",
     "description": "A REST interface for state queries and transactions",
     "version": "1.0.0"
   },
   "apis": [
     {
-      "url": "./tmp-swagger-gen/evmos/claims/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/artela/claims/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "Params": "ClaimsParams"
@@ -15,10 +15,10 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/evmos/epochs/v1/query.swagger.json"
+      "url": "./tmp-swagger-gen/artela/epochs/v1/query.swagger.json"
     },
     {
-      "url": "./tmp-swagger-gen/evmos/erc20/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/artela/erc20/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "Params": "ERC20Params"
@@ -26,7 +26,7 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/evmos/incentives/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/artela/incentives/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "Params": "IncentivesParams"
@@ -34,7 +34,7 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/evmos/inflation/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/artela/inflation/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "Params": "InflationParams",
@@ -43,10 +43,10 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/evmos/vesting/v1/query.swagger.json"
+      "url": "./tmp-swagger-gen/artela/vesting/v1/query.swagger.json"
     },
     {
-      "url": "./tmp-swagger-gen/evmos/recovery/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/artela/recovery/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "Params": "RecoveryParams"
@@ -54,7 +54,7 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/ethermint/evm/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/artela/evm/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "Params": "EvmParams"
@@ -62,7 +62,7 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/ethermint/feemarket/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/artela/fee/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "Params": "FeeMarketParams",
