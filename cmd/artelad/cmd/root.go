@@ -42,11 +42,12 @@ import (
 	"github.com/artela-network/artela/app"
 	appparams "github.com/artela-network/artela/app/params"
 	artelakeyring "github.com/artela-network/artela/crypto/keyring"
+	artelaencoding "github.com/artela-network/artela/encoding"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
 func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
-	encodingConfig := app.MakeEncodingConfig()
+	encodingConfig := artelaencoding.MakeConfig(app.ModuleBasics)
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Marshaler).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
