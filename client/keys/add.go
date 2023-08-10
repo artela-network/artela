@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/artela-network/artela/crypto/codec"
 	"github.com/artela-network/artela/crypto/ethsecp256k1"
 	cryptohd "github.com/artela-network/artela/crypto/hd"
 
@@ -279,7 +280,7 @@ func printCreate(cmd *cobra.Command, k *keyring.Record, showMnemonic bool, mnemo
 			out.Mnemonic = mnemonic
 		}
 
-		jsonString, err := keys.KeysCdc.MarshalJSON(out)
+		jsonString, err := codec.KeysCdc.MarshalJSON(out)
 		if err != nil {
 			return err
 		}

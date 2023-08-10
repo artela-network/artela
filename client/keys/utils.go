@@ -6,7 +6,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/cosmos/cosmos-sdk/client/keys"
+	"github.com/artela-network/artela/crypto/codec"
 	cryptokeyring "github.com/cosmos/cosmos-sdk/crypto/keyring"
 )
 
@@ -31,7 +31,7 @@ func printKeyringRecord(w io.Writer, k *cryptokeyring.Record, bechKeyOut bechKey
 		}
 
 	case OutputFormatJSON:
-		out, err := keys.KeysCdc.MarshalJSON(ko)
+		out, err := codec.KeysCdc.MarshalJSON(ko)
 		if err != nil {
 			return err
 		}
