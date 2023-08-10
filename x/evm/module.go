@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -21,6 +20,9 @@ import (
 	"github.com/artela-network/artela/x/evm/keeper"
 	"github.com/artela-network/artela/x/evm/types"
 )
+
+// ConsensusVersion defines the current x/evm module consensus version.
+const ConsensusVersion = 4
 
 var (
 	_ module.AppModule      = AppModule{}
@@ -42,7 +44,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // ConsensusVersion returns the consensus state-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
-	return 5
+	return ConsensusVersion
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the evm
@@ -53,19 +55,15 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis is the validation check of the Genesis
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
-	var genesisState types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &genesisState); err != nil {
+	var data types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 
-	return genesisState.Validate()
+	return data.Validate()
 }
 
-// RegisterRESTRoutes performs a no-op as the EVM module doesn't expose REST
-// endpoints
-func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {
-}
-
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the evm module.
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *runtime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(c)); err != nil {
 		panic(err)
@@ -87,15 +85,38 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 	types.RegisterInterfaces(registry)
 }
 
-// ____________________________________________________________________________
-
 // AppModule implements an application module for the evm module.
 type AppModule struct {
 	AppModuleBasic
+
 	keeper *keeper.Keeper
 	ak     types.AccountKeeper
+
 	// legacySubspace is used solely for migration of x/params managed parameters
 	legacySubspace types.Subspace
+}
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// RegisterServices registers module services.
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	// TODO mark
+	//m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
+	//err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
+	//	panic(err)
+	//}
 }
 
 // NewAppModule creates a new AppModule object
@@ -113,46 +134,8 @@ func (AppModule) Name() string {
 	return types.ModuleName
 }
 
-// RegisterInvariants interface for registering invariants. Performs a no-op
-// as the evm module doesn't expose invariants.
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {
-}
-
-// RegisterServices registers a GRPC query service to respond to the
-// module-specific GRPC queries.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
-
-	//m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
-	//err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
-	//	panic(err)
-	//}
-}
-
-// Route returns the message routing key for the evm module.
-func (am AppModule) Route() string {
-	return types.RouterKey
-}
-
 // QuerierRoute returns the evm module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
-
-// BeginBlock returns the begin block for the evm module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	am.keeper.BeginBlock(ctx, req)
-}
-
-// EndBlock returns the end blocker for the evm module. It returns no validator
-// updates.
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return am.keeper.EndBlock(ctx, req)
-}
 
 // InitGenesis performs genesis initialization for the evm module. It returns
 // no validator updates.
@@ -170,20 +153,36 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	return cdc.MustMarshalJSON(gs)
 }
 
-// RegisterStoreDecoder registers a decoder for evm module's types
-func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
-}
-
-// ProposalContents doesn't return any content functions for governance proposals.
-func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
-	return nil
-}
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // GenerateGenesisState creates a randomized GenState of the evm module.
 func (AppModule) GenerateGenesisState(_ *module.SimulationState) {
+	//  simulation.RandomizedGenState(simState) // TODO mark
+}
+
+// ProposalMsgs returns msgs used for governance proposals for simulations.
+func (AppModule) ProposalMsgs(simState module.SimulationState) []simtypes.WeightedProposalMsg {
+	// return simulation.ProposalMsgs() // TODO mark
+	return nil
+}
+
+// RegisterStoreDecoder registers a decoder for evm module's types
+func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
 }
 
 // WeightedOperations returns the all the evm module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
 	return nil
+}
+
+// BeginBlock returns the begin block for the evm module.
+func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	am.keeper.BeginBlock(ctx, req)
+}
+
+// EndBlock returns the end blocker for the evm module. It returns no validator
+// updates.
+func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	return am.keeper.EndBlock(ctx, req)
 }
