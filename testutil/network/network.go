@@ -52,6 +52,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	artelakeyring "github.com/artela-network/artela/crypto/keyring"
 	"github.com/artela-network/artela/encoding"
 	"github.com/artela-network/artela/server/config"
 	artelatypes "github.com/artela-network/artela/types"
@@ -119,7 +120,7 @@ func DefaultConfig() Config {
 		PruningStrategy:   pruningtypes.PruningOptionNothing,
 		CleanupDir:        true,
 		SigningAlgo:       string(hd.EthSecp256k1Type),
-		KeyringOptions:    []keyring.Option{hd.EthSecp256k1Option()},
+		KeyringOptions:    []keyring.Option{artelakeyring.Option()},
 		PrintMnemonic:     false,
 	}
 }

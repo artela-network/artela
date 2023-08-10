@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/artela-network/artela/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -50,6 +51,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return fmt.Errorf("failed to parse coins: %w", err)
 			}
 
+			var kb keyring.Keyring
 			addr, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
 				inBuf := bufio.NewReader(cmd.InOrStdin())
@@ -58,10 +60,26 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 					return err
 				}
 
-				// attempt to lookup address from Keybase if no address was provided
-				kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf, cdc)
-				if err != nil {
-					return err
+				if keyringBackend != "" && clientCtx.Keyring == nil {
+					var err error
+					kb, err = keyring.New(
+						sdk.KeyringServiceName(),
+						keyringBackend,
+						clientCtx.HomeDir,
+						inBuf,
+						clientCtx.Codec,
+						hd.EthSecp256k1Option(),
+					)
+					if err != nil {
+						return err
+					}
+				} else {
+					var err error
+					// attempt to lookup address from Keybase if no address was provided
+					kb, err = keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf, cdc)
+					if err != nil {
+						return err
+					}
 				}
 
 				info, err := kb.Key(args[0])

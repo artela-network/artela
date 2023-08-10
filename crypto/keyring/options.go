@@ -12,16 +12,6 @@ import (
 const AppName = "Ethereum"
 
 var (
-	// SupportedAlgorithms defines the list of signing algorithms used on Artela:
-	//  - eth_secp256k1 (Ethereum)
-	SupportedAlgorithms = keyring.SigningAlgoList{hd.EthSecp256k1}
-	// SupportedAlgorithmsLedger defines the list of signing algorithms used on Artela for the Ledger device:
-	//  - secp256k1 (in order to comply with Cosmos SDK)
-	// The Ledger derivation function is responsible for all signing and address generation.
-	SupportedAlgorithmsLedger = keyring.SigningAlgoList{hd.EthSecp256k1}
-	// LedgerDerivation defines the Artela Ledger Go derivation (Ethereum app with EIP-712 signing)
-	// TODO mark: not support leger yet
-	//LedgerDerivation = ledger.ArtelaLedgerDerivation()
 	// CreatePubkey uses the ethsecp256k1 pubkey with Ethereum address generation and keccak hashing
 	CreatePubkey = func(key []byte) types.PubKey { return &ethsecp256k1.PubKey{Key: key} }
 	// SkipDERConversion represents whether the signed Ledger output should skip conversion from DER to BER.
@@ -29,13 +19,12 @@ var (
 	SkipDERConversion = true
 )
 
-// EthSecp256k1Option defines a function keys options for the ethereum Secp256k1 curve.
+// Option defines a function keys options for the ethereum Secp256k1 curve.
 // It supports eth_secp256k1 keys for accounts.
 func Option() keyring.Option {
 	return func(options *keyring.Options) {
-		options.SupportedAlgos = SupportedAlgorithms
-		options.SupportedAlgosLedger = SupportedAlgorithmsLedger
-		//options.LedgerDerivation = func() (cosmosLedger.SECP256K1, error) { return LedgerDerivation() }
+		options.SupportedAlgos = hd.SupportedAlgorithms
+		options.SupportedAlgosLedger = hd.SupportedAlgorithmsLedger
 		options.LedgerCreateKey = CreatePubkey
 		options.LedgerAppName = AppName
 		options.LedgerSigSkipDERConv = SkipDERConversion

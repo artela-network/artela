@@ -207,6 +207,5 @@ require (
 
 replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.3 // TODO artela: btcd/btcec become not valid for 0.23.x, need to dig into it
-	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

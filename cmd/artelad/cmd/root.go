@@ -41,6 +41,7 @@ import (
 
 	"github.com/artela-network/artela/app"
 	appparams "github.com/artela-network/artela/app/params"
+	artelakeyring "github.com/artela-network/artela/crypto/keyring"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
@@ -54,6 +55,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(app.DefaultNodeHome).
+		WithKeyringOptions(artelakeyring.Option()).
 		WithViper("")
 
 	rootCmd := &cobra.Command{
