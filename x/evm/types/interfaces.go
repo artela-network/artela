@@ -10,8 +10,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	feetypes "github.com/artela-network/artela/x/fee/types"
-	"github.com/ethereum/go-ethereum/core"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // AccountKeeper defines the expected account keeper interface
@@ -53,10 +51,10 @@ type FeeKeeper interface {
 // These can be utilized to customize evm transaction processing.
 
 // EvmHooks event hooks for evm tx processing
-type EvmHooks interface {
-	// Must be called after tx is processed successfully, if return an error, the whole transaction is reverted.
-	PostTxProcessing(ctx sdk.Context, msg core.Message, receipt *ethtypes.Receipt) error
-}
+//type EvmHooks interface {
+//	// Must be called after tx is processed successfully, if return an error, the whole transaction is reverted.
+//	PostTxProcessing(ctx sdk.Context, msg core.Message, receipt *ethtypes.Receipt) error
+//}
 
 type (
 	LegacyParams = paramtypes.ParamSet
