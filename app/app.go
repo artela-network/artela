@@ -622,6 +622,8 @@ func NewArtela(
 		// upgrades should be run first
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
+		feemoduletypes.ModuleName,
+		evmmoduletypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -641,8 +643,6 @@ func NewArtela(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		evmmoduletypes.ModuleName,
-		feemoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/beginBlockers
 	)
 
@@ -650,6 +650,8 @@ func NewArtela(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
+		evmmoduletypes.ModuleName,
+		feemoduletypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
 		icatypes.ModuleName,
@@ -668,8 +670,6 @@ func NewArtela(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		evmmoduletypes.ModuleName,
-		feemoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/endBlockers
 	)
 
@@ -688,6 +688,8 @@ func NewArtela(
 		govtypes.ModuleName,
 		minttypes.ModuleName,
 		crisistypes.ModuleName,
+		evmmoduletypes.ModuleName,
+		feemoduletypes.ModuleName,
 		genutiltypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
@@ -700,8 +702,6 @@ func NewArtela(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		evmmoduletypes.ModuleName,
-		feemoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	}
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
