@@ -11,7 +11,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 )
 
-// PreprocessLedgerTx reformats Ledger-signed Cosmos transactions to match the fork expected by Ethermint
+// PreprocessLedgerTx reformats Ledger-signed Cosmos transactions to match the fork expected by Artela
 // by including the signature in a Web3Tx extension and sending a blank signature in the body.
 func PreprocessLedgerTx(chainID string, keyType cosmoskr.KeyType, txBuilder client.TxBuilder) error {
 	// Only process Ledger transactions

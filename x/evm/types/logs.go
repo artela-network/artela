@@ -97,7 +97,7 @@ func NewLogsFromEth(ethlogs []*ethtypes.Log) []*Log {
 	return logs
 }
 
-// LogsToEthereum casts the Ethermint Logs to a slice of Ethereum Logs.
+// LogsToEthereum casts the Artela Logs to a slice of Ethereum Logs.
 func LogsToEthereum(logs []*Log) []*ethtypes.Log {
 	var ethLogs []*ethtypes.Log //nolint: prealloc
 	for i := range logs {
