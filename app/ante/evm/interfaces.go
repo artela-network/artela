@@ -28,7 +28,7 @@ type EVMKeeper interface { //nolint: revive
 	GetParams(ctx sdk.Context) evmtypes.Params
 }
 
-type FeeMarketKeeper interface {
+type FeeKeeper interface {
 	GetParams(ctx sdk.Context) (params feetypes.Params)
 	AddTransientGasWanted(ctx sdk.Context, gasWanted uint64) (uint64, error)
 	GetBaseFeeEnabled(ctx sdk.Context) bool

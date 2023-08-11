@@ -69,7 +69,7 @@ func NewKeeper(
 	fmk types.FeeKeeper,
 	tracer string,
 	ss paramstypes.Subspace,
-) Keeper {
+) *Keeper {
 	// ensure evm module account is set
 	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
 		panic("the EVM module account has not been set")
@@ -81,7 +81,7 @@ func NewKeeper(
 	}
 
 	// NOTE: we pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
-	return Keeper{
+	return &Keeper{
 		cdc:           cdc,
 		authority:     authority,
 		accountKeeper: ak,

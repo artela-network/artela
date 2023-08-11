@@ -17,7 +17,7 @@ import (
 // if London hard fork or fee market params (EIP-1559) are enabled.
 // If fee is high enough, then call next AnteHandler
 type EthMinGasPriceDecorator struct {
-	feesKeeper FeeMarketKeeper
+	feesKeeper FeeKeeper
 	evmKeeper  EVMKeeper
 }
 
@@ -33,7 +33,7 @@ type EthMempoolFeeDecorator struct {
 
 // NewEthMinGasPriceDecorator creates a new MinGasPriceDecorator instance used only for
 // Ethereum transactions.
-func NewEthMinGasPriceDecorator(fk FeeMarketKeeper, ek EVMKeeper) EthMinGasPriceDecorator {
+func NewEthMinGasPriceDecorator(fk FeeKeeper, ek EVMKeeper) EthMinGasPriceDecorator {
 	return EthMinGasPriceDecorator{feesKeeper: fk, evmKeeper: ek}
 }
 

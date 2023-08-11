@@ -13,18 +13,18 @@ import (
 // for BaseFee calculation.
 // NOTE: This decorator does not perform any validation
 type GasWantedDecorator struct {
-	evmKeeper       EVMKeeper
-	feeMarketKeeper FeeMarketKeeper
+	evmKeeper EVMKeeper
+	feeKeeper FeeKeeper
 }
 
 // NewGasWantedDecorator creates a new NewGasWantedDecorator
 func NewGasWantedDecorator(
 	evmKeeper EVMKeeper,
-	feeMarketKeeper FeeMarketKeeper,
+	feeKeeper FeeKeeper,
 ) GasWantedDecorator {
 	return GasWantedDecorator{
 		evmKeeper,
-		feeMarketKeeper,
+		feeKeeper,
 	}
 }
 
@@ -53,11 +53,11 @@ func (gwd GasWantedDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		)
 	}
 
-	isBaseFeeEnabled := gwd.feeMarketKeeper.GetBaseFeeEnabled(ctx)
+	isBaseFeeEnabled := gwd.feeKeeper.GetBaseFeeEnabled(ctx)
 
 	// Add total gasWanted to cumulative in block transientStore in FeeMarket module
 	if isBaseFeeEnabled {
-		if _, err := gwd.feeMarketKeeper.AddTransientGasWanted(ctx, gasWanted); err != nil {
+		if _, err := gwd.feeKeeper.AddTransientGasWanted(ctx, gasWanted); err != nil {
 			return ctx, errorsmod.Wrapf(err, "failed to add gas wanted to transient store")
 		}
 	}

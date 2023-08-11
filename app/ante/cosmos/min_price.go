@@ -15,13 +15,13 @@ import (
 // If fee is high enough, then call next AnteHandler
 // CONTRACT: Tx must implement FeeTx to use MinGasPriceDecorator
 type MinGasPriceDecorator struct {
-	feesKeeper evmante.FeeMarketKeeper
+	feesKeeper evmante.FeeKeeper
 	evmKeeper  evmante.EVMKeeper
 }
 
 // NewMinGasPriceDecorator creates a new MinGasPriceDecorator instance used only for
 // Cosmos transactions.
-func NewMinGasPriceDecorator(fk evmante.FeeMarketKeeper, ek evmante.EVMKeeper) MinGasPriceDecorator {
+func NewMinGasPriceDecorator(fk evmante.FeeKeeper, ek evmante.EVMKeeper) MinGasPriceDecorator {
 	return MinGasPriceDecorator{feesKeeper: fk, evmKeeper: ek}
 }
 
