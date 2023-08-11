@@ -2,6 +2,8 @@ package client
 
 import (
 	"bufio"
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
 
 	"github.com/cometbft/cometbft/libs/cli"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -10,8 +12,6 @@ import (
 	"github.com/spf13/cobra"
 
 	clientkeys "github.com/artela-network/artela/client/keys"
-	"github.com/artela-network/artela/crypto/ethsecp256k1"
-	"github.com/artela-network/artela/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 )
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"io"
 	"os"
 	"path/filepath"
@@ -40,7 +41,6 @@ import (
 
 	"github.com/artela-network/artela/app"
 	appparams "github.com/artela-network/artela/app/params"
-	artelakeyring "github.com/artela-network/artela/crypto/keyring"
 	artelaencoding "github.com/artela-network/artela/encoding"
 )
 

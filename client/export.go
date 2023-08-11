@@ -3,6 +3,8 @@ package client
 import (
 	"bufio"
 	"fmt"
+	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -12,8 +14,6 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/spf13/cobra"
 
-	"github.com/artela-network/artela/crypto/ethsecp256k1"
-	"github.com/artela-network/artela/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 )
 
@@ -60,14 +60,14 @@ func UnsafeExportEthKeyCommand() *cobra.Command {
 				return err
 			}
 
-			if algo != ethsecp256k1.KeyType {
-				return fmt.Errorf("invalid key algorithm, got %s, expected %s", algo, ethsecp256k1.KeyType)
+			if algo != ethsecp256k12.KeyType {
+				return fmt.Errorf("invalid key algorithm, got %s, expected %s", algo, ethsecp256k12.KeyType)
 			}
 
 			// Converts key to Artela secp256k1 implementation
-			ethPrivKey, ok := privKey.(*ethsecp256k1.PrivKey)
+			ethPrivKey, ok := privKey.(*ethsecp256k12.PrivKey)
 			if !ok {
-				return fmt.Errorf("invalid private key type %T, expected %T", privKey, &ethsecp256k1.PrivKey{})
+				return fmt.Errorf("invalid private key type %T, expected %T", privKey, &ethsecp256k12.PrivKey{})
 			}
 
 			key, err := ethPrivKey.ToECDSA()

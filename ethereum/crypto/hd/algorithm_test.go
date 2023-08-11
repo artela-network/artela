@@ -1,6 +1,7 @@
 package hd
 
 import (
+	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
 	"os"
 	"strings"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 
-	cryptocodec "github.com/artela-network/artela/crypto/codec"
 	enccodec "github.com/artela-network/artela/encoding/codec"
 	artelatypes "github.com/artela-network/artela/types"
 )

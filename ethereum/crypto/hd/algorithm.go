@@ -1,6 +1,7 @@
 package hd
 
 import (
+	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	bip39 "github.com/tyler-smith/go-bip39"
@@ -11,13 +12,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-
-	"github.com/artela-network/artela/crypto/ethsecp256k1"
 )
 
 const (
 	// EthSecp256k1Type defines the ECDSA secp256k1 used on Ethereum
-	EthSecp256k1Type = hd.PubKeyType(ethsecp256k1.KeyType)
+	EthSecp256k1Type = hd.PubKeyType(ethsecp256k12.KeyType)
 )
 
 var (
@@ -100,11 +99,11 @@ func (s ethSecp256k1Algo) Derive() hd.DeriveFn {
 // Generate generates a eth_secp256k1 private key from the given bytes.
 func (s ethSecp256k1Algo) Generate() hd.GenerateFn {
 	return func(bz []byte) cryptotypes.PrivKey {
-		bzArr := make([]byte, ethsecp256k1.PrivKeySize)
+		bzArr := make([]byte, ethsecp256k12.PrivKeySize)
 		copy(bzArr, bz)
 
 		// TODO: modulo P
-		return &ethsecp256k1.PrivKey{
+		return &ethsecp256k12.PrivKey{
 			Key: bzArr,
 		}
 	}

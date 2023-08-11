@@ -6,6 +6,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
 	"net"
 	"os"
 	"path/filepath"
@@ -38,8 +40,6 @@ import (
 	mintypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/artela-network/artela/crypto/ethsecp256k1"
-	"github.com/artela-network/artela/crypto/hd"
 	"github.com/artela-network/artela/server/config"
 	srvflags "github.com/artela-network/artela/server/flags"
 	artelatypes "github.com/artela-network/artela/types"

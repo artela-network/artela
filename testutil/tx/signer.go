@@ -2,6 +2,7 @@ package tx
 
 import (
 	"fmt"
+	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -9,13 +10,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/artela-network/artela/crypto/ethsecp256k1"
 )
 
 // NewAddrKey generates an Ethereum address and its corresponding private key.
-func NewAddrKey() (common.Address, *ethsecp256k1.PrivKey) {
-	privkey, _ := ethsecp256k1.GenerateKey()
+func NewAddrKey() (common.Address, *ethsecp256k12.PrivKey) {
+	privkey, _ := ethsecp256k12.GenerateKey()
 	key, err := privkey.ToECDSA()
 	if err != nil {
 		return common.Address{}, nil
@@ -28,7 +27,7 @@ func NewAddrKey() (common.Address, *ethsecp256k1.PrivKey) {
 
 // NewAccAddressAndKey generates a private key and its corresponding
 // Cosmos SDK address.
-func NewAccAddressAndKey() (sdk.AccAddress, *ethsecp256k1.PrivKey) {
+func NewAccAddressAndKey() (sdk.AccAddress, *ethsecp256k12.PrivKey) {
 	addr, privKey := NewAddrKey()
 	return sdk.AccAddress(addr.Bytes()), privKey
 }
@@ -54,10 +53,10 @@ func NewSigner(sk cryptotypes.PrivKey) keyring.Signer {
 
 // Sign signs the message using the underlying private key
 func (s Signer) Sign(_ string, msg []byte) ([]byte, cryptotypes.PubKey, error) {
-	if s.privKey.Type() != ethsecp256k1.KeyType {
+	if s.privKey.Type() != ethsecp256k12.KeyType {
 		return nil, nil, fmt.Errorf(
 			"invalid private key type for signing ethereum tx; expected %s, got %s",
-			ethsecp256k1.KeyType,
+			ethsecp256k12.KeyType,
 			s.privKey.Type(),
 		)
 	}

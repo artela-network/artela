@@ -2,16 +2,15 @@ package client
 
 import (
 	"bufio"
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
 
 	"github.com/spf13/cobra"
 
-	"github.com/artela-network/artela/crypto/ethsecp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/input"
 	"github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/artela-network/artela/crypto/hd"
 )
 
 // UnsafeImportKeyCommand imports private keys from a keyfile.

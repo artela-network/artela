@@ -2,11 +2,11 @@ package keys
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/ethereum/crypto/codec"
 	"io"
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/artela-network/artela/crypto/codec"
 	cryptokeyring "github.com/cosmos/cosmos-sdk/crypto/keyring"
 )
 

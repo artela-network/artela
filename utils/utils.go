@@ -1,9 +1,8 @@
 package utils
 
 import (
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"strings"
-
-	"github.com/artela-network/artela/crypto/ethsecp256k1"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"

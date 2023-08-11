@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
+	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"net/http"
 	"net/url"
 	"os"
@@ -30,7 +32,6 @@ import (
 
 	"github.com/artela-network/artela/app"
 	"github.com/artela-network/artela/app/params"
-	"github.com/artela-network/artela/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -52,7 +53,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	artelakeyring "github.com/artela-network/artela/crypto/keyring"
 	"github.com/artela-network/artela/encoding"
 	"github.com/artela-network/artela/server/config"
 	artelatypes "github.com/artela-network/artela/types"

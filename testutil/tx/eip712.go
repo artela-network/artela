@@ -2,6 +2,7 @@ package tx
 
 import (
 	"errors"
+	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -14,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"github.com/artela-network/artela/app"
-	cryptocodec "github.com/artela-network/artela/crypto/codec"
 	"github.com/artela-network/artela/ethereum/eip712"
 	"github.com/artela-network/artela/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
