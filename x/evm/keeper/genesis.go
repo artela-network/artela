@@ -1,4 +1,4 @@
-package evm
+package keeper
 
 import (
 	"bytes"
@@ -11,21 +11,19 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	artelatypes "github.com/artela-network/artela/types"
-	"github.com/artela-network/artela/x/evm/keeper"
 	"github.com/artela-network/artela/x/evm/types"
 )
 
 // InitGenesis initializes genesis state based on exported genesis
 func InitGenesis(
 	ctx sdk.Context,
-	k *keeper.Keeper,
+	k *Keeper,
 	accountKeeper types.AccountKeeper,
-	data types.GenesisState,
+	genState types.GenesisState,
 ) []abci.ValidatorUpdate {
 	k.WithChainID(ctx)
 
-	err := k.SetParams(ctx, data.Params)
-	if err != nil {
+	if err := k.SetParams(ctx, genState.Params); err != nil {
 		panic(fmt.Errorf("error setting params %s", err))
 	}
 
@@ -34,9 +32,10 @@ func InitGenesis(
 		panic("the EVM module account has not been set")
 	}
 
-	for _, account := range data.Accounts {
+	for _, account := range genState.Accounts {
 		address := common.HexToAddress(account.Address)
 		accAddress := sdk.AccAddress(address.Bytes())
+
 		// check that the EVM balance the matches the account balance
 		acc := accountKeeper.GetAccount(ctx, accAddress)
 		if acc == nil {
@@ -51,6 +50,7 @@ func InitGenesis(
 				),
 			)
 		}
+
 		code := common.Hex2Bytes(account.Code)
 		codeHash := crypto.Keccak256Hash(code)
 
@@ -71,7 +71,7 @@ func InitGenesis(
 }
 
 // ExportGenesis exports genesis state of the EVM module
-func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *types.GenesisState {
+func ExportGenesis(ctx sdk.Context, k *Keeper, ak types.AccountKeeper) *types.GenesisState {
 	var ethGenAccounts []types.GenesisAccount
 	ak.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
 		ethAccount, ok := account.(artelatypes.EthAccountI)

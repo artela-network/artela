@@ -142,14 +142,14 @@ func (AppModule) QuerierRoute() string { return types.RouterKey }
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	InitGenesis(ctx, am.keeper, am.ak, genesisState)
+	keeper.InitGenesis(ctx, am.keeper, am.ak, genesisState)
 	return []abci.ValidatorUpdate{}
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the evm
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper, am.ak)
+	gs := keeper.ExportGenesis(ctx, am.keeper, am.ak)
 	return cdc.MustMarshalJSON(gs)
 }
 
