@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"errors"
-	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 
 	dbm "github.com/cometbft/cometbft-db"
 	tmcfg "github.com/cometbft/cometbft/config"
@@ -41,12 +42,11 @@ import (
 
 	"github.com/artela-network/artela/app"
 	appparams "github.com/artela-network/artela/app/params"
-	artelaencoding "github.com/artela-network/artela/encoding"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
 func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
-	encodingConfig := artelaencoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := app.MakeConfig(app.ModuleBasics)
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Marshaler).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).

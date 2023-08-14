@@ -37,7 +37,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/artela-network/artela/app"
-	artelaencoding "github.com/artela-network/artela/encoding"
 )
 
 type storeKeysPrefixes struct {
@@ -96,7 +95,7 @@ func BenchmarkSimulation(b *testing.B) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		artelaencoding.MakeConfig(app.ModuleBasics),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		baseapp.SetChainID(config.ChainID),
 	)
@@ -172,7 +171,7 @@ func TestAppStateDeterminism(t *testing.T) {
 				map[int64]bool{},
 				app.DefaultNodeHome,
 				simcli.FlagPeriodValue,
-				artelaencoding.MakeConfig(app.ModuleBasics),
+				app.MakeConfig(app.ModuleBasics),
 				appOptions,
 				fauxMerkleModeOpt,
 				baseapp.SetChainID(chainID),
@@ -250,7 +249,7 @@ func TestAppImportExport(t *testing.T) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		artelaencoding.MakeConfig(app.ModuleBasics),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		baseapp.SetChainID(config.ChainID),
 	)
@@ -311,7 +310,7 @@ func TestAppImportExport(t *testing.T) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		artelaencoding.MakeConfig(app.ModuleBasics),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		baseapp.SetChainID(config.ChainID),
 	)
@@ -404,7 +403,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		artelaencoding.MakeConfig(app.ModuleBasics),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		fauxMerkleModeOpt,
 		baseapp.SetChainID(config.ChainID),
@@ -471,7 +470,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		artelaencoding.MakeConfig(app.ModuleBasics),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		fauxMerkleModeOpt,
 		baseapp.SetChainID(config.ChainID),

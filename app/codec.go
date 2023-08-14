@@ -1,4 +1,4 @@
-package codec
+package app
 
 import (
 	codec2 "github.com/artela-network/artela/ethereum/crypto/codec"

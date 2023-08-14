@@ -1,4 +1,4 @@
-package encoding
+package app
 
 import (
 	amino "github.com/cosmos/cosmos-sdk/codec"
@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 
 	"github.com/artela-network/artela/app/params"
-	enccodec "github.com/artela-network/artela/encoding/codec"
 )
 
 // MakeConfig creates an EncodingConfig for testing
@@ -23,9 +22,9 @@ func MakeConfig(mb module.BasicManager) params.EncodingConfig {
 		Amino:             cdc,
 	}
 
-	enccodec.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	RegisterLegacyAminoCodec(encodingConfig.Amino)
 	mb.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	enccodec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	mb.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	return encodingConfig
 }

@@ -1,20 +1,18 @@
 package hd
 
 import (
-	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/ethereum/go-ethereum/common"
-
 	amino "github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/require"
 
-	enccodec "github.com/artela-network/artela/encoding/codec"
+	"github.com/artela-network/artela/app"
+	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
 	artelatypes "github.com/artela-network/artela/types"
 )
 
@@ -26,7 +24,7 @@ func init() {
 
 	interfaceRegistry := types.NewInterfaceRegistry()
 	TestCodec = amino.NewProtoCodec(interfaceRegistry)
-	enccodec.RegisterInterfaces(interfaceRegistry)
+	app.RegisterInterfaces(interfaceRegistry)
 }
 
 const (

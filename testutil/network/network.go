@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/ethereum/crypto/hd"
-	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"net/http"
 	"net/url"
 	"os"
@@ -53,7 +51,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/artela-network/artela/encoding"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
+	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"github.com/artela-network/artela/server/config"
 	artelatypes "github.com/artela-network/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
@@ -99,7 +98,7 @@ type Config struct {
 // DefaultConfig returns a sane default configuration suitable for nearly all
 // testing requirements.
 func DefaultConfig() Config {
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
+	encCfg := app.MakeConfig(app.ModuleBasics)
 
 	return Config{
 		Codec:             encCfg.Marshaler,
