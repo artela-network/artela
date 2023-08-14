@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
+
 	dbm "github.com/cometbft/cometbft-db"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
@@ -30,21 +32,21 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
 	// this line is used by starport scaffolding # root/moduleImport
 
-	"artela/app"
-	appparams "artela/app/params"
+	"github.com/artela-network/artela/app"
+	appparams "github.com/artela-network/artela/app/params"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
 func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
-	encodingConfig := app.MakeEncodingConfig()
+	encodingConfig := app.MakeConfig(app.ModuleBasics)
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Marshaler).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
@@ -53,6 +55,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(app.DefaultNodeHome).
+		WithKeyringOptions(artelakeyring.Option()).
 		WithViper("")
 
 	rootCmd := &cobra.Command{
@@ -106,10 +109,9 @@ func initRootCmd(
 	// Set config
 	initSDKConfig()
 
-	gentxModule := app.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, gentxModule.GenTxValidator),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, genutiltypes.DefaultMessageValidator),
 		genutilcli.MigrateGenesisCmd(),
 		genutilcli.GenTxCmd(
 			app.ModuleBasics,
@@ -274,7 +276,7 @@ func (a appCreator) newApp(
 		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
 	)
 
-	return app.New(
+	return app.NewArtela(
 		logger,
 		db,
 		traceStore,
@@ -315,7 +317,7 @@ func (a appCreator) appExport(
 		return servertypes.ExportedApp{}, errors.New("application home not set")
 	}
 
-	app := app.New(
+	app := app.NewArtela(
 		logger,
 		db,
 		traceStore,

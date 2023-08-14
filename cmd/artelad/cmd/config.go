@@ -3,7 +3,7 @@ package cmd
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"artela/app"
+	"github.com/artela-network/artela/app"
 )
 
 func initSDKConfig() {

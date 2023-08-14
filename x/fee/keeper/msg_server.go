@@ -1,17 +1,27 @@
 package keeper
 
 import (
-	"artela/x/fee/types"
+	"context"
+
+	errorsmod "cosmossdk.io/errors"
+	"github.com/artela-network/artela/x/fee/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
-type msgServer struct {
-	Keeper
-}
+// UpdateParams implements the gRPC MsgServer interface. When an UpdateParams
+// proposal passes, it updates the module parameters. The update can only be
+// performed if the requested authority is the Cosmos SDK governance module
+// account.
+func (k *Keeper) UpdateParams(goCtx context.Context, req *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	if k.authority.String() != req.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority.String(), req.Authority)
+	}
 
-// NewMsgServerImpl returns an implementation of the MsgServer interface
-// for the provided Keeper.
-func NewMsgServerImpl(keeper Keeper) types.MsgServer {
-	return &msgServer{Keeper: keeper}
-}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.SetParams(ctx, req.Params); err != nil {
+		return nil, err
+	}
 
-var _ types.MsgServer = msgServer{}
+	return &types.MsgUpdateParamsResponse{}, nil
+}

@@ -36,7 +36,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 
-	"artela/app"
+	"github.com/artela-network/artela/app"
 )
 
 type storeKeysPrefixes struct {
@@ -87,7 +87,7 @@ func BenchmarkSimulation(b *testing.B) {
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	bApp := app.New(
+	bApp := app.NewArtela(
 		logger,
 		db,
 		nil,
@@ -95,7 +95,7 @@ func BenchmarkSimulation(b *testing.B) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		app.MakeEncodingConfig(),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		baseapp.SetChainID(config.ChainID),
 	)
@@ -163,7 +163,7 @@ func TestAppStateDeterminism(t *testing.T) {
 			config.ChainID = chainID
 
 			db := dbm.NewMemDB()
-			bApp := app.New(
+			bApp := app.NewArtela(
 				logger,
 				db,
 				nil,
@@ -171,7 +171,7 @@ func TestAppStateDeterminism(t *testing.T) {
 				map[int64]bool{},
 				app.DefaultNodeHome,
 				simcli.FlagPeriodValue,
-				app.MakeEncodingConfig(),
+				app.MakeConfig(app.ModuleBasics),
 				appOptions,
 				fauxMerkleModeOpt,
 				baseapp.SetChainID(chainID),
@@ -241,7 +241,7 @@ func TestAppImportExport(t *testing.T) {
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	bApp := app.New(
+	bApp := app.NewArtela(
 		logger,
 		db,
 		nil,
@@ -249,7 +249,7 @@ func TestAppImportExport(t *testing.T) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		app.MakeEncodingConfig(),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		baseapp.SetChainID(config.ChainID),
 	)
@@ -302,7 +302,7 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
-	newApp := app.New(
+	newApp := app.NewArtela(
 		log.NewNopLogger(),
 		newDB,
 		nil,
@@ -310,7 +310,7 @@ func TestAppImportExport(t *testing.T) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		app.MakeEncodingConfig(),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		baseapp.SetChainID(config.ChainID),
 	)
@@ -395,7 +395,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	bApp := app.New(
+	bApp := app.NewArtela(
 		logger,
 		db,
 		nil,
@@ -403,7 +403,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		app.MakeEncodingConfig(),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		fauxMerkleModeOpt,
 		baseapp.SetChainID(config.ChainID),
@@ -462,7 +462,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
-	newApp := app.New(
+	newApp := app.NewArtela(
 		log.NewNopLogger(),
 		newDB,
 		nil,
@@ -470,7 +470,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		0,
-		app.MakeEncodingConfig(),
+		app.MakeConfig(app.ModuleBasics),
 		appOptions,
 		fauxMerkleModeOpt,
 		baseapp.SetChainID(config.ChainID),

@@ -1,35 +1,30 @@
 package app
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
+	amino "github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/std"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 
-	"artela/app/params"
+	"github.com/artela-network/artela/app/params"
 )
 
-// makeEncodingConfig creates an EncodingConfig for an amino based test configuration.
-func makeEncodingConfig() params.EncodingConfig {
-	amino := codec.NewLegacyAmino()
+// MakeConfig creates an EncodingConfig for testing
+func MakeConfig(mb module.BasicManager) params.EncodingConfig {
+	cdc := amino.NewLegacyAmino()
 	interfaceRegistry := types.NewInterfaceRegistry()
-	marshaler := codec.NewProtoCodec(interfaceRegistry)
-	txCfg := tx.NewTxConfig(marshaler, tx.DefaultSignModes)
+	codec := amino.NewProtoCodec(interfaceRegistry)
 
-	return params.EncodingConfig{
+	encodingConfig := params.EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Marshaler:         marshaler,
-		TxConfig:          txCfg,
-		Amino:             amino,
+		Marshaler:         codec,
+		TxConfig:          tx.NewTxConfig(codec, tx.DefaultSignModes),
+		Amino:             cdc,
 	}
-}
 
-// MakeEncodingConfig creates an EncodingConfig for testing
-func MakeEncodingConfig() params.EncodingConfig {
-	encodingConfig := makeEncodingConfig()
-	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	RegisterLegacyAminoCodec(encodingConfig.Amino)
+	mb.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	mb.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	return encodingConfig
 }

@@ -1,19 +1,37 @@
 package types
 
 const (
-	// ModuleName defines the module name
-	ModuleName = "fee"
+	// ModuleName string name of module
+	ModuleName = "feeMeter"
 
-	// StoreKey defines the primary module store key
+	// StoreKey key for base fee and block gas used.
+	// The Fee Market module should use a prefix store.
 	StoreKey = ModuleName
 
-	// RouterKey defines the module's message routing key
+	// RouterKey uses module name for routing
 	RouterKey = ModuleName
 
-	// MemStoreKey defines the in-memory store key
-	MemStoreKey = "mem_fee"
+	// TransientKey is the key to access the Fee transient store, that is reset
+	// during the Commit phase.
+	TransientKey = "transient_" + ModuleName
 )
 
-func KeyPrefix(p string) []byte {
-	return []byte(p)
-}
+// prefix bytes for the fee persistent store
+const (
+	prefixBlockGasWanted    = iota + 1
+	deprecatedPrefixBaseFee // unused
+)
+
+const (
+	prefixTransientBlockGasUsed = iota + 1
+)
+
+// KVStore key prefixes
+var (
+	KeyPrefixBlockGasWanted = []byte{prefixBlockGasWanted}
+)
+
+// Transient Store key prefixes
+var (
+	KeyPrefixTransientBlockGasWanted = []byte{prefixTransientBlockGasUsed}
+)

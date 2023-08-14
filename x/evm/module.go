@@ -4,145 +4,185 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	// this line is used by starport scaffolding # 1
-
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"artela/x/evm/client/cli"
-	"artela/x/evm/keeper"
-	"artela/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+
+	"github.com/artela-network/artela/x/evm/client/cli"
+	"github.com/artela-network/artela/x/evm/keeper"
+	"github.com/artela-network/artela/x/evm/types"
 )
+
+// ConsensusVersion defines the current x/evm module consensus version.
+const ConsensusVersion = 5
 
 var (
 	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
-// ----------------------------------------------------------------------------
-// AppModuleBasic
-// ----------------------------------------------------------------------------
+// AppModuleBasic defines the basic application module used by the evm module.
+type AppModuleBasic struct{}
 
-// AppModuleBasic implements the AppModuleBasic interface that defines the independent methods a Cosmos SDK module needs to implement.
-type AppModuleBasic struct {
-	cdc codec.BinaryCodec
-}
-
-func NewAppModuleBasic(cdc codec.BinaryCodec) AppModuleBasic {
-	return AppModuleBasic{cdc: cdc}
-}
-
-// Name returns the name of the module as a string
+// Name returns the evm module's name.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
 
-// RegisterLegacyAminoCodec registers the amino codec for the module, which is used to marshal and unmarshal structs to/from []byte in order to persist them in the module's KVStore
+// RegisterLegacyAminoCodec registers the module's types with the given codec.
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	types.RegisterCodec(cdc)
+	types.RegisterLegacyAminoCodec(cdc)
 }
 
-// RegisterInterfaces registers a module's interface types and their concrete implementations as proto.Message
-func (a AppModuleBasic) RegisterInterfaces(reg cdctypes.InterfaceRegistry) {
-	types.RegisterInterfaces(reg)
+// ConsensusVersion returns the consensus state-breaking version for the module.
+func (AppModuleBasic) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }
 
-// DefaultGenesis returns a default GenesisState for the module, marshalled to json.RawMessage. The default GenesisState need to be defined by the module developer and is primarily used for testing
+// DefaultGenesis returns default genesis state as raw bytes for the evm
+// module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesis())
+	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
-// ValidateGenesis used to validate the GenesisState, given in its json.RawMessage form
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var genState types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
+// ValidateGenesis is the validation check of the Genesis
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+	var data types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
-	return genState.Validate()
+
+	return data.Validate()
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the evm module.
+func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *runtime.ServeMux) {
+	if err := types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(c)); err != nil {
+		panic(err)
+	}
 }
 
-// GetTxCmd returns the root Tx command for the module. The subcommands of this root command are used by end-users to generate new transactions containing messages defined in the module
-func (a AppModuleBasic) GetTxCmd() *cobra.Command {
+// GetTxCmd returns the root tx command for the evm module.
+func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.GetTxCmd()
 }
 
-// GetQueryCmd returns the root query command for the module. The subcommands of this root command are used by end-users to generate new queries to the subset of the state defined by the module
+// GetQueryCmd returns no root query command for the evm module.
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.GetQueryCmd(types.StoreKey)
+	return cli.GetQueryCmd()
 }
 
-// ----------------------------------------------------------------------------
-// AppModule
-// ----------------------------------------------------------------------------
+// RegisterInterfaces registers interfaces and implementations of the evm module.
+func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
+}
 
-// AppModule implements the AppModule interface that defines the inter-dependent methods that modules need to implement
+// AppModule implements an application module for the evm module.
 type AppModule struct {
 	AppModuleBasic
 
-	keeper        keeper.Keeper
-	accountKeeper types.AccountKeeper
-	bankKeeper    types.BankKeeper
+	keeper *keeper.Keeper
+	ak     types.AccountKeeper
+
+	// legacySubspace is used solely for migration of x/params managed parameters
+	legacySubspace types.Subspace
 }
 
-func NewAppModule(
-	cdc codec.Codec,
-	keeper keeper.Keeper,
-	accountKeeper types.AccountKeeper,
-	bankKeeper types.BankKeeper,
-) AppModule {
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// RegisterServices registers module services.
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	// TODO mark
+	//m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
+	//err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
+	//	panic(err)
+	//}
+}
+
+// NewAppModule creates a new AppModule object
+func NewAppModule(k *keeper.Keeper, ak types.AccountKeeper, ss types.Subspace) AppModule {
 	return AppModule{
-		AppModuleBasic: NewAppModuleBasic(cdc),
-		keeper:         keeper,
-		accountKeeper:  accountKeeper,
-		bankKeeper:     bankKeeper,
+		AppModuleBasic: AppModuleBasic{},
+		keeper:         k,
+		ak:             ak,
+		legacySubspace: ss,
 	}
 }
 
-// RegisterServices registers a gRPC query service to respond to the module-specific gRPC queries
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+// Name returns the evm module's name.
+func (AppModule) Name() string {
+	return types.ModuleName
 }
 
-// RegisterInvariants registers the invariants of the module. If an invariant deviates from its predicted value, the InvariantRegistry triggers appropriate logic (most often the chain will be halted)
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
+// QuerierRoute returns the evm module's querier route name.
+func (AppModule) QuerierRoute() string { return types.RouterKey }
 
-// InitGenesis performs the module's genesis initialization. It returns no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.RawMessage) []abci.ValidatorUpdate {
-	var genState types.GenesisState
-	// Initialize global index to index in genesis state
-	cdc.MustUnmarshalJSON(gs, &genState)
-
-	InitGenesis(ctx, am.keeper, genState)
-
+// InitGenesis performs genesis initialization for the evm module. It returns
+// no validator updates.
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+	var genesisState types.GenesisState
+	cdc.MustUnmarshalJSON(data, &genesisState)
+	keeper.InitGenesis(ctx, am.keeper, am.ak, genesisState)
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the module's exported genesis state as raw JSON bytes.
+// ExportGenesis returns the exported genesis state as raw bytes for the evm
+// module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	genState := ExportGenesis(ctx, am.keeper)
-	return cdc.MustMarshalJSON(genState)
+	gs := keeper.ExportGenesis(ctx, am.keeper, am.ak)
+	return cdc.MustMarshalJSON(gs)
 }
 
-// ConsensusVersion is a sequence number for state-breaking change of the module. It should be incremented on each consensus-breaking change introduced by the module. To avoid wrong/empty versions, the initial version should be set to 1
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
-// BeginBlock contains the logic that is automatically triggered at the beginning of each block
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
+// GenerateGenesisState creates a randomized GenState of the evm module.
+func (AppModule) GenerateGenesisState(_ *module.SimulationState) {
+	//  simulation.RandomizedGenState(simState) // TODO mark
+}
 
-// EndBlock contains the logic that is automatically triggered at the end of each block
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
+// ProposalMsgs returns msgs used for governance proposals for simulations.
+func (AppModule) ProposalMsgs(simState module.SimulationState) []simtypes.WeightedProposalMsg {
+	// return simulation.ProposalMsgs() // TODO mark
+	return nil
+}
+
+// RegisterStoreDecoder registers a decoder for evm module's types
+func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
+}
+
+// WeightedOperations returns the all the evm module operations with their respective weights.
+func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
+	return nil
+}
+
+// BeginBlock returns the begin block for the evm module.
+func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	am.keeper.BeginBlock(ctx, req)
+}
+
+// EndBlock returns the end blocker for the evm module. It returns no validator
+// updates.
+func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	return am.keeper.EndBlock(ctx, req)
 }

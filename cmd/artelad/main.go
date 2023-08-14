@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
-	"artela/app"
-	"artela/cmd/artelad/cmd"
+	"github.com/artela-network/artela/app"
+	"github.com/artela-network/artela/cmd/artelad/cmd"
 )
 
 func main() {
