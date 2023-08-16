@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
 // AccessList is an EIP-2930 access list that represents the slice of
@@ -11,7 +11,7 @@ type AccessList []AccessTuple
 
 // NewAccessList creates a new protobuf-compatible AccessList from an ethereum
 // core AccessList type
-func NewAccessList(ethAccessList *ethtypes.AccessList) AccessList {
+func NewAccessList(ethAccessList *ethereum.AccessList) AccessList {
 	if ethAccessList == nil {
 		return nil
 	}
@@ -33,10 +33,10 @@ func NewAccessList(ethAccessList *ethtypes.AccessList) AccessList {
 	return al
 }
 
-// ToEthAccessList is an utility function to convert the protobuf compatible
+// ToEthAccessList is a utility function to convert the protobuf compatible
 // AccessList to eth core AccessList from go-ethereum
-func (al AccessList) ToEthAccessList() *ethtypes.AccessList {
-	var ethAccessList ethtypes.AccessList
+func (al AccessList) ToEthAccessList() *ethereum.AccessList {
+	var ethAccessList ethereum.AccessList
 
 	for _, tuple := range al {
 		storageKeys := make([]common.Hash, len(tuple.StorageKeys))
@@ -45,7 +45,7 @@ func (al AccessList) ToEthAccessList() *ethtypes.AccessList {
 			storageKeys[i] = common.HexToHash(tuple.StorageKeys[i])
 		}
 
-		ethAccessList = append(ethAccessList, ethtypes.AccessTuple{
+		ethAccessList = append(ethAccessList, ethereum.AccessTuple{
 			Address:     common.HexToAddress(tuple.Address),
 			StorageKeys: storageKeys,
 		})

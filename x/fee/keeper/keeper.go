@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"math/big"
-
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -97,16 +95,4 @@ func (k Keeper) AddTransientGasWanted(ctx sdk.Context, gasWanted uint64) (uint64
 	result := k.GetTransientGasWanted(ctx) + gasWanted
 	k.SetTransientBlockGasWanted(ctx, result)
 	return result, nil
-}
-
-// GetBaseFeeV1 get the base fee from v1 version of states.
-// return nil if base fee is not enabled
-// TODO: Figure out if this will be deleted ?
-func (k Keeper) GetBaseFeeV1(ctx sdk.Context) *big.Int {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(KeyPrefixBaseFeeV1)
-	if len(bz) == 0 {
-		return nil
-	}
-	return new(big.Int).SetBytes(bz)
 }

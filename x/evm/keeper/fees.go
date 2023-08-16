@@ -70,6 +70,7 @@ func VerifyFee(
 	baseFee *big.Int,
 	homestead, istanbul, isCheckTx bool,
 ) (sdk.Coins, error) {
+
 	isContractCreation := txData.GetTo() == nil
 
 	gasLimit := txData.GetGas()

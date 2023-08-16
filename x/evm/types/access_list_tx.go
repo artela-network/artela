@@ -8,12 +8,12 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela/types"
 )
 
-func newAccessListTx(tx *ethtypes.Transaction) (*AccessListTx, error) {
+func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
 	txData := &AccessListTx{
 		Nonce:    tx.Nonce(),
 		Data:     tx.Data(),
@@ -52,7 +52,7 @@ func newAccessListTx(tx *ethtypes.Transaction) (*AccessListTx, error) {
 
 // TxType returns the tx type
 func (tx *AccessListTx) TxType() uint8 {
-	return ethtypes.AccessListTxType
+	return ethereum.AccessListTxType
 }
 
 // Copy returns an instance with the same field values
@@ -82,7 +82,7 @@ func (tx *AccessListTx) GetChainID() *big.Int {
 }
 
 // GetAccessList returns the AccessList field.
-func (tx *AccessListTx) GetAccessList() ethtypes.AccessList {
+func (tx *AccessListTx) GetAccessList() ethereum.AccessList {
 	if tx.Accesses == nil {
 		return nil
 	}
@@ -140,9 +140,9 @@ func (tx *AccessListTx) GetTo() *common.Address {
 
 // AsEthereumData returns an AccessListTx transaction tx from the proto-formatted
 // TxData defined on the Cosmos EVM.
-func (tx *AccessListTx) AsEthereumData() ethtypes.TxData {
+func (tx *AccessListTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
-	return &ethtypes.AccessListTx{
+	return &ethereum.AccessListTx{
 		ChainID:    tx.GetChainID(),
 		Nonce:      tx.GetNonce(),
 		GasPrice:   tx.GetGasPrice(),

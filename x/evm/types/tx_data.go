@@ -16,7 +16,7 @@ var (
 // TxData implements the Ethereum transaction tx structure. It is used
 // solely as intended in Ethereum abiding by the protocol.
 type TxData interface {
-	// TODO: embed ethtypes.TxData. See https://github.com/ethereum/go-ethereum/issues/23154
+	// See https://github.com/ethereum/go-ethereum/issues/23154
 
 	TxType() byte
 	Copy() TxData
@@ -54,11 +54,11 @@ func NewTxDataFromTx(tx *ethtypes.Transaction) (TxData, error) {
 	var err error
 	switch tx.Type() {
 	case ethtypes.DynamicFeeTxType:
-		txData, err = NewDynamicFeeTx(tx)
+		txData, err = newDynamicFeeTx(tx)
 	case ethtypes.AccessListTxType:
 		txData, err = newAccessListTx(tx)
 	default:
-		txData, err = NewLegacyTx(tx)
+		txData, err = newLegacyTx(tx)
 	}
 	if err != nil {
 		return nil, err

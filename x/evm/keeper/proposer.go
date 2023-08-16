@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// GetCoinbaseAddress returns the block proposer's validator operator address.
-func (k Keeper) GetCoinbaseAddress(ctx sdk.Context, proposerAddress sdk.ConsAddress) (common.Address, error) {
+// GetProposerAddress returns the block proposer's validator operator address.
+func (k Keeper) GetProposerAddress(ctx sdk.Context, proposerAddress sdk.ConsAddress) (common.Address, error) {
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, GetProposerAddress(ctx, proposerAddress))
 	if !found {
 		return common.Address{}, errorsmod.Wrapf(
@@ -18,14 +18,13 @@ func (k Keeper) GetCoinbaseAddress(ctx sdk.Context, proposerAddress sdk.ConsAddr
 		)
 	}
 
-	coinbase := common.BytesToAddress(validator.GetOperator())
-	return coinbase, nil
+	return common.BytesToAddress(validator.GetOperator()), nil
 }
 
 // GetProposerAddress returns current block proposer's address when provided proposer address is empty.
 func GetProposerAddress(ctx sdk.Context, proposerAddress sdk.ConsAddress) sdk.ConsAddress {
-	if len(proposerAddress) == 0 {
-		proposerAddress = ctx.BlockHeader().ProposerAddress
+	if len(proposerAddress) > 0 {
+		return proposerAddress
 	}
-	return proposerAddress
+	return ctx.BlockHeader().ProposerAddress
 }

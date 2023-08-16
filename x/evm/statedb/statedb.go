@@ -8,7 +8,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -46,7 +46,7 @@ type StateDB struct {
 	refund uint64
 
 	// Per-transaction logs
-	logs []*ethtypes.Log
+	logs []*ethereum.Log
 
 	// Per-transaction access list
 	accessList *accessList
@@ -76,7 +76,7 @@ func (s *StateDB) GetContext() sdk.Context {
 }
 
 // AddLog adds a log, called by evm.
-func (s *StateDB) AddLog(log *ethtypes.Log) {
+func (s *StateDB) AddLog(log *ethereum.Log) {
 	s.journal.append(addLogChange{})
 
 	log.TxHash = s.txConfig.TxHash
@@ -87,7 +87,7 @@ func (s *StateDB) AddLog(log *ethtypes.Log) {
 }
 
 // Logs returns the logs of current transaction.
-func (s *StateDB) Logs() []*ethtypes.Log {
+func (s *StateDB) Logs() []*ethereum.Log {
 	return s.logs
 }
 
@@ -362,7 +362,7 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 // - Add the contents of the optional tx access list (2930)
 //
 // This method should only be called if Yolov3/Berlin/2929+2930 is applicable at the current number.
-func (s *StateDB) PrepareAccessList(sender common.Address, dst *common.Address, precompiles []common.Address, list ethtypes.AccessList) {
+func (s *StateDB) PrepareAccessList(sender common.Address, dst *common.Address, precompiles []common.Address, list ethereum.AccessList) {
 	s.AddAddressToAccessList(sender)
 	if dst != nil {
 		s.AddAddressToAccessList(*dst)

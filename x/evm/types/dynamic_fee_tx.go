@@ -13,7 +13,7 @@ import (
 	"github.com/artela-network/artela/types"
 )
 
-func NewDynamicFeeTx(tx *ethtypes.Transaction) (*DynamicFeeTx, error) {
+func newDynamicFeeTx(tx *ethtypes.Transaction) (*DynamicFeeTx, error) {
 	txData := &DynamicFeeTx{
 		Nonce:    tx.Nonce(),
 		Data:     tx.Data(),

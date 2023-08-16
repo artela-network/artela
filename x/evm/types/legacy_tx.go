@@ -11,7 +11,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-func NewLegacyTx(tx *ethtypes.Transaction) (*LegacyTx, error) {
+func newLegacyTx(tx *ethtypes.Transaction) (*LegacyTx, error) {
 	txData := &LegacyTx{
 		Nonce:    tx.Nonce(),
 		Data:     tx.Data(),

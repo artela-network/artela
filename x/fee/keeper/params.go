@@ -54,10 +54,6 @@ func (k Keeper) GetBaseFee(ctx sdk.Context) *big.Int {
 	}
 
 	baseFee := params.BaseFee.BigInt()
-	if baseFee == nil || baseFee.Sign() == 0 {
-		// try v1 format
-		return k.GetBaseFeeV1(ctx)
-	}
 	return baseFee
 }
 
