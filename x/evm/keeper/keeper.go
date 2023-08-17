@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
+	"github.com/artela-network/artela/rpc"
 	artela "github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/statedb"
 	"github.com/artela-network/artela/x/evm/types"
@@ -54,6 +55,8 @@ type Keeper struct {
 
 	// Legacy subspace
 	ss paramstypes.Subspace
+
+	artelaService *rpc.ArtelaService
 }
 
 // NewKeeper generates new evm module keeper
@@ -79,7 +82,7 @@ func NewKeeper(
 	}
 
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
-	return &Keeper{
+	k := &Keeper{
 		cdc:           cdc,
 		authority:     authority,
 		accountKeeper: accountKeeper,
@@ -91,6 +94,25 @@ func NewKeeper(
 		tracer:        tracer,
 		ss:            subSpace,
 	}
+
+	k.InitArtelaService()
+
+	return k
+}
+
+func (k *Keeper) InitArtelaService() {
+	cfg := rpc.DefaultConfig()
+	nodeCfg := rpc.DefaultGethNodeConfig()
+	node, err := rpc.NewNode(nodeCfg)
+	if err != nil {
+		panic(err)
+	}
+
+	k.artelaService = rpc.NewArtelaService(cfg, node)
+}
+
+func (k *Keeper) StartArtelaService() {
+	k.artelaService.Start()
 }
 
 // Logger returns a module-specific logger.

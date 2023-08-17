@@ -263,7 +263,7 @@ func NewCanTransferDecorator(evmKeeper EVMKeeper) CanTransferDecorator {
 func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	params := ctd.evmKeeper.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(ctd.evmKeeper.ChainID())
-	signer := ethtypes.MakeSigner(ethCfg, big.NewInt(ctx.BlockHeight()))
+	signer := ethtypes.MakeSigner(ethCfg, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 
 	for _, msg := range tx.GetMsgs() {
 		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
@@ -288,11 +288,11 @@ func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 					"base fee is supported but evm block context value is nil",
 				)
 			}
-			if coreMsg.GasFeeCap().Cmp(baseFee) < 0 {
+			if coreMsg.GasFeeCap.Cmp(baseFee) < 0 {
 				return ctx, errorsmod.Wrapf(
 					errortypes.ErrInsufficientFee,
 					"max fee per gas less than block base fee (%s < %s)",
-					coreMsg.GasFeeCap(), baseFee,
+					coreMsg.GasFeeCap, baseFee,
 				)
 			}
 		}
@@ -306,16 +306,16 @@ func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 		}
 
 		stateDB := statedb.New(ctx, ctd.evmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes())))
-		evm := ctd.evmKeeper.NewEVM(ctx, coreMsg, cfg, evmtypes.NewNoOpTracer(), stateDB)
+		evm := ctd.evmKeeper.NewEVM(ctx, *coreMsg, cfg, evmtypes.NewNoOpTracer(), stateDB)
 
 		// check that caller has enough balance to cover asset transfer for **topmost** call
 		// NOTE: here the gas consumed is from the context with the infinite gas meter
-		if coreMsg.Value().Sign() > 0 && !evm.Context.CanTransfer(stateDB, coreMsg.From(), coreMsg.Value()) {
+		if coreMsg.Value.Sign() > 0 && !evm.Context.CanTransfer(stateDB, coreMsg.From, coreMsg.Value) {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrInsufficientFunds,
 				"failed to transfer %s from address %s using the EVM block context transfer function",
-				coreMsg.Value(),
-				coreMsg.From(),
+				coreMsg.Value,
+				coreMsg.From,
 			)
 		}
 	}

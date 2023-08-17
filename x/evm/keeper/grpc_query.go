@@ -243,7 +243,7 @@ func (k Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.Ms
 	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 
 	// pass false to not commit StateDB
-	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
+	res, err := k.ApplyMessageWithConfig(ctx, *msg, nil, false, cfg, txConfig)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -322,22 +322,9 @@ func (k Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*type
 	// Create a helper to check if a gas allowance results in an executable transaction
 	executable := func(gas uint64) (vmError bool, rsp *types.MsgEthereumTxResponse, err error) {
 		// update the message with the new gas value
-		msg = eth.NewMessage(
-			msg.From(),
-			msg.To(),
-			msg.Nonce(),
-			msg.Value(),
-			gas,
-			msg.GasPrice(),
-			msg.GasFeeCap(),
-			msg.GasTipCap(),
-			msg.Data(),
-			msg.AccessList(),
-			msg.IsFake(),
-		)
-
+		msg.GasLimit = gas
 		// pass false to not commit StateDB
-		rsp, err = k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
+		rsp, err = k.ApplyMessageWithConfig(ctx, *msg, nil, false, cfg, txConfig)
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) {
 				return true, nil, nil // Special case, raise gas limit
@@ -405,18 +392,18 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to load evm config: %s", err.Error())
 	}
-	signer := eth.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()))
+	signer := eth.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 
 	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 	for i, tx := range req.Predecessors {
 		ethTx := tx.AsTransaction()
-		msg, err := ethTx.AsMessage(signer, cfg.BaseFee)
+		msg, err := core.TransactionToMessage(ethTx, signer, cfg.BaseFee)
 		if err != nil {
 			continue
 		}
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
-		rsp, err := k.ApplyMessageWithConfig(ctx, msg, types.NewNoOpTracer(), true, cfg, txConfig)
+		rsp, err := k.ApplyMessageWithConfig(ctx, *msg, types.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
 		}
@@ -483,7 +470,7 @@ func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to load evm config")
 	}
-	signer := eth.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()))
+	signer := eth.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 	txsLength := len(req.Txs)
 	results := make([]*types.TxTraceResult, 0, txsLength)
 
@@ -531,7 +518,7 @@ func (k *Keeper) traceTx(
 		err       error
 		timeout   = defaultTraceTimeout
 	)
-	msg, err := tx.AsMessage(signer, cfg.BaseFee)
+	msg, err := core.TransactionToMessage(tx, signer, cfg.BaseFee)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}
@@ -563,7 +550,7 @@ func (k *Keeper) traceTx(
 	}
 
 	if traceConfig.Tracer != "" {
-		if tracer, err = tracers.New(traceConfig.Tracer, tCtx, tracerJSONConfig); err != nil {
+		if tracer, err = tracers.DefaultDirectory.New(traceConfig.Tracer, tCtx, tracerJSONConfig); err != nil {
 			return nil, 0, status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -586,7 +573,7 @@ func (k *Keeper) traceTx(
 		}
 	}()
 
-	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
+	res, err := k.ApplyMessageWithConfig(ctx, *msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}
