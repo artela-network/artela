@@ -8,12 +8,12 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela/types"
 )
 
-func NewDynamicFeeTx(tx *ethtypes.Transaction) (*DynamicFeeTx, error) {
+func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	txData := &DynamicFeeTx{
 		Nonce:    tx.Nonce(),
 		Data:     tx.Data(),
@@ -60,7 +60,7 @@ func NewDynamicFeeTx(tx *ethtypes.Transaction) (*DynamicFeeTx, error) {
 
 // TxType returns the tx type
 func (tx *DynamicFeeTx) TxType() uint8 {
-	return ethtypes.DynamicFeeTxType
+	return ethereum.DynamicFeeTxType
 }
 
 // Copy returns an instance with the same field values
@@ -91,14 +91,14 @@ func (tx *DynamicFeeTx) GetChainID() *big.Int {
 }
 
 // GetAccessList returns the AccessList field.
-func (tx *DynamicFeeTx) GetAccessList() ethtypes.AccessList {
+func (tx *DynamicFeeTx) GetAccessList() ethereum.AccessList {
 	if tx.Accesses == nil {
 		return nil
 	}
 	return *tx.Accesses.ToEthAccessList()
 }
 
-// GetData returns the a copy of the input data bytes.
+// GetData returns a copy of the input data bytes.
 func (tx *DynamicFeeTx) GetData() []byte {
 	return common.CopyBytes(tx.Data)
 }
@@ -152,9 +152,9 @@ func (tx *DynamicFeeTx) GetTo() *common.Address {
 
 // AsEthereumData returns an DynamicFeeTx transaction tx from the proto-formatted
 // TxData defined on the Cosmos EVM.
-func (tx *DynamicFeeTx) AsEthereumData() ethtypes.TxData {
+func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
-	return &ethtypes.DynamicFeeTx{
+	return &ethereum.DynamicFeeTx{
 		ChainID:    tx.GetChainID(),
 		Nonce:      tx.GetNonce(),
 		GasTipCap:  tx.GetGasTipCap(),

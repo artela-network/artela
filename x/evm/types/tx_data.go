@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
 var (
@@ -16,12 +16,12 @@ var (
 // TxData implements the Ethereum transaction tx structure. It is used
 // solely as intended in Ethereum abiding by the protocol.
 type TxData interface {
-	// TODO: embed ethtypes.TxData. See https://github.com/ethereum/go-ethereum/issues/23154
+	// See https://github.com/ethereum/go-ethereum/issues/23154
 
 	TxType() byte
 	Copy() TxData
 	GetChainID() *big.Int
-	GetAccessList() ethtypes.AccessList
+	GetAccessList() ethereum.AccessList
 	GetData() []byte
 	GetNonce() uint64
 	GetGas() uint64
@@ -34,7 +34,7 @@ type TxData interface {
 	GetRawSignatureValues() (v, r, s *big.Int)
 	SetSignatureValues(chainID, v, r, s *big.Int)
 
-	AsEthereumData() ethtypes.TxData
+	AsEthereumData() ethereum.TxData
 	Validate() error
 
 	// static fee
@@ -49,16 +49,16 @@ type TxData interface {
 
 // NOTE: All non-protected transactions (i.e non EIP155 signed) will fail if the
 // AllowUnprotectedTxs parameter is disabled.
-func NewTxDataFromTx(tx *ethtypes.Transaction) (TxData, error) {
+func NewTxDataFromTx(tx *ethereum.Transaction) (TxData, error) {
 	var txData TxData
 	var err error
 	switch tx.Type() {
-	case ethtypes.DynamicFeeTxType:
-		txData, err = NewDynamicFeeTx(tx)
-	case ethtypes.AccessListTxType:
+	case ethereum.DynamicFeeTxType:
+		txData, err = newDynamicFeeTx(tx)
+	case ethereum.AccessListTxType:
 		txData, err = newAccessListTx(tx)
 	default:
-		txData, err = NewLegacyTx(tx)
+		txData, err = newLegacyTx(tx)
 	}
 	if err != nil {
 		return nil, err

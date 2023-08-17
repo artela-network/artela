@@ -17,10 +17,10 @@ type TxConfig struct {
 }
 
 // NewTxConfig returns a TxConfig
-func NewTxConfig(bhash, thash common.Hash, txIndex, logIndex uint) TxConfig {
+func NewTxConfig(blockHash, txHash common.Hash, txIndex, logIndex uint) TxConfig {
 	return TxConfig{
-		BlockHash: bhash,
-		TxHash:    thash,
+		BlockHash: blockHash,
+		TxHash:    txHash,
 		TxIndex:   txIndex,
 		LogIndex:  logIndex,
 	}
@@ -28,9 +28,9 @@ func NewTxConfig(bhash, thash common.Hash, txIndex, logIndex uint) TxConfig {
 
 // NewEmptyTxConfig construct an empty TxConfig,
 // used in context where there's no transaction, e.g. `eth_call`/`eth_estimateGas`.
-func NewEmptyTxConfig(bhash common.Hash) TxConfig {
+func NewEmptyTxConfig(blockHash common.Hash) TxConfig {
 	return TxConfig{
-		BlockHash: bhash,
+		BlockHash: blockHash,
 		TxHash:    common.Hash{},
 		TxIndex:   0,
 		LogIndex:  0,

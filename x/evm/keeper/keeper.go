@@ -16,7 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	artelatypes "github.com/artela-network/artela/types"
+	artela "github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/statedb"
 	"github.com/artela-network/artela/x/evm/types"
 )
@@ -52,8 +52,6 @@ type Keeper struct {
 	// Tracer used to collect execution traces from the EVM transaction execution
 	tracer string
 
-	// EVM Hooks for tx post-processing
-	//hooks types.EvmHooks
 	// Legacy subspace
 	ss paramstypes.Subspace
 }
@@ -63,15 +61,15 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeKey, transientKey storetypes.StoreKey,
 	authority sdk.AccAddress,
-	ak types.AccountKeeper,
+	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
-	sk types.StakingKeeper,
-	fmk types.FeeKeeper,
+	stakingKeeper types.StakingKeeper,
+	feeKeeper types.FeeKeeper,
 	tracer string,
-	ss paramstypes.Subspace,
+	subSpace paramstypes.Subspace,
 ) *Keeper {
 	// ensure evm module account is set
-	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
+	if addr := accountKeeper.GetModuleAddress(types.ModuleName); addr == nil {
 		panic("the EVM module account has not been set")
 	}
 
@@ -80,18 +78,18 @@ func NewKeeper(
 		panic(err)
 	}
 
-	// NOTE: we pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
+	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	return &Keeper{
 		cdc:           cdc,
 		authority:     authority,
-		accountKeeper: ak,
+		accountKeeper: accountKeeper,
 		bankKeeper:    bankKeeper,
-		stakingKeeper: sk,
-		feeKeeper:     fmk,
+		stakingKeeper: stakingKeeper,
+		feeKeeper:     feeKeeper,
 		storeKey:      storeKey,
 		transientKey:  transientKey,
 		tracer:        tracer,
-		ss:            ss,
+		ss:            subSpace,
 	}
 }
 
@@ -102,7 +100,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // WithChainID sets the chain id to the local variable in the keeper
 func (k *Keeper) WithChainID(ctx sdk.Context) {
-	chainID, err := artelatypes.ParseChainID(ctx.ChainID())
+	chainID, err := artela.ParseChainID(ctx.ChainID())
 	if err != nil {
 		panic(err)
 	}
@@ -226,38 +224,12 @@ func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) types
 // Account
 // ----------------------------------------------------------------------------
 
-// SetHooks sets the hooks for the EVM module
-// It should be called only once during initialization, it panic if called more than once.
-//func (k *Keeper) SetHooks(eh types.EvmHooks) *Keeper {
-//	if k.hooks != nil {
-//		panic("cannot set evm hooks twice")
-//	}
-//
-//	k.hooks = eh
-//	return k
-//}
-
-// CleanHooks resets the hooks for the EVM module
-// NOTE: Should only be used for testing purposes
-//func (k *Keeper) CleanHooks() *Keeper {
-//	k.hooks = nil
-//	return k
-//}
-
-// PostTxProcessing delegate the call to the hooks. If no hook has been registered, this function returns with a `nil` error
-//func (k *Keeper) PostTxProcessing(ctx sdk.Context, msg core.Message, receipt *ethtypes.Receipt) error {
-//	if k.hooks == nil {
-//		return nil
-//	}
-//	return k.hooks.PostTxProcessing(ctx, msg, receipt)
-//}
-
 // Tracer return a default vm.Tracer based on current keeper state
 func (k Keeper) Tracer(ctx sdk.Context, msg core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
 	return types.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
 }
 
-// GetAccountWithoutBalance load nonce and codehash without balance,
+// GetAccountWithoutBalance load nonce and codeHash without balance,
 // more efficient in cases where balance is not needed.
 func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *statedb.Account {
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
@@ -267,7 +239,7 @@ func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) 
 	}
 
 	codeHash := types.EmptyCodeHash
-	ethAcct, ok := acct.(artelatypes.EthAccountI)
+	ethAcct, ok := acct.(artela.EthAccountI)
 	if ok {
 		codeHash = ethAcct.GetCodeHash().Bytes()
 	}
@@ -338,12 +310,12 @@ func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {
 
 // GetMinGasMultiplier returns the MinGasMultiplier param from the fee market module
 func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) sdk.Dec {
-	fmkParmas := k.feeKeeper.GetParams(ctx)
-	if fmkParmas.MinGasMultiplier.IsNil() {
+	feeParams := k.feeKeeper.GetParams(ctx)
+	if feeParams.MinGasMultiplier.IsNil() {
 		// in case we are executing eth_call on a legacy block, returns a zero value.
 		return sdk.ZeroDec()
 	}
-	return fmkParmas.MinGasMultiplier
+	return feeParams.MinGasMultiplier
 }
 
 // ResetTransientGasUsed reset gas used to prepare for execution of current cosmos tx, called in ante handler.

@@ -4,7 +4,7 @@ import (
 	"math"
 	"math/big"
 
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -22,7 +22,7 @@ type EvmTxArgs struct {
 	Amount    *big.Int
 	GasTipCap *big.Int
 	To        *common.Address
-	Accesses  *ethtypes.AccessList
+	Accesses  *ethereum.AccessList
 }
 
 // GetTxPriority returns the priority of a given Ethereum tx. It relies of the
@@ -33,7 +33,7 @@ type EvmTxArgs struct {
 func GetTxPriority(txData TxData, baseFee *big.Int) (priority int64) {
 	// calculate priority based on effective gas price
 	tipPrice := txData.EffectiveGasPrice(baseFee)
-	// if london hardfork is not enabled, tipPrice is the gasPrice
+	// if london hard fork is not enabled, tipPrice is the gasPrice
 	if baseFee != nil {
 		tipPrice = new(big.Int).Sub(tipPrice, baseFee)
 	}

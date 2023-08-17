@@ -8,10 +8,10 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"github.com/artela-network/artela/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
-func NewLegacyTx(tx *ethtypes.Transaction) (*LegacyTx, error) {
+func newLegacyTx(tx *ethereum.Transaction) (*LegacyTx, error) {
 	txData := &LegacyTx{
 		Nonce:    tx.Nonce(),
 		Data:     tx.Data(),
@@ -45,7 +45,7 @@ func NewLegacyTx(tx *ethtypes.Transaction) (*LegacyTx, error) {
 
 // TxType returns the tx type
 func (tx *LegacyTx) TxType() uint8 {
-	return ethtypes.LegacyTxType
+	return ethereum.LegacyTxType
 }
 
 // Copy returns an instance with the same field values
@@ -70,11 +70,11 @@ func (tx *LegacyTx) GetChainID() *big.Int {
 }
 
 // GetAccessList returns nil
-func (tx *LegacyTx) GetAccessList() ethtypes.AccessList {
+func (tx *LegacyTx) GetAccessList() ethereum.AccessList {
 	return nil
 }
 
-// GetData returns the a copy of the input data bytes.
+// GetData returns a copy of the input data bytes.
 func (tx *LegacyTx) GetData() []byte {
 	return common.CopyBytes(tx.Data)
 }
@@ -124,9 +124,9 @@ func (tx *LegacyTx) GetTo() *common.Address {
 
 // AsEthereumData returns an AccessListTx transaction tx from the proto-formatted
 // TxData defined on the Cosmos EVM.
-func (tx *LegacyTx) AsEthereumData() ethtypes.TxData {
+func (tx *LegacyTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
-	return &ethtypes.LegacyTx{
+	return &ethereum.LegacyTx{
 		Nonce:    tx.GetNonce(),
 		GasPrice: tx.GetGasPrice(),
 		Gas:      tx.GetGas(),

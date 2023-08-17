@@ -47,15 +47,6 @@ type FeeKeeper interface {
 	AddTransientGasWanted(ctx sdk.Context, gasWanted uint64) (uint64, error)
 }
 
-// Event Hooks
-// These can be utilized to customize evm transaction processing.
-
-// EvmHooks event hooks for evm tx processing
-//type EvmHooks interface {
-//	// Must be called after tx is processed successfully, if return an error, the whole transaction is reverted.
-//	PostTxProcessing(ctx sdk.Context, msg core.Message, receipt *ethtypes.Receipt) error
-//}
-
 type (
 	LegacyParams = paramtypes.ParamSet
 	// Subspace defines an interface that implements the legacy Cosmos SDK x/params Subspace type.
