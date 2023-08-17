@@ -29,8 +29,6 @@ const (
 	codeErrInvalidGasLimit
 )
 
-var ErrPostTxProcessing = errors.New("failed to execute post processing")
-
 var (
 	// ErrInvalidState returns an error resulting from an invalid Storage State.
 	ErrInvalidState = errorsmod.Register(ModuleName, codeErrInvalidState, "invalid storage state")
@@ -59,7 +57,7 @@ var (
 	// ErrVMExecution returns an error resulting from an error in EVM execution.
 	ErrVMExecution = errorsmod.Register(ModuleName, codeErrVMExecution, "evm transaction execution failed")
 
-	// ErrInvalidRefund returns an error if a the gas refund value is invalid.
+	// ErrInvalidRefund returns an error if the gas refund value is invalid.
 	ErrInvalidRefund = errorsmod.Register(ModuleName, codeErrInvalidRefund, "invalid gas refund amount")
 
 	// ErrInvalidGasCap returns an error if a the gas cap value is negative or invalid

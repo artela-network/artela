@@ -10,9 +10,6 @@ import (
 	"github.com/artela-network/artela/x/fee/types"
 )
 
-// KeyPrefixBaseFeeV1 TODO: Temporary will be removed with params refactor PR
-var KeyPrefixBaseFeeV1 = []byte{2}
-
 // Keeper grants access to the Fee Market module state.
 type Keeper struct {
 	// Protobuf codec
