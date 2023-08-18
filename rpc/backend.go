@@ -48,6 +48,9 @@ type backend struct {
 	rmLogsFeed      event.Feed
 	chainSideFeed   event.Feed
 	newTxsFeed      event.Feed
+
+	// am manage etherum account, any updates of the artela account should also update to am.
+	am *accounts.Manager
 }
 
 // NewBackend create the backend instance
@@ -55,12 +58,14 @@ func NewBackend(
 	artela *ArtelaService,
 	extRPCEnabled bool,
 	cfg *Config,
+	am *accounts.Manager,
 ) Backend {
 	b := &backend{
 		extRPCEnabled: extRPCEnabled,
 		artela:        artela,
 		cfg:           cfg,
 		logger:        log.Root(),
+		am:            am,
 
 		scope: event.SubscriptionScope{},
 	}
@@ -99,7 +104,7 @@ func (b *backend) ChainDb() ethdb.Database { //nolint:stylecheck // conforms to 
 }
 
 func (b *backend) AccountManager() *accounts.Manager {
-	return &accounts.Manager{}
+	return b.am
 }
 
 func (b *backend) ExtRPCEnabled() bool {
@@ -211,6 +216,8 @@ func (b *backend) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.S
 // Transaction pool API
 
 func (b *backend) SendTx(ctx context.Context, signedTx *types.Transaction) error {
+	// eth tx -> cosmos tx
+	// broadcast tx
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/eth/filters"
@@ -29,6 +30,7 @@ type ArtelaService struct {
 func NewArtelaService(
 	cfg *Config,
 	stack types.NetworkingStack,
+	am *accounts.Manager,
 ) *ArtelaService {
 	art := &ArtelaService{
 		cfg:   cfg,
@@ -36,7 +38,7 @@ func NewArtelaService(
 	}
 
 	// Set the Backend.
-	art.backend = NewBackend(art, stack.ExtRPCEnabled(), cfg)
+	art.backend = NewBackend(art, stack.ExtRPCEnabled(), cfg, am)
 	return art
 }
 
@@ -44,8 +46,23 @@ func (art *ArtelaService) APIs() []rpc.API {
 	return ethapi.GetAPIs(art.backend)
 }
 
+// Start start the ethereum services
+func (art *ArtelaService) Start() {
+	if err := art.registerAPIs(); err != nil {
+		panic(err)
+	}
+	go func() {
+		// wait for the start of the node.
+		time.Sleep(2 * time.Second)
+
+		if art.stack.Start() != nil {
+			os.Exit(1)
+		}
+	}()
+}
+
 // RegisterAPIs register apis and create graphql instance.
-func (art *ArtelaService) RegisterAPIs() error {
+func (art *ArtelaService) registerAPIs() error {
 	art.stack.RegisterAPIs(art.APIs())
 	art.filterSystem = RegisterFilterAPI(art.stack, art.backend, &defaultEthConfig)
 
@@ -55,18 +72,6 @@ func (art *ArtelaService) RegisterAPIs() error {
 	}
 
 	return nil
-}
-
-// Start start the ethereum services
-func (art *ArtelaService) Start() {
-	go func() {
-		// wait for the start of the node.
-		time.Sleep(2 * time.Second)
-
-		if art.stack.Start() != nil {
-			os.Exit(1)
-		}
-	}()
 }
 
 func RegisterFilterAPI(stack types.NetworkingStack, backend ethapi.Backend, ethcfg *ethconfig.Config) *filters.FilterSystem {
