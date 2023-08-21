@@ -468,7 +468,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		}
 
 		go func() {
-			if err := apiSrv.Start(config.Config); err != nil {
+			if err := jsonrpcSrv.Start(); err != nil {
 				errCh <- err
 			}
 		}()
