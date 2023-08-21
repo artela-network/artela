@@ -10,12 +10,14 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
+	"github.com/artela-network/artela/rpc"
 	artela "github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/statedb"
 	"github.com/artela-network/artela/x/evm/types"
@@ -54,6 +56,9 @@ type Keeper struct {
 
 	// Legacy subspace
 	ss paramstypes.Subspace
+
+	artelaService  *rpc.ArtelaService
+	accountManager *accounts.Manager
 }
 
 // NewKeeper generates new evm module keeper
@@ -79,18 +84,38 @@ func NewKeeper(
 	}
 
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
-	return &Keeper{
-		cdc:           cdc,
-		authority:     authority,
-		accountKeeper: accountKeeper,
-		bankKeeper:    bankKeeper,
-		stakingKeeper: stakingKeeper,
-		feeKeeper:     feeKeeper,
-		storeKey:      storeKey,
-		transientKey:  transientKey,
-		tracer:        tracer,
-		ss:            subSpace,
+	k := &Keeper{
+		cdc:            cdc,
+		authority:      authority,
+		accountKeeper:  accountKeeper,
+		bankKeeper:     bankKeeper,
+		stakingKeeper:  stakingKeeper,
+		feeKeeper:      feeKeeper,
+		storeKey:       storeKey,
+		transientKey:   transientKey,
+		tracer:         tracer,
+		ss:             subSpace,
+		accountManager: accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}),
 	}
+
+	k.InitArtelaService()
+
+	return k
+}
+
+func (k *Keeper) InitArtelaService() {
+	cfg := rpc.DefaultConfig()
+	nodeCfg := rpc.DefaultGethNodeConfig()
+	node, err := rpc.NewNode(nodeCfg)
+	if err != nil {
+		panic(err)
+	}
+
+	k.artelaService = rpc.NewArtelaService(cfg, node, k.accountManager)
+}
+
+func (k *Keeper) StartArtelaService() {
+	k.artelaService.Start()
 }
 
 // Logger returns a module-specific logger.

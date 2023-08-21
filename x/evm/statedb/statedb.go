@@ -11,6 +11,7 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // revision is the identifier of a version of state.
@@ -63,6 +64,18 @@ func New(ctx sdk.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 
 		txConfig: txConfig,
 	}
+}
+
+func (s *StateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses ethereum.AccessList) {
+	// TOOD this is a new method in ethereum 1.20, implement this here.
+}
+
+func (s *StateDB) GetTransientState(addr common.Address, key common.Hash) common.Hash {
+	return common.Hash{}
+}
+
+func (s *StateDB) SetTransientState(addr common.Address, key, value common.Hash) {
+
 }
 
 // Keeper returns the underlying `Keeper`
