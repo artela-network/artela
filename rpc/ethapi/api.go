@@ -240,17 +240,17 @@ func (s *TxPoolAPI) Inspect() map[string]map[string]map[string]string {
 // EthereumAccountAPI provides an API to access accounts managed by this node.
 // It offers only methods that can retrieve accounts.
 type EthereumAccountAPI struct {
-	am *accounts.Manager
+	b AcctBackend
 }
 
 // NewEthereumAccountAPI creates a new EthereumAccountAPI.
-func NewEthereumAccountAPI(am *accounts.Manager) *EthereumAccountAPI {
-	return &EthereumAccountAPI{am: am}
+func NewEthereumAccountAPI(b AcctBackend) *EthereumAccountAPI {
+	return &EthereumAccountAPI{b}
 }
 
 // Accounts returns the collection of accounts this node manages.
 func (s *EthereumAccountAPI) Accounts() []common.Address {
-	return s.am.Accounts()
+	return s.b.Accounts()
 }
 
 // PersonalAccountAPI provides an API to access accounts managed by this node.
