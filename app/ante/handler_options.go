@@ -17,7 +17,7 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 )
 
-// HandlerOptions defines the list of module keepers required to run the Evmos
+// HandlerOptions defines the list of module keepers required to run the Artela
 // AnteHandler decorators.
 type HandlerOptions struct {
 	Cdc                codec.BinaryCodec

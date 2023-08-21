@@ -260,7 +260,7 @@ type Artela struct {
 
 	EvmKeeper *evmmodulekeeper.Keeper
 
-	FeeKeeper feemodulekeeper.Keeper
+	FeeKeeper *feemodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager

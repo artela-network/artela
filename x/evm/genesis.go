@@ -1,9 +1,10 @@
-package keeper
+package evm
 
 import (
 	"bytes"
 	"fmt"
 
+	"github.com/artela-network/artela/x/evm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -17,7 +18,7 @@ import (
 // InitGenesis initializes genesis state based on exported genesis
 func InitGenesis(
 	ctx sdk.Context,
-	k *Keeper,
+	k *keeper.Keeper,
 	accountKeeper types.AccountKeeper,
 	genState types.GenesisState,
 ) []abci.ValidatorUpdate {
@@ -71,7 +72,7 @@ func InitGenesis(
 }
 
 // ExportGenesis exports genesis state of the EVM module
-func ExportGenesis(ctx sdk.Context, k *Keeper, ak types.AccountKeeper) *types.GenesisState {
+func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *types.GenesisState {
 	var ethGenAccounts []types.GenesisAccount
 	ak.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
 		ethAccount, ok := account.(artela.EthAccountI)
