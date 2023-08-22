@@ -126,7 +126,7 @@ import (
 )
 
 const (
-	AccountAddressPrefix = "cosmos"
+	AccountAddressPrefix = "artela"
 	Name                 = "artela"
 	ExeName              = "artelad"
 )
@@ -449,8 +449,6 @@ func NewArtela(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// ... other modules keepers
-
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec, keys[ibcexported.StoreKey],
@@ -753,6 +751,7 @@ func NewArtela(
 	return app
 }
 
+// TODO mark
 func (app *Artela) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
 	options := ante.HandlerOptions{
 		Cdc:                    app.appCodec,

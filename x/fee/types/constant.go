@@ -35,3 +35,10 @@ var (
 var (
 	KeyPrefixTransientBlockGasWanted = []byte{prefixTransientBlockGasUsed}
 )
+
+// fee module events
+const (
+	EventTypeFee = "fee"
+
+	AttributeKeyBaseFee = "base_fee"
+)
