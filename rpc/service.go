@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/eth/filters"
@@ -41,16 +42,30 @@ func NewArtelaService(
 		clientCtx: clientCtx,
 	}
 
-	// TODO, add wallet for backend
-	// accts :=
-	// wallets := make([]accounts.Wallet, len(accs))
-	// for i := 0; i < len(accs); i++ {
-	// 	wallets[i] = &keystoreWallet{account: accs[i], keystore: ks}
-	// }
-
 	// Set the Backend.
-	art.backend = NewBackend(art, stack.ExtRPCEnabled(), cfg, am)
+	ab := NewAccountBackend(clientCtx)
+	art.backend = NewBackend(art, stack.ExtRPCEnabled(), cfg, ab)
 	return art
+}
+
+func Accounts(clientCtx client.Context) ([]common.Address, error) {
+	addresses := make([]common.Address, 0) // return [] instead of nil if empty
+
+	infos, err := clientCtx.Keyring.List()
+	if err != nil {
+		return addresses, err
+	}
+
+	for _, info := range infos {
+		pubKey, err := info.GetPubKey()
+		if err != nil {
+			return nil, err
+		}
+		addressBytes := pubKey.Address().Bytes()
+		addresses = append(addresses, common.BytesToAddress(addressBytes))
+	}
+
+	return addresses, nil
 }
 
 func (art *ArtelaService) APIs() []rpc.API {

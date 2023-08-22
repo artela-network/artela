@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -50,7 +49,7 @@ type backend struct {
 	newTxsFeed      event.Feed
 
 	// am manage etherum account, any updates of the artela account should also update to am.
-	am *accounts.Manager
+	accountBackend ethapi.AccountBackend
 }
 
 // NewBackend create the backend instance
@@ -58,14 +57,14 @@ func NewBackend(
 	artela *ArtelaService,
 	extRPCEnabled bool,
 	cfg *Config,
-	am *accounts.Manager,
+	acct ethapi.AccountBackend,
 ) Backend {
 	b := &backend{
-		extRPCEnabled: extRPCEnabled,
-		artela:        artela,
-		cfg:           cfg,
-		logger:        log.Root(),
-		am:            am,
+		extRPCEnabled:  extRPCEnabled,
+		artela:         artela,
+		cfg:            cfg,
+		logger:         log.Root(),
+		accountBackend: acct,
 
 		scope: event.SubscriptionScope{},
 	}
@@ -103,8 +102,8 @@ func (b *backend) ChainDb() ethdb.Database { //nolint:stylecheck // conforms to 
 	return ethdb.Database(nil)
 }
 
-func (b *backend) AccountManager() *accounts.Manager {
-	return b.am
+func (b *backend) AccountManager() ethapi.AccountBackend {
+	return b.accountBackend
 }
 
 func (b *backend) ExtRPCEnabled() bool {
