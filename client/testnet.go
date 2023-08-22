@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
+	"github.com/artela-network/artela/x/evm/transaction"
 	"net"
 	"os"
 	"path/filepath"
@@ -22,7 +23,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
@@ -93,7 +93,7 @@ func addTestnetFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().String(sdkserver.FlagMinGasPrices,
 		fmt.Sprintf("0.000006%s",
 			artelatypes.AttoArtela),
-		"Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.01photino,0.001stake)")
+		"Minimum gas prices to accept for transactions; All fees in a transaction must meet this minimum (e.g. 0.01photino,0.001stake)")
 	cmd.Flags().String(ethsecp256k1.FlagKeyAlgorithm, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
 }
 
@@ -305,7 +305,7 @@ func initTestnetFiles(
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
 		genAccounts = append(genAccounts, &artelatypes.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(addr, nil, 0, 0),
-			CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
+			CodeHash:    common.BytesToHash(transaction.EmptyCodeHash).Hex(),
 		})
 
 		valTokens := sdk.TokensFromConsensusPower(100, artelatypes.PowerReduction)
@@ -328,14 +328,14 @@ func initTestnetFiles(
 
 		txBuilder.SetMemo(memo)
 
-		txFactory := tx.Factory{}
+		txFactory := transaction.Factory{}
 		txFactory = txFactory.
 			WithChainID(args.chainID).
 			WithMemo(memo).
 			WithKeybase(kb).
 			WithTxConfig(clientCtx.TxConfig)
 
-		if err := tx.Sign(txFactory, nodeDirName, txBuilder, true); err != nil {
+		if err := transaction.Sign(txFactory, nodeDirName, txBuilder, true); err != nil {
 			return err
 		}
 
@@ -427,7 +427,7 @@ func initGenFiles(
 	crisisGenState.ConstantFee.Denom = coinDenom
 	appGenState[crisistypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&crisisGenState)
 
-	var evmGenState evmtypes.GenesisState
+	var evmGenState transaction.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[evmtypes.ModuleName], &evmGenState)
 
 	evmGenState.Params.EvmDenom = coinDenom

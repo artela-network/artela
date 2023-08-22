@@ -79,8 +79,8 @@ type EVMConfig struct {
 	// Tracer defines vm.Tracer type that the EVM will use if the node is run in
 	// trace mode. Default: 'json'.
 	Tracer string `mapstructure:"tracer"`
-	// MaxTxGasWanted defines the gas wanted for each eth tx returned in ante handler in check tx mode.
-	MaxTxGasWanted uint64 `mapstructure:"max-tx-gas-wanted"`
+	// MaxTxGasWanted defines the gas wanted for each eth transaction returned in ante handler in check transaction mode.
+	MaxTxGasWanted uint64 `mapstructure:"max-transaction-gas-wanted"`
 }
 
 // JSONRPCConfig defines configuration for the EVM RPC server.
@@ -95,7 +95,7 @@ type JSONRPCConfig struct {
 	GasCap uint64 `mapstructure:"gas-cap"`
 	// EVMTimeout is the global timeout for eth-call.
 	EVMTimeout time.Duration `mapstructure:"evm-timeout"`
-	// TxFeeCap is the global tx-fee cap for send transaction
+	// TxFeeCap is the global transaction-fee cap for send transaction
 	TxFeeCap float64 `mapstructure:"txfee-cap"`
 	// FilterCap is the global cap for total number of filters that can be created.
 	FilterCap int32 `mapstructure:"filter-cap"`
@@ -244,7 +244,7 @@ func (c JSONRPCConfig) Validate() error {
 	}
 
 	if c.TxFeeCap < 0 {
-		return errors.New("JSON-RPC tx fee cap cannot be negative")
+		return errors.New("JSON-RPC transaction fee cap cannot be negative")
 	}
 
 	if c.EVMTimeout < 0 {
@@ -316,7 +316,7 @@ func GetConfig(v *viper.Viper) (Config, error) {
 		Config: cfg,
 		EVM: EVMConfig{
 			Tracer:         v.GetString("evm.tracer"),
-			MaxTxGasWanted: v.GetUint64("evm.max-tx-gas-wanted"),
+			MaxTxGasWanted: v.GetUint64("evm.max-transaction-gas-wanted"),
 		},
 		JSONRPC: JSONRPCConfig{
 			Enable:                   v.GetBool("json-rpc.enable"),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/artela-network/artela/x/evm/transaction"
 	"strconv"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -19,13 +20,13 @@ import (
 	"github.com/artela-network/artela/x/evm/types"
 )
 
-var _ types.MsgServer = &Keeper{}
+var _ transaction.MsgServer = &Keeper{}
 
 // EthereumTx implements the gRPC MsgServer interface. It receives a transaction which is then
 // executed (i.e applied) against the go-ethereum EVM. The provided SDK Context is set to the Keeper
 // so that it can implements and call the StateDB methods without receiving it as a function
 // parameter.
-func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*types.MsgEthereumTxResponse, error) {
+func (k *Keeper) EthereumTx(goCtx context.Context, msg *transaction.MsgEthereumTx) (*transaction.MsgEthereumTxResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	sender := msg.From
@@ -48,14 +49,14 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 
 	defer func() {
 		telemetry.IncrCounterWithLabels(
-			[]string{"tx", "msg", "ethereum_tx", "total"},
+			[]string{"transaction", "msg", "ethereum_tx", "total"},
 			1,
 			labels,
 		)
 
 		if response.GasUsed != 0 {
 			telemetry.IncrCounterWithLabels(
-				[]string{"tx", "msg", "ethereum_tx", "gas_used", "total"},
+				[]string{"transaction", "msg", "ethereum_tx", "gas_used", "total"},
 				float32(response.GasUsed),
 				labels,
 			)
@@ -66,7 +67,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 			gasRatio, err := gasLimit.QuoInt64(int64(response.GasUsed)).Float64()
 			if err == nil {
 				telemetry.SetGaugeWithLabels(
-					[]string{"tx", "msg", "ethereum_tx", "gas_limit", "per", "gas_used"},
+					[]string{"transaction", "msg", "ethereum_tx", "gas_limit", "per", "gas_used"},
 					float32(gasRatio),
 					labels,
 				)
@@ -78,9 +79,9 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 		sdk.NewAttribute(sdk.AttributeKeyAmount, tx.Value().String()),
 		// add event for ethereum transaction hash format
 		sdk.NewAttribute(types.AttributeKeyEthereumTxHash, response.Hash),
-		// add event for index of valid ethereum tx
+		// add event for index of valid ethereum transaction
 		sdk.NewAttribute(types.AttributeKeyTxIndex, strconv.FormatUint(txIndex, 10)),
-		// add event for eth tx gas used, we can't get it from cosmos tx result when it contains multiple eth tx msgs.
+		// add event for eth transaction gas used, we can't get it from cosmos transaction result when it contains multiple eth transaction msgs.
 		sdk.NewAttribute(types.AttributeKeyTxGasUsed, strconv.FormatUint(response.GasUsed, 10)),
 	}
 
@@ -132,7 +133,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 // proposal passes, it updates the module parameters. The update can only be
 // performed if the requested authority is the Cosmos SDK governance module
 // account.
-func (k *Keeper) UpdateParams(goCtx context.Context, req *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+func (k *Keeper) UpdateParams(goCtx context.Context, req *transaction.MsgUpdateParams) (*transaction.MsgUpdateParamsResponse, error) {
 	if k.authority.String() != req.Authority {
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority, expected %s, got %s", k.authority.String(), req.Authority)
 	}
@@ -142,5 +143,5 @@ func (k *Keeper) UpdateParams(goCtx context.Context, req *types.MsgUpdateParams)
 		return nil, err
 	}
 
-	return &types.MsgUpdateParamsResponse{}, nil
+	return &transaction.MsgUpdateParamsResponse{}, nil
 }

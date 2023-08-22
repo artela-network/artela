@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/transaction"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -46,7 +47,7 @@ func (k *Keeper) TxConfig(ctx sdk.Context, txHash common.Hash) statedb.TxConfig 
 // module parameters. The config generated uses the default JumpTable from the EVM.
 func (k Keeper) VMConfig(ctx sdk.Context, _ core.Message, cfg *statedb.EVMConfig, tracer vm.EVMLogger) vm.Config {
 	noBaseFee := true
-	if types.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
+	if transaction.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
 		noBaseFee = k.feeKeeper.GetParams(ctx).NoBaseFee
 	}
 

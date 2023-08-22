@@ -10,7 +10,7 @@ import (
 )
 
 // MinGasPriceDecorator will check if the transaction's fee is at least as large
-// as the MinGasPrices param. If fee is too low, decorator returns error and tx
+// as the MinGasPrices param. If fee is too low, decorator returns error and transaction
 // is rejected. This applies for both CheckTx and DeliverTx
 // If fee is high enough, then call next AnteHandler
 // CONTRACT: Tx must implement FeeTx to use MinGasPriceDecorator
@@ -65,7 +65,7 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	// Fees not provided (or flag "auto"). Then use the base fee to make the check pass
 	if feeCoins == nil {
 		return ctx, errorsmod.Wrapf(errortypes.ErrInsufficientFee,
-			"fee not provided. Please use the --fees flag or the --gas-price flag along with the --gas flag to estimate the fee. The minimun global fee for this tx is: %s",
+			"fee not provided. Please use the --fees flag or the --gas-price flag along with the --gas flag to estimate the fee. The minimun global fee for this transaction is: %s",
 			requiredFees)
 	}
 

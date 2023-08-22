@@ -1,9 +1,8 @@
-package types
+package transaction
 
 import (
 	"errors"
 	"fmt"
-
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
@@ -40,7 +39,7 @@ func (tx TransactionLogs) Validate() error {
 			return fmt.Errorf("invalid log %d: %w", i, err)
 		}
 		if log.TxHash != tx.Hash {
-			return fmt.Errorf("log tx hash mismatch (%s ≠ %s)", log.TxHash, tx.Hash)
+			return fmt.Errorf("log transaction hash mismatch (%s ≠ %s)", log.TxHash, tx.Hash)
 		}
 	}
 	return nil
@@ -63,7 +62,7 @@ func (log *Log) Validate() error {
 		return errors.New("block number cannot be zero")
 	}
 	if artela.IsEmptyHash(log.TxHash) {
-		return fmt.Errorf("tx hash cannot be the empty %s", log.TxHash)
+		return fmt.Errorf("transaction hash cannot be the empty %s", log.TxHash)
 	}
 	return nil
 }

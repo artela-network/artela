@@ -2,6 +2,7 @@ package tx
 
 import (
 	"encoding/json"
+	"github.com/artela-network/artela/x/evm/transaction"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -22,7 +23,7 @@ import (
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
-// PrepareEthTx creates an ethereum tx and signs it with the provided messages and private key.
+// PrepareEthTx creates an ethereum transaction and signs it with the provided messages and private key.
 // It returns the signed transaction and an error
 func PrepareEthTx(
 	txCfg client.TxConfig,
@@ -38,7 +39,7 @@ func PrepareEthTx(
 
 	// Sign messages and compute gas/fees.
 	for _, m := range msgs {
-		msg, ok := m.(*evmtypes.MsgEthereumTx)
+		msg, ok := m.(*transaction.MsgEthereumTx)
 		if !ok {
 			return nil, errorsmod.Wrapf(errorsmod.Error{}, "cannot mix Ethereum and Cosmos messages in one Tx")
 		}
@@ -62,14 +63,14 @@ func PrepareEthTx(
 
 	// Set the extension
 	var option *codectypes.Any
-	option, err := codectypes.NewAnyWithValue(&evmtypes.ExtensionOptionsEthereumTx{})
+	option, err := codectypes.NewAnyWithValue(&transaction.ExtensionOptionsEthereumTx{})
 	if err != nil {
 		return nil, err
 	}
 
 	builder, ok := txBuilder.(authtx.ExtensionOptionsTxBuilder)
 	if !ok {
-		return nil, errorsmod.Wrapf(errorsmod.Error{}, "could not set extensions for Ethereum tx")
+		return nil, errorsmod.Wrapf(errorsmod.Error{}, "could not set extensions for Ethereum transaction")
 	}
 
 	builder.SetExtensionOptions(option)
@@ -95,14 +96,14 @@ func CreateEthTx(
 	dest sdk.AccAddress,
 	amount *big.Int,
 	nonceIncrement int,
-) (*evmtypes.MsgEthereumTx, error) {
+) (*transaction.MsgEthereumTx, error) {
 	toAddr := common.BytesToAddress(dest.Bytes())
 	fromAddr := common.BytesToAddress(from.Bytes())
 	chainID := appArtela.EvmKeeper.ChainID()
 
 	// When we send multiple Ethereum Tx's in one Cosmos Tx, we need to increment the nonce for each one.
 	nonce := appArtela.EvmKeeper.GetNonce(ctx, fromAddr) + uint64(nonceIncrement)
-	evmTxParams := &evmtypes.EvmTxArgs{
+	evmTxParams := &transaction.EvmTxArgs{
 		ChainID:   chainID,
 		Nonce:     nonce,
 		To:        &toAddr,
@@ -112,7 +113,7 @@ func CreateEthTx(
 		GasTipCap: big.NewInt(1),
 		Accesses:  &ethtypes.AccessList{},
 	}
-	msgEthereumTx := evmtypes.NewTx(evmTxParams)
+	msgEthereumTx := transaction.NewTx(evmTxParams)
 	msgEthereumTx.From = fromAddr.String()
 
 	// If we are creating multiple eth Tx's with different senders, we need to sign here rather than later.
@@ -130,12 +131,12 @@ func CreateEthTx(
 // GasLimit estimates the gas limit for the provided parameters. To achieve
 // this, need to provide the corresponding QueryClient to call the
 // `eth_estimateGas` rpc method. If not provided, returns a default value
-func GasLimit(ctx sdk.Context, from common.Address, data evmtypes.HexString, queryClientEvm evmtypes.QueryClient) (uint64, error) {
+func GasLimit(ctx sdk.Context, from common.Address, data evmtypes.HexString, queryClientEvm transaction.QueryClient) (uint64, error) {
 	// default gas limit (used if no queryClientEvm is provided)
 	gas := uint64(100000000000)
 
 	if queryClientEvm != nil {
-		args, err := json.Marshal(&evmtypes.TransactionArgs{
+		args, err := json.Marshal(&transaction.TransactionArgs{
 			From: &from,
 			Data: (*hexutil.Bytes)(&data),
 		})
@@ -144,7 +145,7 @@ func GasLimit(ctx sdk.Context, from common.Address, data evmtypes.HexString, que
 		}
 
 		goCtx := sdk.WrapSDKContext(ctx)
-		res, err := queryClientEvm.EstimateGas(goCtx, &evmtypes.EthCallRequest{
+		res, err := queryClientEvm.EstimateGas(goCtx, &transaction.EthCallRequest{
 			Args:   args,
 			GasCap: config.DefaultGasCap,
 		})

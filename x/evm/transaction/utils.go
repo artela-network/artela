@@ -1,4 +1,4 @@
-package types
+package transaction
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func DecodeTxResponse(in []byte) (*MsgEthereumTxResponse, error) {
 
 	var res MsgEthereumTxResponse
 	if err := proto.Unmarshal(txMsgData.MsgResponses[0].Value, &res); err != nil {
-		return nil, errorsmod.Wrap(err, "failed to unmarshal tx response message data")
+		return nil, errorsmod.Wrap(err, "failed to unmarshal transaction response message data")
 	}
 
 	return &res, nil
@@ -58,13 +58,13 @@ func DecodeTransactionLogs(data []byte) (TransactionLogs, error) {
 // UnwrapEthereumMsg extract MsgEthereumTx from wrapping sdk.Tx
 func UnwrapEthereumMsg(tx *sdk.Tx, ethHash common.Hash) (*MsgEthereumTx, error) {
 	if tx == nil {
-		return nil, fmt.Errorf("invalid tx: nil")
+		return nil, fmt.Errorf("invalid transaction: nil")
 	}
 
 	for _, msg := range (*tx).GetMsgs() {
 		ethMsg, ok := msg.(*MsgEthereumTx)
 		if !ok {
-			return nil, fmt.Errorf("invalid tx type: %T", tx)
+			return nil, fmt.Errorf("invalid transaction type: %T", tx)
 		}
 		txHash := ethMsg.AsTransaction().Hash()
 		ethMsg.Hash = txHash.Hex()
@@ -73,7 +73,7 @@ func UnwrapEthereumMsg(tx *sdk.Tx, ethHash common.Hash) (*MsgEthereumTx, error) 
 		}
 	}
 
-	return nil, fmt.Errorf("eth tx not found: %s", ethHash)
+	return nil, fmt.Errorf("eth transaction not found: %s", ethHash)
 }
 
 // BinSearch execute the binary search and hone in on an executable gas limit

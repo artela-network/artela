@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/transaction"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -209,11 +210,11 @@ func (k Keeper) SetLogSizeTransient(ctx sdk.Context, logSize uint64) {
 // ----------------------------------------------------------------------------
 
 // GetAccountStorage return state storage associated with an account
-func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) types.Storage {
-	storage := types.Storage{}
+func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) transaction.Storage {
+	storage := transaction.Storage{}
 
 	k.ForEachStorage(ctx, address, func(key, value common.Hash) bool {
-		storage = append(storage, types.NewState(key, value))
+		storage = append(storage, transaction.NewState(key, value))
 		return true
 	})
 
@@ -238,7 +239,7 @@ func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) 
 		return nil
 	}
 
-	codeHash := types.EmptyCodeHash
+	codeHash := transaction.EmptyCodeHash
 	ethAcct, ok := acct.(artela.EthAccountI)
 	if ok {
 		codeHash = ethAcct.GetCodeHash().Bytes()
@@ -260,7 +261,7 @@ func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) statedb
 	// empty account
 	return statedb.Account{
 		Balance:  new(big.Int),
-		CodeHash: types.EmptyCodeHash,
+		CodeHash: transaction.EmptyCodeHash,
 	}
 }
 
@@ -293,7 +294,7 @@ func (k *Keeper) GetBalance(ctx sdk.Context, addr common.Address) *big.Int {
 // - `0`: london hardfork enabled but fee is not enabled.
 // - `n`: both london hardfork and fee are enabled.
 func (k Keeper) GetBaseFee(ctx sdk.Context, ethCfg *params.ChainConfig) *big.Int {
-	return k.getBaseFee(ctx, types.IsLondon(ethCfg, ctx.BlockHeight()))
+	return k.getBaseFee(ctx, transaction.IsLondon(ethCfg, ctx.BlockHeight()))
 }
 
 func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {
@@ -318,13 +319,13 @@ func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) sdk.Dec {
 	return feeParams.MinGasMultiplier
 }
 
-// ResetTransientGasUsed reset gas used to prepare for execution of current cosmos tx, called in ante handler.
+// ResetTransientGasUsed reset gas used to prepare for execution of current cosmos transaction, called in ante handler.
 func (k Keeper) ResetTransientGasUsed(ctx sdk.Context) {
 	store := ctx.TransientStore(k.transientKey)
 	store.Delete(types.KeyPrefixTransientGasUsed)
 }
 
-// GetTransientGasUsed returns the gas used by current cosmos tx.
+// GetTransientGasUsed returns the gas used by current cosmos transaction.
 func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientGasUsed)
@@ -334,14 +335,14 @@ func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
 	return sdk.BigEndianToUint64(bz)
 }
 
-// SetTransientGasUsed sets the gas used by current cosmos tx.
+// SetTransientGasUsed sets the gas used by current cosmos transaction.
 func (k Keeper) SetTransientGasUsed(ctx sdk.Context, gasUsed uint64) {
 	store := ctx.TransientStore(k.transientKey)
 	bz := sdk.Uint64ToBigEndian(gasUsed)
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 }
 
-// AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos tx.
+// AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos transaction.
 func (k Keeper) AddTransientGasUsed(ctx sdk.Context, gasUsed uint64) (uint64, error) {
 	result := k.GetTransientGasUsed(ctx) + gasUsed
 	if result < gasUsed {

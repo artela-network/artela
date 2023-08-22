@@ -26,15 +26,15 @@ func NewAnteHandler(options HandlerOptions) sdk.AnteHandler {
 					// handle as *evmtypes.MsgEthereumTx
 					anteHandler = newEVMAnteHandler(options)
 				case "/artela.types.v1.ExtensionOptionsWeb3Tx":
-					// handle as normal Cosmos SDK tx, except signature is checked for EIP712 representation
+					// handle as normal Cosmos SDK transaction, except signature is checked for EIP712 representation
 					anteHandler = newLegacyCosmosAnteHandlerEip712(options)
 				case "/artela.types.v1.ExtensionOptionDynamicFeeTx":
-					// cosmos-sdk tx with dynamic fee extension
+					// cosmos-sdk transaction with dynamic fee extension
 					anteHandler = newCosmosAnteHandler(options)
 				default:
 					return ctx, errorsmod.Wrapf(
 						errortypes.ErrUnknownExtensionOptions,
-						"rejecting tx with unsupported extension option: %s", typeURL,
+						"rejecting transaction with unsupported extension option: %s", typeURL,
 					)
 				}
 
@@ -42,7 +42,7 @@ func NewAnteHandler(options HandlerOptions) sdk.AnteHandler {
 			}
 		}
 
-		// handle as totally normal Cosmos SDK tx
+		// handle as totally normal Cosmos SDK transaction
 		switch tx.(type) {
 		case sdk.Tx:
 			anteHandler = newCosmosAnteHandler(options)

@@ -2,6 +2,7 @@ package evm
 
 import (
 	"errors"
+	"github.com/artela-network/artela/x/evm/transaction"
 	"strconv"
 
 	errorsmod "cosmossdk.io/errors"
@@ -38,13 +39,13 @@ func (esc EthSetupContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 		WithKVGasConfig(storetypes.GasConfig{}).
 		WithTransientKVGasConfig(storetypes.GasConfig{})
 
-	// Reset transient gas used to prepare the execution of current cosmos tx.
-	// Transient gas-used is necessary to sum the gas-used of cosmos tx, when it contains multiple eth msgs.
+	// Reset transient gas used to prepare the execution of current cosmos transaction.
+	// Transient gas-used is necessary to sum the gas-used of cosmos transaction, when it contains multiple eth msgs.
 	esc.evmKeeper.ResetTransientGasUsed(ctx)
 	return next(newCtx, tx, simulate)
 }
 
-// EthEmitEventDecorator emit events in ante handler in case of tx execution failed (out of block gas limit).
+// EthEmitEventDecorator emit events in ante handler in case of transaction execution failed (out of block gas limit).
 type EthEmitEventDecorator struct {
 	evmKeeper EVMKeeper
 }
@@ -56,17 +57,17 @@ func NewEthEmitEventDecorator(evmKeeper EVMKeeper) EthEmitEventDecorator {
 
 // AnteHandle emits some basic events for the eth messages
 func (eeed EthEmitEventDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	// After eth tx passed ante handler, the fee is deducted and nonce increased, it shouldn't be ignored by json-rpc,
+	// After eth transaction passed ante handler, the fee is deducted and nonce increased, it shouldn't be ignored by json-rpc,
 	// we need to emit some basic events at the very end of ante handler to be indexed by tendermint.
 	txIndex := eeed.evmKeeper.GetTxIndexTransient(ctx)
 
 	for i, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
+		msgEthTx, ok := msg.(*transaction.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*transaction.MsgEthereumTx)(nil))
 		}
 
-		// emit ethereum tx hash as an event so that it can be indexed by Tendermint for query purposes
+		// emit ethereum transaction hash as an event so that it can be indexed by Tendermint for query purposes
 		// it's emitted in ante handler, so we can query failed transaction (out of block gas limit).
 		ctx.EventManager().EmitEvent(sdk.NewEvent(
 			evmtypes.EventTypeEthereumTx,
@@ -90,49 +91,49 @@ func NewEthValidateBasicDecorator(ek EVMKeeper) EthValidateBasicDecorator {
 	}
 }
 
-// AnteHandle handles basic validation of tx
+// AnteHandle handles basic validation of transaction
 func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
-	// no need to validate basic on recheck tx, call next antehandler
+	// no need to validate basic on recheck transaction, call next antehandler
 	if ctx.IsReCheckTx() {
 		return next(ctx, tx, simulate)
 	}
 
 	err := tx.ValidateBasic()
-	// ErrNoSignatures is fine with eth tx
+	// ErrNoSignatures is fine with eth transaction
 	if err != nil && !errors.Is(err, errortypes.ErrNoSignatures) {
-		return ctx, errorsmod.Wrap(err, "tx basic validation failed")
+		return ctx, errorsmod.Wrap(err, "transaction basic validation failed")
 	}
 
-	// For eth type cosmos tx, some fields should be verified as zero values,
+	// For eth type cosmos transaction, some fields should be verified as zero values,
 	// since we will only verify the signature against the hash of the MsgEthereumTx.Data
 	wrapperTx, ok := tx.(protoTxProvider)
 	if !ok {
-		return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid tx type %T, didn't implement interface protoTxProvider", tx)
+		return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid transaction type %T, didn't implement interface protoTxProvider", tx)
 	}
 
 	protoTx := wrapperTx.GetProtoTx()
 	body := protoTx.Body
 	if body.Memo != "" || body.TimeoutHeight != uint64(0) || len(body.NonCriticalExtensionOptions) > 0 {
 		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest,
-			"for eth tx body Memo TimeoutHeight NonCriticalExtensionOptions should be empty")
+			"for eth transaction body Memo TimeoutHeight NonCriticalExtensionOptions should be empty")
 	}
 
 	if len(body.ExtensionOptions) != 1 {
-		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx length of ExtensionOptions should be 1")
+		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth transaction length of ExtensionOptions should be 1")
 	}
 
 	authInfo := protoTx.AuthInfo
 	if len(authInfo.SignerInfos) > 0 {
-		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx AuthInfo SignerInfos should be empty")
+		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth transaction AuthInfo SignerInfos should be empty")
 	}
 
 	if authInfo.Fee.Payer != "" || authInfo.Fee.Granter != "" {
-		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx AuthInfo Fee payer and granter should be empty")
+		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth transaction AuthInfo Fee payer and granter should be empty")
 	}
 
 	sigs := protoTx.Signatures
 	if len(sigs) > 0 {
-		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx Signatures should be empty")
+		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth transaction Signatures should be empty")
 	}
 
 	txFee := sdk.Coins{}
@@ -148,9 +149,9 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 	evmDenom := evmParams.GetEvmDenom()
 
 	for _, msg := range protoTx.GetMsgs() {
-		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
+		msgEthTx, ok := msg.(*transaction.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*transaction.MsgEthereumTx)(nil))
 		}
 
 		// Validate `From` field
@@ -160,7 +161,7 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 
 		txGasLimit += msgEthTx.GetGas()
 
-		txData, err := evmtypes.UnpackTxData(msgEthTx.Data)
+		txData, err := transaction.UnpackTxData(msgEthTx.Data)
 		if err != nil {
 			return ctx, errorsmod.Wrap(err, "failed to unpack MsgEthereumTx Data")
 		}
@@ -173,7 +174,7 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 		}
 
 		if baseFee == nil && txData.TxType() == ethtypes.DynamicFeeTxType {
-			return ctx, errorsmod.Wrap(ethtypes.ErrTxTypeNotSupported, "dynamic fee tx not supported")
+			return ctx, errorsmod.Wrap(ethtypes.ErrTxTypeNotSupported, "dynamic fee transaction not supported")
 		}
 
 		txFee = txFee.Add(sdk.Coin{Denom: evmDenom, Amount: sdkmath.NewIntFromBigInt(txData.Fee())})

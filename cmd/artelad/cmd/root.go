@@ -140,7 +140,7 @@ func initRootCmd(
 		addModuleInitFlags,
 	)
 
-	// add keybase, auxiliary RPC, query, and tx child commands
+	// add keybase, auxiliary RPC, query, and transaction child commands
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
 		queryCommand(),
@@ -177,7 +177,7 @@ func queryCommand() *cobra.Command {
 // txCommand returns the sub-command to send transactions to the app
 func txCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        "tx",
+		Use:                        "transaction",
 		Short:                      "Transactions subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,

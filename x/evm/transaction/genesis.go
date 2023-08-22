@@ -1,8 +1,7 @@
-package types
+package transaction
 
 import (
 	"fmt"
-
 	"github.com/artela-network/artela/types"
 )
 

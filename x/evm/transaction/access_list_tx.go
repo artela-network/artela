@@ -1,6 +1,7 @@
-package types
+package transaction
 
 import (
+	types2 "github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -50,7 +51,7 @@ func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
 	return txData, nil
 }
 
-// TxType returns the tx type
+// TxType returns the transaction type
 func (tx *AccessListTx) TxType() uint8 {
 	return ethereum.AccessListTxType
 }
@@ -117,7 +118,7 @@ func (tx *AccessListTx) GetGasFeeCap() *big.Int {
 	return tx.GetGasPrice()
 }
 
-// GetValue returns the tx amount.
+// GetValue returns the transaction amount.
 func (tx *AccessListTx) GetValue() *big.Int {
 	if tx.Amount == nil {
 		return nil
@@ -138,7 +139,7 @@ func (tx *AccessListTx) GetTo() *common.Address {
 	return &to
 }
 
-// AsEthereumData returns an AccessListTx transaction tx from the proto-formatted
+// AsEthereumData returns an AccessListTx transaction transaction from the proto-formatted
 // TxData defined on the Cosmos EVM.
 func (tx *AccessListTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
@@ -180,31 +181,31 @@ func (tx *AccessListTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 	}
 }
 
-// Validate performs a stateless validation of the tx fields.
+// Validate performs a stateless validation of the transaction fields.
 func (tx AccessListTx) Validate() error {
 	gasPrice := tx.GetGasPrice()
 	if gasPrice == nil {
-		return errorsmod.Wrap(ErrInvalidGasPrice, "cannot be nil")
+		return errorsmod.Wrap(types2.ErrInvalidGasPrice, "cannot be nil")
 	}
 	if !types.IsValidInt256(gasPrice) {
-		return errorsmod.Wrap(ErrInvalidGasPrice, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidGasPrice, "out of bound")
 	}
 
 	if gasPrice.Sign() == -1 {
-		return errorsmod.Wrapf(ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
+		return errorsmod.Wrapf(types2.ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
 	}
 
 	amount := tx.GetValue()
 	// Amount can be 0
 	if amount != nil && amount.Sign() == -1 {
-		return errorsmod.Wrapf(ErrInvalidAmount, "amount cannot be negative %s", amount)
+		return errorsmod.Wrapf(types2.ErrInvalidAmount, "amount cannot be negative %s", amount)
 	}
 	if !types.IsValidInt256(amount) {
-		return errorsmod.Wrap(ErrInvalidAmount, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidAmount, "out of bound")
 	}
 
 	if !types.IsValidInt256(tx.Fee()) {
-		return errorsmod.Wrap(ErrInvalidGasFee, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidGasFee, "out of bound")
 	}
 
 	if tx.To != "" {

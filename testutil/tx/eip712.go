@@ -45,8 +45,8 @@ type legacyWeb3ExtensionArgs struct {
 	signature []byte
 }
 
-// CreateEIP712CosmosTx creates a cosmos tx for typed data according to EIP712.
-// Also, signs the tx with the provided messages and private key.
+// CreateEIP712CosmosTx creates a cosmos transaction for typed data according to EIP712.
+// Also, signs the transaction with the provided messages and private key.
 // It returns the signed transaction and an error
 func CreateEIP712CosmosTx(
 	ctx sdk.Context,
@@ -61,9 +61,9 @@ func CreateEIP712CosmosTx(
 	return builder.GetTx(), err
 }
 
-// PrepareEIP712CosmosTx creates a cosmos tx for typed data according to EIP712.
-// Also, signs the tx with the provided messages and private key.
-// It returns the tx builder with the signed transaction and an error
+// PrepareEIP712CosmosTx creates a cosmos transaction for typed data according to EIP712.
+// Also, signs the transaction with the provided messages and private key.
+// It returns the transaction builder with the signed transaction and an error
 func PrepareEIP712CosmosTx(
 	ctx sdk.Context,
 	appArtela *app.Artela,

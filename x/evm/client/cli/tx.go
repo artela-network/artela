@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"fmt"
+	"github.com/artela-network/artela/x/evm/transaction"
 	"os"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -38,10 +39,10 @@ func NewRawTxCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			data, err := hexutil.Decode(args[0])
 			if err != nil {
-				return errors.Wrap(err, "failed to decode ethereum tx hex bytes")
+				return errors.Wrap(err, "failed to decode ethereum transaction hex bytes")
 			}
 
-			msg := &types.MsgEthereumTx{}
+			msg := &transaction.MsgEthereumTx{}
 			if err := msg.UnmarshalBinary(data); err != nil {
 				return err
 			}
@@ -55,7 +56,7 @@ func NewRawTxCmd() *cobra.Command {
 				return err
 			}
 
-			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &types.QueryParamsRequest{})
+			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &transaction.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

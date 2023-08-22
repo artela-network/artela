@@ -1,6 +1,7 @@
 package evm
 
 import (
+	evmtypes "github.com/artela-network/artela/x/evm/transaction"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/artela-network/artela/x/evm/statedb"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 

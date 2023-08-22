@@ -1,6 +1,7 @@
-package types
+package transaction
 
 import (
+	"github.com/artela-network/artela/x/evm/types"
 	"math/big"
 	"strings"
 
@@ -160,7 +161,7 @@ func (cc ChainConfig) Validate() error {
 
 func validateHash(hex string) error {
 	if hex != "" && strings.TrimSpace(hex) == "" {
-		return errorsmod.Wrap(ErrInvalidChainConfig, "hash cannot be blank")
+		return errorsmod.Wrap(types.ErrInvalidChainConfig, "hash cannot be blank")
 	}
 
 	return nil
@@ -174,7 +175,7 @@ func validateBlock(block *sdkmath.Int) error {
 
 	if block.IsNegative() {
 		return errorsmod.Wrapf(
-			ErrInvalidChainConfig, "block value cannot be negative: %s", block,
+			types.ErrInvalidChainConfig, "block value cannot be negative: %s", block,
 		)
 	}
 

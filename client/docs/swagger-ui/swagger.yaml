@@ -38788,7 +38788,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/txs/{hash}:
     get:
-      summary: GetTx fetches a tx by hash.
+      summary: GetTx fetches a transaction by hash.
       operationId: GetTx
       responses:
         '200':
@@ -38988,7 +38988,7 @@ paths:
                         }
       parameters:
         - name: hash
-          description: hash is the tx hash to query, encoded as a hex string.
+          description: hash is the transaction hash to query, encoded as a hex string.
           in: path
           required: true
           type: string
@@ -61134,12 +61134,12 @@ definitions:
       gas_wanted:
         type: string
         format: uint64
-        description: GasWanted is the maximum units of work we allow this tx to perform.
+        description: GasWanted is the maximum units of work we allow this transaction to perform.
       gas_used:
         type: string
         format: uint64
         description: GasUsed is the amount of gas actually consumed.
-    description: GasInfo defines tx execution gas context.
+    description: GasInfo defines transaction execution gas context.
   cosmos.base.abci.v1beta1.Result:
     type: object
     properties:
@@ -62863,7 +62863,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the queried transaction.
+        description: transaction is the queried transaction.
       tx_response:
         type: object
         properties:
@@ -65397,7 +65397,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the decoded transaction.
+        description: transaction is the decoded transaction.
     description: |-
       TxDecodeResponse is the response type for the
       Service.TxDecode method.
@@ -65429,7 +65429,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the transaction to encode.
+        description: transaction is the transaction to encode.
     description: |-
       TxEncodeRequest is the request type for the Service.TxEncode
       RPC method.

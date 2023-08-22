@@ -2,6 +2,7 @@ package network
 
 import (
 	"encoding/json"
+	"github.com/artela-network/artela/x/evm/transaction"
 	"path/filepath"
 	"time"
 
@@ -75,7 +76,7 @@ func startInProcess(cfg Config, val *Validator) error {
 		val.ClientCtx = val.ClientCtx.
 			WithClient(val.RPCClient)
 
-		// Add the tx service in the gRPC router.
+		// Add the transaction service in the gRPC router.
 		app.RegisterTxService(val.ClientCtx)
 
 		// Add the tendermint queries service in the gRPC router.
@@ -223,7 +224,7 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 	crisisGenState.ConstantFee.Denom = cfg.BondDenom
 	cfg.GenesisState[crisistypes.ModuleName] = cfg.Codec.MustMarshalJSON(&crisisGenState)
 
-	var evmGenState evmtypes.GenesisState
+	var evmGenState transaction.GenesisState
 	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[evmtypes.ModuleName], &evmGenState)
 
 	evmGenState.Params.EvmDenom = cfg.BondDenom

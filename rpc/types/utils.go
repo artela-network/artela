@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"fmt"
+	evmtypes "github.com/artela-network/artela/x/evm/transaction"
 	"math/big"
 	"strings"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 	feetypes "github.com/artela-network/artela/x/fee/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -23,11 +23,11 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// ExceedBlockGasLimitError defines the error message when tx execution exceeds the block gas limit.
-// The tx fee is deducted in ante handler, so it shouldn't be ignored in JSON-RPC API.
+// ExceedBlockGasLimitError defines the error message when transaction execution exceeds the block gas limit.
+// The transaction fee is deducted in ante handler, so it shouldn't be ignored in JSON-RPC API.
 const ExceedBlockGasLimitError = "out of gas in location: block gas meter; gasWanted:"
 
-// RawTxToEthTx returns a evm MsgEthereum transaction from raw tx bytes.
+// RawTxToEthTx returns a evm MsgEthereum transaction from raw transaction bytes.
 func RawTxToEthTx(clientCtx client.Context, txBz tmtypes.Tx) ([]*evmtypes.MsgEthereumTx, error) {
 	tx, err := clientCtx.TxConfig.TxDecoder()(txBz)
 	if err != nil {
@@ -249,12 +249,12 @@ func CheckTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
 	// no need to check error from parsing
 	feeFloat, _ := feeEth.Float64()
 	if feeFloat > cap {
-		return fmt.Errorf("tx fee (%.2f ether) exceeds the configured cap (%.2f ether)", feeFloat, cap)
+		return fmt.Errorf("transaction fee (%.2f ether) exceeds the configured cap (%.2f ether)", feeFloat, cap)
 	}
 	return nil
 }
 
-// TxExceedBlockGasLimit returns true if the tx exceeds block gas limit.
+// TxExceedBlockGasLimit returns true if the transaction exceeds block gas limit.
 func TxExceedBlockGasLimit(res *abci.ResponseDeliverTx) bool {
 	return strings.Contains(res.Log, ExceedBlockGasLimitError)
 }

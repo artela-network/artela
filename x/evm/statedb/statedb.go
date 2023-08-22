@@ -359,14 +359,14 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 // - Add sender to access list (2929)
 // - Add destination to access list (2929)
 // - Add precompiles to access list (2929)
-// - Add the contents of the optional tx access list (2930)
+// - Add the contents of the optional transaction access list (2930)
 //
 // This method should only be called if Yolov3/Berlin/2929+2930 is applicable at the current number.
 func (s *StateDB) PrepareAccessList(sender common.Address, dst *common.Address, precompiles []common.Address, list ethereum.AccessList) {
 	s.AddAddressToAccessList(sender)
 	if dst != nil {
 		s.AddAddressToAccessList(*dst)
-		// If it's a create-tx, the destination will be added inside evm.create
+		// If it's a create-transaction, the destination will be added inside evm.create
 	}
 	for _, addr := range precompiles {
 		s.AddAddressToAccessList(addr)

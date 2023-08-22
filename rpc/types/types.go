@@ -79,7 +79,7 @@ type FeeHistoryResult struct {
 // SignTransactionResult represents a RLP encoded signed transaction.
 type SignTransactionResult struct {
 	Raw hexutil.Bytes         `json:"raw"`
-	Tx  *ethtypes.Transaction `json:"tx"`
+	Tx  *ethtypes.Transaction `json:"transaction"`
 }
 
 type OneFeeHistory struct {

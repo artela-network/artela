@@ -2,6 +2,7 @@ package cli
 
 import (
 	rpctypes "github.com/artela-network/artela/rpc/types"
+	"github.com/artela-network/artela/x/evm/transaction"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -41,7 +42,7 @@ func GetStorageCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := transaction.NewQueryClient(clientCtx)
 
 			address, err := accountToHex(args[0])
 			if err != nil {
@@ -50,7 +51,7 @@ func GetStorageCmd() *cobra.Command {
 
 			key := formatKeyToHash(args[1])
 
-			req := &types.QueryStorageRequest{
+			req := &transaction.QueryStorageRequest{
 				Address: address,
 				Key:     key,
 			}
@@ -81,14 +82,14 @@ func GetCodeCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := transaction.NewQueryClient(clientCtx)
 
 			address, err := accountToHex(args[0])
 			if err != nil {
 				return err
 			}
 
-			req := &types.QueryCodeRequest{
+			req := &transaction.QueryCodeRequest{
 				Address: address,
 			}
 
@@ -118,9 +119,9 @@ func GetParamsCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := transaction.NewQueryClient(clientCtx)
 
-			res, err := queryClient.Params(cmd.Context(), &types.QueryParamsRequest{})
+			res, err := queryClient.Params(cmd.Context(), &transaction.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

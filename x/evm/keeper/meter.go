@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/transaction"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/params"
 	"math/big"
@@ -18,25 +19,25 @@ import (
 	"github.com/artela-network/artela/x/evm/types"
 )
 
-// CheckSenderBalance validates that the tx cost value is positive and that the
+// CheckSenderBalance validates that the transaction cost value is positive and that the
 // sender has enough funds to pay for the fees and value of the transaction.
 func CheckSenderBalance(
 	balance sdkmath.Int,
-	txData types.TxData,
+	txData transaction.TxData,
 ) error {
 	cost := txData.Cost()
 
 	if cost.Sign() < 0 {
 		return errorsmod.Wrapf(
 			errortypes.ErrInvalidCoins,
-			"tx cost (%s) is negative and invalid", cost,
+			"transaction cost (%s) is negative and invalid", cost,
 		)
 	}
 
 	if balance.IsNegative() || balance.BigInt().Cmp(cost) < 0 {
 		return errorsmod.Wrapf(
 			errortypes.ErrInsufficientFunds,
-			"sender balance < tx cost (%s < %s)", balance, txData.Cost(),
+			"sender balance < transaction cost (%s < %s)", balance, txData.Cost(),
 		)
 	}
 	return nil
@@ -67,7 +68,7 @@ func (k *Keeper) DeductTxCostsFromUserBalance(
 // gas limit is not reached, the gas limit is higher than the intrinsic gas and that the
 // base fee is higher than the gas fee cap.
 func VerifyFee(
-	txData types.TxData,
+	txData transaction.TxData,
 	denom string,
 	baseFee *big.Int,
 	homestead, istanbul, isCheckTx bool,
@@ -101,7 +102,7 @@ func VerifyFee(
 
 	if baseFee != nil && txData.GetGasFeeCap().Cmp(baseFee) < 0 {
 		return nil, errorsmod.Wrapf(errortypes.ErrInsufficientFee,
-			"the tx gasfeecap is lower than the tx baseFee: %s (gasfeecap), %s (basefee) ",
+			"the transaction gasfeecap is lower than the transaction baseFee: %s (gasfeecap), %s (basefee) ",
 			txData.GetGasFeeCap(),
 			baseFee)
 	}
@@ -140,7 +141,7 @@ func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64
 		// positive amount refund
 		refundedCoins := sdk.Coins{sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(remaining))}
 
-		// refund to sender from the fee collector module account, which is the escrow account in charge of collecting tx fees
+		// refund to sender from the fee collector module account, which is the escrow account in charge of collecting transaction fees
 
 		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, msg.From().Bytes(), refundedCoins)
 		if err != nil {
@@ -148,7 +149,7 @@ func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64
 			return errorsmod.Wrapf(err, "failed to refund %d leftover gas (%s)", leftoverGas, refundedCoins.String())
 		}
 	default:
-		// no refund, consume gas and update the tx gas meter
+		// no refund, consume gas and update the transaction gas meter
 	}
 
 	return nil

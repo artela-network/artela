@@ -32,7 +32,7 @@ func init() {
 	artelaCodec = codec.NewProtoCodec(registry)
 }
 
-// Deprecated: LegacyEip712SigVerificationDecorator Verify all signatures for a tx and return an error if any are invalid. Note,
+// Deprecated: LegacyEip712SigVerificationDecorator Verify all signatures for a transaction and return an error if any are invalid. Note,
 // the LegacyEip712SigVerificationDecorator decorator will not get executed on ReCheck.
 // NOTE: As of v10, EIP-712 signature verification is handled by the ethsecp256k1 public key (see ethsecp256k1.go)
 //
@@ -61,19 +61,19 @@ func (svd LegacyEip712SigVerificationDecorator) AnteHandle(ctx sdk.Context,
 	simulate bool,
 	next sdk.AnteHandler,
 ) (newCtx sdk.Context, err error) {
-	// no need to verify signatures on recheck tx
+	// no need to verify signatures on recheck transaction
 	if ctx.IsReCheckTx() {
 		return next(ctx, tx, simulate)
 	}
 
 	sigTx, ok := tx.(authsigning.SigVerifiableTx)
 	if !ok {
-		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "tx %T doesn't implement authsigning.SigVerifiableTx", tx)
+		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "transaction %T doesn't implement authsigning.SigVerifiableTx", tx)
 	}
 
 	authSignTx, ok := tx.(authsigning.Tx)
 	if !ok {
-		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "tx %T doesn't implement the authsigning.Tx interface", tx)
+		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "transaction %T doesn't implement the authsigning.Tx interface", tx)
 	}
 
 	// stdSigs contains the sequence number, account number, and signatures.
@@ -174,7 +174,7 @@ func VerifySignature(
 
 		msgs := tx.GetMsgs()
 		if len(msgs) == 0 {
-			return errorsmod.Wrap(errortypes.ErrNoSignatures, "tx doesn't contain any msgs to verify signature")
+			return errorsmod.Wrap(errortypes.ErrNoSignatures, "transaction doesn't contain any msgs to verify signature")
 		}
 
 		txBytes := legacytx.StdSignBytes(
@@ -196,11 +196,11 @@ func VerifySignature(
 
 		txWithExtensions, ok := tx.(authante.HasExtensionOptionsTx)
 		if !ok {
-			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "tx doesnt contain any extensions")
+			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "transaction doesnt contain any extensions")
 		}
 		opts := txWithExtensions.GetExtensionOptions()
 		if len(opts) != 1 {
-			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "tx doesnt contain expected amount of extension options")
+			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "transaction doesnt contain expected amount of extension options")
 		}
 
 		extOpt, ok := opts[0].GetCachedValue().(*types.ExtensionOptionsWeb3Tx)
@@ -226,7 +226,7 @@ func VerifySignature(
 
 		typedData, err := eip712.LegacyWrapTxToTypedData(artelaCodec, extOpt.TypedDataChainID, msgs[0], txBytes, feeDelegation)
 		if err != nil {
-			return errorsmod.Wrap(err, "failed to create EIP-712 typed data from tx")
+			return errorsmod.Wrap(err, "failed to create EIP-712 typed data from transaction")
 		}
 
 		sigHash, _, err := apitypes.TypedDataAndHash(typedData)

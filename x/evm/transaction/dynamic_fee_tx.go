@@ -1,6 +1,7 @@
-package types
+package transaction
 
 import (
+	types2 "github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -58,7 +59,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	return txData, nil
 }
 
-// TxType returns the tx type
+// TxType returns the transaction type
 func (tx *DynamicFeeTx) TxType() uint8 {
 	return ethereum.DynamicFeeTxType
 }
@@ -129,7 +130,7 @@ func (tx *DynamicFeeTx) GetGasFeeCap() *big.Int {
 	return tx.GasFeeCap.BigInt()
 }
 
-// GetValue returns the tx amount.
+// GetValue returns the transaction amount.
 func (tx *DynamicFeeTx) GetValue() *big.Int {
 	if tx.Amount == nil {
 		return nil
@@ -150,7 +151,7 @@ func (tx *DynamicFeeTx) GetTo() *common.Address {
 	return &to
 }
 
-// AsEthereumData returns an DynamicFeeTx transaction tx from the proto-formatted
+// AsEthereumData returns an DynamicFeeTx transaction transaction from the proto-formatted
 // TxData defined on the Cosmos EVM.
 func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
@@ -193,50 +194,50 @@ func (tx *DynamicFeeTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 	}
 }
 
-// Validate performs a stateless validation of the tx fields.
+// Validate performs a stateless validation of the transaction fields.
 func (tx DynamicFeeTx) Validate() error {
 	if tx.GasTipCap == nil {
-		return errorsmod.Wrap(ErrInvalidGasCap, "gas tip cap cannot nil")
+		return errorsmod.Wrap(types2.ErrInvalidGasCap, "gas tip cap cannot nil")
 	}
 
 	if tx.GasFeeCap == nil {
-		return errorsmod.Wrap(ErrInvalidGasCap, "gas fee cap cannot nil")
+		return errorsmod.Wrap(types2.ErrInvalidGasCap, "gas fee cap cannot nil")
 	}
 
 	if tx.GasTipCap.IsNegative() {
-		return errorsmod.Wrapf(ErrInvalidGasCap, "gas tip cap cannot be negative %s", tx.GasTipCap)
+		return errorsmod.Wrapf(types2.ErrInvalidGasCap, "gas tip cap cannot be negative %s", tx.GasTipCap)
 	}
 
 	if tx.GasFeeCap.IsNegative() {
-		return errorsmod.Wrapf(ErrInvalidGasCap, "gas fee cap cannot be negative %s", tx.GasFeeCap)
+		return errorsmod.Wrapf(types2.ErrInvalidGasCap, "gas fee cap cannot be negative %s", tx.GasFeeCap)
 	}
 
 	if !types.IsValidInt256(tx.GetGasTipCap()) {
-		return errorsmod.Wrap(ErrInvalidGasCap, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidGasCap, "out of bound")
 	}
 
 	if !types.IsValidInt256(tx.GetGasFeeCap()) {
-		return errorsmod.Wrap(ErrInvalidGasCap, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidGasCap, "out of bound")
 	}
 
 	if tx.GasFeeCap.LT(*tx.GasTipCap) {
 		return errorsmod.Wrapf(
-			ErrInvalidGasCap, "max priority fee per gas higher than max fee per gas (%s > %s)",
+			types2.ErrInvalidGasCap, "max priority fee per gas higher than max fee per gas (%s > %s)",
 			tx.GasTipCap, tx.GasFeeCap,
 		)
 	}
 
 	if !types.IsValidInt256(tx.Fee()) {
-		return errorsmod.Wrap(ErrInvalidGasFee, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidGasFee, "out of bound")
 	}
 
 	amount := tx.GetValue()
 	// Amount can be 0
 	if amount != nil && amount.Sign() == -1 {
-		return errorsmod.Wrapf(ErrInvalidAmount, "amount cannot be negative %s", amount)
+		return errorsmod.Wrapf(types2.ErrInvalidAmount, "amount cannot be negative %s", amount)
 	}
 	if !types.IsValidInt256(amount) {
-		return errorsmod.Wrap(ErrInvalidAmount, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidAmount, "out of bound")
 	}
 
 	if tx.To != "" {

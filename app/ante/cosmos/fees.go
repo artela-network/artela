@@ -12,7 +12,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
-// DeductFeeDecorator deducts fees from the first signer of the tx.
+// DeductFeeDecorator deducts fees from the first signer of the transaction.
 // If the first signer does not have the funds to pay for the fees,
 // and does not have enough unclaimed staking rewards, then return
 // with InsufficientFunds error.
@@ -157,7 +157,7 @@ func deductFeesFromBalanceOrUnclaimedStakingRewards(
 }
 
 // checkTxFeeWithValidatorMinGasPrices implements the default fee logic, where the minimum price per
-// unit of gas is fixed and set by each validator, and the tx priority is computed from the gas price.
+// unit of gas is fixed and set by each validator, and the transaction priority is computed from the gas price.
 func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, feeTx sdk.FeeTx) (sdk.Coins, int64, error) {
 	feeCoins := feeTx.GetFee()
 	gas := feeTx.GetGas()
@@ -200,7 +200,7 @@ func checkFeeCoinsAgainstMinGasPrices(ctx sdk.Context, feeCoins sdk.Coins, gas u
 	return nil
 }
 
-// getTxPriority returns a naive tx priority based on the amount of the smallest denomination of the gas price
+// getTxPriority returns a naive transaction priority based on the amount of the smallest denomination of the gas price
 // provided in a transaction.
 // NOTE: This implementation should be used with a great consideration as it opens potential attack vectors
 // where txs with multiple coins could not be prioritized as expected.

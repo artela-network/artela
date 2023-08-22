@@ -1,7 +1,8 @@
-package types
+package transaction
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/x/evm/types"
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
@@ -17,7 +18,7 @@ func (s Storage) Validate() error {
 	seenStorage := make(map[string]bool)
 	for i, state := range s {
 		if seenStorage[state.Key] {
-			return errorsmod.Wrapf(ErrInvalidState, "duplicate state key %d: %s", i, state.Key)
+			return errorsmod.Wrapf(types.ErrInvalidState, "duplicate state key %d: %s", i, state.Key)
 		}
 
 		if err := state.Validate(); err != nil {
@@ -51,7 +52,7 @@ func (s Storage) Copy() Storage {
 // NOTE: state value can be empty
 func (s State) Validate() error {
 	if strings.TrimSpace(s.Key) == "" {
-		return errorsmod.Wrap(ErrInvalidState, "state key hash cannot be blank")
+		return errorsmod.Wrap(types.ErrInvalidState, "state key hash cannot be blank")
 	}
 
 	return nil

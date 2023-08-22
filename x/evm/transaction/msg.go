@@ -1,8 +1,9 @@
-package types
+package transaction
 
 import (
 	"errors"
 	"fmt"
+	types2 "github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -31,12 +32,6 @@ var (
 	_ sdk.Msg    = &MsgUpdateParams{}
 
 	_ codectypes.UnpackInterfacesMessage = MsgEthereumTx{}
-)
-
-// message type and route constants
-const (
-	// TypeMsgEthereumTx defines the type string of an Ethereum transaction
-	TypeMsgEthereumTx = "ethereum_tx"
 )
 
 // NewTx returns a reference to a new Ethereum transaction message.
@@ -141,10 +136,10 @@ func (msg *MsgEthereumTx) FromEthereumTx(tx *ethereum.Transaction) error {
 }
 
 // Route returns the route value of an MsgEthereumTx.
-func (msg MsgEthereumTx) Route() string { return RouterKey }
+func (msg MsgEthereumTx) Route() string { return types2.RouterKey }
 
 // Type returns the type value of an MsgEthereumTx.
-func (msg MsgEthereumTx) Type() string { return TypeMsgEthereumTx }
+func (msg MsgEthereumTx) Type() string { return types2.TypeMsgEthereumTx }
 
 // ValidateBasic implements the sdk.Msg interface. It performs basic validation
 // checks of a Transaction. If returns an error if validation fails.
@@ -157,24 +152,24 @@ func (msg MsgEthereumTx) ValidateBasic() error {
 
 	// Validate Size_ field, should be kept empty
 	if msg.Size_ != 0 {
-		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "tx size is deprecated")
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "transaction size is deprecated")
 	}
 
 	txData, err := UnpackTxData(msg.Data)
 	if err != nil {
-		return errorsmod.Wrap(err, "failed to unpack tx data")
+		return errorsmod.Wrap(err, "failed to unpack transaction data")
 	}
 
 	gas := txData.GetGas()
 
 	// prevent txs with 0 gas to fill up the mempool
 	if gas == 0 {
-		return errorsmod.Wrap(ErrInvalidGasLimit, "gas limit must not be zero")
+		return errorsmod.Wrap(types2.ErrInvalidGasLimit, "gas limit must not be zero")
 	}
 
 	// prevent gas limit from overflow
 	if g := new(big.Int).SetUint64(gas); !g.IsInt64() {
-		return errorsmod.Wrap(ErrGasOverflow, "gas limit must be less than math.MaxInt64")
+		return errorsmod.Wrap(types2.ErrGasOverflow, "gas limit must be less than math.MaxInt64")
 	}
 
 	if err := txData.Validate(); err != nil {
@@ -184,7 +179,7 @@ func (msg MsgEthereumTx) ValidateBasic() error {
 	// Validate Hash field after validated txData to avoid panic
 	txHash := msg.AsTransaction().Hash().Hex()
 	if msg.Hash != txHash {
-		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid tx hash %s, expected: %s", msg.Hash, txHash)
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid transaction hash %s, expected: %s", msg.Hash, txHash)
 	}
 
 	return nil
@@ -261,7 +256,7 @@ func (msg MsgEthereumTx) GetGas() uint64 {
 	return txData.GetGas()
 }
 
-// GetFee returns the fee for non dynamic fee tx
+// GetFee returns the fee for non dynamic fee transaction
 func (msg MsgEthereumTx) GetFee() *big.Int {
 	txData, err := UnpackTxData(msg.Data)
 	if err != nil {
@@ -270,7 +265,7 @@ func (msg MsgEthereumTx) GetFee() *big.Int {
 	return txData.Fee()
 }
 
-// GetEffectiveFee returns the fee for dynamic fee tx
+// GetEffectiveFee returns the fee for dynamic fee transaction
 func (msg MsgEthereumTx) GetEffectiveFee(baseFee *big.Int) *big.Int {
 	txData, err := UnpackTxData(msg.Data)
 	if err != nil {
@@ -330,7 +325,7 @@ func (msg *MsgEthereumTx) UnmarshalBinary(b []byte) error {
 	return msg.FromEthereumTx(tx)
 }
 
-// BuildTx builds the canonical cosmos tx from ethereum msg
+// BuildTx builds the canonical cosmos transaction from ethereum msg
 func (msg *MsgEthereumTx) BuildTx(b client.TxBuilder, evmDenom string) (signing.Tx, error) {
 	builder, ok := b.(authtx.ExtensionOptionsTxBuilder)
 	if !ok {

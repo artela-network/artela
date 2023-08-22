@@ -13,8 +13,8 @@ const DefaultConfigTemplate = `
 # Valid types are: json|struct|access_list|markdown
 tracer = "{{ .EVM.Tracer }}"
 
-# MaxTxGasWanted defines the gas wanted for each eth tx returned in ante handler in check tx mode.
-max-tx-gas-wanted = {{ .EVM.MaxTxGasWanted }}
+# MaxTxGasWanted defines the gas wanted for each eth transaction returned in ante handler in check transaction mode.
+max-transaction-gas-wanted = {{ .EVM.MaxTxGasWanted }}
 
 ###############################################################################
 ###                           JSON RPC Configuration                        ###
@@ -41,7 +41,7 @@ gas-cap = {{ .JSONRPC.GasCap }}
 # EVMTimeout is the global timeout for eth_call. Default: 5s.
 evm-timeout = "{{ .JSONRPC.EVMTimeout }}"
 
-# TxFeeCap is the global tx-fee cap for send transaction. Default: 1eth.
+# TxFeeCap is the global transaction-fee cap for send transaction. Default: 1eth.
 txfee-cap = {{ .JSONRPC.TxFeeCap }}
 
 # FilterCap sets the global cap for total number of filters that can be created

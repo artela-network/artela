@@ -23,7 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// TxResult is the value stored in eth tx indexer
+// TxResult is the value stored in eth transaction indexer
 type TxResult struct {
 	// height of the blockchain
 	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
@@ -31,7 +31,7 @@ type TxResult struct {
 	TxIndex uint32 `protobuf:"varint,2,opt,name=tx_index,json=txIndex,proto3" json:"tx_index,omitempty"`
 	// msg_index in a batch transaction
 	MsgIndex uint32 `protobuf:"varint,3,opt,name=msg_index,json=msgIndex,proto3" json:"msg_index,omitempty"`
-	// eth_tx_index is the index in the list of valid eth tx in the block,
+	// eth_tx_index is the index in the list of valid eth transaction in the block,
 	// aka. the transaction list returned by eth_getBlock api.
 	EthTxIndex int32 `protobuf:"varint,4,opt,name=eth_tx_index,json=ethTxIndex,proto3" json:"eth_tx_index,omitempty"`
 	// failed is true if the eth transaction did not go succeed

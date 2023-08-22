@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/transaction"
 	"math/big"
 
 	cometbft "github.com/cometbft/cometbft/types"
@@ -121,14 +122,14 @@ func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
 // amount of gas used by the VM execution. The amount of gas used is tracked by the EVM and returned in the execution
 // result.
 //
-// Prior to the execution, the starting tx gas meter is saved and replaced with an infinite gas meter in a new context
+// Prior to the execution, the starting transaction gas meter is saved and replaced with an infinite gas meter in a new context
 // in order to ignore the SDK gas consumption config values (read, write, has, delete).
 // After the execution, the gas used from the message execution will be added to the starting gas consumed, taking into
 // consideration the amount of gas returned. Finally, the context is updated with the EVM gas consumed value prior to
 // returning.
 //
 // For relevant discussion see: https://github.com/cosmos/cosmos-sdk/discussions/9072
-func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*types.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*transaction.MsgEthereumTxResponse, error) {
 	var (
 		bloom        *big.Int
 		bloomReceipt ethereum.Bloom
@@ -148,7 +149,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*t
 		return nil, errorsmod.Wrap(err, "failed to return ethereum transaction as core message")
 	}
 
-	// snapshot to contain the tx processing and post processing in same scope
+	// snapshot to contain the transaction processing and post processing in same scope
 	var commit func()
 	tmpCtx := ctx
 	tmpCtx, commit = ctx.CacheContext()
@@ -159,7 +160,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*t
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
 	}
 
-	logs := types.LogsToEthereum(res.Logs)
+	logs := transaction.LogsToEthereum(res.Logs)
 
 	// Compute block bloom filter
 	if len(logs) > 0 {
@@ -200,7 +201,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*t
 		receipt.Status = ethereum.ReceiptStatusSuccessful
 		if commit != nil {
 			commit()
-			res.Logs = types.NewLogsFromEth(receipt.Logs)
+			res.Logs = transaction.NewLogsFromEth(receipt.Logs)
 			ctx.EventManager().EmitEvents(tmpCtx.EventManager().Events())
 		}
 	}
@@ -229,7 +230,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*t
 }
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
-func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*types.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*transaction.MsgEthereumTxResponse, error) {
 	evmConfig, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
@@ -283,7 +284,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	commit bool,
 	cfg *statedb.EVMConfig,
 	txConfig statedb.TxConfig,
-) (*types.MsgEthereumTxResponse, error) {
+) (*transaction.MsgEthereumTxResponse, error) {
 	var (
 		ret   []byte // return bytes from evm execution
 		vmErr error  // vm errors do not effect consensus and are therefore not assigned to err
@@ -301,7 +302,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 
 	leftoverGas := msg.Gas()
 
-	// Allow the tracer captures the tx level events, mainly the gas consumption.
+	// Allow the tracer captures the transaction level events, mainly the gas consumption.
 	evmCfg := evm.Config
 	if evmCfg.Debug {
 		evmCfg.Tracer.CaptureTxStart(leftoverGas)
@@ -391,11 +392,11 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	// reset leftoverGas, to be used by the tracer
 	leftoverGas = msg.Gas() - gasUsed
 
-	return &types.MsgEthereumTxResponse{
+	return &transaction.MsgEthereumTxResponse{
 		GasUsed: gasUsed,
 		VmError: vmError,
 		Ret:     ret,
-		Logs:    types.NewLogsFromEth(stateDB.Logs()),
+		Logs:    transaction.NewLogsFromEth(stateDB.Logs()),
 		Hash:    txConfig.TxHash.Hex(),
 	}, nil
 }

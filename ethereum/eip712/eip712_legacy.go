@@ -59,7 +59,7 @@ func LegacyWrapTxToTypedData(
 	if feeDelegation != nil {
 		feeInfo, ok := txData["fee"].(map[string]interface{})
 		if !ok {
-			return apitypes.TypedData{}, errorsmod.Wrap(errortypes.ErrInvalidType, "cannot parse fee from tx data")
+			return apitypes.TypedData{}, errorsmod.Wrap(errortypes.ErrInvalidType, "cannot parse fee from transaction data")
 		}
 
 		feeInfo["feePayer"] = feeDelegation.FeePayer.String()

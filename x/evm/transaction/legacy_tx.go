@@ -1,6 +1,7 @@
-package types
+package transaction
 
 import (
+	types2 "github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
@@ -43,7 +44,7 @@ func newLegacyTx(tx *ethereum.Transaction) (*LegacyTx, error) {
 	return txData, nil
 }
 
-// TxType returns the tx type
+// TxType returns the transaction type
 func (tx *LegacyTx) TxType() uint8 {
 	return ethereum.LegacyTxType
 }
@@ -102,7 +103,7 @@ func (tx *LegacyTx) GetGasFeeCap() *big.Int {
 	return tx.GetGasPrice()
 }
 
-// GetValue returns the tx amount.
+// GetValue returns the transaction amount.
 func (tx *LegacyTx) GetValue() *big.Int {
 	if tx.Amount == nil {
 		return nil
@@ -122,7 +123,7 @@ func (tx *LegacyTx) GetTo() *common.Address {
 	return &to
 }
 
-// AsEthereumData returns an AccessListTx transaction tx from the proto-formatted
+// AsEthereumData returns an AccessListTx transaction transaction from the proto-formatted
 // TxData defined on the Cosmos EVM.
 func (tx *LegacyTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
@@ -158,30 +159,30 @@ func (tx *LegacyTx) SetSignatureValues(_, v, r, s *big.Int) {
 	}
 }
 
-// Validate performs a stateless validation of the tx fields.
+// Validate performs a stateless validation of the transaction fields.
 func (tx LegacyTx) Validate() error {
 	gasPrice := tx.GetGasPrice()
 	if gasPrice == nil {
-		return errorsmod.Wrap(ErrInvalidGasPrice, "gas price cannot be nil")
+		return errorsmod.Wrap(types2.ErrInvalidGasPrice, "gas price cannot be nil")
 	}
 
 	if gasPrice.Sign() == -1 {
-		return errorsmod.Wrapf(ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
+		return errorsmod.Wrapf(types2.ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
 	}
 	if !types.IsValidInt256(gasPrice) {
-		return errorsmod.Wrap(ErrInvalidGasPrice, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidGasPrice, "out of bound")
 	}
 	if !types.IsValidInt256(tx.Fee()) {
-		return errorsmod.Wrap(ErrInvalidGasFee, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidGasFee, "out of bound")
 	}
 
 	amount := tx.GetValue()
 	// Amount can be 0
 	if amount != nil && amount.Sign() == -1 {
-		return errorsmod.Wrapf(ErrInvalidAmount, "amount cannot be negative %s", amount)
+		return errorsmod.Wrapf(types2.ErrInvalidAmount, "amount cannot be negative %s", amount)
 	}
 	if !types.IsValidInt256(amount) {
-		return errorsmod.Wrap(ErrInvalidAmount, "out of bound")
+		return errorsmod.Wrap(types2.ErrInvalidAmount, "out of bound")
 	}
 
 	if tx.To != "" {

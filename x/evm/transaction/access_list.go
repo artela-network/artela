@@ -1,4 +1,4 @@
-package types
+package transaction
 
 import (
 	"github.com/ethereum/go-ethereum/common"

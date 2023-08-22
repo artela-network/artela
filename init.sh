@@ -56,7 +56,7 @@ artelad add-genesis-account $KEY4 100000000000000000000000000aphoton --keyring-b
 # Sign genesis transaction
 artelad gentx $KEY 1000000000000000000000aphoton --keyring-backend $KEYRING --chain-id $CHAINID
 
-# Collect genesis tx
+# Collect genesis transaction
 artelad collect-gentxs
 
 # Run this to ensure everything worked and that the genesis file is setup correctly

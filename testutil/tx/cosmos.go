@@ -20,27 +20,27 @@ var (
 	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(uint64(feeAmt))) // 0.01 Artela
 )
 
-// CosmosTxArgs contains the params to create a cosmos tx
+// CosmosTxArgs contains the params to create a cosmos transaction
 type CosmosTxArgs struct {
 	// TxCfg is the client transaction config
 	TxCfg client.TxConfig
-	// Priv is the private key that will be used to sign the tx
+	// Priv is the private key that will be used to sign the transaction
 	Priv cryptotypes.PrivKey
 	// ChainID is the chain's id on cosmos format, e.g. 'artela_9000-1'
 	ChainID string
-	// Gas to be used on the tx
+	// Gas to be used on the transaction
 	Gas uint64
-	// GasPrice to use on tx
+	// GasPrice to use on transaction
 	GasPrice *sdkmath.Int
-	// Fees is the fee to be used on the tx (amount and denom)
+	// Fees is the fee to be used on the transaction (amount and denom)
 	Fees sdk.Coins
 	// FeeGranter is the account address of the fee granter
 	FeeGranter sdk.AccAddress
-	// Msgs slice of messages to include on the tx
+	// Msgs slice of messages to include on the transaction
 	Msgs []sdk.Msg
 }
 
-// PrepareCosmosTx creates a cosmos tx and signs it with the provided messages and private key.
+// PrepareCosmosTx creates a cosmos transaction and signs it with the provided messages and private key.
 // It returns the signed transaction and an error
 func PrepareCosmosTx(
 	ctx sdk.Context,

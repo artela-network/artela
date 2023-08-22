@@ -4,6 +4,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// message type and route constants
+const (
+	// TypeMsgEthereumTx defines the type string of an Ethereum transaction
+	TypeMsgEthereumTx = "ethereum_tx"
+)
+
 const (
 	// ModuleName string name of module
 	ModuleName = "evm"

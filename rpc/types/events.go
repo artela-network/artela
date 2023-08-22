@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/x/evm/transaction"
 	"strconv"
 
 	"github.com/artela-network/artela/types"
@@ -14,7 +15,7 @@ import (
 
 // EventFormat is the format version of the events.
 //
-// To fix the issue of tx exceeds block gas limit, we changed the event format in a breaking way.
+// To fix the issue of transaction exceeds block gas limit, we changed the event format in a breaking way.
 // But to avoid forcing clients to re-sync from scatch, we make json-rpc logic to be compatible with both formats.
 type EventFormat int
 
@@ -46,7 +47,7 @@ const (
 	eventFormat2
 )
 
-// ParsedTx is the tx infos parsed from events.
+// ParsedTx is the transaction infos parsed from events.
 type ParsedTx struct {
 	MsgIndex int
 
@@ -64,15 +65,15 @@ func NewParsedTx(msgIndex int) ParsedTx {
 	return ParsedTx{MsgIndex: msgIndex, EthTxIndex: -1}
 }
 
-// ParsedTxs is the tx infos parsed from eth tx events.
+// ParsedTxs is the transaction infos parsed from eth transaction events.
 type ParsedTxs struct {
 	// one item per message
 	Txs []ParsedTx
-	// map tx hash to msg index
+	// map transaction hash to msg index
 	TxHashes map[common.Hash]int
 }
 
-// ParseTxResult parse eth tx infos from cosmos-sdk events.
+// ParseTxResult parse eth transaction infos from cosmos-sdk events.
 // It supports two event formats, the formats are described in the comments of the format constants.
 func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error) {
 	format := eventFormatUnknown
@@ -105,12 +106,12 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 			// format 1 or second part of format 2
 			eventIndex++
 			if format == eventFormat1 {
-				// append tx
+				// append transaction
 				if err := p.newTx(event.Attributes); err != nil {
 					return nil, err
 				}
 			} else {
-				// the second part of format 2, update tx fields
+				// the second part of format 2, update transaction fields
 				if err := p.updateTx(eventIndex, event.Attributes); err != nil {
 					return nil, err
 				}
@@ -118,35 +119,35 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 		}
 	}
 
-	// some old versions miss some events, fill it with tx result
+	// some old versions miss some events, fill it with transaction result
 	gasUsed := uint64(result.GasUsed) // #nosec G701
 	if len(p.Txs) == 1 {
 		p.Txs[0].GasUsed = gasUsed
 	}
 
-	// this could only happen if tx exceeds block gas limit
+	// this could only happen if transaction exceeds block gas limit
 	if result.Code != 0 && tx != nil {
 		for i := 0; i < len(p.Txs); i++ {
 			p.Txs[i].Failed = true
 
 			// replace gasUsed with gasLimit because that's what's actually deducted.
-			gasLimit := tx.GetMsgs()[i].(*evmtypes.MsgEthereumTx).GetGas()
+			gasLimit := tx.GetMsgs()[i].(*transaction.MsgEthereumTx).GetGas()
 			p.Txs[i].GasUsed = gasLimit
 		}
 	}
 	return p, nil
 }
 
-// ParseTxIndexerResult parse tm tx result to a format compatible with the custom tx indexer.
+// ParseTxIndexerResult parse tm transaction result to a format compatible with the custom transaction indexer.
 func ParseTxIndexerResult(txResult *tmrpctypes.ResultTx, tx sdk.Tx, getter func(*ParsedTxs) *ParsedTx) (*types.TxResult, error) {
 	txs, err := ParseTxResult(&txResult.TxResult, tx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse tx events: block %d, index %d, %v", txResult.Height, txResult.Index, err)
+		return nil, fmt.Errorf("failed to parse transaction events: block %d, index %d, %v", txResult.Height, txResult.Index, err)
 	}
 
 	parsedTx := getter(txs)
 	if parsedTx == nil {
-		return nil, fmt.Errorf("ethereum tx not found in msgs: block %d, index %d", txResult.Height, txResult.Index)
+		return nil, fmt.Errorf("ethereum transaction not found in msgs: block %d, index %d", txResult.Height, txResult.Index)
 	}
 	index := uint32(parsedTx.MsgIndex) // #nosec G701
 	return &types.TxResult{
@@ -160,7 +161,7 @@ func ParseTxIndexerResult(txResult *tmrpctypes.ResultTx, tx sdk.Tx, getter func(
 	}, nil
 }
 
-// newTx parse a new tx from events, called during parsing.
+// newTx parse a new transaction from events, called during parsing.
 func (p *ParsedTxs) newTx(attrs []abci.EventAttribute) error {
 	msgIndex := len(p.Txs)
 	tx := NewParsedTx(msgIndex)
@@ -172,9 +173,9 @@ func (p *ParsedTxs) newTx(attrs []abci.EventAttribute) error {
 	return nil
 }
 
-// updateTx updates an exiting tx from events, called during parsing.
-// In event format 2, we update the tx with the attributes of the second `ethereum_tx` event,
-// Due to bug https://github.com/evmos/ethermint/issues/1175, the first `ethereum_tx` event may emit incorrect tx hash,
+// updateTx updates an exiting transaction from events, called during parsing.
+// In event format 2, we update the transaction with the attributes of the second `ethereum_tx` event,
+// Due to bug https://github.com/evmos/ethermint/issues/1175, the first `ethereum_tx` event may emit incorrect transaction hash,
 // so we prefer the second event and override the first one.
 func (p *ParsedTxs) updateTx(eventIndex int, attrs []abci.EventAttribute) error {
 	tx := NewParsedTx(eventIndex)
@@ -185,12 +186,12 @@ func (p *ParsedTxs) updateTx(eventIndex int, attrs []abci.EventAttribute) error 
 		// if hash is different, index the new one too
 		p.TxHashes[tx.Hash] = eventIndex
 	}
-	// override the tx because the second event is more trustworthy
+	// override the transaction because the second event is more trustworthy
 	p.Txs[eventIndex] = tx
 	return nil
 }
 
-// GetTxByHash find ParsedTx by tx hash, returns nil if not exists.
+// GetTxByHash find ParsedTx by transaction hash, returns nil if not exists.
 func (p *ParsedTxs) GetTxByHash(hash common.Hash) *ParsedTx {
 	if idx, ok := p.TxHashes[hash]; ok {
 		return &p.Txs[idx]
@@ -206,7 +207,7 @@ func (p *ParsedTxs) GetTxByMsgIndex(i int) *ParsedTx {
 	return &p.Txs[i]
 }
 
-// GetTxByTxIndex returns ParsedTx by tx index
+// GetTxByTxIndex returns ParsedTx by transaction index
 func (p *ParsedTxs) GetTxByTxIndex(txIndex int) *ParsedTx {
 	if len(p.Txs) == 0 {
 		return nil

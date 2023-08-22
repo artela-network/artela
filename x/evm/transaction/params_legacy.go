@@ -1,6 +1,8 @@
-package types
+package transaction
 
-import paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+import (
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+)
 
 // Parameter keys
 var (
