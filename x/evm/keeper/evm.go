@@ -11,8 +11,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	artela "github.com/artela-network/artela/types"
-	"github.com/artela-network/artela/x/evm/statedb"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artela/x/evm/vmstate"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -32,7 +32,7 @@ import (
 func (k *Keeper) NewEVM(
 	ctx sdk.Context,
 	msg core.Message,
-	cfg *statedb.EVMConfig,
+	cfg *vmstate.EVMConfig,
 	tracer vm.EVMLogger,
 	stateDB vm.StateDB,
 ) *vm.EVM {
@@ -237,7 +237,7 @@ func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLo
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
 
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 	return k.ApplyMessageWithConfig(ctx, msg, tracer, commit, evmConfig, txConfig)
 }
 
@@ -247,7 +247,7 @@ func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLo
 //
 // # Reverted state
 //
-// The snapshot and rollback are supported by the `statedb.StateDB`.
+// The snapshot and rollback are supported by the `vmstate.StateDB`.
 //
 // # Different Callers
 //
@@ -283,8 +283,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	msg core.Message,
 	tracer vm.EVMLogger,
 	commit bool,
-	cfg *statedb.EVMConfig,
-	txConfig statedb.TxConfig,
+	cfg *vmstate.EVMConfig,
+	txConfig vmstate.TxConfig,
 ) (*process.MsgEthereumTxResponse, error) {
 	var (
 		ret   []byte // return bytes from evm execution
@@ -298,7 +298,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 		return nil, errorsmod.Wrap(types.ErrCallDisabled, "failed to call contract")
 	}
 
-	stateDB := statedb.New(ctx, k, txConfig)
+	stateDB := vmstate.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
 
 	leftoverGas := msg.Gas()

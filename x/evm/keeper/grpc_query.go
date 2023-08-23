@@ -27,8 +27,8 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 
 	artela "github.com/artela-network/artela/types"
-	"github.com/artela-network/artela/x/evm/statedb"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artela/x/evm/vmstate"
 )
 
 var _ process.QueryServer = Keeper{}
@@ -242,7 +242,7 @@ func (k Keeper) EthCall(c context.Context, req *process.EthCallRequest) (*proces
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
@@ -310,7 +310,7 @@ func (k Keeper) EstimateGas(c context.Context, req *process.EthCallRequest) (*pr
 	nonce := k.GetNonce(ctx, args.GetFrom())
 	args.Nonce = (*hexutil.Uint64)(&nonce)
 
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 
 	// convert the process args to an ethereum message
 	msg, err := args.ToMessage(req.GasCap, cfg.BaseFee)
@@ -409,7 +409,7 @@ func (k Keeper) TraceTx(c context.Context, req *process.QueryTraceTxRequest) (*p
 	}
 	signer := eth.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()))
 
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 	for i, tx := range req.Predecessors {
 		ethTx := tx.AsTransaction()
 		msg, err := ethTx.AsMessage(signer, cfg.BaseFee)
@@ -489,7 +489,7 @@ func (k Keeper) TraceBlock(c context.Context, req *process.QueryTraceBlockReques
 	txsLength := len(req.Txs)
 	results := make([]*types.TxTraceResult, 0, txsLength)
 
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 	for i, tx := range req.Txs {
 		result := types.TxTraceResult{}
 		ethTx := tx.AsTransaction()
@@ -518,8 +518,8 @@ func (k Keeper) TraceBlock(c context.Context, req *process.QueryTraceBlockReques
 // traceTx do trace on one process, it returns a tuple: (traceResult, nextLogIndex, error).
 func (k *Keeper) traceTx(
 	ctx sdk.Context,
-	cfg *statedb.EVMConfig,
-	txConfig statedb.TxConfig,
+	cfg *vmstate.EVMConfig,
+	txConfig vmstate.TxConfig,
 	signer eth.Signer,
 	tx *eth.Transaction,
 	traceConfig *support.TraceConfig,

@@ -1,4 +1,4 @@
-package statedb
+package vmstate
 
 import (
 	"github.com/artela-network/artela/x/evm/process/support"

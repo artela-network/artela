@@ -15,8 +15,8 @@ import (
 	anteutils "github.com/artela-network/artela/app/ante/utils"
 	"github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/keeper"
-	"github.com/artela-network/artela/x/evm/statedb"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artela/x/evm/vmstate"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -76,7 +76,7 @@ func (avd EthAccountVerificationDecorator) AnteHandle(
 		if acct == nil {
 			acc := avd.ak.NewAccountWithAddress(ctx, from)
 			avd.ak.SetAccount(ctx, acc)
-			acct = statedb.NewEmptyAccount()
+			acct = vmstate.NewEmptyAccount()
 		} else if acct.IsContract() {
 			return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType,
 				"the sender is not EOA: address %s, codeHash <%s>", fromAddr, acct.CodeHash)
@@ -300,14 +300,14 @@ func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 		}
 
 		// NOTE: pass in an empty coinbase address and nil tracer as we don't need them for the check below
-		cfg := &statedb.EVMConfig{
+		cfg := &vmstate.EVMConfig{
 			ChainConfig: ethCfg,
 			Params:      params,
 			CoinBase:    common.Address{},
 			BaseFee:     baseFee,
 		}
 
-		stateDB := statedb.New(ctx, ctd.evmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes())))
+		stateDB := vmstate.New(ctx, ctd.evmKeeper, vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes())))
 		evm := ctd.evmKeeper.NewEVM(ctx, coreMsg, cfg, evmtypes.NewNoOpTracer(), stateDB)
 
 		// check that caller has enough balance to cover asset transfer for **topmost** call

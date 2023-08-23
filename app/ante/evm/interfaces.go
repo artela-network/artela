@@ -11,16 +11,16 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/artela-network/artela/x/evm/statedb"
+	"github.com/artela-network/artela/x/evm/vmstate"
 	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 
 // EVMKeeper defines the expected keeper interface used on the AnteHandler
 type EVMKeeper interface { //nolint: revive
-	statedb.Keeper
+	vmstate.Keeper
 	DynamicFeeEVMKeeper
 
-	NewEVM(ctx sdk.Context, msg core.Message, cfg *statedb.EVMConfig, tracer vm.EVMLogger, stateDB vm.StateDB) *vm.EVM
+	NewEVM(ctx sdk.Context, msg core.Message, cfg *vmstate.EVMConfig, tracer vm.EVMLogger, stateDB vm.StateDB) *vm.EVM
 	DeductTxCostsFromUserBalance(ctx sdk.Context, fees sdk.Coins, from common.Address) error
 	GetBalance(ctx sdk.Context, addr common.Address) *big.Int
 	ResetTransientGasUsed(ctx sdk.Context)
