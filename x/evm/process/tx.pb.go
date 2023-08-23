@@ -7,6 +7,7 @@ import (
 	context "context"
 	encoding_binary "encoding/binary"
 	fmt "fmt"
+	"github.com/artela-network/artela/x/evm/process/generated"
 	_ "github.com/cosmos/cosmos-proto"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
@@ -303,7 +304,7 @@ type MsgEthereumTxResponse struct {
 	Hash string `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 	// logs contains the process hash and the proto-compatible ethereum
 	// logs.
-	Logs []*Log `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
+	Logs []*generated.Log `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
 	// ret is the returned data from evm function (result or data supplied with revert
 	// opcode)
 	Ret []byte `protobuf:"bytes,3,opt,name=ret,proto3" json:"ret,omitempty"`
@@ -352,7 +353,7 @@ type MsgUpdateParams struct {
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	// params defines the x/evm parameters to update.
 	// NOTE: All parameters must be supplied.
-	Params Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
+	Params generated.Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
 }
 
 func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
@@ -395,11 +396,11 @@ func (m *MsgUpdateParams) GetAuthority() string {
 	return ""
 }
 
-func (m *MsgUpdateParams) GetParams() Params {
+func (m *MsgUpdateParams) GetParams() generated.Params {
 	if m != nil {
 		return m.Params
 	}
-	return Params{}
+	return generated.Params{}
 }
 
 // MsgUpdateParamsResponse defines the response structure for executing a
@@ -2201,7 +2202,7 @@ func (m *AccessListTx) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Accesses = append(m.Accesses, AccessTuple{})
+			m.Accesses = append(m.Accesses, generated.AccessTuple{})
 			if err := m.Accesses[len(m.Accesses)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -2635,7 +2636,7 @@ func (m *DynamicFeeTx) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Accesses = append(m.Accesses, AccessTuple{})
+			m.Accesses = append(m.Accesses, generated.AccessTuple{})
 			if err := m.Accesses[len(m.Accesses)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -2903,7 +2904,7 @@ func (m *MsgEthereumTxResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Logs = append(m.Logs, &Log{})
+			m.Logs = append(m.Logs, &generated.Log{})
 			if err := m.Logs[len(m.Logs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

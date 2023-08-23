@@ -1,6 +1,7 @@
 package process
 
 import (
+	sdkmath "cosmossdk.io/math"
 	"math"
 	"math/big"
 
@@ -9,6 +10,90 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 )
+
+// NewTx returns a reference to a new Ethereum process message.
+func NewTx(
+	tx *EvmTxArgs,
+) *MsgEthereumTx {
+	return newMsgEthereumTx(tx)
+}
+
+func newMsgEthereumTx(
+	tx *EvmTxArgs,
+) *MsgEthereumTx {
+	var (
+		cid, amt, gp *sdkmath.Int
+		toAddr       string
+		txData       TxData
+	)
+
+	if tx.To != nil {
+		toAddr = tx.To.Hex()
+	}
+
+	if tx.Amount != nil {
+		amountInt := sdkmath.NewIntFromBigInt(tx.Amount)
+		amt = &amountInt
+	}
+
+	if tx.ChainID != nil {
+		chainIDInt := sdkmath.NewIntFromBigInt(tx.ChainID)
+		cid = &chainIDInt
+	}
+
+	if tx.GasPrice != nil {
+		gasPriceInt := sdkmath.NewIntFromBigInt(tx.GasPrice)
+		gp = &gasPriceInt
+	}
+
+	switch {
+	case tx.Accesses == nil:
+		txData = &LegacyTx{
+			To:       toAddr,
+			Amount:   amt,
+			GasPrice: gp,
+			Nonce:    tx.Nonce,
+			GasLimit: tx.GasLimit,
+			Data:     tx.Input,
+		}
+	case tx.Accesses != nil && tx.GasFeeCap != nil && tx.GasTipCap != nil:
+		gtc := sdkmath.NewIntFromBigInt(tx.GasTipCap)
+		gfc := sdkmath.NewIntFromBigInt(tx.GasFeeCap)
+
+		txData = &DynamicFeeTx{
+			ChainID:   cid,
+			Amount:    amt,
+			To:        toAddr,
+			GasTipCap: &gtc,
+			GasFeeCap: &gfc,
+			Nonce:     tx.Nonce,
+			GasLimit:  tx.GasLimit,
+			Data:      tx.Input,
+			Accesses:  NewAccessList(tx.Accesses),
+		}
+	case tx.Accesses != nil:
+		txData = &AccessListTx{
+			ChainID:  cid,
+			Nonce:    tx.Nonce,
+			To:       toAddr,
+			Amount:   amt,
+			GasLimit: tx.GasLimit,
+			GasPrice: gp,
+			Data:     tx.Input,
+			Accesses: NewAccessList(tx.Accesses),
+		}
+	default:
+	}
+
+	dataAny, err := PackTxData(txData)
+	if err != nil {
+		panic(err)
+	}
+
+	msg := MsgEthereumTx{Data: dataAny}
+	msg.Hash = msg.AsTransaction().Hash().Hex()
+	return &msg
+}
 
 // EvmTxArgs encapsulates all possible params to create all EVM txs types.
 // This includes LegacyTx, DynamicFeeTx and AccessListTx

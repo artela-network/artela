@@ -3,7 +3,7 @@ package process
 import (
 	"errors"
 	"fmt"
-	types2 "github.com/artela-network/artela/x/evm/types"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -34,90 +34,6 @@ var (
 	_ codectypes.UnpackInterfacesMessage = MsgEthereumTx{}
 )
 
-// NewTx returns a reference to a new Ethereum process message.
-func NewTx(
-	tx *EvmTxArgs,
-) *MsgEthereumTx {
-	return newMsgEthereumTx(tx)
-}
-
-func newMsgEthereumTx(
-	tx *EvmTxArgs,
-) *MsgEthereumTx {
-	var (
-		cid, amt, gp *sdkmath.Int
-		toAddr       string
-		txData       TxData
-	)
-
-	if tx.To != nil {
-		toAddr = tx.To.Hex()
-	}
-
-	if tx.Amount != nil {
-		amountInt := sdkmath.NewIntFromBigInt(tx.Amount)
-		amt = &amountInt
-	}
-
-	if tx.ChainID != nil {
-		chainIDInt := sdkmath.NewIntFromBigInt(tx.ChainID)
-		cid = &chainIDInt
-	}
-
-	if tx.GasPrice != nil {
-		gasPriceInt := sdkmath.NewIntFromBigInt(tx.GasPrice)
-		gp = &gasPriceInt
-	}
-
-	switch {
-	case tx.Accesses == nil:
-		txData = &LegacyTx{
-			To:       toAddr,
-			Amount:   amt,
-			GasPrice: gp,
-			Nonce:    tx.Nonce,
-			GasLimit: tx.GasLimit,
-			Data:     tx.Input,
-		}
-	case tx.Accesses != nil && tx.GasFeeCap != nil && tx.GasTipCap != nil:
-		gtc := sdkmath.NewIntFromBigInt(tx.GasTipCap)
-		gfc := sdkmath.NewIntFromBigInt(tx.GasFeeCap)
-
-		txData = &DynamicFeeTx{
-			ChainID:   cid,
-			Amount:    amt,
-			To:        toAddr,
-			GasTipCap: &gtc,
-			GasFeeCap: &gfc,
-			Nonce:     tx.Nonce,
-			GasLimit:  tx.GasLimit,
-			Data:      tx.Input,
-			Accesses:  NewAccessList(tx.Accesses),
-		}
-	case tx.Accesses != nil:
-		txData = &AccessListTx{
-			ChainID:  cid,
-			Nonce:    tx.Nonce,
-			To:       toAddr,
-			Amount:   amt,
-			GasLimit: tx.GasLimit,
-			GasPrice: gp,
-			Data:     tx.Input,
-			Accesses: NewAccessList(tx.Accesses),
-		}
-	default:
-	}
-
-	dataAny, err := PackTxData(txData)
-	if err != nil {
-		panic(err)
-	}
-
-	msg := MsgEthereumTx{Data: dataAny}
-	msg.Hash = msg.AsTransaction().Hash().Hex()
-	return &msg
-}
-
 // FromEthereumTx populates the message fields from the given ethereum process
 func (msg *MsgEthereumTx) FromEthereumTx(tx *ethereum.Transaction) error {
 	txData, err := NewTxDataFromTx(tx)
@@ -136,10 +52,10 @@ func (msg *MsgEthereumTx) FromEthereumTx(tx *ethereum.Transaction) error {
 }
 
 // Route returns the route value of an MsgEthereumTx.
-func (msg MsgEthereumTx) Route() string { return types2.RouterKey }
+func (msg MsgEthereumTx) Route() string { return evmtypes.RouterKey }
 
 // Type returns the type value of an MsgEthereumTx.
-func (msg MsgEthereumTx) Type() string { return types2.TypeMsgEthereumTx }
+func (msg MsgEthereumTx) Type() string { return evmtypes.TypeMsgEthereumTx }
 
 // ValidateBasic implements the sdk.Msg interface. It performs basic validation
 // checks of a Transaction. If returns an error if validation fails.
@@ -164,12 +80,12 @@ func (msg MsgEthereumTx) ValidateBasic() error {
 
 	// prevent txs with 0 gas to fill up the mempool
 	if gas == 0 {
-		return errorsmod.Wrap(types2.ErrInvalidGasLimit, "gas limit must not be zero")
+		return errorsmod.Wrap(evmtypes.ErrInvalidGasLimit, "gas limit must not be zero")
 	}
 
 	// prevent gas limit from overflow
 	if g := new(big.Int).SetUint64(gas); !g.IsInt64() {
-		return errorsmod.Wrap(types2.ErrGasOverflow, "gas limit must be less than math.MaxInt64")
+		return errorsmod.Wrap(evmtypes.ErrGasOverflow, "gas limit must be less than math.MaxInt64")
 	}
 
 	if err := txData.Validate(); err != nil {
@@ -218,7 +134,7 @@ func (msg MsgEthereumTx) GetSignBytes() []byte {
 	panic("must use 'RLPSignBytes' with a chain ID to get the valid bytes to sign")
 }
 
-// Sign calculates a secp256k1 ECDSA signature and signs the process. It
+// Sign calculates a secp256k1 ECDSA signature and signs the  It
 // takes a keyring signer and the chainID to sign an Ethereum process according to
 // EIP155 standard.
 // This method mutates the process as it populates the V, R, S
@@ -247,7 +163,7 @@ func (msg *MsgEthereumTx) Sign(ethSigner ethereum.Signer, keyringSigner keyring.
 	return msg.FromEthereumTx(tx)
 }
 
-// GetGas implements the GasTx interface. It returns the GasLimit of the process.
+// GetGas implements the GasTx interface. It returns the GasLimit of the
 func (msg MsgEthereumTx) GetGas() uint64 {
 	txData, err := UnpackTxData(msg.Data)
 	if err != nil {

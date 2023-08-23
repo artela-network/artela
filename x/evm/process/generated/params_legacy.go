@@ -1,4 +1,4 @@
-package process
+package generated
 
 import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"

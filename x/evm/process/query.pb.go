@@ -6,6 +6,9 @@ package process
 import (
 	context "context"
 	fmt "fmt"
+	"github.com/artela-network/artela/x/evm/process/generated"
+
+	//"github.com/artela-network/artela/x/evm/process"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/gogoproto/gogoproto"
@@ -651,7 +654,7 @@ var xxx_messageInfo_QueryTxLogsRequest proto.InternalMessageInfo
 // QueryTxLogsResponse is the response type for the Query/TxLogs RPC method.
 type QueryTxLogsResponse struct {
 	// logs represents the ethereum logs generated from the given process.
-	Logs []*Log `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
+	Logs []*generated.Log `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
 	// pagination defines the pagination in the response.
 	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
@@ -689,7 +692,7 @@ func (m *QueryTxLogsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryTxLogsResponse proto.InternalMessageInfo
 
-func (m *QueryTxLogsResponse) GetLogs() []*Log {
+func (m *QueryTxLogsResponse) GetLogs() []*generated.Log {
 	if m != nil {
 		return m.Logs
 	}
@@ -743,7 +746,7 @@ var xxx_messageInfo_QueryParamsRequest proto.InternalMessageInfo
 // QueryParamsResponse defines the response type for querying x/evm parameters.
 type QueryParamsResponse struct {
 	// params define the evm module parameters.
-	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	Params generated.Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 }
 
 func (m *QueryParamsResponse) Reset()         { *m = QueryParamsResponse{} }
@@ -779,11 +782,11 @@ func (m *QueryParamsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryParamsResponse proto.InternalMessageInfo
 
-func (m *QueryParamsResponse) GetParams() Params {
+func (m *QueryParamsResponse) GetParams() generated.Params {
 	if m != nil {
 		return m.Params
 	}
-	return Params{}
+	return generated.Params{}
 }
 
 // EthCallRequest defines EthCall request
@@ -910,7 +913,7 @@ type QueryTraceTxRequest struct {
 	// msg is the MsgEthereumTx for the requested process
 	Msg *MsgEthereumTx `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
 	// trace_config holds extra parameters to trace functions.
-	TraceConfig *TraceConfig `protobuf:"bytes,3,opt,name=trace_config,json=traceConfig,proto3" json:"trace_config,omitempty"`
+	TraceConfig *generated.TraceConfig `protobuf:"bytes,3,opt,name=trace_config,json=traceConfig,proto3" json:"trace_config,omitempty"`
 	// predecessors is an array of transactions included in the same block
 	// need to be replayed first to get correct context for tracing.
 	Predecessors []*MsgEthereumTx `protobuf:"bytes,4,rep,name=predecessors,proto3" json:"predecessors,omitempty"`
@@ -966,7 +969,7 @@ func (m *QueryTraceTxRequest) GetMsg() *MsgEthereumTx {
 	return nil
 }
 
-func (m *QueryTraceTxRequest) GetTraceConfig() *TraceConfig {
+func (m *QueryTraceTxRequest) GetTraceConfig() *generated.TraceConfig {
 	if m != nil {
 		return m.TraceConfig
 	}
@@ -1066,7 +1069,7 @@ type QueryTraceBlockRequest struct {
 	// txs is an array of messages in the block
 	Txs []*MsgEthereumTx `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 	// trace_config holds extra parameters to trace functions.
-	TraceConfig *TraceConfig `protobuf:"bytes,3,opt,name=trace_config,json=traceConfig,proto3" json:"trace_config,omitempty"`
+	TraceConfig *generated.TraceConfig `protobuf:"bytes,3,opt,name=trace_config,json=traceConfig,proto3" json:"trace_config,omitempty"`
 	// block_number of the traced block
 	BlockNumber int64 `protobuf:"varint,5,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
 	// block_hash (hex) of the traced block
@@ -1119,7 +1122,7 @@ func (m *QueryTraceBlockRequest) GetTxs() []*MsgEthereumTx {
 	return nil
 }
 
-func (m *QueryTraceBlockRequest) GetTraceConfig() *TraceConfig {
+func (m *QueryTraceBlockRequest) GetTraceConfig() *generated.TraceConfig {
 	if m != nil {
 		return m.TraceConfig
 	}
@@ -4556,7 +4559,7 @@ func (m *QueryTxLogsResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Logs = append(m.Logs, &Log{})
+			m.Logs = append(m.Logs, &generated.Log{})
 			if err := m.Logs[len(m.Logs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -5071,7 +5074,7 @@ func (m *QueryTraceTxRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.TraceConfig == nil {
-				m.TraceConfig = &TraceConfig{}
+				m.TraceConfig = &generated.TraceConfig{}
 			}
 			if err := m.TraceConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -5446,7 +5449,7 @@ func (m *QueryTraceBlockRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.TraceConfig == nil {
-				m.TraceConfig = &TraceConfig{}
+				m.TraceConfig = &generated.TraceConfig{}
 			}
 			if err := m.TraceConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

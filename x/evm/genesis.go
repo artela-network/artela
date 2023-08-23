@@ -3,7 +3,7 @@ package evm
 import (
 	"bytes"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/process/generated"
 
 	"github.com/artela-network/artela/x/evm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -21,7 +21,7 @@ func InitGenesis(
 	ctx sdk.Context,
 	k *keeper.Keeper,
 	accountKeeper types.AccountKeeper,
-	genState process.GenesisState,
+	genState generated.GenesisState,
 ) []abci.ValidatorUpdate {
 	k.WithChainID(ctx)
 
@@ -73,8 +73,8 @@ func InitGenesis(
 }
 
 // ExportGenesis exports genesis state of the EVM module
-func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *process.GenesisState {
-	var ethGenAccounts []process.GenesisAccount
+func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *generated.GenesisState {
+	var ethGenAccounts []generated.GenesisAccount
 	ak.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
 		ethAccount, ok := account.(artela.EthAccountI)
 		if !ok {
@@ -86,7 +86,7 @@ func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *p
 
 		storage := k.GetAccountStorage(ctx, addr)
 
-		genAccount := process.GenesisAccount{
+		genAccount := generated.GenesisAccount{
 			Address: addr.String(),
 			Code:    common.Bytes2Hex(k.GetCode(ctx, ethAccount.GetCodeHash())),
 			Storage: storage,
@@ -96,7 +96,7 @@ func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *p
 		return false
 	})
 
-	return &process.GenesisState{
+	return &generated.GenesisState{
 		Accounts: ethGenAccounts,
 		Params:   k.GetParams(ctx),
 	}

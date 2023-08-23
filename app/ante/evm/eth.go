@@ -2,6 +2,7 @@ package evm
 
 import (
 	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/process/generated"
 	"math"
 	"math/big"
 
@@ -282,7 +283,7 @@ func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 			)
 		}
 
-		if process.IsLondon(ethCfg, ctx.BlockHeight()) {
+		if generated.IsLondon(ethCfg, ctx.BlockHeight()) {
 			if baseFee == nil {
 				return ctx, errorsmod.Wrap(
 					evmtypes.ErrInvalidBaseFee,

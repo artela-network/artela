@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/process/generated"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -210,11 +211,11 @@ func (k Keeper) SetLogSizeTransient(ctx sdk.Context, logSize uint64) {
 // ----------------------------------------------------------------------------
 
 // GetAccountStorage return state storage associated with an account
-func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) process.Storage {
-	storage := process.Storage{}
+func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) generated.Storage {
+	storage := generated.Storage{}
 
 	k.ForEachStorage(ctx, address, func(key, value common.Hash) bool {
-		storage = append(storage, process.NewState(key, value))
+		storage = append(storage, generated.NewState(key, value))
 		return true
 	})
 
@@ -294,7 +295,7 @@ func (k *Keeper) GetBalance(ctx sdk.Context, addr common.Address) *big.Int {
 // - `0`: london hardfork enabled but fee is not enabled.
 // - `n`: both london hardfork and fee are enabled.
 func (k Keeper) GetBaseFee(ctx sdk.Context, ethCfg *params.ChainConfig) *big.Int {
-	return k.getBaseFee(ctx, process.IsLondon(ethCfg, ctx.BlockHeight()))
+	return k.getBaseFee(ctx, generated.IsLondon(ethCfg, ctx.BlockHeight()))
 }
 
 func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {

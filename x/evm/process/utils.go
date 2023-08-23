@@ -2,6 +2,7 @@ package process
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/x/evm/process/generated"
 	"math/big"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -41,16 +42,16 @@ func DecodeTxResponse(in []byte) (*MsgEthereumTxResponse, error) {
 }
 
 // EncodeTransactionLogs encodes TransactionLogs slice into a protobuf-encoded byte slice.
-func EncodeTransactionLogs(res *TransactionLogs) ([]byte, error) {
+func EncodeTransactionLogs(res *generated.TransactionLogs) ([]byte, error) {
 	return proto.Marshal(res)
 }
 
 // DecodeTransactionLogs decodes an protobuf-encoded byte slice into TransactionLogs
-func DecodeTransactionLogs(data []byte) (TransactionLogs, error) {
-	var logs TransactionLogs
+func DecodeTransactionLogs(data []byte) (generated.TransactionLogs, error) {
+	var logs generated.TransactionLogs
 	err := proto.Unmarshal(data, &logs)
 	if err != nil {
-		return TransactionLogs{}, err
+		return generated.TransactionLogs{}, err
 	}
 	return logs, nil
 }

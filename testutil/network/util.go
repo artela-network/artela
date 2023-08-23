@@ -2,7 +2,7 @@ package network
 
 import (
 	"encoding/json"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/process/generated"
 	"path/filepath"
 	"time"
 
@@ -224,7 +224,7 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 	crisisGenState.ConstantFee.Denom = cfg.BondDenom
 	cfg.GenesisState[crisistypes.ModuleName] = cfg.Codec.MustMarshalJSON(&crisisGenState)
 
-	var evmGenState process.GenesisState
+	var evmGenState generated.GenesisState
 	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[evmtypes.ModuleName], &evmGenState)
 
 	evmGenState.Params.EvmDenom = cfg.BondDenom
