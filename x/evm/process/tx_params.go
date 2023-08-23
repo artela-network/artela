@@ -3,6 +3,7 @@ package process
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -10,13 +11,49 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
+
+var (
+	_ TxData = &LegacyTx{}
+	_ TxData = &AccessListTx{}
+	_ TxData = &DynamicFeeTx{}
+)
+
+// TxData implements the Ethereum process structure.
+// See https://github.com/ethereum/go-ethereum/issues/23154
+type TxData interface {
+	TxType() byte
+	Copy() TxData
+	GetChainID() *big.Int
+	GetAccessList() ethereum.AccessList
+	GetData() []byte
+	GetNonce() uint64
+	GetGas() uint64
+	GetGasPrice() *big.Int
+	GetGasTipCap() *big.Int
+	GetGasFeeCap() *big.Int
+	GetValue() *big.Int
+	GetTo() *common.Address
+
+	GetRawSignatureValues() (v, r, s *big.Int)
+	SetSignatureValues(chainID, v, r, s *big.Int)
+
+	AsEthereumData() ethereum.TxData
+	Validate() error
+
+	// static fee
+	Fee() *big.Int
+	Cost() *big.Int
+
+	// effective gasPrice/fee/cost according to current base fee
+	EffectiveGasPrice(baseFee *big.Int) *big.Int
+	EffectiveFee(baseFee *big.Int) *big.Int
+	EffectiveCost(baseFee *big.Int) *big.Int
+}
 
 // TransactionArgs represents the arguments to construct a new process
 // or a message call using JSON-RPC.
-// Duplicate struct definition since geth struct is in internal package
-// Ref: https://github.com/ethereum/go-ethereum/blob/release/1.10.4/internal/ethapi/transaction_args.go#L36
 type TransactionArgs struct {
 	From                 *common.Address `json:"from"`
 	To                   *common.Address `json:"to"`
@@ -27,18 +64,16 @@ type TransactionArgs struct {
 	Value                *hexutil.Big    `json:"value"`
 	Nonce                *hexutil.Uint64 `json:"nonce"`
 
-	// We accept "data" and "input" for backwards-compatibility reasons.
-	// "input" is the newer name and should be preferred by clients.
 	// Issue detail: https://github.com/ethereum/go-ethereum/issues/15628
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input"`
 
 	// Introduced by AccessListTxType process.
-	AccessList *ethtypes.AccessList `json:"accessList,omitempty"`
+	AccessList *ethereum.AccessList `json:"accessList,omitempty"`
 	ChainID    *hexutil.Big         `json:"chainId,omitempty"`
 }
 
-// String return the struct in a string format
+// String returns the struct in a string format
 func (args *TransactionArgs) String() string {
 	// Todo: There is currently a bug with hexutil.Big when the value its nil, printing would trigger an exception
 	return fmt.Sprintf("TransactionArgs{From:%v, To:%v, Gas:%v,"+
@@ -52,8 +87,26 @@ func (args *TransactionArgs) String() string {
 		args.AccessList)
 }
 
-// ToTransaction converts the arguments to an ethereum process.
-// This assumes that setTxDefaults has been called.
+// GetFrom retrieves the process sender address
+func (args *TransactionArgs) GetFrom() common.Address {
+	if args.From == nil {
+		return common.Address{}
+	}
+	return *args.From
+}
+
+// GetData retrieves the process calldata. Input field is preferred
+func (args *TransactionArgs) GetData() []byte {
+	if args.Input != nil {
+		return *args.Input
+	}
+	if args.Data != nil {
+		return *args.Data
+	}
+	return nil
+}
+
+// ToTransaction converts the arguments to an ethereum process
 func (args *TransactionArgs) ToTransaction() *MsgEthereumTx {
 	var (
 		chainID, value, gasPrice, maxFeePerGas, maxPriorityFeePerGas sdkmath.Int
@@ -152,12 +205,11 @@ func (args *TransactionArgs) ToTransaction() *MsgEthereumTx {
 	return &msg
 }
 
-// ToMessage converts the arguments to the Message type used by the core evm.
-// This assumes that setTxDefaults has been called.
-func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (ethtypes.Message, error) {
+// ToMessage converts the arguments to the Message type used by the core evm
+func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (ethereum.Message, error) {
 	// Reject invalid combinations of pre- and post-1559 fee styles
 	if args.GasPrice != nil && (args.MaxFeePerGas != nil || args.MaxPriorityFeePerGas != nil) {
-		return ethtypes.Message{}, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
+		return ethereum.Message{}, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
 	}
 
 	// Set sender address or use zero address if none specified.
@@ -187,7 +239,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (e
 		}
 		gasFeeCap, gasTipCap = gasPrice, gasPrice
 	} else {
-		// A basefee is provided, necessitating 1559-type execution
+		// basefee is provided, necessitating 1559-type execution
 		if args.GasPrice != nil {
 			// User specified the legacy gas field, convert to 1559 gas typing
 			gasPrice = args.GasPrice.ToInt()
@@ -214,7 +266,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (e
 		value = args.Value.ToInt()
 	}
 	data := args.GetData()
-	var accessList ethtypes.AccessList
+	var accessList ethereum.AccessList
 	if args.AccessList != nil {
 		accessList = *args.AccessList
 	}
@@ -224,25 +276,127 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (e
 		nonce = uint64(*args.Nonce)
 	}
 
-	msg := ethtypes.NewMessage(addr, args.To, nonce, value, gas, gasPrice, gasFeeCap, gasTipCap, data, accessList, true)
+	msg := ethereum.NewMessage(addr, args.To, nonce, value, gas, gasPrice, gasFeeCap, gasTipCap, data, accessList, true)
 	return msg, nil
 }
 
-// GetFrom retrieves the process sender address.
-func (args *TransactionArgs) GetFrom() common.Address {
-	if args.From == nil {
-		return common.Address{}
-	}
-	return *args.From
+// ---------------------
+
+// EvmTxArgs encapsulates all params for accessListTx, legacyTx, dynamicFeeTx
+type EvmTxArgs struct {
+	Nonce     uint64
+	GasLimit  uint64
+	Input     []byte
+	GasFeeCap *big.Int
+	GasPrice  *big.Int
+	ChainID   *big.Int
+	Amount    *big.Int
+	GasTipCap *big.Int
+	To        *common.Address
+	Accesses  *ethereum.AccessList
 }
 
-// GetData retrieves the process calldata. Input field is preferred.
-func (args *TransactionArgs) GetData() []byte {
-	if args.Input != nil {
-		return *args.Input
+// NewTx returns a reference to a new Ethereum process message
+func NewTx(
+	tx *EvmTxArgs,
+) *MsgEthereumTx {
+	return newMsgEthereumTx(tx)
+}
+
+func newMsgEthereumTx(
+	tx *EvmTxArgs,
+) *MsgEthereumTx {
+	var (
+		cid, amt, gp *sdkmath.Int
+		toAddr       string
+		txData       TxData
+	)
+
+	if tx.To != nil {
+		toAddr = tx.To.Hex()
 	}
-	if args.Data != nil {
-		return *args.Data
+
+	if tx.Amount != nil {
+		amountInt := sdkmath.NewIntFromBigInt(tx.Amount)
+		amt = &amountInt
 	}
-	return nil
+
+	if tx.ChainID != nil {
+		chainIDInt := sdkmath.NewIntFromBigInt(tx.ChainID)
+		cid = &chainIDInt
+	}
+
+	if tx.GasPrice != nil {
+		gasPriceInt := sdkmath.NewIntFromBigInt(tx.GasPrice)
+		gp = &gasPriceInt
+	}
+
+	switch {
+	case tx.Accesses == nil:
+		txData = &LegacyTx{
+			To:       toAddr,
+			Amount:   amt,
+			GasPrice: gp,
+			Nonce:    tx.Nonce,
+			GasLimit: tx.GasLimit,
+			Data:     tx.Input,
+		}
+	case tx.Accesses != nil && tx.GasFeeCap != nil && tx.GasTipCap != nil:
+		gtc := sdkmath.NewIntFromBigInt(tx.GasTipCap)
+		gfc := sdkmath.NewIntFromBigInt(tx.GasFeeCap)
+
+		txData = &DynamicFeeTx{
+			ChainID:   cid,
+			Amount:    amt,
+			To:        toAddr,
+			GasTipCap: &gtc,
+			GasFeeCap: &gfc,
+			Nonce:     tx.Nonce,
+			GasLimit:  tx.GasLimit,
+			Data:      tx.Input,
+			Accesses:  NewAccessList(tx.Accesses),
+		}
+	case tx.Accesses != nil:
+		txData = &AccessListTx{
+			ChainID:  cid,
+			Nonce:    tx.Nonce,
+			To:       toAddr,
+			Amount:   amt,
+			GasLimit: tx.GasLimit,
+			GasPrice: gp,
+			Data:     tx.Input,
+			Accesses: NewAccessList(tx.Accesses),
+		}
+	default:
+	}
+
+	dataAny, err := PackTxData(txData)
+	if err != nil {
+		panic(err)
+	}
+
+	msg := MsgEthereumTx{Data: dataAny}
+	msg.Hash = msg.AsTransaction().Hash().Hex()
+	return &msg
+}
+
+// Failed returns if the contract execution failed in vm errors
+func (m *MsgEthereumTxResponse) Failed() bool {
+	return len(m.VmError) > 0
+}
+
+// Return returns the data after execution if no error occurs
+func (m *MsgEthereumTxResponse) Return() []byte {
+	if m.Failed() {
+		return nil
+	}
+	return common.CopyBytes(m.Ret)
+}
+
+// Revert returns the concrete revert reason if the execution is aborted by `REVERT` opcode
+func (m *MsgEthereumTxResponse) Revert() []byte {
+	if m.VmError != vm.ErrExecutionReverted.Error() {
+		return nil
+	}
+	return common.CopyBytes(m.Ret)
 }

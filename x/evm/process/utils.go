@@ -8,6 +8,7 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/types/tx"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -186,4 +187,101 @@ func BinSearch(lo, hi uint64, executable func(uint64) (bool, *MsgEthereumTxRespo
 // `effectiveGasPrice = min(baseFee + tipCap, feeCap)`
 func EffectiveGasPrice(baseFee, feeCap, tipCap *big.Int) *big.Int {
 	return math.BigMin(new(big.Int).Add(tipCap, baseFee), feeCap)
+}
+
+// GetTxPriority returns the priority of a given Ethereum process. It relies of the
+// priority reduction global variable to calculate the process priority given the process
+// tip price:
+//
+//	tx_priority = tip_price / priority_reduction
+func GetTxPriority(txData TxData, baseFee *big.Int) (priority int64) {
+	// calculate priority based on effective gas price
+	tipPrice := txData.EffectiveGasPrice(baseFee)
+	// if london hard fork is not enabled, tipPrice is the gasPrice
+	if baseFee != nil {
+		tipPrice = new(big.Int).Sub(tipPrice, baseFee)
+	}
+
+	priority = math.MaxInt64
+	priorityBig := new(big.Int).Quo(tipPrice, DefaultPriorityReduction.BigInt())
+
+	// safety check
+	if priorityBig.IsInt64() {
+		priority = priorityBig.Int64()
+	}
+
+	return priority
+}
+
+func NewTxDataFromTx(tx *ethereum.Transaction) (TxData, error) {
+	var txData TxData
+	var err error
+	switch tx.Type() {
+	case ethereum.DynamicFeeTxType:
+		txData, err = newDynamicFeeTx(tx)
+	case ethereum.AccessListTxType:
+		txData, err = newAccessListTx(tx)
+	default:
+		txData, err = newLegacyTx(tx)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return txData, nil
+}
+
+// DeriveChainID derives the chain id from the given v parameter.
+//
+// CONTRACT: v value is either:
+//
+//   - {0,1} + CHAIN_ID * 2 + 35, if EIP155 is used
+//   - {0,1} + 27, otherwise
+//
+// Ref: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
+func DeriveChainID(v *big.Int) *big.Int {
+	if v == nil || v.Sign() < 1 {
+		return nil
+	}
+
+	if v.BitLen() <= 64 {
+		v := v.Uint64()
+		if v == 27 || v == 28 {
+			return new(big.Int)
+		}
+
+		if v < 35 {
+			return nil
+		}
+
+		// V MUST be of the form {0,1} + CHAIN_ID * 2 + 35
+		return new(big.Int).SetUint64((v - 35) / 2)
+	}
+	v = new(big.Int).Sub(v, big.NewInt(35))
+	return v.Div(v, big.NewInt(2))
+}
+
+func rawSignatureValues(vBz, rBz, sBz []byte) (v, r, s *big.Int) {
+	if len(vBz) > 0 {
+		v = new(big.Int).SetBytes(vBz)
+	}
+	if len(rBz) > 0 {
+		r = new(big.Int).SetBytes(rBz)
+	}
+	if len(sBz) > 0 {
+		s = new(big.Int).SetBytes(sBz)
+	}
+	return v, r, s
+}
+
+func fee(gasPrice *big.Int, gas uint64) *big.Int {
+	gasLimit := new(big.Int).SetUint64(gas)
+	return new(big.Int).Mul(gasPrice, gasLimit)
+}
+
+func cost(fee, value *big.Int) *big.Int {
+	if value != nil {
+		return new(big.Int).Add(fee, value)
+	}
+	return fee
 }

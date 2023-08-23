@@ -1,7 +1,7 @@
 package process
 
 import (
-	types2 "github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/artela-network/artela/types"
+	artela "github.com/artela-network/artela/types"
 )
 
 func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
@@ -27,7 +27,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	}
 
 	if tx.Value() != nil {
-		amountInt, err := types.SafeNewIntFromBigInt(tx.Value())
+		amountInt, err := artela.SafeNewIntFromBigInt(tx.Value())
 		if err != nil {
 			return nil, err
 		}
@@ -35,7 +35,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	}
 
 	if tx.GasFeeCap() != nil {
-		gasFeeCapInt, err := types.SafeNewIntFromBigInt(tx.GasFeeCap())
+		gasFeeCapInt, err := artela.SafeNewIntFromBigInt(tx.GasFeeCap())
 		if err != nil {
 			return nil, err
 		}
@@ -43,7 +43,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	}
 
 	if tx.GasTipCap() != nil {
-		gasTipCapInt, err := types.SafeNewIntFromBigInt(tx.GasTipCap())
+		gasTipCapInt, err := artela.SafeNewIntFromBigInt(tx.GasTipCap())
 		if err != nil {
 			return nil, err
 		}
@@ -80,6 +80,77 @@ func (tx *DynamicFeeTx) Copy() TxData {
 		R:         common.CopyBytes(tx.R),
 		S:         common.CopyBytes(tx.S),
 	}
+}
+
+// Validate performs a stateless validation of the process fields.
+func (tx DynamicFeeTx) Validate() error {
+	if tx.GasTipCap == nil {
+		return errorsmod.Wrap(types.ErrInvalidGasCap, "gas tip cap cannot nil")
+	}
+
+	if tx.GasFeeCap == nil {
+		return errorsmod.Wrap(types.ErrInvalidGasCap, "gas fee cap cannot nil")
+	}
+
+	if tx.GasTipCap.IsNegative() {
+		return errorsmod.Wrapf(types.ErrInvalidGasCap, "gas tip cap cannot be negative %s", tx.GasTipCap)
+	}
+
+	if tx.GasFeeCap.IsNegative() {
+		return errorsmod.Wrapf(types.ErrInvalidGasCap, "gas fee cap cannot be negative %s", tx.GasFeeCap)
+	}
+
+	if !artela.IsValidInt256(tx.GetGasTipCap()) {
+		return errorsmod.Wrap(types.ErrInvalidGasCap, "out of bound")
+	}
+
+	if !artela.IsValidInt256(tx.GetGasFeeCap()) {
+		return errorsmod.Wrap(types.ErrInvalidGasCap, "out of bound")
+	}
+
+	if tx.GasFeeCap.LT(*tx.GasTipCap) {
+		return errorsmod.Wrapf(
+			types.ErrInvalidGasCap, "max priority fee per gas higher than max fee per gas (%s > %s)",
+			tx.GasTipCap, tx.GasFeeCap,
+		)
+	}
+
+	if !artela.IsValidInt256(tx.Fee()) {
+		return errorsmod.Wrap(types.ErrInvalidGasFee, "out of bound")
+	}
+
+	amount := tx.GetValue()
+	// Amount can be 0
+	if amount != nil && amount.Sign() == -1 {
+		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount cannot be negative %s", amount)
+	}
+	if !artela.IsValidInt256(amount) {
+		return errorsmod.Wrap(types.ErrInvalidAmount, "out of bound")
+	}
+
+	if tx.To != "" {
+		if err := artela.ValidateAddress(tx.To); err != nil {
+			return errorsmod.Wrap(err, "invalid to address")
+		}
+	}
+
+	chainID := tx.GetChainID()
+
+	if chainID == nil {
+		return errorsmod.Wrap(
+			errortypes.ErrInvalidChainID,
+			"chain ID must be present on AccessList txs",
+		)
+	}
+
+	if !(chainID.Cmp(big.NewInt(9001)) == 0 || chainID.Cmp(big.NewInt(9000)) == 0) {
+		return errorsmod.Wrapf(
+			errortypes.ErrInvalidChainID,
+			"chain ID must be 9000 or 9001 on Artela, got %s", chainID,
+		)
+	}
+
+	return nil
 }
 
 // GetChainID returns the chain id field from the DynamicFeeTx
@@ -128,6 +199,31 @@ func (tx *DynamicFeeTx) GetGasFeeCap() *big.Int {
 		return nil
 	}
 	return tx.GasFeeCap.BigInt()
+}
+
+// Fee returns gasprice * gaslimit.
+func (tx DynamicFeeTx) Fee() *big.Int {
+	return fee(tx.GetGasFeeCap(), tx.GasLimit)
+}
+
+// Cost returns amount + gasprice * gaslimit.
+func (tx DynamicFeeTx) Cost() *big.Int {
+	return cost(tx.Fee(), tx.GetValue())
+}
+
+// EffectiveGasPrice returns the effective gas price
+func (tx *DynamicFeeTx) EffectiveGasPrice(baseFee *big.Int) *big.Int {
+	return EffectiveGasPrice(baseFee, tx.GasFeeCap.BigInt(), tx.GasTipCap.BigInt())
+}
+
+// EffectiveFee returns effective_gasprice * gaslimit.
+func (tx DynamicFeeTx) EffectiveFee(baseFee *big.Int) *big.Int {
+	return fee(tx.EffectiveGasPrice(baseFee), tx.GasLimit)
+}
+
+// EffectiveCost returns amount + effective_gasprice * gaslimit.
+func (tx DynamicFeeTx) EffectiveCost(baseFee *big.Int) *big.Int {
+	return cost(tx.EffectiveFee(baseFee), tx.GetValue())
 }
 
 // GetValue returns the process amount.
@@ -192,100 +288,4 @@ func (tx *DynamicFeeTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 		chainIDInt := sdkmath.NewIntFromBigInt(chainID)
 		tx.ChainID = &chainIDInt
 	}
-}
-
-// Validate performs a stateless validation of the process fields.
-func (tx DynamicFeeTx) Validate() error {
-	if tx.GasTipCap == nil {
-		return errorsmod.Wrap(types2.ErrInvalidGasCap, "gas tip cap cannot nil")
-	}
-
-	if tx.GasFeeCap == nil {
-		return errorsmod.Wrap(types2.ErrInvalidGasCap, "gas fee cap cannot nil")
-	}
-
-	if tx.GasTipCap.IsNegative() {
-		return errorsmod.Wrapf(types2.ErrInvalidGasCap, "gas tip cap cannot be negative %s", tx.GasTipCap)
-	}
-
-	if tx.GasFeeCap.IsNegative() {
-		return errorsmod.Wrapf(types2.ErrInvalidGasCap, "gas fee cap cannot be negative %s", tx.GasFeeCap)
-	}
-
-	if !types.IsValidInt256(tx.GetGasTipCap()) {
-		return errorsmod.Wrap(types2.ErrInvalidGasCap, "out of bound")
-	}
-
-	if !types.IsValidInt256(tx.GetGasFeeCap()) {
-		return errorsmod.Wrap(types2.ErrInvalidGasCap, "out of bound")
-	}
-
-	if tx.GasFeeCap.LT(*tx.GasTipCap) {
-		return errorsmod.Wrapf(
-			types2.ErrInvalidGasCap, "max priority fee per gas higher than max fee per gas (%s > %s)",
-			tx.GasTipCap, tx.GasFeeCap,
-		)
-	}
-
-	if !types.IsValidInt256(tx.Fee()) {
-		return errorsmod.Wrap(types2.ErrInvalidGasFee, "out of bound")
-	}
-
-	amount := tx.GetValue()
-	// Amount can be 0
-	if amount != nil && amount.Sign() == -1 {
-		return errorsmod.Wrapf(types2.ErrInvalidAmount, "amount cannot be negative %s", amount)
-	}
-	if !types.IsValidInt256(amount) {
-		return errorsmod.Wrap(types2.ErrInvalidAmount, "out of bound")
-	}
-
-	if tx.To != "" {
-		if err := types.ValidateAddress(tx.To); err != nil {
-			return errorsmod.Wrap(err, "invalid to address")
-		}
-	}
-
-	chainID := tx.GetChainID()
-
-	if chainID == nil {
-		return errorsmod.Wrap(
-			errortypes.ErrInvalidChainID,
-			"chain ID must be present on AccessList txs",
-		)
-	}
-
-	if !(chainID.Cmp(big.NewInt(9001)) == 0 || chainID.Cmp(big.NewInt(9000)) == 0) {
-		return errorsmod.Wrapf(
-			errortypes.ErrInvalidChainID,
-			"chain ID must be 9000 or 9001 on Artela, got %s", chainID,
-		)
-	}
-
-	return nil
-}
-
-// Fee returns gasprice * gaslimit.
-func (tx DynamicFeeTx) Fee() *big.Int {
-	return fee(tx.GetGasFeeCap(), tx.GasLimit)
-}
-
-// Cost returns amount + gasprice * gaslimit.
-func (tx DynamicFeeTx) Cost() *big.Int {
-	return cost(tx.Fee(), tx.GetValue())
-}
-
-// EffectiveGasPrice returns the effective gas price
-func (tx *DynamicFeeTx) EffectiveGasPrice(baseFee *big.Int) *big.Int {
-	return EffectiveGasPrice(baseFee, tx.GasFeeCap.BigInt(), tx.GasTipCap.BigInt())
-}
-
-// EffectiveFee returns effective_gasprice * gaslimit.
-func (tx DynamicFeeTx) EffectiveFee(baseFee *big.Int) *big.Int {
-	return fee(tx.EffectiveGasPrice(baseFee), tx.GasLimit)
-}
-
-// EffectiveCost returns amount + effective_gasprice * gaslimit.
-func (tx DynamicFeeTx) EffectiveCost(baseFee *big.Int) *big.Int {
-	return cost(tx.EffectiveFee(baseFee), tx.GetValue())
 }

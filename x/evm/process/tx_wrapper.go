@@ -3,7 +3,7 @@ package process
 import (
 	"errors"
 	"fmt"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -18,7 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 
-	"github.com/artela-network/artela/types"
+	artela "github.com/artela-network/artela/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -52,16 +52,16 @@ func (msg *MsgEthereumTx) FromEthereumTx(tx *ethereum.Transaction) error {
 }
 
 // Route returns the route value of an MsgEthereumTx.
-func (msg MsgEthereumTx) Route() string { return evmtypes.RouterKey }
+func (msg MsgEthereumTx) Route() string { return types.RouterKey }
 
 // Type returns the type value of an MsgEthereumTx.
-func (msg MsgEthereumTx) Type() string { return evmtypes.TypeMsgEthereumTx }
+func (msg MsgEthereumTx) Type() string { return types.TypeMsgEthereumTx }
 
 // ValidateBasic implements the sdk.Msg interface. It performs basic validation
 // checks of a Transaction. If returns an error if validation fails.
 func (msg MsgEthereumTx) ValidateBasic() error {
 	if msg.From != "" {
-		if err := types.ValidateAddress(msg.From); err != nil {
+		if err := artela.ValidateAddress(msg.From); err != nil {
 			return errorsmod.Wrap(err, "invalid from address")
 		}
 	}
@@ -80,12 +80,12 @@ func (msg MsgEthereumTx) ValidateBasic() error {
 
 	// prevent txs with 0 gas to fill up the mempool
 	if gas == 0 {
-		return errorsmod.Wrap(evmtypes.ErrInvalidGasLimit, "gas limit must not be zero")
+		return errorsmod.Wrap(types.ErrInvalidGasLimit, "gas limit must not be zero")
 	}
 
 	// prevent gas limit from overflow
 	if g := new(big.Int).SetUint64(gas); !g.IsInt64() {
-		return errorsmod.Wrap(evmtypes.ErrGasOverflow, "gas limit must be less than math.MaxInt64")
+		return errorsmod.Wrap(types.ErrGasOverflow, "gas limit must be less than math.MaxInt64")
 	}
 
 	if err := txData.Validate(); err != nil {
