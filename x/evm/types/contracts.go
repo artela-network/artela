@@ -68,19 +68,19 @@ func (s *CompiledContract) UnmarshalJSON(data []byte) error {
 }
 
 var (
-	//go:embed ERC20Contract.json
+	//go:embed contracts/ERC20Contract.json
 	erc20JSON []byte
 
 	// ERC20Contract is the compiled test erc20 contract
 	ERC20Contract CompiledContract
 
-	//go:embed SimpleStorageContract.json
+	//go:embed contracts/SimpleStorageContract.json
 	simpleStorageJSON []byte
 
 	// SimpleStorageContract is the compiled test simple storage contract
 	SimpleStorageContract CompiledContract
 
-	//go:embed TestMessageCall.json
+	//go:embed contracts/TestMessageCall.json
 	testMessageCallJSON []byte
 
 	// TestMessageCall is the compiled message call benchmark contract
