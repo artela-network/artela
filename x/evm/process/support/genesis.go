@@ -1,4 +1,4 @@
-package generated
+package support
 
 import (
 	"fmt"

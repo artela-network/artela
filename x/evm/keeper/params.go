@@ -1,13 +1,13 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/process/generated"
+	"github.com/artela-network/artela/x/evm/process/support"
 	"github.com/artela-network/artela/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // GetParams returns the total set of evm parameters.
-func (k Keeper) GetParams(ctx sdk.Context) (params generated.Params) {
+func (k Keeper) GetParams(ctx sdk.Context) (params support.Params) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.KeyPrefixParams)
 	if len(bz) == 0 {
@@ -18,7 +18,7 @@ func (k Keeper) GetParams(ctx sdk.Context) (params generated.Params) {
 }
 
 // SetParams sets the EVM params each in their individual key for better get performance
-func (k Keeper) SetParams(ctx sdk.Context, params generated.Params) error {
+func (k Keeper) SetParams(ctx sdk.Context, params support.Params) error {
 	if err := params.Validate(); err != nil {
 		return err
 	}
@@ -34,8 +34,8 @@ func (k Keeper) SetParams(ctx sdk.Context, params generated.Params) error {
 }
 
 // GetLegacyParams returns param set for version before migrate
-func (k Keeper) GetLegacyParams(ctx sdk.Context) generated.Params {
-	var params generated.Params
+func (k Keeper) GetLegacyParams(ctx sdk.Context) support.Params {
+	var params support.Params
 	k.ss.GetParamSetIfExists(ctx, &params)
 	return params
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 	"github.com/artela-network/artela/x/evm/process"
-	"github.com/artela-network/artela/x/evm/process/generated"
+	"github.com/artela-network/artela/x/evm/process/support"
 	"net"
 	"os"
 	"path/filepath"
@@ -428,7 +428,7 @@ func initGenFiles(
 	crisisGenState.ConstantFee.Denom = coinDenom
 	appGenState[crisistypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&crisisGenState)
 
-	var evmGenState generated.GenesisState
+	var evmGenState support.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[evmtypes.ModuleName], &evmGenState)
 
 	evmGenState.Params.EvmDenom = coinDenom

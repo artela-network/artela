@@ -1,7 +1,7 @@
 package statedb
 
 import (
-	"github.com/artela-network/artela/x/evm/process/generated"
+	"github.com/artela-network/artela/x/evm/process/support"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -40,7 +40,7 @@ func NewEmptyTxConfig(blockHash common.Hash) TxConfig {
 // EVMConfig encapsulates common parameters needed to create an EVM to execute a message
 // It's mainly to reduce the number of method parameters
 type EVMConfig struct {
-	Params      generated.Params
+	Params      support.Params
 	ChainConfig *params.ChainConfig
 	CoinBase    common.Address
 	BaseFee     *big.Int

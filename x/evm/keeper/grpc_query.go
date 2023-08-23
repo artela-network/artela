@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/artela-network/artela/x/evm/process"
-	"github.com/artela-network/artela/x/evm/process/generated"
+	"github.com/artela-network/artela/x/evm/process/support"
 	"math/big"
 	"time"
 
@@ -522,7 +522,7 @@ func (k *Keeper) traceTx(
 	txConfig statedb.TxConfig,
 	signer eth.Signer,
 	tx *eth.Transaction,
-	traceConfig *generated.TraceConfig,
+	traceConfig *support.TraceConfig,
 	commitMessage bool,
 	tracerJSONConfig json.RawMessage,
 ) (*interface{}, uint, error) {
@@ -539,7 +539,7 @@ func (k *Keeper) traceTx(
 	}
 
 	if traceConfig == nil {
-		traceConfig = &generated.TraceConfig{}
+		traceConfig = &support.TraceConfig{}
 	}
 
 	if traceConfig.Overrides != nil {

@@ -2,7 +2,7 @@ package keeper
 
 import (
 	"github.com/artela-network/artela/x/evm/process"
-	"github.com/artela-network/artela/x/evm/process/generated"
+	"github.com/artela-network/artela/x/evm/process/support"
 	"math/big"
 
 	cometbft "github.com/cometbft/cometbft/types"
@@ -161,7 +161,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*p
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
 	}
 
-	logs := generated.LogsToEthereum(res.Logs)
+	logs := support.LogsToEthereum(res.Logs)
 
 	// Compute block bloom filter
 	if len(logs) > 0 {
@@ -202,7 +202,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*p
 		receipt.Status = ethereum.ReceiptStatusSuccessful
 		if commit != nil {
 			commit()
-			res.Logs = generated.NewLogsFromEth(receipt.Logs)
+			res.Logs = support.NewLogsFromEth(receipt.Logs)
 			ctx.EventManager().EmitEvents(tmpCtx.EventManager().Events())
 		}
 	}
@@ -397,7 +397,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 		GasUsed: gasUsed,
 		VmError: vmError,
 		Ret:     ret,
-		Logs:    generated.NewLogsFromEth(stateDB.Logs()),
+		Logs:    support.NewLogsFromEth(stateDB.Logs()),
 		Hash:    txConfig.TxHash.Hex(),
 	}, nil
 }

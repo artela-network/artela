@@ -3405,7 +3405,7 @@ paths:
                   properties:
                     address:
                       type: string
-                      title: address of the contract that generated the event
+                      title: address of the contract that support the event
                     topics:
                       type: array
                       items:
@@ -9403,7 +9403,7 @@ paths:
                 format: byte
                 title: merkle proof of existence
               proof_height:
-                title: height at which the proof was generated
+                title: height at which the proof was support
                 type: object
                 properties:
                   revision_number:
@@ -45150,7 +45150,7 @@ definitions:
     properties:
       address:
         type: string
-        title: address of the contract that generated the event
+        title: address of the contract that support the event
       topics:
         type: array
         items:
@@ -45401,7 +45401,7 @@ definitions:
           properties:
             address:
               type: string
-              title: address of the contract that generated the event
+              title: address of the contract that support the event
             topics:
               type: array
               items:
@@ -48206,7 +48206,7 @@ definitions:
         format: byte
         title: merkle proof of existence
       proof_height:
-        title: height at which the proof was generated
+        title: height at which the proof was support
         type: object
         properties:
           revision_number:

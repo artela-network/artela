@@ -1,4 +1,4 @@
-package generated
+package support
 
 import (
 	"github.com/artela-network/artela/x/evm/types"

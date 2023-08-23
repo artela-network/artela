@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/process/generated"
+	"github.com/artela-network/artela/x/evm/process/support"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -44,10 +44,10 @@ func (k *Keeper) TxConfig(ctx sdk.Context, txHash common.Hash) statedb.TxConfig 
 }
 
 // VMConfig creates an EVM configuration from the debug setting and the extra EIPs enabled on the
-// module parameters. The config generated uses the default JumpTable from the EVM.
+// module parameters. The config support uses the default JumpTable from the EVM.
 func (k Keeper) VMConfig(ctx sdk.Context, _ core.Message, cfg *statedb.EVMConfig, tracer vm.EVMLogger) vm.Config {
 	noBaseFee := true
-	if generated.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
+	if support.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
 		noBaseFee = k.feeKeeper.GetParams(ctx).NoBaseFee
 	}
 

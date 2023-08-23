@@ -2,7 +2,12 @@ package process
 
 import (
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process/generated"
+	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	"math/big"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -14,6 +19,86 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 )
+
+var (
+	amino = codec.NewLegacyAmino()
+	// ModuleCdc references the global evm module codec. Note, the codec should
+	// ONLY be used in certain instances of tests and for JSON encoding.
+	ModuleCdc = codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
+
+	// AminoCdc is a amino codec created to support amino JSON compatible msgs.
+	AminoCdc = codec.NewAminoCodec(amino)
+)
+
+const (
+	// Amino names
+	updateParamsName = "artela/MsgUpdateParams"
+)
+
+// NOTE: This is required for the GetSignBytes function
+func init() {
+	RegisterLegacyAminoCodec(amino)
+	amino.Seal()
+}
+
+// RegisterInterfaces registers the client interfaces to protobuf Any.
+func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	registry.RegisterImplementations(
+		(*tx.TxExtensionOptionI)(nil),
+		&ExtensionOptionsEthereumTx{},
+	)
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgEthereumTx{},
+		&MsgUpdateParams{},
+	)
+	registry.RegisterInterface(
+		"artela.evm.v1.TxData",
+		(*TxData)(nil),
+		&DynamicFeeTx{},
+		&AccessListTx{},
+		&LegacyTx{},
+	)
+
+	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
+}
+
+// PackTxData constructs a new Any packed with the given process data value. It returns
+// an error if the client state can't be casted to a protobuf message or if the concrete
+// implementation is not registered to the protobuf codec.
+func PackTxData(txData TxData) (*codectypes.Any, error) {
+	msg, ok := txData.(proto.Message)
+	if !ok {
+		return nil, errorsmod.Wrapf(errortypes.ErrPackAny, "cannot proto marshal %T", txData)
+	}
+
+	anyTxData, err := codectypes.NewAnyWithValue(msg)
+	if err != nil {
+		return nil, errorsmod.Wrap(errortypes.ErrPackAny, err.Error())
+	}
+
+	return anyTxData, nil
+}
+
+// UnpackTxData unpacks an Any into a TxData. It returns an error if the
+// client state can't be unpacked into a TxData.
+func UnpackTxData(any *codectypes.Any) (TxData, error) {
+	if any == nil {
+		return nil, errorsmod.Wrap(errortypes.ErrUnpackAny, "protobuf Any message cannot be nil")
+	}
+
+	txData, ok := any.GetCachedValue().(TxData)
+	if !ok {
+		return nil, errorsmod.Wrapf(errortypes.ErrUnpackAny, "cannot unpack Any into TxData %T", any)
+	}
+
+	return txData, nil
+}
+
+// RegisterLegacyAminoCodec required for EIP-712
+func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	cdc.RegisterConcrete(&MsgUpdateParams{}, updateParamsName, nil)
+}
 
 // DefaultPriorityReduction is the default amount of price values required for 1 unit of priority.
 // Because priority is `int64` while price is `big.Int`, it's necessary to scale down the range to keep it more pratical.
@@ -42,16 +127,16 @@ func DecodeTxResponse(in []byte) (*MsgEthereumTxResponse, error) {
 }
 
 // EncodeTransactionLogs encodes TransactionLogs slice into a protobuf-encoded byte slice.
-func EncodeTransactionLogs(res *generated.TransactionLogs) ([]byte, error) {
+func EncodeTransactionLogs(res *support.TransactionLogs) ([]byte, error) {
 	return proto.Marshal(res)
 }
 
 // DecodeTransactionLogs decodes an protobuf-encoded byte slice into TransactionLogs
-func DecodeTransactionLogs(data []byte) (generated.TransactionLogs, error) {
-	var logs generated.TransactionLogs
+func DecodeTransactionLogs(data []byte) (support.TransactionLogs, error) {
+	var logs support.TransactionLogs
 	err := proto.Unmarshal(data, &logs)
 	if err != nil {
-		return generated.TransactionLogs{}, err
+		return support.TransactionLogs{}, err
 	}
 	return logs, nil
 }

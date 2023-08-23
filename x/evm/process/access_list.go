@@ -1,14 +1,14 @@
 package process
 
 import (
-	"github.com/artela-network/artela/x/evm/process/generated"
+	"github.com/artela-network/artela/x/evm/process/support"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
 // AccessList is an EIP-2930 access list that represents the slice of
 // the protobuf AccessTuples.
-type AccessList []generated.AccessTuple
+type AccessList []support.AccessTuple
 
 // NewAccessList creates a new protobuf-compatible AccessList from an ethereum
 // core AccessList type
@@ -25,7 +25,7 @@ func NewAccessList(ethAccessList *ethereum.AccessList) AccessList {
 			storageKeys[i] = tuple.StorageKeys[i].String()
 		}
 
-		al = append(al, generated.AccessTuple{
+		al = append(al, support.AccessTuple{
 			Address:     tuple.Address.String(),
 			StorageKeys: storageKeys,
 		})
