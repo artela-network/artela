@@ -69,7 +69,7 @@ func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *ru
 	}
 }
 
-// GetTxCmd returns the root transaction command for the fee market module.
+// GetTxCmd returns the root process command for the fee market module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }

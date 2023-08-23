@@ -14,7 +14,7 @@ const (
 	AttributeKeyTxGasUsed       = "txGasUsed"
 	AttributeKeyTxType          = "txType"
 	AttributeKeyTxLog           = "txLog"
-	// AttributeKeyEthereumTxFailed transaction failed in evm execution
+	// AttributeKeyEthereumTxFailed process failed in evm execution
 	AttributeKeyEthereumTxFailed = "ethereumTxFailed"
 	AttributeValueCategory       = ModuleName
 	AttributeKeyEthereumBloom    = "bloom"

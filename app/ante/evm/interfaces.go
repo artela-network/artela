@@ -1,7 +1,7 @@
 package evm
 
 import (
-	evmtypes "github.com/artela-network/artela/x/evm/transaction"
+	evmtypes "github.com/artela-network/artela/x/evm/process"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

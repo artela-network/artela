@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"errors"
@@ -39,7 +39,7 @@ func (tx TransactionLogs) Validate() error {
 			return fmt.Errorf("invalid log %d: %w", i, err)
 		}
 		if log.TxHash != tx.Hash {
-			return fmt.Errorf("log transaction hash mismatch (%s ≠ %s)", log.TxHash, tx.Hash)
+			return fmt.Errorf("log process hash mismatch (%s ≠ %s)", log.TxHash, tx.Hash)
 		}
 	}
 	return nil
@@ -62,7 +62,7 @@ func (log *Log) Validate() error {
 		return errors.New("block number cannot be zero")
 	}
 	if artela.IsEmptyHash(log.TxHash) {
-		return fmt.Errorf("transaction hash cannot be the empty %s", log.TxHash)
+		return fmt.Errorf("process hash cannot be the empty %s", log.TxHash)
 	}
 	return nil
 }

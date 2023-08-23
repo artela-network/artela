@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/transaction"
+	"github.com/artela-network/artela/x/evm/process"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/params"
 	"math/big"
@@ -19,25 +19,25 @@ import (
 	"github.com/artela-network/artela/x/evm/types"
 )
 
-// CheckSenderBalance validates that the transaction cost value is positive and that the
-// sender has enough funds to pay for the fees and value of the transaction.
+// CheckSenderBalance validates that the process cost value is positive and that the
+// sender has enough funds to pay for the fees and value of the process.
 func CheckSenderBalance(
 	balance sdkmath.Int,
-	txData transaction.TxData,
+	txData process.TxData,
 ) error {
 	cost := txData.Cost()
 
 	if cost.Sign() < 0 {
 		return errorsmod.Wrapf(
 			errortypes.ErrInvalidCoins,
-			"transaction cost (%s) is negative and invalid", cost,
+			"process cost (%s) is negative and invalid", cost,
 		)
 	}
 
 	if balance.IsNegative() || balance.BigInt().Cmp(cost) < 0 {
 		return errorsmod.Wrapf(
 			errortypes.ErrInsufficientFunds,
-			"sender balance < transaction cost (%s < %s)", balance, txData.Cost(),
+			"sender balance < process cost (%s < %s)", balance, txData.Cost(),
 		)
 	}
 	return nil
@@ -64,11 +64,11 @@ func (k *Keeper) DeductTxCostsFromUserBalance(
 	return nil
 }
 
-// VerifyFee is used to return the fee for the given transaction data in sdk.Coins. It checks that the
+// VerifyFee is used to return the fee for the given process data in sdk.Coins. It checks that the
 // gas limit is not reached, the gas limit is higher than the intrinsic gas and that the
 // base fee is higher than the gas fee cap.
 func VerifyFee(
-	txData transaction.TxData,
+	txData process.TxData,
 	denom string,
 	baseFee *big.Int,
 	homestead, istanbul, isCheckTx bool,
@@ -102,7 +102,7 @@ func VerifyFee(
 
 	if baseFee != nil && txData.GetGasFeeCap().Cmp(baseFee) < 0 {
 		return nil, errorsmod.Wrapf(errortypes.ErrInsufficientFee,
-			"the transaction gasfeecap is lower than the transaction baseFee: %s (gasfeecap), %s (basefee) ",
+			"the process gasfeecap is lower than the process baseFee: %s (gasfeecap), %s (basefee) ",
 			txData.GetGasFeeCap(),
 			baseFee)
 	}
@@ -116,7 +116,7 @@ func VerifyFee(
 	return sdk.Coins{{Denom: denom, Amount: sdkmath.NewIntFromBigInt(feeAmt)}}, nil
 }
 
-// GetEthIntrinsicGas returns the intrinsic gas cost for the transaction
+// GetEthIntrinsicGas returns the intrinsic gas cost for the process
 func (k *Keeper) GetEthIntrinsicGas(ctx sdk.Context, msg core.Message, cfg *params.ChainConfig, isContractCreation bool) (uint64, error) {
 	height := big.NewInt(ctx.BlockHeight())
 	homestead := cfg.IsHomestead(height)
@@ -126,7 +126,7 @@ func (k *Keeper) GetEthIntrinsicGas(ctx sdk.Context, msg core.Message, cfg *para
 }
 
 // RefundGas transfers the leftover gas to the sender of the message, caped to half of the total gas
-// consumed in the transaction. Additionally, the function sets the total gas consumed to the value
+// consumed in the process. Additionally, the function sets the total gas consumed to the value
 // returned by the EVM execution, thus ignoring the previous intrinsic gas consumed during in the
 // AnteHandler.
 func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64, denom string) error {
@@ -141,7 +141,7 @@ func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64
 		// positive amount refund
 		refundedCoins := sdk.Coins{sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(remaining))}
 
-		// refund to sender from the fee collector module account, which is the escrow account in charge of collecting transaction fees
+		// refund to sender from the fee collector module account, which is the escrow account in charge of collecting process fees
 
 		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, msg.From().Bytes(), refundedCoins)
 		if err != nil {
@@ -149,7 +149,7 @@ func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64
 			return errorsmod.Wrapf(err, "failed to refund %d leftover gas (%s)", leftoverGas, refundedCoins.String())
 		}
 	default:
-		// no refund, consume gas and update the transaction gas meter
+		// no refund, consume gas and update the process gas meter
 	}
 
 	return nil
@@ -160,7 +160,7 @@ func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64
 func (k *Keeper) ResetGasMeterAndConsumeGas(ctx sdk.Context, gasUsed uint64) {
 	// reset the gas count
 	ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "reset the gas count")
-	ctx.GasMeter().ConsumeGas(gasUsed, "apply evm transaction")
+	ctx.GasMeter().ConsumeGas(gasUsed, "apply evm process")
 }
 
 // GasToRefund calculates the amount of gas the state machine should refund to the sender. It is

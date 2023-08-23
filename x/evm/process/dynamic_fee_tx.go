@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	types2 "github.com/artela-network/artela/x/evm/types"
@@ -59,7 +59,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	return txData, nil
 }
 
-// TxType returns the transaction type
+// TxType returns the process type
 func (tx *DynamicFeeTx) TxType() uint8 {
 	return ethereum.DynamicFeeTxType
 }
@@ -130,7 +130,7 @@ func (tx *DynamicFeeTx) GetGasFeeCap() *big.Int {
 	return tx.GasFeeCap.BigInt()
 }
 
-// GetValue returns the transaction amount.
+// GetValue returns the process amount.
 func (tx *DynamicFeeTx) GetValue() *big.Int {
 	if tx.Amount == nil {
 		return nil
@@ -139,7 +139,7 @@ func (tx *DynamicFeeTx) GetValue() *big.Int {
 	return tx.Amount.BigInt()
 }
 
-// GetNonce returns the account sequence for the transaction.
+// GetNonce returns the account sequence for the process.
 func (tx *DynamicFeeTx) GetNonce() uint64 { return tx.Nonce }
 
 // GetTo returns the pointer to the recipient address.
@@ -151,7 +151,7 @@ func (tx *DynamicFeeTx) GetTo() *common.Address {
 	return &to
 }
 
-// AsEthereumData returns an DynamicFeeTx transaction transaction from the proto-formatted
+// AsEthereumData returns an DynamicFeeTx process process from the proto-formatted
 // TxData defined on the Cosmos EVM.
 func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
@@ -171,13 +171,13 @@ func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
 	}
 }
 
-// GetRawSignatureValues returns the V, R, S signature values of the transaction.
+// GetRawSignatureValues returns the V, R, S signature values of the process.
 // The return values should not be modified by the caller.
 func (tx *DynamicFeeTx) GetRawSignatureValues() (v, r, s *big.Int) {
 	return rawSignatureValues(tx.V, tx.R, tx.S)
 }
 
-// SetSignatureValues sets the signature values to the transaction.
+// SetSignatureValues sets the signature values to the process.
 func (tx *DynamicFeeTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 	if v != nil {
 		tx.V = v.Bytes()
@@ -194,7 +194,7 @@ func (tx *DynamicFeeTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 	}
 }
 
-// Validate performs a stateless validation of the transaction fields.
+// Validate performs a stateless validation of the process fields.
 func (tx DynamicFeeTx) Validate() error {
 	if tx.GasTipCap == nil {
 		return errorsmod.Wrap(types2.ErrInvalidGasCap, "gas tip cap cannot nil")

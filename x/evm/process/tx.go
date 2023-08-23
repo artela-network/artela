@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"math"
@@ -25,8 +25,8 @@ type EvmTxArgs struct {
 	Accesses  *ethereum.AccessList
 }
 
-// GetTxPriority returns the priority of a given Ethereum transaction. It relies of the
-// priority reduction global variable to calculate the transaction priority given the transaction
+// GetTxPriority returns the priority of a given Ethereum process. It relies of the
+// priority reduction global variable to calculate the process priority given the process
 // tip price:
 //
 //	tx_priority = tip_price / priority_reduction

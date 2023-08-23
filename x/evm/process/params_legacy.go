@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"

@@ -1,18 +1,18 @@
 package statedb
 
 import (
-	"github.com/artela-network/artela/x/evm/transaction"
+	"github.com/artela-network/artela/x/evm/process"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// TxConfig encapulates the readonly information of current transaction for `StateDB`.
+// TxConfig encapulates the readonly information of current process for `StateDB`.
 type TxConfig struct {
 	BlockHash common.Hash // hash of current block
-	TxHash    common.Hash // hash of current transaction
-	TxIndex   uint        // the index of current transaction
+	TxHash    common.Hash // hash of current process
+	TxIndex   uint        // the index of current process
 	LogIndex  uint        // the index of next log within current block
 }
 
@@ -27,7 +27,7 @@ func NewTxConfig(blockHash, txHash common.Hash, txIndex, logIndex uint) TxConfig
 }
 
 // NewEmptyTxConfig construct an empty TxConfig,
-// used in context where there's no transaction, e.g. `eth_call`/`eth_estimateGas`.
+// used in context where there's no process, e.g. `eth_call`/`eth_estimateGas`.
 func NewEmptyTxConfig(blockHash common.Hash) TxConfig {
 	return TxConfig{
 		BlockHash: blockHash,
@@ -40,7 +40,7 @@ func NewEmptyTxConfig(blockHash common.Hash) TxConfig {
 // EVMConfig encapsulates common parameters needed to create an EVM to execute a message
 // It's mainly to reduce the number of method parameters
 type EVMConfig struct {
-	Params      transaction.Params
+	Params      process.Params
 	ChainConfig *params.ChainConfig
 	CoinBase    common.Address
 	BaseFee     *big.Int

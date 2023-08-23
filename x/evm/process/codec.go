@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	errorsmod "cosmossdk.io/errors"
@@ -54,7 +54,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
-// PackTxData constructs a new Any packed with the given transaction data value. It returns
+// PackTxData constructs a new Any packed with the given process data value. It returns
 // an error if the client state can't be casted to a protobuf message or if the concrete
 // implementation is not registered to the protobuf codec.
 func PackTxData(txData TxData) (*codectypes.Any, error) {

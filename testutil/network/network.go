@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	evmtypes "github.com/artela-network/artela/x/evm/transaction"
+	evmtypes "github.com/artela-network/artela/x/evm/process"
 	"net/http"
 	"net/url"
 	"os"

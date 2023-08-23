@@ -1,7 +1,7 @@
 package evm
 
 import (
-	evmtypes "github.com/artela-network/artela/x/evm/transaction"
+	evmtypes "github.com/artela-network/artela/x/evm/process"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -25,7 +25,7 @@ func NewEthSigVerificationDecorator(ek EVMKeeper) EthSigVerificationDecorator {
 // AnteHandle validates checks that the registered chain id is the same as the one on the message, and
 // that the signer address matches the one defined on the message.
 // It's not skipped for RecheckTx, because it set `From` address which is critical from other ante handler to work.
-// Failure in RecheckTx will prevent transaction to be included into block, especially when CheckTx succeed, in which case user
+// Failure in RecheckTx will prevent process to be included into block, especially when CheckTx succeed, in which case user
 // won't see the error message.
 func (esvd EthSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
 	chainID := esvd.evmKeeper.ChainID()
@@ -46,19 +46,19 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 		if !allowUnprotectedTxs && !ethTx.Protected() {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrNotSupported,
-				"rejected unprotected Ethereum transaction. Please EIP155 sign your transaction to protect it against replay-attacks")
+				"rejected unprotected Ethereum process. Please EIP155 sign your process to protect it against replay-attacks")
 		}
 
 		sender, err := signer.Sender(ethTx)
 		if err != nil {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrorInvalidSigner,
-				"couldn't retrieve sender address from the ethereum transaction: %s",
+				"couldn't retrieve sender address from the ethereum process: %s",
 				err.Error(),
 			)
 		}
 
-		// set up the sender to the transaction field if not already
+		// set up the sender to the process field if not already
 		msgEthTx.From = sender.Hex()
 	}
 

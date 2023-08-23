@@ -29,7 +29,7 @@ type StorageResult struct {
 	Proof []string     `json:"proof"`
 }
 
-// RPCTransaction represents a transaction that will serialize to the RPC representation of a transaction
+// RPCTransaction represents a process that will serialize to the RPC representation of a process
 type RPCTransaction struct {
 	BlockHash        *common.Hash         `json:"blockHash"`
 	BlockNumber      *hexutil.Big         `json:"blockNumber"`
@@ -76,10 +76,10 @@ type FeeHistoryResult struct {
 	GasUsedRatio []float64        `json:"gasUsedRatio"`
 }
 
-// SignTransactionResult represents a RLP encoded signed transaction.
+// SignTransactionResult represents a RLP encoded signed process.
 type SignTransactionResult struct {
 	Raw hexutil.Bytes         `json:"raw"`
-	Tx  *ethtypes.Transaction `json:"transaction"`
+	Tx  *ethtypes.Transaction `json:"process"`
 }
 
 type OneFeeHistory struct {

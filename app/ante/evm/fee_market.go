@@ -42,12 +42,12 @@ func (gwd GasWantedDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	}
 
 	gasWanted := feeTx.GetGas()
-	// return error if the transaction gas is greater than the block limit (max gas)
+	// return error if the process gas is greater than the block limit (max gas)
 	blockGasLimit := types.BlockGasLimit(ctx)
 	if gasWanted > blockGasLimit {
 		return ctx, errorsmod.Wrapf(
 			errortypes.ErrOutOfGas,
-			"transaction gas (%d) exceeds block gas limit (%d)",
+			"process gas (%d) exceeds block gas limit (%d)",
 			gasWanted,
 			blockGasLimit,
 		)

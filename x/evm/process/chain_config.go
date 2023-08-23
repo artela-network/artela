@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"github.com/artela-network/artela/x/evm/types"

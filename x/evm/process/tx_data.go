@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"math/big"
@@ -13,7 +13,7 @@ var (
 	_ TxData = &DynamicFeeTx{}
 )
 
-// TxData implements the Ethereum transaction transaction structure. It is used
+// TxData implements the Ethereum process process structure. It is used
 // solely as intended in Ethereum abiding by the protocol.
 type TxData interface {
 	// See https://github.com/ethereum/go-ethereum/issues/23154

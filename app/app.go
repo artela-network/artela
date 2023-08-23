@@ -889,7 +889,7 @@ func (app *Artela) GetSubspace(moduleName string) paramstypes.Subspace {
 // API server.
 func (app *Artela) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
-	// Register new transaction routes from grpc-gateway.
+	// Register new process routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
 	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)

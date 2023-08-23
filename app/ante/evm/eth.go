@@ -1,7 +1,7 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/transaction"
+	"github.com/artela-network/artela/x/evm/process"
 	"math"
 	"math/big"
 
@@ -35,12 +35,12 @@ func NewEthAccountVerificationDecorator(ak evmtypes.AccountKeeper, ek EVMKeeper)
 	}
 }
 
-// AnteHandle validates checks that the sender balance is greater than the total transaction cost.
+// AnteHandle validates checks that the sender balance is greater than the total process cost.
 // The account will be set to store if it doesn't exist, i.e. cannot be found on store.
 // This AnteHandler decorator will fail if:
 // - any of the msgs is not a MsgEthereumTx
 // - from address is empty
-// - account balance is lower than the transaction cost
+// - account balance is lower than the process cost
 func (avd EthAccountVerificationDecorator) AnteHandle(
 	ctx sdk.Context,
 	tx sdk.Tx,
@@ -52,17 +52,17 @@ func (avd EthAccountVerificationDecorator) AnteHandle(
 	}
 
 	for i, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*transaction.MsgEthereumTx)
+		msgEthTx, ok := msg.(*process.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*transaction.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
 		}
 
-		txData, err := transaction.UnpackTxData(msgEthTx.Data)
+		txData, err := process.UnpackTxData(msgEthTx.Data)
 		if err != nil {
-			return ctx, errorsmod.Wrapf(err, "failed to unpack transaction data any for transaction %d", i)
+			return ctx, errorsmod.Wrapf(err, "failed to unpack process data any for process %d", i)
 		}
 
-		// sender address should be in the transaction cache from the previous AnteHandle call
+		// sender address should be in the process cache from the previous AnteHandle call
 		from := msgEthTx.GetFrom()
 		if from.Empty() {
 			return ctx, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
@@ -88,7 +88,7 @@ func (avd EthAccountVerificationDecorator) AnteHandle(
 	return next(ctx, tx, simulate)
 }
 
-// EthGasConsumeDecorator validates enough intrinsic gas for the transaction and
+// EthGasConsumeDecorator validates enough intrinsic gas for the process and
 // gas consumption.
 type EthGasConsumeDecorator struct {
 	bankKeeper         anteutils.BankKeeper
@@ -115,21 +115,21 @@ func NewEthGasConsumeDecorator(
 	}
 }
 
-// AnteHandle validates that the Ethereum transaction message has enough to cover intrinsic gas
+// AnteHandle validates that the Ethereum process message has enough to cover intrinsic gas
 // (during CheckTx only) and that the sender has enough balance to pay for the gas cost.
 // If the balance is not sufficient, it will be attempted to withdraw enough staking rewards
 // for the payment.
 //
-// Intrinsic gas for a transaction is the amount of gas that the transaction uses before the
-// transaction is executed. The gas is a constant value plus any cost incurred by additional bytes
-// of data supplied with the transaction.
+// Intrinsic gas for a process is the amount of gas that the process uses before the
+// process is executed. The gas is a constant value plus any cost incurred by additional bytes
+// of data supplied with the process.
 //
 // This AnteHandler decorator will fail if:
 // - the message is not a MsgEthereumTx
 // - sender account cannot be found
-// - transaction's gas limit is lower than the intrinsic gas
-// - user has neither enough balance nor staking rewards to deduct the transaction fees (gas_limit * gas_price)
-// - transaction or block gas meter runs out of gas
+// - process's gas limit is lower than the intrinsic gas
+// - user has neither enough balance nor staking rewards to deduct the process fees (gas_limit * gas_price)
+// - process or block gas meter runs out of gas
 // - sets the gas meter limit
 // - gas limit is greater than the block gas meter limit
 func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
@@ -162,19 +162,19 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 	baseFee := egcd.evmKeeper.GetBaseFee(ctx, ethCfg)
 
 	for _, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*transaction.MsgEthereumTx)
+		msgEthTx, ok := msg.(*process.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*transaction.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
 		}
 		from := msgEthTx.GetFrom()
 
-		txData, err := transaction.UnpackTxData(msgEthTx.Data)
+		txData, err := process.UnpackTxData(msgEthTx.Data)
 		if err != nil {
-			return ctx, errorsmod.Wrap(err, "failed to unpack transaction data")
+			return ctx, errorsmod.Wrap(err, "failed to unpack process data")
 		}
 
 		if ctx.IsCheckTx() && egcd.maxGasWanted != 0 {
-			// We can't trust the transaction gas limit, because we'll refund the unused gas.
+			// We can't trust the process gas limit, because we'll refund the unused gas.
 			if txData.GetGas() > egcd.maxGasWanted {
 				gasWanted += egcd.maxGasWanted
 			} else {
@@ -197,7 +197,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 
 		err = egcd.evmKeeper.DeductTxCostsFromUserBalance(ctx, fees, common.HexToAddress(msgEthTx.From))
 		if err != nil {
-			return ctx, errorsmod.Wrapf(err, "failed to deduct transaction costs from user balance")
+			return ctx, errorsmod.Wrapf(err, "failed to deduct process costs from user balance")
 		}
 
 		events = append(events,
@@ -207,7 +207,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 			),
 		)
 
-		priority := transaction.GetTxPriority(txData, baseFee)
+		priority := process.GetTxPriority(txData, baseFee)
 
 		if priority < minPriority {
 			minPriority = priority
@@ -218,26 +218,26 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 
 	blockGasLimit := types.BlockGasLimit(ctx)
 
-	// return error if the transaction gas is greater than the block limit (max gas)
+	// return error if the process gas is greater than the block limit (max gas)
 
 	// NOTE: it's important here to use the gas wanted instead of the gas consumed
-	// from the transaction gas pool. The latter only has the value so far since the
+	// from the process gas pool. The latter only has the value so far since the
 	// EthSetupContextDecorator, so it will never exceed the block gas limit.
 	if gasWanted > blockGasLimit {
 		return ctx, errorsmod.Wrapf(
 			errortypes.ErrOutOfGas,
-			"transaction gas (%d) exceeds block gas limit (%d)",
+			"process gas (%d) exceeds block gas limit (%d)",
 			gasWanted,
 			blockGasLimit,
 		)
 	}
 
-	// Set transaction GasMeter with a limit of GasWanted (i.e. gas limit from the Ethereum transaction).
+	// Set process GasMeter with a limit of GasWanted (i.e. gas limit from the Ethereum process).
 	// The gas consumed will be then reset to the gas used by the state transition
 	// in the EVM.
 
 	// FIXME: use a custom gas configuration that doesn't add any additional gas and only
-	// takes into account the gas consumed at the end of the EVM transaction.
+	// takes into account the gas consumed at the end of the EVM process.
 	newCtx := ctx.
 		WithGasMeter(types.NewInfiniteGasMeterWithLimit(gasWanted)).
 		WithPriority(minPriority)
@@ -260,16 +260,16 @@ func NewCanTransferDecorator(evmKeeper EVMKeeper) CanTransferDecorator {
 }
 
 // AnteHandle creates an EVM from the message and calls the BlockContext CanTransfer function to
-// see if the address can execute the transaction.
+// see if the address can execute the process.
 func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	params := ctd.evmKeeper.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(ctd.evmKeeper.ChainID())
 	signer := ethtypes.MakeSigner(ethCfg, big.NewInt(ctx.BlockHeight()))
 
 	for _, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*transaction.MsgEthereumTx)
+		msgEthTx, ok := msg.(*process.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*transaction.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
 		}
 
 		baseFee := ctd.evmKeeper.GetBaseFee(ctx, ethCfg)
@@ -282,7 +282,7 @@ func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 			)
 		}
 
-		if transaction.IsLondon(ethCfg, ctx.BlockHeight()) {
+		if process.IsLondon(ethCfg, ctx.BlockHeight()) {
 			if baseFee == nil {
 				return ctx, errorsmod.Wrap(
 					evmtypes.ErrInvalidBaseFee,
@@ -336,19 +336,19 @@ func NewEthIncrementSenderSequenceDecorator(ak evmtypes.AccountKeeper) EthIncrem
 	}
 }
 
-// AnteHandle handles incrementing the sequence of the signer (i.e. sender). If the transaction is a
-// contract creation, the nonce will be incremented during the transaction execution and not within
+// AnteHandle handles incrementing the sequence of the signer (i.e. sender). If the process is a
+// contract creation, the nonce will be incremented during the process execution and not within
 // this AnteHandler decorator.
 func (issd EthIncrementSenderSequenceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	for _, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*transaction.MsgEthereumTx)
+		msgEthTx, ok := msg.(*process.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*transaction.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
 		}
 
-		txData, err := transaction.UnpackTxData(msgEthTx.Data)
+		txData, err := process.UnpackTxData(msgEthTx.Data)
 		if err != nil {
-			return ctx, errorsmod.Wrap(err, "failed to unpack transaction data")
+			return ctx, errorsmod.Wrap(err, "failed to unpack process data")
 		}
 
 		// increase sequence of sender
@@ -361,7 +361,7 @@ func (issd EthIncrementSenderSequenceDecorator) AnteHandle(ctx sdk.Context, tx s
 		}
 		nonce := acc.GetSequence()
 
-		// we merged the nonce verification to nonce increment, so when transaction includes multiple messages
+		// we merged the nonce verification to nonce increment, so when process includes multiple messages
 		// with same sender, they'll be accepted.
 		if txData.GetNonce() != nonce {
 			return ctx, errorsmod.Wrapf(

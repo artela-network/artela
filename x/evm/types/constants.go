@@ -6,7 +6,7 @@ import (
 
 // message type and route constants
 const (
-	// TypeMsgEthereumTx defines the type string of an Ethereum transaction
+	// TypeMsgEthereumTx defines the type string of an Ethereum process
 	TypeMsgEthereumTx = "ethereum_tx"
 )
 

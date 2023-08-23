@@ -2,7 +2,7 @@ package cosmos
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	evmtypes "github.com/artela-network/artela/x/evm/transaction"
+	evmtypes "github.com/artela-network/artela/x/evm/process"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -18,7 +18,7 @@ func (rmd RejectMessagesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 		if _, ok := msg.(*evmtypes.MsgEthereumTx); ok {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrInvalidType,
-				"MsgEthereumTx needs to be contained within a transaction with 'ExtensionOptionsEthereumTx' option",
+				"MsgEthereumTx needs to be contained within a process with 'ExtensionOptionsEthereumTx' option",
 			)
 		}
 	}

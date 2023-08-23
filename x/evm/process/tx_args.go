@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-// TransactionArgs represents the arguments to construct a new transaction
+// TransactionArgs represents the arguments to construct a new process
 // or a message call using JSON-RPC.
 // Duplicate struct definition since geth struct is in internal package
 // Ref: https://github.com/ethereum/go-ethereum/blob/release/1.10.4/internal/ethapi/transaction_args.go#L36
@@ -33,7 +33,7 @@ type TransactionArgs struct {
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input"`
 
-	// Introduced by AccessListTxType transaction.
+	// Introduced by AccessListTxType process.
 	AccessList *ethtypes.AccessList `json:"accessList,omitempty"`
 	ChainID    *hexutil.Big         `json:"chainId,omitempty"`
 }
@@ -52,7 +52,7 @@ func (args *TransactionArgs) String() string {
 		args.AccessList)
 }
 
-// ToTransaction converts the arguments to an ethereum transaction.
+// ToTransaction converts the arguments to an ethereum process.
 // This assumes that setTxDefaults has been called.
 func (args *TransactionArgs) ToTransaction() *MsgEthereumTx {
 	var (
@@ -228,7 +228,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (e
 	return msg, nil
 }
 
-// GetFrom retrieves the transaction sender address.
+// GetFrom retrieves the process sender address.
 func (args *TransactionArgs) GetFrom() common.Address {
 	if args.From == nil {
 		return common.Address{}
@@ -236,7 +236,7 @@ func (args *TransactionArgs) GetFrom() common.Address {
 	return *args.From
 }
 
-// GetData retrieves the transaction calldata. Input field is preferred.
+// GetData retrieves the process calldata. Input field is preferred.
 func (args *TransactionArgs) GetData() []byte {
 	if args.Input != nil {
 		return *args.Input

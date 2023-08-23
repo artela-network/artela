@@ -5,7 +5,7 @@ import (
 	cosmosante "github.com/artela-network/artela/app/ante/cosmos"
 	evmante "github.com/artela-network/artela/app/ante/evm"
 	anteutils "github.com/artela-network/artela/app/ante/utils"
-	"github.com/artela-network/artela/x/evm/transaction"
+	"github.com/artela-network/artela/x/evm/process"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -72,7 +72,7 @@ func (options HandlerOptions) Validate() error {
 		return errorsmod.Wrap(errortypes.ErrLogic, "distribution keeper is required for AnteHandler")
 	}
 	if options.TxFeeChecker == nil {
-		return errorsmod.Wrap(errortypes.ErrLogic, "transaction fee checker is required for AnteHandler")
+		return errorsmod.Wrap(errortypes.ErrLogic, "process fee checker is required for AnteHandler")
 	}
 	return nil
 }
@@ -94,7 +94,7 @@ func newEVMAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		// TODO mark evmante.NewEthGasConsumeDecorator(options.BankKeeper, options.DistributionKeeper, options.EvmKeeper, options.StakingKeeper, options.MaxTxGasWanted),
 		evmante.NewEthIncrementSenderSequenceDecorator(options.AccountKeeper),
 		evmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeKeeper),
-		// emit eth transaction hash and index at the very last ante handler.
+		// emit eth process hash and index at the very last ante handler.
 		evmante.NewEthEmitEventDecorator(options.EvmKeeper),
 	)
 }
@@ -104,7 +104,7 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
-			sdk.MsgTypeURL(&transaction.MsgEthereumTx{}),
+			sdk.MsgTypeURL(&process.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
 		ante.NewSetUpContextDecorator(),
@@ -132,7 +132,7 @@ func newLegacyCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
-			sdk.MsgTypeURL(&transaction.MsgEthereumTx{}),
+			sdk.MsgTypeURL(&process.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
 		ante.NewSetUpContextDecorator(),

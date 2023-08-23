@@ -8,8 +8,8 @@ import (
 )
 
 // NewAnteHandler returns an ante handler responsible for attempting to route an
-// Ethereum or SDK transaction to an internal ante handler for performing
-// transaction-level processing (e.g. fee payment, signature verification) before
+// Ethereum or SDK process to an internal ante handler for performing
+// process-level processing (e.g. fee payment, signature verification) before
 // being passed onto it's respective handler.
 func NewAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return func(
@@ -26,15 +26,15 @@ func NewAnteHandler(options HandlerOptions) sdk.AnteHandler {
 					// handle as *evmtypes.MsgEthereumTx
 					anteHandler = newEVMAnteHandler(options)
 				case "/artela.types.v1.ExtensionOptionsWeb3Tx":
-					// handle as normal Cosmos SDK transaction, except signature is checked for EIP712 representation
+					// handle as normal Cosmos SDK process, except signature is checked for EIP712 representation
 					anteHandler = newLegacyCosmosAnteHandlerEip712(options)
 				case "/artela.types.v1.ExtensionOptionDynamicFeeTx":
-					// cosmos-sdk transaction with dynamic fee extension
+					// cosmos-sdk process with dynamic fee extension
 					anteHandler = newCosmosAnteHandler(options)
 				default:
 					return ctx, errorsmod.Wrapf(
 						errortypes.ErrUnknownExtensionOptions,
-						"rejecting transaction with unsupported extension option: %s", typeURL,
+						"rejecting process with unsupported extension option: %s", typeURL,
 					)
 				}
 
@@ -42,12 +42,12 @@ func NewAnteHandler(options HandlerOptions) sdk.AnteHandler {
 			}
 		}
 
-		// handle as totally normal Cosmos SDK transaction
+		// handle as totally normal Cosmos SDK process
 		switch tx.(type) {
 		case sdk.Tx:
 			anteHandler = newCosmosAnteHandler(options)
 		default:
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid transaction type: %T", tx)
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid process type: %T", tx)
 		}
 
 		return anteHandler(ctx, tx, sim)

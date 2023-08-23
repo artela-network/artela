@@ -21,7 +21,7 @@ const (
 )
 
 // NewTracer creates a new Logger tracer to collect execution traces from an
-// EVM transaction.
+// EVM process.
 func NewTracer(tracer string, msg core.Message, cfg *params.ChainConfig, height int64) vm.EVMLogger {
 	// TODO: enable additional log configuration
 	logCfg := &logger.Config{
@@ -43,7 +43,7 @@ func NewTracer(tracer string, msg core.Message, cfg *params.ChainConfig, height 
 	}
 }
 
-// TxTraceResult is the result of a single transaction trace during a block trace.
+// TxTraceResult is the result of a single process trace during a block trace.
 type TxTraceResult struct {
 	Result interface{} `json:"result,omitempty"` // Trace results produced by the tracer
 	Error  string      `json:"error,omitempty"`  // Trace failure produced by the tracer

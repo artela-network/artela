@@ -45,10 +45,10 @@ type StateDB struct {
 	// The refund counter, also used by state transitioning.
 	refund uint64
 
-	// Per-transaction logs
+	// Per-process logs
 	logs []*ethereum.Log
 
-	// Per-transaction access list
+	// Per-process access list
 	accessList *accessList
 }
 
@@ -70,7 +70,7 @@ func (s *StateDB) Keeper() Keeper {
 	return s.keeper
 }
 
-// GetContext returns the transaction Context.
+// GetContext returns the process Context.
 func (s *StateDB) GetContext() sdk.Context {
 	return s.ctx
 }
@@ -86,7 +86,7 @@ func (s *StateDB) AddLog(log *ethereum.Log) {
 	s.logs = append(s.logs, log)
 }
 
-// Logs returns the logs of current transaction.
+// Logs returns the logs of current process.
 func (s *StateDB) Logs() []*ethereum.Log {
 	return s.logs
 }
@@ -189,7 +189,7 @@ func (s *StateDB) GetRefund() uint64 {
 	return s.refund
 }
 
-// HasSuicided returns if the contract is suicided in current transaction.
+// HasSuicided returns if the contract is suicided in current process.
 func (s *StateDB) HasSuicided(addr common.Address) bool {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -359,14 +359,14 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 // - Add sender to access list (2929)
 // - Add destination to access list (2929)
 // - Add precompiles to access list (2929)
-// - Add the contents of the optional transaction access list (2930)
+// - Add the contents of the optional process access list (2930)
 //
 // This method should only be called if Yolov3/Berlin/2929+2930 is applicable at the current number.
 func (s *StateDB) PrepareAccessList(sender common.Address, dst *common.Address, precompiles []common.Address, list ethereum.AccessList) {
 	s.AddAddressToAccessList(sender)
 	if dst != nil {
 		s.AddAddressToAccessList(*dst)
-		// If it's a create-transaction, the destination will be added inside evm.create
+		// If it's a create-process, the destination will be added inside evm.create
 	}
 	for _, addr := range precompiles {
 		s.AddAddressToAccessList(addr)

@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
