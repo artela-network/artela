@@ -2,11 +2,19 @@ package vmstate
 
 import (
 	"github.com/artela-network/artela/x/evm/process/support"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
+	"math/big"
 )
+
+// EVMConfig encapsulates common parameters needed to create an EVM to execute a message
+// It's mainly to reduce the number of method parameters
+type EVMConfig struct {
+	Params      support.Params
+	ChainConfig *params.ChainConfig
+	CoinBase    common.Address
+	BaseFee     *big.Int
+}
 
 // TxConfig encapulates the readonly information of current process for `StateDB`.
 type TxConfig struct {
@@ -35,13 +43,4 @@ func NewEmptyTxConfig(blockHash common.Hash) TxConfig {
 		TxIndex:   0,
 		LogIndex:  0,
 	}
-}
-
-// EVMConfig encapsulates common parameters needed to create an EVM to execute a message
-// It's mainly to reduce the number of method parameters
-type EVMConfig struct {
-	Params      support.Params
-	ChainConfig *params.ChainConfig
-	CoinBase    common.Address
-	BaseFee     *big.Int
 }

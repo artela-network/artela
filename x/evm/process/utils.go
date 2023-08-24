@@ -21,6 +21,15 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// ===============================================================
+//          		          Codec
+// ===============================================================
+
+const (
+	// Amino names
+	updateParamsName = "artela/MsgUpdateParams"
+)
+
 var (
 	amino = codec.NewLegacyAmino()
 	// ModuleCdc references the global evm module codec. Note, the codec should
@@ -31,12 +40,7 @@ var (
 	AminoCdc = codec.NewAminoCodec(amino)
 )
 
-const (
-	// Amino names
-	updateParamsName = "artela/MsgUpdateParams"
-)
-
-// NOTE: This is required for the GetSignBytes function
+// This is required for the GetSignBytes function
 func init() {
 	RegisterLegacyAminoCodec(amino)
 	amino.Seal()
@@ -102,7 +106,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 }
 
 // DefaultPriorityReduction is the default amount of price values required for 1 unit of priority.
-// Because priority is `int64` while price is `big.Int`, it's necessary to scale down the range to keep it more pratical.
+// Because priority is `int64` while price is `big.Int`, it's necessary to scale down the range to keep it more practical.
 // The default value is the same as the `sdk.DefaultPowerReduction`.
 var DefaultPriorityReduction = sdk.DefaultPowerReduction
 
@@ -212,6 +216,10 @@ func GetTxPriority(txData TxData, baseFee *big.Int) (priority int64) {
 
 	return priority
 }
+
+// ===============================================================
+//          		          Converter
+// ===============================================================
 
 func NewTxDataFromTx(tx *ethereum.Transaction) (TxData, error) {
 	var txData TxData

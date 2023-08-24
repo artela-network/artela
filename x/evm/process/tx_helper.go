@@ -42,18 +42,44 @@ type TxData interface {
 	AsEthereumData() ethereum.TxData
 	Validate() error
 
-	// static fee
 	Fee() *big.Int
 	Cost() *big.Int
 
-	// effective gasPrice/fee/cost according to current base fee
 	EffectiveGasPrice(baseFee *big.Int) *big.Int
 	EffectiveFee(baseFee *big.Int) *big.Int
 	EffectiveCost(baseFee *big.Int) *big.Int
 }
 
-// TransactionArgs represents the arguments to construct a new process
-// or a message call using JSON-RPC.
+// ===============================================================
+//          		 MsgEthereumTxResponse
+// ===============================================================
+
+// Failed returns if the contract execution failed in vm errors
+func (m *MsgEthereumTxResponse) Failed() bool {
+	return len(m.VmError) > 0
+}
+
+// Return returns the data after execution if no error occurs
+func (m *MsgEthereumTxResponse) Return() []byte {
+	if m.Failed() {
+		return nil
+	}
+	return common.CopyBytes(m.Ret)
+}
+
+// Revert returns the concrete revert reason if the execution is aborted by `REVERT` opcode
+func (m *MsgEthereumTxResponse) Revert() []byte {
+	if m.VmError != vm.ErrExecutionReverted.Error() {
+		return nil
+	}
+	return common.CopyBytes(m.Ret)
+}
+
+// ===============================================================
+//          		      TransactionArgs
+// ===============================================================
+
+// TransactionArgs represents the arguments of a process or message call
 type TransactionArgs struct {
 	From                 *common.Address `json:"from"`
 	To                   *common.Address `json:"to"`
@@ -95,7 +121,7 @@ func (args *TransactionArgs) GetFrom() common.Address {
 	return *args.From
 }
 
-// GetData retrieves the process calldata. Input field is preferred
+// GetData retrieves the process call data. Input field is preferred
 func (args *TransactionArgs) GetData() []byte {
 	if args.Input != nil {
 		return *args.Input
@@ -280,7 +306,9 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (e
 	return msg, nil
 }
 
-// ---------------------
+// ===============================================================
+//          		         EvmTxArgs
+// ===============================================================
 
 // EvmTxArgs encapsulates all params for accessListTx, legacyTx, dynamicFeeTx
 type EvmTxArgs struct {
@@ -378,25 +406,4 @@ func newMsgEthereumTx(
 	msg := MsgEthereumTx{Data: dataAny}
 	msg.Hash = msg.AsTransaction().Hash().Hex()
 	return &msg
-}
-
-// Failed returns if the contract execution failed in vm errors
-func (m *MsgEthereumTxResponse) Failed() bool {
-	return len(m.VmError) > 0
-}
-
-// Return returns the data after execution if no error occurs
-func (m *MsgEthereumTxResponse) Return() []byte {
-	if m.Failed() {
-		return nil
-	}
-	return common.CopyBytes(m.Ret)
-}
-
-// Revert returns the concrete revert reason if the execution is aborted by `REVERT` opcode
-func (m *MsgEthereumTxResponse) Revert() []byte {
-	if m.VmError != vm.ErrExecutionReverted.Error() {
-		return nil
-	}
-	return common.CopyBytes(m.Ret)
 }

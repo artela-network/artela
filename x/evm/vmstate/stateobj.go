@@ -2,50 +2,12 @@ package vmstate
 
 import (
 	"bytes"
-	"math/big"
-	"sort"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"math/big"
 )
 
 var emptyCodeHash = crypto.Keccak256(nil)
-
-// Account is the Ethereum consensus representation of accounts.
-// These objects are stored in the storage of auth module.
-type Account struct {
-	Nonce    uint64
-	Balance  *big.Int
-	CodeHash []byte
-}
-
-// NewEmptyAccount returns an empty account.
-func NewEmptyAccount() *Account {
-	return &Account{
-		Balance:  new(big.Int),
-		CodeHash: emptyCodeHash,
-	}
-}
-
-// IsContract returns if the account contains contract code.
-func (acct Account) IsContract() bool {
-	return !bytes.Equal(acct.CodeHash, emptyCodeHash)
-}
-
-// Storage represents in-memory cache/buffer of contract storage.
-type Storage map[common.Hash]common.Hash
-
-// SortedKeys sort the keys for deterministic iteration
-func (s Storage) SortedKeys() []common.Hash {
-	keys := make([]common.Hash, 0, len(s))
-	for k := range s {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) < 0
-	})
-	return keys
-}
 
 // stateObject is the state of an account
 type stateObject struct {
@@ -121,10 +83,6 @@ func (s *stateObject) SetBalance(amount *big.Int) {
 func (s *stateObject) setBalance(amount *big.Int) {
 	s.account.Balance = amount
 }
-
-//
-// Attribute accessors
-//
 
 // Returns the address of the contract/account
 func (s *stateObject) Address() common.Address {

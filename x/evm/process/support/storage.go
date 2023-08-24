@@ -1,12 +1,9 @@
 package support
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"fmt"
 	"github.com/artela-network/artela/x/evm/types"
-	"strings"
-
-	errorsmod "cosmossdk.io/errors"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // Storage represents the account Storage map as a slice of single key value
@@ -46,22 +43,4 @@ func (s Storage) Copy() Storage {
 	copy(cpy, s)
 
 	return cpy
-}
-
-// Validate performs a basic validation of the State fields.
-// NOTE: state value can be empty
-func (s State) Validate() error {
-	if strings.TrimSpace(s.Key) == "" {
-		return errorsmod.Wrap(types.ErrInvalidState, "state key hash cannot be blank")
-	}
-
-	return nil
-}
-
-// NewState creates a new State instance
-func NewState(key, value common.Hash) State {
-	return State{
-		Key:   key.String(),
-		Value: value.String(),
-	}
 }
