@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/eth/downloader"
@@ -31,6 +32,7 @@ type ArtelaService struct {
 }
 
 func NewArtelaService(
+	ctx *server.Context,
 	clientCtx client.Context,
 	cfg *Config,
 	stack types.NetworkingStack,
@@ -42,9 +44,7 @@ func NewArtelaService(
 		clientCtx: clientCtx,
 	}
 
-	// Set the Backend.
-	ab := NewAccountBackend(clientCtx)
-	art.backend = NewBackend(art, stack.ExtRPCEnabled(), cfg, ab)
+	art.backend = NewBackend(clientCtx, art, stack.ExtRPCEnabled(), cfg)
 	return art
 }
 

@@ -376,23 +376,7 @@ func (s *PersonalAccountAPI) LockAccount(addr common.Address) bool {
 // NOTE: the caller needs to ensure that the nonceLock is held, if applicable,
 // and release it after the transaction has been submitted to the tx pool
 func (s *PersonalAccountAPI) signTransaction(ctx context.Context, args *TransactionArgs, passwd string) (*types.Transaction, error) {
-	// Look up the wallet containing the requested signer
-	// account := accounts.Account{Address: args.from()}
-	// wallet, err := s.am.Find(account)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// // Set some sanity defaults and terminate on failure
-	// if err := args.setDefaults(ctx, s.b); err != nil {
-	// 	return nil, err
-	// }
-	// // Assemble the transaction and sign with the wallet
-	// tx := args.toTransaction()
-
-	// return wallet.SignTxWithPassphrase(account, passwd, tx, s.b.ChainConfig().ChainID)
-
 	return s.ab.SignTransaction(args, passwd)
-	// return nil, nil
 }
 
 // SendTransaction will create a transaction from the given arguments and

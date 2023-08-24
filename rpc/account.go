@@ -1,41 +1,55 @@
 package rpc
 
 import (
+	"context"
 	"fmt"
+	"math"
 	"math/big"
+	"strconv"
 	"time"
 
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
-	"github.com/artela-network/artela/ethereum/crypto/hd"
-	"github.com/artela-network/artela/rpc/ethapi"
-	"github.com/artela-network/artela/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdkcrypto "github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
+	"github.com/artela-network/artela/rpc/ethapi"
+	rpctypes "github.com/artela-network/artela/rpc/types"
+	"github.com/artela-network/artela/types"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 var _ ethapi.AccountBackend = (*AccountBackend)(nil)
 
 type AccountBackend struct {
-	clientCtx client.Context
-	chainID   *big.Int
+	ctx         context.Context
+	clientCtx   client.Context
+	chainID     *big.Int
+	queryClient *rpctypes.QueryClient
 }
 
-func NewAccountBackend(clientCtx client.Context) *AccountBackend {
+func NewAccountBackend(ctx context.Context, clientCtx client.Context, queryClient *rpctypes.QueryClient) *AccountBackend {
 	chainID, err := types.ParseChainID(clientCtx.ChainID)
 	if err != nil {
 		panic(err)
 	}
 
 	return &AccountBackend{
-		clientCtx: clientCtx,
-		chainID:   chainID,
+		ctx:         ctx,
+		clientCtx:   clientCtx,
+		chainID:     chainID,
+		queryClient: queryClient,
 	}
 }
 
@@ -115,68 +129,39 @@ func (ab *AccountBackend) ImportRawKey(privkey, password string) (common.Address
 }
 
 func (ab *AccountBackend) SignTransaction(args *ethapi.TransactionArgs, passwd string) (*ethtypes.Transaction, error) {
-	/*_, err := ab.clientCtx.Keyring.KeyByAddress(sdktypes.AccAddress(args.From.Bytes()))
+	_, err := ab.clientCtx.Keyring.KeyByAddress(sdktypes.AccAddress(args.From.Bytes()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to find key in the node's keyring; %s; %s", keystore.ErrNoMatch, err.Error())
 	}
 
 	if args.ChainID != nil && (ab.chainID).Cmp((*big.Int)(args.ChainID)) != 0 {
-		return nil, fmt.Errorf("chainId does not match node's (have=%v, want=%v)", args.ChainID, (*hexutil.Big)(b.chainID))
+		return nil, fmt.Errorf("chainId does not match node's (have=%v, want=%v)", args.ChainID, (*hexutil.Big)(ab.chainID))
 	}
 
-	args, err = b.SetTxDefaults(args)
+	// TODO, set defaults
+	// args, err = b.SetTxDefaults(args)
+	// if err != nil {
+	// 	return common.Hash{}, err
+	// }
+
+	bn, err := ab.BlockNumber()
 	if err != nil {
-		return common.Hash{}, err
+		return nil, err
 	}
 
-	bn, err := b.BlockNumber()
+	bt, err := ab.BlockTimeByNumber(int64(bn))
 	if err != nil {
-		b.logger.Debug("failed to fetch latest block number", "error", err.Error())
-		return common.Hash{}, err
+		return nil, err
 	}
 
-	signer := ethtypes.MakeSigner(b.ChainConfig(), new(big.Int).SetUint64(uint64(bn)))
+	signer := ethtypes.MakeSigner(ab.ChainConfig(), new(big.Int).SetUint64(uint64(bn)), bt)
 
 	// LegacyTx derives chainID from the signature. To make sure the msg.ValidateBasic makes
 	// the corresponding chainID validation, we need to sign the transaction before calling it
 
 	// Sign transaction
-	msg := args.ToTransaction()
-	if err := msg.Sign(signer, b.clientCtx.Keyring); err != nil {
-		b.logger.Debug("failed to sign tx", "error", err.Error())
-		return common.Hash{}, err
-	}
-
-	if err := msg.ValidateBasic(); err != nil {
-		b.logger.Debug("tx failed basic validation", "error", err.Error())
-		return common.Hash{}, err
-	}
-
-	// Query params to use the EVM denomination
-	res, err := b.queryClient.QueryClient.Params(b.ctx, &evmtypes.QueryParamsRequest{})
-	if err != nil {
-		b.logger.Error("failed to query evm params", "error", err.Error())
-		return common.Hash{}, err
-	}
-
-	// Assemble transaction from fields
-	tx, err := msg.BuildTx(b.clientCtx.TxConfig.NewTxBuilder(), res.Params.EvmDenom)
-	if err != nil {
-		b.logger.Error("build cosmos tx failed", "error", err.Error())
-		return common.Hash{}, err
-	}
-
-	// Encode transaction by default Tx encoder
-	txEncoder := b.clientCtx.TxConfig.TxEncoder()
-	txBytes, err := txEncoder(tx)
-	if err != nil {
-		b.logger.Error("failed to encode eth tx using default encoder", "error", err.Error())
-		return common.Hash{}, err
-	}
-
-	ethTx := msg.AsTransaction()
-	return ethTx, nil*/
-	return nil, nil
+	msg := args.ToEVMTransaction()
+	return msg.SignEthereumTx(signer, ab.clientCtx.Keyring)
 }
 
 // Sign signs the provided data using the private key of address via Geth's signature standard.
@@ -196,4 +181,47 @@ func (ab *AccountBackend) Sign(address common.Address, data hexutil.Bytes) (hexu
 
 	signature[crypto.RecoveryIDOffset] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
 	return signature, nil
+}
+
+func (ab *AccountBackend) BlockNumber() (hexutil.Uint64, error) {
+	// do any grpc query, ignore the response and use the returned block height
+	var header metadata.MD
+	_, err := ab.queryClient.Params(ab.ctx, &evmtypes.QueryParamsRequest{}, grpc.Header(&header))
+	if err != nil {
+		return hexutil.Uint64(0), err
+	}
+
+	blockHeightHeader := header.Get(grpctypes.GRPCBlockHeightHeader)
+	if headerLen := len(blockHeightHeader); headerLen != 1 {
+		return 0, fmt.Errorf("unexpected '%s' gRPC header length; got %d, expected: %d", grpctypes.GRPCBlockHeightHeader, headerLen, 1)
+	}
+
+	height, err := strconv.ParseUint(blockHeightHeader[0], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse block height: %w", err)
+	}
+
+	if height > math.MaxInt64 {
+		return 0, fmt.Errorf("block height %d is greater than max uint64", height)
+	}
+
+	return hexutil.Uint64(height), nil
+}
+
+func (ab *AccountBackend) BlockTimeByNumber(blockNum int64) (uint64, error) {
+	resBlock, err := ab.clientCtx.Client.Block(ab.ctx, &blockNum)
+	if err != nil {
+		return 0, err
+	}
+	return uint64(resBlock.Block.Time.Unix()), nil
+}
+
+// ChainConfig returns the latest ethereum chain configuration
+func (ab *AccountBackend) ChainConfig() *params.ChainConfig {
+	params, err := ab.queryClient.Params(ab.ctx, &evmtypes.QueryParamsRequest{})
+	if err != nil {
+		return nil
+	}
+
+	return params.Params.ChainConfig.EthereumConfig(ab.chainID)
 }

@@ -231,9 +231,18 @@ func (msg MsgEthereumTx) GetSignBytes() []byte {
 // The function will fail if the sender address is not defined for the msg or if
 // the sender is not registered on the keyring
 func (msg *MsgEthereumTx) Sign(ethSigner ethereum.Signer, keyringSigner keyring.Signer) error {
+	tx, err := msg.SignEthereumTx(ethSigner, keyringSigner)
+	if err != nil {
+		return err
+	}
+
+	return msg.FromEthereumTx(tx)
+}
+
+func (msg *MsgEthereumTx) SignEthereumTx(ethSigner ethereum.Signer, keyringSigner keyring.Signer) (*ethereum.Transaction, error) {
 	from := msg.GetFrom()
 	if from.Empty() {
-		return fmt.Errorf("sender address not defined for message")
+		return nil, fmt.Errorf("sender address not defined for message")
 	}
 
 	tx := msg.AsTransaction()
@@ -241,15 +250,10 @@ func (msg *MsgEthereumTx) Sign(ethSigner ethereum.Signer, keyringSigner keyring.
 
 	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	tx, err = tx.WithSignature(ethSigner, sig)
-	if err != nil {
-		return err
-	}
-
-	return msg.FromEthereumTx(tx)
+	return tx.WithSignature(ethSigner, sig)
 }
 
 // GetGas implements the GasTx interface. It returns the GasLimit of the transaction.
