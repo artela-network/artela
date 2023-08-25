@@ -1,12 +1,12 @@
 package server
 
 import (
+	rpc2 "github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
 	"io"
 	"os"
 	"path/filepath"
 
-	"github.com/artela-network/artela/rpc"
-	"github.com/artela-network/artela/server/config"
 	dbm "github.com/cometbft/cometbft-db"
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -54,23 +54,23 @@ func CreateJSONRPC(ctx *server.Context,
 	tmRPCAddr,
 	tmEndpoint string,
 	config *config.Config,
-) (*rpc.ArtelaService, error) {
-	cfg := rpc.DefaultConfig()
+) (*rpc2.ArtelaService, error) {
+	cfg := rpc2.DefaultConfig()
 	cfg.RPCGasCap = config.JSONRPC.GasCap
 	cfg.RPCEVMTimeout = config.JSONRPC.EVMTimeout
 	cfg.RPCTxFeeCap = config.JSONRPC.TxFeeCap
 
-	nodeCfg := rpc.DefaultGethNodeConfig()
+	nodeCfg := rpc2.DefaultGethNodeConfig()
 	// TODO, config end point
 	// nodeCfg.HTTPHost = tmRPCAddr
 	// nodeCfg. =
-	stack, err := rpc.NewNode(nodeCfg)
+	stack, err := rpc2.NewNode(nodeCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	am := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false})
-	serv := rpc.NewArtelaService(ctx, clientCtx, cfg, stack, am)
+	serv := rpc2.NewArtelaService(ctx, clientCtx, cfg, stack, am)
 
 	return serv, nil
 }

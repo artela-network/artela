@@ -3,6 +3,9 @@ package rpc
 import (
 	"context"
 	"fmt"
+	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"math"
 	"math/big"
@@ -25,12 +28,9 @@ import (
 
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
-	"github.com/artela-network/artela/rpc/ethapi"
-	rpctypes "github.com/artela-network/artela/rpc/types"
-	"github.com/artela-network/artela/types"
 )
 
-var _ ethapi.AccountBackend = (*AccountBackend)(nil)
+var _ ethapi2.AccountBackend = (*AccountBackend)(nil)
 
 type AccountBackend struct {
 	ctx         context.Context
@@ -40,7 +40,7 @@ type AccountBackend struct {
 }
 
 func NewAccountBackend(ctx context.Context, clientCtx client.Context, queryClient *rpctypes.QueryClient) *AccountBackend {
-	chainID, err := types.ParseChainID(clientCtx.ChainID)
+	chainID, err := types2.ParseChainID(clientCtx.ChainID)
 	if err != nil {
 		panic(err)
 	}
@@ -79,7 +79,7 @@ func (ab *AccountBackend) NewAccount(password string) (common.AddressEIP55, erro
 	cfg := sdktypes.GetConfig()
 	basePath := cfg.GetFullBIP44Path()
 
-	hdPathIter, err := types.NewHDPathIterator(basePath, true)
+	hdPathIter, err := types2.NewHDPathIterator(basePath, true)
 	if err != nil {
 		panic(err)
 	}
@@ -128,7 +128,7 @@ func (ab *AccountBackend) ImportRawKey(privkey, password string) (common.Address
 	return ethereumAddr, nil
 }
 
-func (ab *AccountBackend) SignTransaction(args *ethapi.TransactionArgs) (*ethtypes.Transaction, error) {
+func (ab *AccountBackend) SignTransaction(args *ethapi2.TransactionArgs) (*ethtypes.Transaction, error) {
 	_, err := ab.clientCtx.Keyring.KeyByAddress(sdktypes.AccAddress(args.From.Bytes()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to find key in the node's keyring; %s; %s", keystore.ErrNoMatch, err.Error())

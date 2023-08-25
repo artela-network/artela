@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
+	"github.com/artela-network/artela/ethereum/types"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	"net/http"
 	"net/url"
@@ -31,7 +34,6 @@ import (
 
 	"github.com/artela-network/artela/app"
 	"github.com/artela-network/artela/app/params"
-	"github.com/artela-network/artela/rpc"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -55,8 +57,6 @@ import (
 
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
-	"github.com/artela-network/artela/server/config"
-	artelatypes "github.com/artela-network/artela/types"
 )
 
 // package-wide network lock to only allow one test network at a time
@@ -113,10 +113,10 @@ func DefaultConfig() Config {
 		ChainID:           fmt.Sprintf("artela_%d-1", tmrand.Int63n(9999999999999)+1),
 		NumValidators:     4,
 		BondDenom:         "aartela",
-		MinGasPrices:      fmt.Sprintf("0.000006%s", artelatypes.AttoArtela),
-		AccountTokens:     sdk.TokensFromConsensusPower(1000000000000000000, artelatypes.PowerReduction),
-		StakingTokens:     sdk.TokensFromConsensusPower(500000000000000000, artelatypes.PowerReduction),
-		BondedTokens:      sdk.TokensFromConsensusPower(100000000000000000, artelatypes.PowerReduction),
+		MinGasPrices:      fmt.Sprintf("0.000006%s", types.AttoArtela),
+		AccountTokens:     sdk.TokensFromConsensusPower(1000000000000000000, types.PowerReduction),
+		StakingTokens:     sdk.TokensFromConsensusPower(500000000000000000, types.PowerReduction),
+		BondedTokens:      sdk.TokensFromConsensusPower(100000000000000000, types.PowerReduction),
 		PruningStrategy:   pruningtypes.PruningOptionNothing,
 		CleanupDir:        true,
 		SigningAlgo:       string(hd.EthSecp256k1Type),
@@ -222,7 +222,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 	l.Log("acquiring test network lock")
 	lock.Lock()
 
-	if !artelatypes.IsValidChainID(cfg.ChainID) {
+	if !types.IsValidChainID(cfg.ChainID) {
 		return nil, fmt.Errorf("invalid chain-id: %s", cfg.ChainID)
 	}
 
@@ -417,7 +417,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 
 		genFiles = append(genFiles, tmCfg.GenesisFile())
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: balances.Sort()})
-		genAccounts = append(genAccounts, &artelatypes.EthAccount{
+		genAccounts = append(genAccounts, &types.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(addr, nil, 0, 0),
 			CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
 		})
@@ -475,7 +475,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
-		customAppTemplate, _ := config.AppConfig(artelatypes.AttoArtela)
+		customAppTemplate, _ := config.AppConfig(types.AttoArtela)
 		srvconfig.SetConfigTemplate(customAppTemplate)
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appCfg)
 

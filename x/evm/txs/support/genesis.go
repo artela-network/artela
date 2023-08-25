@@ -2,7 +2,7 @@ package support
 
 import (
 	"fmt"
-	"github.com/artela-network/artela/types"
+	"github.com/artela-network/artela/ethereum/types"
 )
 
 // Validate performs a basic validation of a GenesisAccount fields.

@@ -1,6 +1,7 @@
 package evm
 
 import (
+	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math"
@@ -13,7 +14,6 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
-	"github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/keeper"
 	"github.com/artela-network/artela/x/evm/states"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
@@ -143,7 +143,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 		// that is not bubbled up. Thus, the Tx never runs on DeliverMode
 		// Error: "gas wanted -1 is negative"
 		// For more information, see issue #1554
-		newCtx := ctx.WithGasMeter(types.NewInfiniteGasMeterWithLimit(gasWanted))
+		newCtx := ctx.WithGasMeter(types2.NewInfiniteGasMeterWithLimit(gasWanted))
 		return next(newCtx, tx, simulate)
 	}
 
@@ -216,7 +216,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 
 	ctx.EventManager().EmitEvents(events)
 
-	blockGasLimit := types.BlockGasLimit(ctx)
+	blockGasLimit := types2.BlockGasLimit(ctx)
 
 	// return error if the tx gas is greater than the block limit (max gas)
 
@@ -239,7 +239,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 	// FIXME: use a custom gas configuration that doesn't add any additional gas and only
 	// takes into account the gas consumed at the end of the EVM transaction.
 	newCtx := ctx.
-		WithGasMeter(types.NewInfiniteGasMeterWithLimit(gasWanted)).
+		WithGasMeter(types2.NewInfiniteGasMeterWithLimit(gasWanted)).
 		WithPriority(minPriority)
 
 	// we know that we have enough gas on the pool to cover the intrinsic gas

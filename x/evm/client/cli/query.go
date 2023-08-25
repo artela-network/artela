@@ -1,7 +1,7 @@
 package cli
 
 import (
-	rpctypes "github.com/artela-network/artela/rpc/types"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/spf13/cobra"
 

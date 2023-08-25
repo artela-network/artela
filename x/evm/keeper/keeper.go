@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
@@ -18,7 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	artela "github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
 )
@@ -104,7 +104,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // WithChainID sets the chain id to the local variable in the keeper
 func (k *Keeper) WithChainID(ctx sdk.Context) {
-	chainID, err := artela.ParseChainID(ctx.ChainID())
+	chainID, err := types2.ParseChainID(ctx.ChainID())
 	if err != nil {
 		panic(err)
 	}
@@ -243,7 +243,7 @@ func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) 
 	}
 
 	codeHash := txs.EmptyCodeHash
-	ethAcct, ok := acct.(artela.EthAccountI)
+	ethAcct, ok := acct.(types2.EthAccountI)
 	if ok {
 		codeHash = ethAcct.GetCodeHash().Bytes()
 	}

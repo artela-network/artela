@@ -3,6 +3,7 @@ package tx
 import (
 	"errors"
 	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
+	types2 "github.com/artela-network/artela/ethereum/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/artela-network/artela/app"
 	"github.com/artela-network/artela/ethereum/eip712"
-	"github.com/artela-network/artela/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
@@ -71,7 +71,7 @@ func PrepareEIP712CosmosTx(
 ) (client.TxBuilder, error) {
 	txArgs := args.CosmosTxArgs
 
-	pc, err := types.ParseChainID(txArgs.ChainID)
+	pc, err := types2.ParseChainID(txArgs.ChainID)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func signCosmosEIP712Tx(
 func createTypedData(args typedDataArgs, useLegacy bool) (apitypes.TypedData, error) {
 	if useLegacy {
 		registry := codectypes.NewInterfaceRegistry()
-		types.RegisterInterfaces(registry)
+		types2.RegisterInterfaces(registry)
 		cryptocodec.RegisterInterfaces(registry)
 		artelaCodec := codec.NewProtoCodec(registry)
 
@@ -212,7 +212,7 @@ func createTypedData(args typedDataArgs, useLegacy bool) (apitypes.TypedData, er
 // setBuilderLegacyWeb3Extension creates a legacy ExtensionOptionsWeb3Tx and
 // appends it to the builder options.
 func setBuilderLegacyWeb3Extension(builder authtx.ExtensionOptionsTxBuilder, args legacyWeb3ExtensionArgs) error {
-	option, err := codectypes.NewAnyWithValue(&types.ExtensionOptionsWeb3Tx{
+	option, err := codectypes.NewAnyWithValue(&types2.ExtensionOptionsWeb3Tx{
 		FeePayer:         args.feePayer,
 		TypedDataChainID: args.chainID,
 		FeePayerSig:      args.signature,

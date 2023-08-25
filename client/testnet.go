@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
+	"github.com/artela-network/artela/ethereum/server/config"
+	srvflags "github.com/artela-network/artela/ethereum/server/flags"
+	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"net"
@@ -41,9 +44,6 @@ import (
 	mintypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/artela-network/artela/server/config"
-	srvflags "github.com/artela-network/artela/server/flags"
-	artelatypes "github.com/artela-network/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 
 	"github.com/artela-network/artela/testutil/network"
@@ -93,7 +93,7 @@ func addTestnetFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
 	cmd.Flags().String(sdkserver.FlagMinGasPrices,
 		fmt.Sprintf("0.000006%s",
-			artelatypes.AttoArtela),
+			types2.AttoArtela),
 		"Minimum gas prices to accept for transactions; All fees in a txs must meet this minimum (e.g. 0.01photino,0.001stake)")
 	cmd.Flags().String(ethsecp256k1.FlagKeyAlgorithm, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
 }
@@ -298,22 +298,22 @@ func initTestnetFiles(
 			return err
 		}
 
-		accStakingTokens := sdk.TokensFromConsensusPower(5000, artelatypes.PowerReduction)
+		accStakingTokens := sdk.TokensFromConsensusPower(5000, types2.PowerReduction)
 		coins := sdk.Coins{
-			sdk.NewCoin(artelatypes.AttoArtela, accStakingTokens),
+			sdk.NewCoin(types2.AttoArtela, accStakingTokens),
 		}
 
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
-		genAccounts = append(genAccounts, &artelatypes.EthAccount{
+		genAccounts = append(genAccounts, &types2.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(addr, nil, 0, 0),
 			CodeHash:    common.BytesToHash(txs.EmptyCodeHash).Hex(),
 		})
 
-		valTokens := sdk.TokensFromConsensusPower(100, artelatypes.PowerReduction)
+		valTokens := sdk.TokensFromConsensusPower(100, types2.PowerReduction)
 		createValMsg, err := stakingtypes.NewMsgCreateValidator(
 			sdk.ValAddress(addr),
 			valPubKeys[i],
-			sdk.NewCoin(artelatypes.AttoArtela, valTokens),
+			sdk.NewCoin(types2.AttoArtela, valTokens),
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
 			stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.OneDec()),
 			sdk.OneInt(),
@@ -349,7 +349,7 @@ func initTestnetFiles(
 			return err
 		}
 
-		customAppTemplate, customAppConfig := config.AppConfig(artelatypes.AttoArtela)
+		customAppTemplate, customAppConfig := config.AppConfig(types2.AttoArtela)
 		srvconfig.SetConfigTemplate(customAppTemplate)
 		if err := sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, tmconfig.DefaultConfig()); err != nil {
 			return err
@@ -358,7 +358,7 @@ func initTestnetFiles(
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
 
-	if err := initGenFiles(clientCtx, mbm, args.chainID, artelatypes.AttoArtela, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
+	if err := initGenFiles(clientCtx, mbm, args.chainID, types2.AttoArtela, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
 		return err
 	}
 

@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"github.com/artela-network/artela/rpc/types"
+	"github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/ethereum/go-ethereum/node"
 )
 

@@ -3,10 +3,9 @@ package support
 import (
 	"errors"
 	"fmt"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
-	artela "github.com/artela-network/artela/types"
 )
 
 // NewTransactionLogs creates a new NewTransactionLogs instance.

@@ -1,6 +1,7 @@
 package hd
 
 import (
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 	"os"
 	"strings"
 	"testing"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/artela-network/artela/app"
 	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
-	artelatypes "github.com/artela-network/artela/types"
 )
 
 var TestCodec amino.Codec

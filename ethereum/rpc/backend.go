@@ -3,6 +3,8 @@ package rpc
 import (
 	"context"
 	"errors"
+	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"math/big"
 	"time"
@@ -25,15 +27,12 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
-
-	"github.com/artela-network/artela/rpc/ethapi"
-	rpctypes "github.com/artela-network/artela/rpc/types"
 )
 
 // Backend represents the backend object for a artela. It extends the standard
 // go-ethereum backend object.
 type Backend interface {
-	ethapi.Backend
+	ethapi2.Backend
 }
 
 // backend represents the backend for the JSON-RPC service.
@@ -57,7 +56,7 @@ type backend struct {
 	clientCtx   client.Context
 	queryClient *rpctypes.QueryClient
 	// am manage etherum account, any updates of the artela account should also update to am.
-	ab ethapi.AccountBackend
+	ab ethapi2.AccountBackend
 }
 
 // NewBackend create the backend instance
@@ -115,7 +114,7 @@ func (b *backend) ChainDb() ethdb.Database { //nolint:stylecheck // conforms to 
 	return ethdb.Database(nil)
 }
 
-func (b *backend) AccountManager() ethapi.AccountBackend {
+func (b *backend) AccountManager() ethapi2.AccountBackend {
 	return b.ab
 }
 

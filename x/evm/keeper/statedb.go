@@ -2,12 +2,12 @@ package keeper
 
 import (
 	"fmt"
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
 
 	errorsmod "cosmossdk.io/errors"
-	artelatypes "github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"

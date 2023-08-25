@@ -2,10 +2,10 @@ package types
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"strconv"
 
-	"github.com/artela-network/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"

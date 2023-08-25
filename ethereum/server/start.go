@@ -5,6 +5,9 @@ package server
 import (
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
+	artelaflag "github.com/artela-network/artela/ethereum/server/flags"
 	"net"
 	"net/http"
 	"os"
@@ -36,10 +39,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
-
-	"github.com/artela-network/artela/rpc"
-	"github.com/artela-network/artela/server/config"
-	artelaflag "github.com/artela-network/artela/server/flags"
 )
 
 const (

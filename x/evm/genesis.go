@@ -3,6 +3,7 @@ package evm
 import (
 	"bytes"
 	"fmt"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs/support"
 
 	"github.com/artela-network/artela/x/evm/keeper"
@@ -12,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	artela "github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/types"
 )
 

@@ -3,6 +3,8 @@ package graphql
 import (
 	"context"
 	"encoding/json"
+	"github.com/artela-network/artela/ethereum/rpc/ethapi"
+	"github.com/artela-network/artela/ethereum/rpc/types"
 	"net/http"
 	"strconv"
 	"sync"
@@ -14,9 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/graph-gophers/graphql-go"
 	gqlErrors "github.com/graph-gophers/graphql-go/errors"
-
-	"github.com/artela-network/artela/rpc/ethapi"
-	"github.com/artela-network/artela/rpc/types"
 )
 
 // this is a ethereum hanlder

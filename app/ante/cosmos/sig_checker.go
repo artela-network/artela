@@ -2,12 +2,12 @@ package cosmos
 
 import (
 	"fmt"
+	types2 "github.com/artela-network/artela/ethereum/types"
 
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/eip712"
-	"github.com/artela-network/artela/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -28,7 +28,7 @@ var artelaCodec codec.ProtoCodecMarshaler
 
 func init() {
 	registry := codectypes.NewInterfaceRegistry()
-	types.RegisterInterfaces(registry)
+	types2.RegisterInterfaces(registry)
 	artelaCodec = codec.NewProtoCodec(registry)
 }
 
@@ -189,7 +189,7 @@ func VerifySignature(
 			msgs, tx.GetMemo(), tx.GetTip(),
 		)
 
-		signerChainID, err := types.ParseChainID(signerData.ChainID)
+		signerChainID, err := types2.ParseChainID(signerData.ChainID)
 		if err != nil {
 			return errorsmod.Wrapf(err, "failed to parse chain-id: %s", signerData.ChainID)
 		}
@@ -203,7 +203,7 @@ func VerifySignature(
 			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "tx doesnt contain expected amount of extension options")
 		}
 
-		extOpt, ok := opts[0].GetCachedValue().(*types.ExtensionOptionsWeb3Tx)
+		extOpt, ok := opts[0].GetCachedValue().(*types2.ExtensionOptionsWeb3Tx)
 		if !ok {
 			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "unknown extension option")
 		}

@@ -1,6 +1,9 @@
 package rpc
 
 import (
+	"github.com/artela-network/artela/ethereum/rpc/ethapi"
+	"github.com/artela-network/artela/ethereum/rpc/graphql"
+	"github.com/artela-network/artela/ethereum/rpc/types"
 	"os"
 	"time"
 
@@ -12,10 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/eth/filters"
 	"github.com/ethereum/go-ethereum/rpc"
-
-	"github.com/artela-network/artela/rpc/ethapi"
-	"github.com/artela-network/artela/rpc/graphql"
-	"github.com/artela-network/artela/rpc/types"
 )
 
 var defaultEthConfig = ethconfig.Config{

@@ -2,6 +2,7 @@ package network
 
 import (
 	"encoding/json"
+	rpc2 "github.com/artela-network/artela/ethereum/rpc"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"path/filepath"
 	"strings"
@@ -29,7 +30,6 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/artela-network/artela/rpc"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
@@ -143,8 +143,8 @@ func startInProcess(cfg Config, val *Validator) error {
 		if err != nil {
 			return fmt.Errorf("failed to dial JSON-RPC at %s: %w", val.AppConfig.JSONRPC.Address, err)
 		}*/
-		cfg := rpc.DefaultConfig()
-		nodeCfg := rpc.DefaultGethNodeConfig()
+		cfg := rpc2.DefaultConfig()
+		nodeCfg := rpc2.DefaultGethNodeConfig()
 
 		httpEndpoint := strings.Split(val.AppConfig.JSONRPC.Address, ":")
 		if len(httpEndpoint) > 0 {
@@ -154,12 +154,12 @@ func startInProcess(cfg Config, val *Validator) error {
 			nodeCfg.HTTPHost = strings.Split(val.AppConfig.JSONRPC.Address, ":")[1]
 		}
 
-		node, err := rpc.NewNode(nodeCfg)
+		node, err := rpc2.NewNode(nodeCfg)
 		if err != nil {
 			panic(err)
 		}
 
-		val.artelaService = rpc.NewArtelaService(val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}))
+		val.artelaService = rpc2.NewArtelaService(val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}))
 		val.artelaService.Start()
 	}
 

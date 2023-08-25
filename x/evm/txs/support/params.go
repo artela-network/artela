@@ -2,6 +2,7 @@ package support
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/ethereum/utils"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"math/big"
 
@@ -9,8 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/artela-network/artela/utils"
 )
 
 var (

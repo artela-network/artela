@@ -3,6 +3,7 @@ package txs
 import (
 	"errors"
 	"fmt"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"math/big"
@@ -17,8 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-
-	artela "github.com/artela-network/artela/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"

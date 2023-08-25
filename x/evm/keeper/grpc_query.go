@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
@@ -26,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
-	artela "github.com/artela-network/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
 )
@@ -43,7 +43,7 @@ func (k Keeper) Account(c context.Context, req *txs.QueryAccountRequest) (*txs.Q
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -66,7 +66,7 @@ func (k Keeper) CosmosAccount(c context.Context, req *txs.QueryCosmosAccountRequ
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -131,7 +131,7 @@ func (k Keeper) Balance(c context.Context, req *txs.QueryBalanceRequest) (*txs.Q
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -153,7 +153,7 @@ func (k Keeper) Storage(c context.Context, req *txs.QueryStorageRequest) (*txs.Q
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -179,7 +179,7 @@ func (k Keeper) Code(c context.Context, req *txs.QueryCodeRequest) (*txs.QueryCo
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -609,7 +609,7 @@ func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.Que
 // getChainID parse chainID from current context if not provided
 func getChainID(ctx sdk.Context, chainID int64) (*big.Int, error) {
 	if chainID == 0 {
-		return artela.ParseChainID(ctx.ChainID())
+		return types2.ParseChainID(ctx.ChainID())
 	}
 	return big.NewInt(chainID), nil
 }

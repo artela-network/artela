@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/json"
+	srvflags "github.com/artela-network/artela/ethereum/server/flags"
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -121,8 +123,6 @@ import (
 	ethante "github.com/artela-network/artela/app/ante/evm"
 	appparams "github.com/artela-network/artela/app/params"
 	"github.com/artela-network/artela/docs"
-	srvflags "github.com/artela-network/artela/server/flags"
-	artelatypes "github.com/artela-network/artela/types"
 )
 
 const (

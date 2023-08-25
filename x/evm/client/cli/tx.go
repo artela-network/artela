@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"fmt"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"os"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	rpctypes "github.com/artela-network/artela/rpc/types"
 	"github.com/artela-network/artela/x/evm/types"
 )
 

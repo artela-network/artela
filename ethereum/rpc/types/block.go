@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/ethereum/types"
 	"math"
 	"math/big"
 	"strings"
@@ -16,8 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
-
-	"github.com/artela-network/artela/types"
 )
 
 // BlockNumber represents decoding hex string to block values

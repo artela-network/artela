@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	artela "github.com/artela-network/artela/ethereum/types"
 
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txTypes "github.com/cosmos/cosmos-sdk/types/tx"
 
-	artela "github.com/artela-network/artela/types"
 	apitypes "github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 

@@ -2,6 +2,7 @@ package txs
 
 import (
 	errorsmod "cosmossdk.io/errors"
+	types3 "github.com/artela-network/artela/ethereum/types"
 	types2 "github.com/artela-network/artela/x/evm/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"math/big"
@@ -9,8 +10,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/artela-network/artela/types"
 )
 
 func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
@@ -28,7 +27,7 @@ func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
 
 	// fill the amount
 	if tx.Value() != nil {
-		amountInt, err := types.SafeNewIntFromBigInt(tx.Value())
+		amountInt, err := types3.SafeNewIntFromBigInt(tx.Value())
 		if err != nil {
 			return nil, err
 		}
@@ -37,7 +36,7 @@ func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
 
 	// fill the gas price
 	if tx.GasPrice() != nil {
-		gasPriceInt, err := types.SafeNewIntFromBigInt(tx.GasPrice())
+		gasPriceInt, err := types3.SafeNewIntFromBigInt(tx.GasPrice())
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +82,7 @@ func (tx AccessListTx) Validate() error {
 	if gasPrice == nil {
 		return errorsmod.Wrap(types2.ErrInvalidGasPrice, "cannot be nil")
 	}
-	if !types.IsValidInt256(gasPrice) {
+	if !types3.IsValidInt256(gasPrice) {
 		return errorsmod.Wrap(types2.ErrInvalidGasPrice, "out of bound")
 	}
 
@@ -96,16 +95,16 @@ func (tx AccessListTx) Validate() error {
 	if amount != nil && amount.Sign() == -1 {
 		return errorsmod.Wrapf(types2.ErrInvalidAmount, "amount cannot be negative %s", amount)
 	}
-	if !types.IsValidInt256(amount) {
+	if !types3.IsValidInt256(amount) {
 		return errorsmod.Wrap(types2.ErrInvalidAmount, "out of bound")
 	}
 
-	if !types.IsValidInt256(tx.Fee()) {
+	if !types3.IsValidInt256(tx.Fee()) {
 		return errorsmod.Wrap(types2.ErrInvalidGasFee, "out of bound")
 	}
 
 	if tx.To != "" {
-		if err := types.ValidateAddress(tx.To); err != nil {
+		if err := types3.ValidateAddress(tx.To); err != nil {
 			return errorsmod.Wrap(err, "invalid to address")
 		}
 	}

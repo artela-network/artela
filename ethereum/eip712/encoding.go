@@ -3,6 +3,7 @@ package eip712
 import (
 	"errors"
 	"fmt"
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 
@@ -10,7 +11,6 @@ import (
 	txTypes "github.com/cosmos/cosmos-sdk/types/tx"
 
 	"github.com/artela-network/artela/app/params"
-	artelatypes "github.com/artela-network/artela/types"
 	apitypes "github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"github.com/cosmos/cosmos-sdk/codec"

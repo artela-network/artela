@@ -2,8 +2,8 @@ package eip712
 
 import (
 	"fmt"
+	types2 "github.com/artela-network/artela/ethereum/types"
 
-	"github.com/artela-network/artela/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmoskr "github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -44,14 +44,14 @@ func PreprocessLedgerTx(chainID string, keyType cosmoskr.KeyType, txBuilder clie
 	sigBytes := sigData.Signature
 
 	// Parse Chain ID as big.Int
-	chainIDInt, err := types.ParseChainID(chainID)
+	chainIDInt, err := types2.ParseChainID(chainID)
 	if err != nil {
 		return fmt.Errorf("could not parse chain id: %w", err)
 	}
 
 	// Add ExtensionOptionsWeb3Tx extension with signature
 	var option *codectypes.Any
-	option, err = codectypes.NewAnyWithValue(&types.ExtensionOptionsWeb3Tx{
+	option, err = codectypes.NewAnyWithValue(&types2.ExtensionOptionsWeb3Tx{
 		FeePayer:         txBuilder.GetTx().FeePayer().String(),
 		TypedDataChainID: chainIDInt.Uint64(),
 		FeePayerSig:      sigBytes,

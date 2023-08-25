@@ -2,6 +2,8 @@ package tx
 
 import (
 	"encoding/json"
+	"github.com/artela-network/artela/ethereum/server/config"
+	"github.com/artela-network/artela/ethereum/utils"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
@@ -19,8 +21,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela/app"
-	"github.com/artela-network/artela/server/config"
-	"github.com/artela-network/artela/utils"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
