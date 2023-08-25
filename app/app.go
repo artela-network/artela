@@ -753,7 +753,7 @@ func NewArtela(
 
 // TODO mark
 func (app *Artela) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
-	options := ante.HandlerOptions{
+	options := ante.AnteDecorators{
 		Cdc:                    app.appCodec,
 		AccountKeeper:          app.AccountKeeper,
 		BankKeeper:             app.BankKeeper,

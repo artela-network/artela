@@ -23,9 +23,9 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 )
 
-// HandlerOptions defines the list of module keepers required to run the Artela
+// AnteDecorators defines the list of module keepers required to run the Artela
 // AnteHandler decorators.
-type HandlerOptions struct {
+type AnteDecorators struct {
 	Cdc                codec.BinaryCodec
 	AccountKeeper      evmtypes.AccountKeeper
 	BankKeeper         evmtypes.BankKeeper
@@ -43,7 +43,7 @@ type HandlerOptions struct {
 }
 
 // Validate checks if the keepers are defined
-func (options HandlerOptions) Validate() error {
+func (options AnteDecorators) Validate() error {
 	if options.Cdc == nil {
 		return errorsmod.Wrap(errortypes.ErrLogic, "codec is required for AnteHandler")
 	}
@@ -81,7 +81,7 @@ func (options HandlerOptions) Validate() error {
 }
 
 // newEVMAnteHandler creates the default ante handler for Ethereum transactions
-func newEVMAnteHandler(options HandlerOptions) sdk.AnteHandler {
+func newEVMAnteHandler(options AnteDecorators) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		// outermost AnteDecorator. SetUpContext must be called first
 		evmante.NewEthSetUpContextDecorator(options.EvmKeeper),
@@ -103,7 +103,7 @@ func newEVMAnteHandler(options HandlerOptions) sdk.AnteHandler {
 }
 
 // newCosmosAnteHandler creates the default ante handler for Cosmos transactions
-func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
+func newCosmosAnteHandler(options AnteDecorators) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
@@ -131,7 +131,7 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 }
 
 // newCosmosAnteHandlerEip712 creates the ante handler for transactions signed with EIP712
-func newLegacyCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
+func newLegacyCosmosAnteHandlerEip712(options AnteDecorators) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
