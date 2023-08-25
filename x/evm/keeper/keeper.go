@@ -1,8 +1,9 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/process"
-	"github.com/artela-network/artela/x/evm/process/support"
+	types2 "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -18,19 +19,18 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	artela "github.com/artela-network/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
-	"github.com/artela-network/artela/x/evm/vmstate"
 )
 
-// Keeper grants access to the EVM module state and implements the go-ethereum StateDB interface.
+// Keeper grants access to the EVM module states and implements the go-ethereum StateDB interface.
 type Keeper struct {
 	// Protobuf codec
 	cdc codec.BinaryCodec
 	// Store key required for the EVM Prefix KVStore. It is required by:
 	// - storing account's Storage State
 	// - storing account's Code
-	// - storing process Logs
+	// - storing txs Logs
 	// - storing Bloom filters by block height. Needed for the Web3 API.
 	storeKey storetypes.StoreKey
 
@@ -39,11 +39,11 @@ type Keeper struct {
 
 	// the address capable of executing a MsgUpdateParams message. Typically, this should be the x/gov module account.
 	authority sdk.AccAddress
-	// access to account state
+	// access to account states
 	accountKeeper types.AccountKeeper
 	// update balance and accounting operations with coins
 	bankKeeper types.BankKeeper
-	// access historical headers for EVM state transition execution
+	// access historical headers for EVM states transition execution
 	stakingKeeper types.StakingKeeper
 	// fetch EIP1559 base fee and parameters
 	feeKeeper types.FeeKeeper
@@ -51,7 +51,7 @@ type Keeper struct {
 	// chain ID number obtained from the context's chain id
 	eip155ChainID *big.Int
 
-	// Tracer used to collect execution traces from the EVM process execution
+	// Tracer used to collect execution traces from the EVM txs execution
 	tracer string
 
 	// Legacy subspace
@@ -104,7 +104,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // WithChainID sets the chain id to the local variable in the keeper
 func (k *Keeper) WithChainID(ctx sdk.Context) {
-	chainID, err := artela.ParseChainID(ctx.ChainID())
+	chainID, err := types2.ParseChainID(ctx.ChainID())
 	if err != nil {
 		panic(err)
 	}
@@ -169,13 +169,13 @@ func (k Keeper) SetBlockBloomTransient(ctx sdk.Context, bloom *big.Int) {
 // Tx
 // ----------------------------------------------------------------------------
 
-// SetTxIndexTransient set the index of processing process
+// SetTxIndexTransient set the index of processing txs
 func (k Keeper) SetTxIndexTransient(ctx sdk.Context, index uint64) {
 	store := ctx.TransientStore(k.transientKey)
 	store.Set(types.KeyPrefixTransientTxIndex, sdk.Uint64ToBigEndian(index))
 }
 
-// GetTxIndexTransient returns EVM process index on the current block.
+// GetTxIndexTransient returns EVM txs index on the current block.
 func (k Keeper) GetTxIndexTransient(ctx sdk.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientTxIndex)
@@ -212,7 +212,7 @@ func (k Keeper) SetLogSizeTransient(ctx sdk.Context, logSize uint64) {
 // Storage
 // ----------------------------------------------------------------------------
 
-// GetAccountStorage return state storage associated with an account
+// GetAccountStorage return states storage associated with an account
 func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) support.Storage {
 	storage := support.Storage{}
 
@@ -228,43 +228,43 @@ func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) suppo
 // Account
 // ----------------------------------------------------------------------------
 
-// Tracer return a default vm.Tracer based on current keeper state
+// Tracer return a default vm.Tracer based on current keeper states
 func (k Keeper) Tracer(ctx sdk.Context, msg core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
 	return types.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
 }
 
 // GetAccountWithoutBalance load nonce and codeHash without balance,
 // more efficient in cases where balance is not needed.
-func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *vmstate.Account {
+func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *states.Account {
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
 		return nil
 	}
 
-	codeHash := process.EmptyCodeHash
-	ethAcct, ok := acct.(artela.EthAccountI)
+	codeHash := txs.EmptyCodeHash
+	ethAcct, ok := acct.(types2.EthAccountI)
 	if ok {
 		codeHash = ethAcct.GetCodeHash().Bytes()
 	}
 
-	return &vmstate.Account{
+	return &states.Account{
 		Nonce:    acct.GetSequence(),
 		CodeHash: codeHash,
 	}
 }
 
 // GetAccountOrEmpty returns empty account if not exist, returns error if it's not `EthAccount`
-func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) vmstate.Account {
+func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) states.Account {
 	acct := k.GetAccount(ctx, addr)
 	if acct != nil {
 		return *acct
 	}
 
 	// empty account
-	return vmstate.Account{
+	return states.Account{
 		Balance:  new(big.Int),
-		CodeHash: process.EmptyCodeHash,
+		CodeHash: txs.EmptyCodeHash,
 	}
 }
 
@@ -322,13 +322,13 @@ func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) sdk.Dec {
 	return feeParams.MinGasMultiplier
 }
 
-// ResetTransientGasUsed reset gas used to prepare for execution of current cosmos process, called in ante handler.
+// ResetTransientGasUsed reset gas used to prepare for execution of current cosmos txs, called in ante handler.
 func (k Keeper) ResetTransientGasUsed(ctx sdk.Context) {
 	store := ctx.TransientStore(k.transientKey)
 	store.Delete(types.KeyPrefixTransientGasUsed)
 }
 
-// GetTransientGasUsed returns the gas used by current cosmos process.
+// GetTransientGasUsed returns the gas used by current cosmos txs.
 func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientGasUsed)
@@ -338,14 +338,14 @@ func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
 	return sdk.BigEndianToUint64(bz)
 }
 
-// SetTransientGasUsed sets the gas used by current cosmos process.
+// SetTransientGasUsed sets the gas used by current cosmos txs.
 func (k Keeper) SetTransientGasUsed(ctx sdk.Context, gasUsed uint64) {
 	store := ctx.TransientStore(k.transientKey)
 	bz := sdk.Uint64ToBigEndian(gasUsed)
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 }
 
-// AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos process.
+// AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos txs.
 func (k Keeper) AddTransientGasUsed(ctx sdk.Context, gasUsed uint64) (uint64, error) {
 	result := k.GetTransientGasUsed(ctx) + gasUsed
 	if result < gasUsed {

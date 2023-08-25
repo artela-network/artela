@@ -1,14 +1,14 @@
 package evm
 
 import (
+	artela "github.com/artela-network/artela/ethereum/types"
 	"math"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
-	artela "github.com/artela-network/artela/types"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -69,7 +69,7 @@ func NewDynamicFeeChecker(k DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
 		}
 
 		// calculate the effective gas price using the EIP-1559 logic.
-		effectivePrice := sdkmath.NewIntFromBigInt(process.EffectiveGasPrice(baseFeeInt.BigInt(), feeCap.BigInt(), maxPriorityPrice.BigInt()))
+		effectivePrice := sdkmath.NewIntFromBigInt(txs.EffectiveGasPrice(baseFeeInt.BigInt(), feeCap.BigInt(), maxPriorityPrice.BigInt()))
 
 		// NOTE: create a new coins slice without having to validate the denom
 		effectiveFee := sdk.Coins{
@@ -79,7 +79,7 @@ func NewDynamicFeeChecker(k DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
 			},
 		}
 
-		bigPriority := effectivePrice.Sub(baseFeeInt).Quo(process.DefaultPriorityReduction)
+		bigPriority := effectivePrice.Sub(baseFeeInt).Quo(txs.DefaultPriorityReduction)
 		priority := int64(math.MaxInt64)
 
 		if bigPriority.IsInt64() {
@@ -127,7 +127,7 @@ func getTxPriority(fees sdk.Coins, gas int64) int64 {
 
 	for _, fee := range fees {
 		gasPrice := fee.Amount.QuoRaw(gas)
-		amt := gasPrice.Quo(process.DefaultPriorityReduction)
+		amt := gasPrice.Quo(txs.DefaultPriorityReduction)
 		p := int64(math.MaxInt64)
 
 		if amt.IsInt64() {

@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"errors"
+	server2 "github.com/artela-network/artela/ethereum/server"
+	config2 "github.com/artela-network/artela/ethereum/server/config"
 	"io"
 	"os"
 	"path/filepath"
@@ -43,8 +45,6 @@ import (
 
 	"github.com/artela-network/artela/app"
 	appparams "github.com/artela-network/artela/app/params"
-	"github.com/artela-network/artela/server"
-	artelacfg "github.com/artela-network/artela/server/config"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
@@ -137,7 +137,7 @@ func initRootCmd(
 	}
 
 	// add server commands
-	server.AddCommands(
+	server2.AddCommands(
 		rootCmd,
 		app.DefaultNodeHome,
 		a.newApp,
@@ -145,7 +145,7 @@ func initRootCmd(
 		addModuleInitFlags,
 	)
 
-	// add keybase, auxiliary RPC, query, and process child commands
+	// add keybase, auxiliary RPC, query, and txs child commands
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
 		queryCommand(),
@@ -182,7 +182,7 @@ func queryCommand() *cobra.Command {
 // txCommand returns the sub-command to send transactions to the app
 func txCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        "process",
+		Use:                        "txs",
 		Short:                      "Transactions subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
@@ -240,12 +240,12 @@ func (a appCreator) newApp(
 ) servertypes.Application {
 	var cache sdk.MultiStorePersistentCache
 
-	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
+	if cast.ToBool(appOpts.Get(server2.FlagInterBlockCache)) {
 		cache = store.NewCommitKVStoreCacheManager()
 	}
 
 	skipUpgradeHeights := make(map[int64]bool)
-	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
+	for _, h := range cast.ToIntSlice(appOpts.Get(server2.FlagUnsafeSkipUpgrades)) {
 		skipUpgradeHeights[int64(h)] = true
 	}
 
@@ -277,8 +277,8 @@ func (a appCreator) newApp(
 	}
 
 	snapshotOptions := snapshottypes.NewSnapshotOptions(
-		cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)),
-		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
+		cast.ToUint64(appOpts.Get(server2.FlagStateSyncSnapshotInterval)),
+		cast.ToUint32(appOpts.Get(server2.FlagStateSyncSnapshotKeepRecent)),
 	)
 
 	return app.NewArtela(
@@ -288,20 +288,20 @@ func (a appCreator) newApp(
 		true,
 		skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
+		cast.ToUint(appOpts.Get(server2.FlagInvCheckPeriod)),
 		a.encodingConfig,
 		appOpts,
 		baseapp.SetPruning(pruningOpts),
-		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
-		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
-		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server.FlagHaltTime))),
-		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
+		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server2.FlagMinGasPrices))),
+		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server2.FlagHaltHeight))),
+		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server2.FlagHaltTime))),
+		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server2.FlagMinRetainBlocks))),
 		baseapp.SetInterBlockCache(cache),
-		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
-		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
+		baseapp.SetTrace(cast.ToBool(appOpts.Get(server2.FlagTrace))),
+		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server2.FlagIndexEvents))),
 		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
-		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server.FlagIAVLCacheSize))),
-		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server.FlagDisableIAVLFastNode))),
+		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server2.FlagIAVLCacheSize))),
+		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server2.FlagDisableIAVLFastNode))),
 		baseapp.SetChainID(chainID),
 	)
 }
@@ -351,9 +351,9 @@ func initAppConfig() (string, interface{}) {
 	type CustomAppConfig struct {
 		serverconfig.Config
 
-		EVM     artelacfg.EVMConfig     `mapstructure:"evm"`
-		JSONRPC artelacfg.JSONRPCConfig `mapstructure:"json-rpc"`
-		TLS     artelacfg.TLSConfig     `mapstructure:"tls"`
+		EVM     config2.EVMConfig     `mapstructure:"evm"`
+		JSONRPC config2.JSONRPCConfig `mapstructure:"json-rpc"`
+		TLS     config2.TLSConfig     `mapstructure:"tls"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -375,11 +375,11 @@ func initAppConfig() (string, interface{}) {
 
 	customAppConfig := CustomAppConfig{
 		Config:  *srvCfg,
-		EVM:     *artelacfg.DefaultEVMConfig(),
-		JSONRPC: *artelacfg.DefaultJSONRPCConfig(),
-		TLS:     *artelacfg.DefaultTLSConfig(),
+		EVM:     *config2.DefaultEVMConfig(),
+		JSONRPC: *config2.DefaultJSONRPCConfig(),
+		TLS:     *config2.DefaultTLSConfig(),
 	}
-	customAppTemplate := serverconfig.DefaultConfigTemplate + artelacfg.DefaultConfigTemplate
+	customAppTemplate := serverconfig.DefaultConfigTemplate + config2.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }

@@ -22,19 +22,19 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// EventEthereumTx defines the event for an Ethereum process
+// EventEthereumTx defines the event for an Ethereum txs
 type EventEthereumTx struct {
 	// amount
 	Amount string `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount,omitempty"`
-	// eth_hash is the Ethereum hash of the process
+	// eth_hash is the Ethereum hash of the txs
 	EthHash string `protobuf:"bytes,2,opt,name=eth_hash,json=ethHash,proto3" json:"eth_hash,omitempty"`
-	// index of the process in the block
+	// index of the txs in the block
 	Index string `protobuf:"bytes,3,opt,name=index,proto3" json:"index,omitempty"`
-	// gas_used is the amount of gas used by the process
+	// gas_used is the amount of gas used by the txs
 	GasUsed string `protobuf:"bytes,4,opt,name=gas_used,json=gasUsed,proto3" json:"gas_used,omitempty"`
-	// hash is the Tendermint hash of the process
+	// hash is the Tendermint hash of the txs
 	Hash string `protobuf:"bytes,5,opt,name=hash,proto3" json:"hash,omitempty"`
-	// recipient of the process
+	// recipient of the txs
 	Recipient string `protobuf:"bytes,6,opt,name=recipient,proto3" json:"recipient,omitempty"`
 	// eth_tx_failed contains a VM error should it occur
 	EthTxFailed string `protobuf:"bytes,7,opt,name=eth_tx_failed,json=ethTxFailed,proto3" json:"eth_tx_failed,omitempty"`
@@ -122,9 +122,9 @@ func (m *EventEthereumTx) GetEthTxFailed() string {
 	return ""
 }
 
-// EventTxLog defines the event for an Ethereum process log
+// EventTxLog defines the event for an Ethereum txs log
 type EventTxLog struct {
-	// tx_logs is an array of process logs
+	// tx_logs is an array of txs logs
 	TxLogs []string `protobuf:"bytes,1,rep,name=tx_logs,json=txLogs,proto3" json:"tx_logs,omitempty"`
 }
 

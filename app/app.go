@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/json"
+	srvflags "github.com/artela-network/artela/ethereum/server/flags"
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -121,8 +123,6 @@ import (
 	ethante "github.com/artela-network/artela/app/ante/evm"
 	appparams "github.com/artela-network/artela/app/params"
 	"github.com/artela-network/artela/docs"
-	srvflags "github.com/artela-network/artela/server/flags"
-	artelatypes "github.com/artela-network/artela/types"
 )
 
 const (
@@ -889,7 +889,7 @@ func (app *Artela) GetSubspace(moduleName string) paramstypes.Subspace {
 // API server.
 func (app *Artela) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
-	// Register new process routes from grpc-gateway.
+	// Register new txs routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
 	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)

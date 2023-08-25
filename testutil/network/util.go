@@ -2,7 +2,8 @@ package network
 
 import (
 	"encoding/json"
-	"github.com/artela-network/artela/x/evm/process/support"
+	rpc2 "github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"path/filepath"
 	"strings"
 	"time"
@@ -29,7 +30,6 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/artela-network/artela/rpc"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
@@ -79,7 +79,7 @@ func startInProcess(cfg Config, val *Validator) error {
 		val.ClientCtx = val.ClientCtx.
 			WithClient(val.RPCClient)
 
-		// Add the process service in the gRPC router.
+		// Add the txs service in the gRPC router.
 		app.RegisterTxService(val.ClientCtx)
 
 		// Add the tendermint queries service in the gRPC router.
@@ -143,8 +143,8 @@ func startInProcess(cfg Config, val *Validator) error {
 		if err != nil {
 			return fmt.Errorf("failed to dial JSON-RPC at %s: %w", val.AppConfig.JSONRPC.Address, err)
 		}*/
-		cfg := rpc.DefaultConfig()
-		nodeCfg := rpc.DefaultGethNodeConfig()
+		cfg := rpc2.DefaultConfig()
+		nodeCfg := rpc2.DefaultGethNodeConfig()
 
 		httpEndpoint := strings.Split(val.AppConfig.JSONRPC.Address, ":")
 		if len(httpEndpoint) > 0 {
@@ -154,12 +154,12 @@ func startInProcess(cfg Config, val *Validator) error {
 			nodeCfg.HTTPHost = strings.Split(val.AppConfig.JSONRPC.Address, ":")[1]
 		}
 
-		node, err := rpc.NewNode(nodeCfg)
+		node, err := rpc2.NewNode(nodeCfg)
 		if err != nil {
 			panic(err)
 		}
 
-		val.artelaService = rpc.NewArtelaService(val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}))
+		val.artelaService = rpc2.NewArtelaService(val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}))
 		val.artelaService.Start()
 	}
 
@@ -202,7 +202,7 @@ func collectGenFiles(cfg Config, vals []*Validator, outputDir string) error {
 }
 
 func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalances []banktypes.Balance, genFiles []string) error {
-	// set the accounts in the genesis state
+	// set the accounts in the genesis states
 	var authGenState authtypes.GenesisState
 	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[authtypes.ModuleName], &authGenState)
 
@@ -214,7 +214,7 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 	authGenState.Accounts = append(authGenState.Accounts, accounts...)
 	cfg.GenesisState[authtypes.ModuleName] = cfg.Codec.MustMarshalJSON(&authGenState)
 
-	// set the balances in the genesis state
+	// set the balances in the genesis states
 	var bankGenState banktypes.GenesisState
 	bankGenState.Balances = genBalances
 	cfg.GenesisState[banktypes.ModuleName] = cfg.Codec.MustMarshalJSON(&bankGenState)

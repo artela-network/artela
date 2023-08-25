@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process"
-	"github.com/artela-network/artela/x/evm/process/support"
+	types2 "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
 	"time"
 
@@ -26,24 +27,23 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
-	artela "github.com/artela-network/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
-	"github.com/artela-network/artela/x/evm/vmstate"
 )
 
-var _ process.QueryServer = Keeper{}
+var _ txs.QueryServer = Keeper{}
 
 const (
 	defaultTraceTimeout = 5 * time.Second
 )
 
 // Account implements the Query/Account gRPC method
-func (k Keeper) Account(c context.Context, req *process.QueryAccountRequest) (*process.QueryAccountResponse, error) {
+func (k Keeper) Account(c context.Context, req *txs.QueryAccountRequest) (*txs.QueryAccountResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -54,19 +54,19 @@ func (k Keeper) Account(c context.Context, req *process.QueryAccountRequest) (*p
 	ctx := sdk.UnwrapSDKContext(c)
 	acct := k.GetAccountOrEmpty(ctx, addr)
 
-	return &process.QueryAccountResponse{
+	return &txs.QueryAccountResponse{
 		Balance:  acct.Balance.String(),
 		CodeHash: common.BytesToHash(acct.CodeHash).Hex(),
 		Nonce:    acct.Nonce,
 	}, nil
 }
 
-func (k Keeper) CosmosAccount(c context.Context, req *process.QueryCosmosAccountRequest) (*process.QueryCosmosAccountResponse, error) {
+func (k Keeper) CosmosAccount(c context.Context, req *txs.QueryCosmosAccountRequest) (*txs.QueryCosmosAccountResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -78,7 +78,7 @@ func (k Keeper) CosmosAccount(c context.Context, req *process.QueryCosmosAccount
 	cosmosAddr := sdk.AccAddress(ethAddr.Bytes())
 
 	account := k.accountKeeper.GetAccount(ctx, cosmosAddr)
-	res := process.QueryCosmosAccountResponse{
+	res := txs.QueryCosmosAccountResponse{
 		CosmosAddress: cosmosAddr.String(),
 	}
 
@@ -91,7 +91,7 @@ func (k Keeper) CosmosAccount(c context.Context, req *process.QueryCosmosAccount
 }
 
 // ValidatorAccount implements the Query/Balance gRPC method
-func (k Keeper) ValidatorAccount(c context.Context, req *process.QueryValidatorAccountRequest) (*process.QueryValidatorAccountResponse, error) {
+func (k Keeper) ValidatorAccount(c context.Context, req *txs.QueryValidatorAccountRequest) (*txs.QueryValidatorAccountResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -112,7 +112,7 @@ func (k Keeper) ValidatorAccount(c context.Context, req *process.QueryValidatorA
 
 	accAddr := sdk.AccAddress(validator.GetOperator())
 
-	res := process.QueryValidatorAccountResponse{
+	res := txs.QueryValidatorAccountResponse{
 		AccountAddress: accAddr.String(),
 	}
 
@@ -126,12 +126,12 @@ func (k Keeper) ValidatorAccount(c context.Context, req *process.QueryValidatorA
 }
 
 // Balance implements the Query/Balance gRPC method
-func (k Keeper) Balance(c context.Context, req *process.QueryBalanceRequest) (*process.QueryBalanceResponse, error) {
+func (k Keeper) Balance(c context.Context, req *txs.QueryBalanceRequest) (*txs.QueryBalanceResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -142,18 +142,18 @@ func (k Keeper) Balance(c context.Context, req *process.QueryBalanceRequest) (*p
 
 	balanceInt := k.GetBalance(ctx, common.HexToAddress(req.Address))
 
-	return &process.QueryBalanceResponse{
+	return &txs.QueryBalanceResponse{
 		Balance: balanceInt.String(),
 	}, nil
 }
 
 // Storage implements the Query/Storage gRPC method
-func (k Keeper) Storage(c context.Context, req *process.QueryStorageRequest) (*process.QueryStorageResponse, error) {
+func (k Keeper) Storage(c context.Context, req *txs.QueryStorageRequest) (*txs.QueryStorageResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -168,18 +168,18 @@ func (k Keeper) Storage(c context.Context, req *process.QueryStorageRequest) (*p
 	state := k.GetState(ctx, address, key)
 	stateHex := state.Hex()
 
-	return &process.QueryStorageResponse{
+	return &txs.QueryStorageResponse{
 		Value: stateHex,
 	}, nil
 }
 
 // Code implements the Query/Code gRPC method
-func (k Keeper) Code(c context.Context, req *process.QueryCodeRequest) (*process.QueryCodeResponse, error) {
+func (k Keeper) Code(c context.Context, req *txs.QueryCodeRequest) (*txs.QueryCodeResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := artela.ValidateAddress(req.Address); err != nil {
+	if err := types2.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -196,30 +196,30 @@ func (k Keeper) Code(c context.Context, req *process.QueryCodeRequest) (*process
 		code = k.GetCode(ctx, common.BytesToHash(acct.CodeHash))
 	}
 
-	return &process.QueryCodeResponse{
+	return &txs.QueryCodeResponse{
 		Code: code,
 	}, nil
 }
 
 // Params implements the Query/Params gRPC method
-func (k Keeper) Params(c context.Context, _ *process.QueryParamsRequest) (*process.QueryParamsResponse, error) {
+func (k Keeper) Params(c context.Context, _ *txs.QueryParamsRequest) (*txs.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	params := k.GetParams(ctx)
 
-	return &process.QueryParamsResponse{
+	return &txs.QueryParamsResponse{
 		Params: params,
 	}, nil
 }
 
 // EthCall implements eth_call rpc api.
-func (k Keeper) EthCall(c context.Context, req *process.EthCallRequest) (*process.MsgEthereumTxResponse, error) {
+func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEthereumTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
 
-	var args process.TransactionArgs
+	var args txs.TransactionArgs
 	err := json.Unmarshal(req.Args, &args)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -242,7 +242,7 @@ func (k Keeper) EthCall(c context.Context, req *process.EthCallRequest) (*proces
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, *msg, nil, false, cfg, txConfig)
@@ -254,7 +254,7 @@ func (k Keeper) EthCall(c context.Context, req *process.EthCallRequest) (*proces
 }
 
 // EstimateGas implements eth_estimateGas rpc api.
-func (k Keeper) EstimateGas(c context.Context, req *process.EthCallRequest) (*process.EstimateGasResponse, error) {
+func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.EstimateGasResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -269,7 +269,7 @@ func (k Keeper) EstimateGas(c context.Context, req *process.EthCallRequest) (*pr
 		return nil, status.Error(codes.InvalidArgument, "gas cap cannot be lower than 21,000")
 	}
 
-	var args process.TransactionArgs
+	var args txs.TransactionArgs
 	err = json.Unmarshal(req.Args, &args)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -310,9 +310,9 @@ func (k Keeper) EstimateGas(c context.Context, req *process.EthCallRequest) (*pr
 	nonce := k.GetNonce(ctx, args.GetFrom())
 	args.Nonce = (*hexutil.Uint64)(&nonce)
 
-	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 
-	// convert the process args to an ethereum message
+	// convert the txs args to an ethereum message
 	msg, err := args.ToMessage(req.GasCap, cfg.BaseFee)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -321,8 +321,8 @@ func (k Keeper) EstimateGas(c context.Context, req *process.EthCallRequest) (*pr
 	// NOTE: the errors from the executable below should be consistent with go-ethereum,
 	// so we don't wrap them with the gRPC status code
 
-	// Create a helper to check if a gas allowance results in an executable process
-	executable := func(gas uint64) (vmError bool, rsp *process.MsgEthereumTxResponse, err error) {
+	// Create a helper to check if a gas allowance results in an executable txs
+	executable := func(gas uint64) (vmError bool, rsp *txs.MsgEthereumTxResponse, err error) {
 		// update the message with the new gas value
 		msg.GasLimit = gas
 		// pass false to not commit StateDB
@@ -337,12 +337,12 @@ func (k Keeper) EstimateGas(c context.Context, req *process.EthCallRequest) (*pr
 	}
 
 	// Execute the binary search and hone in on an executable gas limit
-	hi, err = process.BinSearch(lo, hi, executable)
+	hi, err = txs.BinSearch(lo, hi, executable)
 	if err != nil {
 		return nil, err
 	}
 
-	// Reject the process as invalid if it still fails at the highest allowance
+	// Reject the txs as invalid if it still fails at the highest allowance
 	if hi == gasCap {
 		failed, result, err := executable(hi)
 		if err != nil {
@@ -360,13 +360,13 @@ func (k Keeper) EstimateGas(c context.Context, req *process.EthCallRequest) (*pr
 			return nil, fmt.Errorf("gas required exceeds allowance (%d)", gasCap)
 		}
 	}
-	return &process.EstimateGasResponse{Gas: hi}, nil
+	return &txs.EstimateGasResponse{Gas: hi}, nil
 }
 
 // TraceTx configures a new tracer according to the provided configuration, and
 // executes the given message in the provided environment. The return value will
 // be tracer dependent.
-func (k Keeper) TraceTx(c context.Context, req *process.QueryTraceTxRequest) (*process.QueryTraceTxResponse, error) {
+func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.QueryTraceTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -396,7 +396,7 @@ func (k Keeper) TraceTx(c context.Context, req *process.QueryTraceTxRequest) (*p
 	}
 	signer := eth.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 
-	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 	for i, tx := range req.Predecessors {
 		ethTx := tx.AsTransaction()
 		msg, err := core.TransactionToMessage(ethTx, signer, cfg.BaseFee)
@@ -435,7 +435,7 @@ func (k Keeper) TraceTx(c context.Context, req *process.QueryTraceTxRequest) (*p
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &process.QueryTraceTxResponse{
+	return &txs.QueryTraceTxResponse{
 		Data: resultData,
 	}, nil
 }
@@ -443,7 +443,7 @@ func (k Keeper) TraceTx(c context.Context, req *process.QueryTraceTxRequest) (*p
 // TraceBlock configures a new tracer according to the provided configuration, and
 // executes the given message in the provided environment for all the transactions in the queried block.
 // The return value will be tracer dependent.
-func (k Keeper) TraceBlock(c context.Context, req *process.QueryTraceBlockRequest) (*process.QueryTraceBlockResponse, error) {
+func (k Keeper) TraceBlock(c context.Context, req *txs.QueryTraceBlockRequest) (*txs.QueryTraceBlockResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -476,7 +476,7 @@ func (k Keeper) TraceBlock(c context.Context, req *process.QueryTraceBlockReques
 	txsLength := len(req.Txs)
 	results := make([]*types.TxTraceResult, 0, txsLength)
 
-	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 	for i, tx := range req.Txs {
 		result := types.TxTraceResult{}
 		ethTx := tx.AsTransaction()
@@ -497,16 +497,16 @@ func (k Keeper) TraceBlock(c context.Context, req *process.QueryTraceBlockReques
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &process.QueryTraceBlockResponse{
+	return &txs.QueryTraceBlockResponse{
 		Data: resultData,
 	}, nil
 }
 
-// traceTx do trace on one process, it returns a tuple: (traceResult, nextLogIndex, error).
+// traceTx do trace on one txs, it returns a tuple: (traceResult, nextLogIndex, error).
 func (k *Keeper) traceTx(
 	ctx sdk.Context,
-	cfg *vmstate.EVMConfig,
-	txConfig vmstate.TxConfig,
+	cfg *states.EVMConfig,
+	txConfig states.TxConfig,
 	signer eth.Signer,
 	tx *eth.Transaction,
 	traceConfig *support.TraceConfig,
@@ -557,7 +557,7 @@ func (k *Keeper) traceTx(
 		}
 	}
 
-	// Define a meaningful timeout of a single process trace
+	// Define a meaningful timeout of a single txs trace
 	if traceConfig.Timeout != "" {
 		if timeout, err = time.ParseDuration(traceConfig.Timeout); err != nil {
 			return nil, 0, status.Errorf(codes.InvalidArgument, "timeout value: %s", err.Error())
@@ -590,14 +590,14 @@ func (k *Keeper) traceTx(
 }
 
 // BaseFee implements the Query/BaseFee gRPC method
-func (k Keeper) BaseFee(c context.Context, _ *process.QueryBaseFeeRequest) (*process.QueryBaseFeeResponse, error) {
+func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.QueryBaseFeeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	params := k.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(k.eip155ChainID)
 	baseFee := k.GetBaseFee(ctx, ethCfg)
 
-	res := &process.QueryBaseFeeResponse{}
+	res := &txs.QueryBaseFeeResponse{}
 	if baseFee != nil {
 		aux := sdkmath.NewIntFromBigInt(baseFee)
 		res.BaseFee = &aux
@@ -609,7 +609,7 @@ func (k Keeper) BaseFee(c context.Context, _ *process.QueryBaseFeeRequest) (*pro
 // getChainID parse chainID from current context if not provided
 func getChainID(ctx sdk.Context, chainID int64) (*big.Int, error) {
 	if chainID == 0 {
-		return artela.ParseChainID(ctx.ChainID())
+		return types2.ParseChainID(ctx.ChainID())
 	}
 	return big.NewInt(chainID), nil
 }

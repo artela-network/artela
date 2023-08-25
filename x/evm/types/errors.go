@@ -31,7 +31,7 @@ const (
 
 var (
 	// ErrInvalidState returns an error resulting from an invalid Storage State.
-	ErrInvalidState = errorsmod.Register(ModuleName, codeErrInvalidState, "invalid storage state")
+	ErrInvalidState = errorsmod.Register(ModuleName, codeErrInvalidState, "invalid storage states")
 
 	// ErrInvalidChainConfig returns an error resulting from an invalid ChainConfig.
 	ErrInvalidChainConfig = errorsmod.Register(ModuleName, codeErrInvalidChainConfig, "invalid chain configuration")
@@ -45,17 +45,17 @@ var (
 	// ErrCallDisabled returns an error if the EnableCall parameter is false.
 	ErrCallDisabled = errorsmod.Register(ModuleName, codeErrCallDisabled, "EVM Call operation is disabled")
 
-	// ErrInvalidAmount returns an error if a process contains an invalid amount.
-	ErrInvalidAmount = errorsmod.Register(ModuleName, codeErrInvalidAmount, "invalid process amount")
+	// ErrInvalidAmount returns an error if a txs contains an invalid amount.
+	ErrInvalidAmount = errorsmod.Register(ModuleName, codeErrInvalidAmount, "invalid txs amount")
 
-	// ErrInvalidGasPrice returns an error if an invalid gas price is provided to the process.
+	// ErrInvalidGasPrice returns an error if an invalid gas price is provided to the txs.
 	ErrInvalidGasPrice = errorsmod.Register(ModuleName, codeErrInvalidGasPrice, "invalid gas price")
 
-	// ErrInvalidGasFee returns an error if the process gas fee is out of bound.
+	// ErrInvalidGasFee returns an error if the txs gas fee is out of bound.
 	ErrInvalidGasFee = errorsmod.Register(ModuleName, codeErrInvalidGasFee, "invalid gas fee")
 
 	// ErrVMExecution returns an error resulting from an error in EVM execution.
-	ErrVMExecution = errorsmod.Register(ModuleName, codeErrVMExecution, "evm process execution failed")
+	ErrVMExecution = errorsmod.Register(ModuleName, codeErrVMExecution, "evm txs execution failed")
 
 	// ErrInvalidRefund returns an error if the gas refund value is invalid.
 	ErrInvalidRefund = errorsmod.Register(ModuleName, codeErrInvalidRefund, "invalid gas refund amount")

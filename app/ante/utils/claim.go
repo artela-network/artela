@@ -60,7 +60,7 @@ func ClaimSufficientStakingRewards(
 		rewards sdk.Coins
 	)
 
-	// Allocate a cached context to avoid writing to state if there are not enough rewards
+	// Allocate a cached context to avoid writing to states if there are not enough rewards
 	cacheCtx, writeFn := ctx.CacheContext()
 
 	// Iterate through delegations and get the rewards if any are unclaimed.
@@ -84,10 +84,10 @@ func ClaimSufficientStakingRewards(
 		return errorsmod.Wrap(err, "error while withdrawing delegation rewards")
 	}
 
-	// only write to state if there are enough rewards to cover the transaction fees
+	// only write to states if there are enough rewards to cover the transaction fees
 	if rewards.AmountOf(amount.Denom).LT(amount.Amount) {
 		return errortypes.ErrInsufficientFee.Wrapf("insufficient staking rewards to cover transaction fees")
 	}
-	writeFn() // commit state changes
+	writeFn() // commit states changes
 	return nil
 }

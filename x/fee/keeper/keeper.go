@@ -10,7 +10,7 @@ import (
 	"github.com/artela-network/artela/x/fee/types"
 )
 
-// Keeper grants access to the Fee Market module state.
+// Keeper grants access to the Fee Market module states.
 type Keeper struct {
 	// Protobuf codec
 	cdc codec.BinaryCodec

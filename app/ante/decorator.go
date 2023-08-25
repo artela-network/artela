@@ -1,7 +1,7 @@
 package ante
 
 import (
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 
 	errorsmod "cosmossdk.io/errors"
 	anteutils "github.com/artela-network/artela/app/ante/utils"
@@ -107,7 +107,7 @@ func newCosmosAnteHandler(options AnteDecorators) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
-			sdk.MsgTypeURL(&process.MsgEthereumTx{}),
+			sdk.MsgTypeURL(&txs.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
 		ante.NewSetUpContextDecorator(),
@@ -135,7 +135,7 @@ func newLegacyCosmosAnteHandlerEip712(options AnteDecorators) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
-			sdk.MsgTypeURL(&process.MsgEthereumTx{}),
+			sdk.MsgTypeURL(&txs.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
 		ante.NewSetUpContextDecorator(),

@@ -3,6 +3,7 @@ package eip712
 import (
 	"errors"
 	"fmt"
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 
@@ -10,7 +11,6 @@ import (
 	txTypes "github.com/cosmos/cosmos-sdk/types/tx"
 
 	"github.com/artela-network/artela/app/params"
-	artelatypes "github.com/artela-network/artela/types"
 	apitypes "github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -22,7 +22,7 @@ var (
 )
 
 // SetEncodingConfig set the encoding config to the singleton codecs (Amino and Protobuf).
-// The process of unmarshaling SignDoc bytes into a SignDoc object requires having a codec
+// The txs of unmarshaling SignDoc bytes into a SignDoc object requires having a codec
 // populated with all relevant message types. As a result, we must call this method on app
 // initialization with the app's encoding config.
 func SetEncodingConfig(cfg params.EncodingConfig) {
@@ -210,11 +210,11 @@ func validateCodecInit() error {
 	return nil
 }
 
-// validatePayloadMessages ensures that the process messages can be represented in an EIP-712
+// validatePayloadMessages ensures that the txs messages can be represented in an EIP-712
 // encoding by checking that messages exist and share a single signer.
 func validatePayloadMessages(msgs []sdk.Msg) error {
 	if len(msgs) == 0 {
-		return errors.New("unable to build EIP-712 payload: process does contain any messages")
+		return errors.New("unable to build EIP-712 payload: txs does contain any messages")
 	}
 
 	var msgSigner sdk.AccAddress

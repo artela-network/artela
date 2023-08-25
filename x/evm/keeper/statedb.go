@@ -2,27 +2,27 @@ package keeper
 
 import (
 	"fmt"
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
 
 	errorsmod "cosmossdk.io/errors"
-	artelatypes "github.com/artela-network/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
-	"github.com/artela-network/artela/x/evm/vmstate"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var _ vmstate.Keeper = &Keeper{}
+var _ states.Keeper = &Keeper{}
 
 // ----------------------------------------------------------------------------
 // StateDB Keeper implementation
 // ----------------------------------------------------------------------------
 
 // GetAccount returns nil if account is not exist, returns error if it's not `EthAccountI`
-func (k *Keeper) GetAccount(ctx sdk.Context, addr common.Address) *vmstate.Account {
+func (k *Keeper) GetAccount(ctx sdk.Context, addr common.Address) *states.Account {
 	acct := k.GetAccountWithoutBalance(ctx, addr)
 	if acct == nil {
 		return nil
@@ -32,7 +32,7 @@ func (k *Keeper) GetAccount(ctx sdk.Context, addr common.Address) *vmstate.Accou
 	return acct
 }
 
-// GetState loads contract state from database, implements `vmstate.Keeper` interface.
+// GetState loads contract states from database, implements `states.Keeper` interface.
 func (k *Keeper) GetState(ctx sdk.Context, addr common.Address, key common.Hash) common.Hash {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
 
@@ -44,7 +44,7 @@ func (k *Keeper) GetState(ctx sdk.Context, addr common.Address, key common.Hash)
 	return common.BytesToHash(value)
 }
 
-// GetCode loads contract code from database, implements `vmstate.Keeper` interface.
+// GetCode loads contract code from database, implements `states.Keeper` interface.
 func (k *Keeper) GetCode(ctx sdk.Context, codeHash common.Hash) []byte {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixCode)
 	return store.Get(codeHash.Bytes())
@@ -103,7 +103,7 @@ func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.In
 }
 
 // SetAccount updates nonce/balance/codeHash together.
-func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account vmstate.Account) error {
+func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account states.Account) error {
 	// update account
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
@@ -150,7 +150,7 @@ func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash,
 		store.Set(key.Bytes(), value)
 	}
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("state %s", action),
+		fmt.Sprintf("states %s", action),
 		"ethereum-address", addr.Hex(),
 		"key", key.Hex(),
 	)

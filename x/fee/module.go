@@ -42,12 +42,12 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
-// ConsensusVersion returns the consensus state-breaking version for the module.
+// ConsensusVersion returns the consensus states-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
 	return ConsensusVersion
 }
 
-// DefaultGenesis returns default genesis state as raw bytes for the fee market
+// DefaultGenesis returns default genesis states as raw bytes for the fee market
 // module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
@@ -57,7 +57,7 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var genesisState types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genesisState); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+		return fmt.Errorf("failed to unmarshal %s genesis states: %w", types.ModuleName, err)
 	}
 
 	return genesisState.Validate()
@@ -69,7 +69,7 @@ func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *ru
 	}
 }
 
-// GetTxCmd returns the root process command for the fee market module.
+// GetTxCmd returns the root txs command for the fee market module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }
@@ -135,7 +135,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the fee market
+// ExportGenesis returns the exported genesis states as raw bytes for the fee market
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	gs := ExportGenesis(ctx, am.keeper)

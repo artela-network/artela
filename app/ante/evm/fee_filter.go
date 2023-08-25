@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
-	evmtypes "github.com/artela-network/artela/x/evm/process"
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 

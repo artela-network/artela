@@ -1,5 +1,5 @@
 // Code support by protoc-gen-gogo. DO NOT EDIT.
-// source: artela/fee/v1/process.proto
+// source: artela/fee/v1/txs.proto
 
 package types
 
@@ -129,7 +129,7 @@ func init() {
 	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "artela.fee.v1.MsgUpdateParamsResponse")
 }
 
-func init() { proto.RegisterFile("artela/fee/v1/process.proto", fileDescriptor_c26b5e51db554952) }
+func init() { proto.RegisterFile("artela/fee/v1/txs.proto", fileDescriptor_c26b5e51db554952) }
 
 var fileDescriptor_c26b5e51db554952 = []byte{
 	// 318 bytes of a gzipped FileDescriptorProto
@@ -236,7 +236,7 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "artela/fee/v1/process.proto",
+	Metadata: "artela/fee/v1/txs.proto",
 }
 
 func (m *MsgUpdateParams) Marshal() (dAtA []byte, err error) {

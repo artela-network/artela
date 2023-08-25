@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -22,7 +22,7 @@ import (
 // sender has enough funds to pay for the fees and value of the transaction.
 func CheckSenderBalance(
 	balance sdkmath.Int,
-	txData process.TxData,
+	txData txs.TxData,
 ) error {
 	cost := txData.Cost()
 
@@ -67,7 +67,7 @@ func (k *Keeper) DeductTxCostsFromUserBalance(
 // gas limit is not reached, the gas limit is higher than the intrinsic gas and that the
 // base fee is higher than the gas fee cap.
 func VerifyFee(
-	txData process.TxData,
+	txData txs.TxData,
 	denom string,
 	baseFee *big.Int,
 	homestead, istanbul, isCheckTx bool,
@@ -166,7 +166,7 @@ func (k *Keeper) ResetGasMeterAndConsumeGas(ctx sdk.Context, gasUsed uint64) {
 	ctx.GasMeter().ConsumeGas(gasUsed, "apply evm transaction")
 }
 
-// GasToRefund calculates the amount of gas the state machine should refund to the sender. It is
+// GasToRefund calculates the amount of gas the states machine should refund to the sender. It is
 // capped by the refund quotient value.
 // Note: do not pass 0 to refundQuotient
 func GasToRefund(availableRefund, gasConsumed, refundQuotient uint64) uint64 {
