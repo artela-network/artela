@@ -902,9 +902,6 @@ func (app *Artela) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICon
 
 	// register app's OpenAPI routes.
 	docs.RegisterOpenAPIService(Name, apiSvr.Router)
-
-	// start the rpc serice
-	app.EvmKeeper.StartArtelaService()
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.

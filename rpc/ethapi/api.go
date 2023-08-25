@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/accounts/scwallet"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -30,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/tyler-smith/go-bip39"
 )
 
 // EthereumAPI provides an API to access Ethereum related information.
@@ -240,24 +238,24 @@ func (s *TxPoolAPI) Inspect() map[string]map[string]map[string]string {
 // EthereumAccountAPI provides an API to access accounts managed by this node.
 // It offers only methods that can retrieve accounts.
 type EthereumAccountAPI struct {
-	am *accounts.Manager
+	ab AccountBackend
 }
 
 // NewEthereumAccountAPI creates a new EthereumAccountAPI.
-func NewEthereumAccountAPI(am *accounts.Manager) *EthereumAccountAPI {
-	return &EthereumAccountAPI{am: am}
+func NewEthereumAccountAPI(ab AccountBackend) *EthereumAccountAPI {
+	return &EthereumAccountAPI{ab}
 }
 
 // Accounts returns the collection of accounts this node manages.
 func (s *EthereumAccountAPI) Accounts() []common.Address {
-	return s.am.Accounts()
+	return s.ab.Accounts()
 }
 
 // PersonalAccountAPI provides an API to access accounts managed by this node.
 // It offers methods to create, (un)lock en list accounts. Some methods accept
 // passwords and are therefore considered private by default.
 type PersonalAccountAPI struct {
-	am        *accounts.Manager
+	ab        AccountBackend
 	nonceLock *AddrLocker
 	b         Backend
 }
@@ -265,7 +263,7 @@ type PersonalAccountAPI struct {
 // NewPersonalAccountAPI create a new PersonalAccountAPI.
 func NewPersonalAccountAPI(b Backend, nonceLock *AddrLocker) *PersonalAccountAPI {
 	return &PersonalAccountAPI{
-		am:        b.AccountManager(),
+		ab:        b.AccountManager(),
 		nonceLock: nonceLock,
 		b:         b,
 	}
@@ -273,7 +271,7 @@ func NewPersonalAccountAPI(b Backend, nonceLock *AddrLocker) *PersonalAccountAPI
 
 // ListAccounts will return a list of addresses for accounts this node manages.
 func (s *PersonalAccountAPI) ListAccounts() []common.Address {
-	return s.am.Accounts()
+	return s.ab.Accounts()
 }
 
 // rawWallet is a JSON representation of an accounts.Wallet interface, with its
@@ -288,19 +286,21 @@ type rawWallet struct {
 // ListWallets will return a list of wallets this node manages.
 func (s *PersonalAccountAPI) ListWallets() []rawWallet {
 	wallets := make([]rawWallet, 0) // return [] instead of nil if empty
-	for _, wallet := range s.am.Wallets() {
-		status, failure := wallet.Status()
+	// TODO build wallet from cosmos eth account
 
-		raw := rawWallet{
-			URL:      wallet.URL().String(),
-			Status:   status,
-			Accounts: wallet.Accounts(),
-		}
-		if failure != nil {
-			raw.Failure = failure.Error()
-		}
-		wallets = append(wallets, raw)
-	}
+	// for _, wallet := range s.am.Wallets() {
+	// 	status, failure := wallet.Status()
+
+	// 	raw := rawWallet{
+	// 		URL:      wallet.URL().String(),
+	// 		Status:   status,
+	// 		Accounts: wallet.Accounts(),
+	// 	}
+	// 	if failure != nil {
+	// 		raw.Failure = failure.Error()
+	// 	}
+	// 	wallets = append(wallets, raw)
+	// }
 	return wallets
 }
 
@@ -309,49 +309,39 @@ func (s *PersonalAccountAPI) ListWallets() []rawWallet {
 // the method may return an extra challenge requiring a second open (e.g. the
 // Trezor PIN matrix challenge).
 func (s *PersonalAccountAPI) OpenWallet(url string, passphrase *string) error {
-	wallet, err := s.am.Wallet(url)
-	if err != nil {
-		return err
-	}
-	pass := ""
-	if passphrase != nil {
-		pass = *passphrase
-	}
-	return wallet.Open(pass)
+	// wallet, err := s.am.Wallet(url)
+	// if err != nil {
+	// 	return err
+	// }
+	// pass := ""
+	// if passphrase != nil {
+	// 	pass = *passphrase
+	// }
+	// return wallet.Open(pass)
+	return nil
 }
 
 // DeriveAccount requests an HD wallet to derive a new account, optionally pinning
 // it for later reuse.
 func (s *PersonalAccountAPI) DeriveAccount(url string, path string, pin *bool) (accounts.Account, error) {
-	wallet, err := s.am.Wallet(url)
-	if err != nil {
-		return accounts.Account{}, err
-	}
-	derivPath, err := accounts.ParseDerivationPath(path)
-	if err != nil {
-		return accounts.Account{}, err
-	}
-	if pin == nil {
-		pin = new(bool)
-	}
-	return wallet.Derive(derivPath, *pin)
+	// wallet, err := s.am.Wallet(url)
+	// if err != nil {
+	// 	return accounts.Account{}, err
+	// }
+	// derivPath, err := accounts.ParseDerivationPath(path)
+	// if err != nil {
+	// 	return accounts.Account{}, err
+	// }
+	// if pin == nil {
+	// 	pin = new(bool)
+	// }
+	// return wallet.Derive(derivPath, *pin)
+	return accounts.Account{}, nil
 }
 
 // NewAccount will create a new account and returns the address for the new account.
 func (s *PersonalAccountAPI) NewAccount(password string) (common.AddressEIP55, error) {
-	ks, err := fetchKeystore(s.am)
-	if err != nil {
-		return common.AddressEIP55{}, err
-	}
-	acc, err := ks.NewAccount(password)
-	if err == nil {
-		addrEIP55 := common.AddressEIP55(acc.Address)
-		log.Info("Your new key was generated", "address", addrEIP55.String())
-		log.Warn("Please backup your key file!", "path", acc.URL.Path)
-		log.Warn("Please remember your password!")
-		return addrEIP55, nil
-	}
-	return common.AddressEIP55{}, err
+	return s.ab.NewAccount(password)
 }
 
 // fetchKeystore retrieves the encrypted keystore from the account manager.
@@ -365,54 +355,20 @@ func fetchKeystore(am *accounts.Manager) (*keystore.KeyStore, error) {
 // ImportRawKey stores the given hex encoded ECDSA key into the key directory,
 // encrypting it with the passphrase.
 func (s *PersonalAccountAPI) ImportRawKey(privkey string, password string) (common.Address, error) {
-	key, err := crypto.HexToECDSA(privkey)
-	if err != nil {
-		return common.Address{}, err
-	}
-	ks, err := fetchKeystore(s.am)
-	if err != nil {
-		return common.Address{}, err
-	}
-	acc, err := ks.ImportECDSA(key, password)
-	return acc.Address, err
+	return s.ab.ImportRawKey(privkey, password)
 }
 
 // UnlockAccount will unlock the account associated with the given address with
 // the given password for duration seconds. If duration is nil it will use a
 // default of 300 seconds. It returns an indication if the account was unlocked.
 func (s *PersonalAccountAPI) UnlockAccount(ctx context.Context, addr common.Address, password string, duration *uint64) (bool, error) {
-	// When the API is exposed by external RPC(http, ws etc), unless the user
-	// explicitly specifies to allow the insecure account unlocking, otherwise
-	// it is disabled.
-	if s.b.ExtRPCEnabled() && !s.b.AccountManager().Config().InsecureUnlockAllowed {
-		return false, errors.New("account unlock with HTTP access is forbidden")
-	}
-
-	const max = uint64(time.Duration(math.MaxInt64) / time.Second)
-	var d time.Duration
-	if duration == nil {
-		d = 300 * time.Second
-	} else if *duration > max {
-		return false, errors.New("unlock duration too large")
-	} else {
-		d = time.Duration(*duration) * time.Second
-	}
-	ks, err := fetchKeystore(s.am)
-	if err != nil {
-		return false, err
-	}
-	err = ks.TimedUnlock(accounts.Account{Address: addr}, password, d)
-	if err != nil {
-		log.Warn("Failed account unlock attempt", "address", addr, "err", err)
-	}
-	return err == nil, err
+	// do not implement
+	return false, nil
 }
 
 // LockAccount will lock the account associated with the given address when it's unlocked.
 func (s *PersonalAccountAPI) LockAccount(addr common.Address) bool {
-	if ks, err := fetchKeystore(s.am); err == nil {
-		return ks.Lock(addr) == nil
-	}
+	// do not implement
 	return false
 }
 
@@ -420,20 +376,8 @@ func (s *PersonalAccountAPI) LockAccount(addr common.Address) bool {
 // NOTE: the caller needs to ensure that the nonceLock is held, if applicable,
 // and release it after the transaction has been submitted to the tx pool
 func (s *PersonalAccountAPI) signTransaction(ctx context.Context, args *TransactionArgs, passwd string) (*types.Transaction, error) {
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: args.from()}
-	wallet, err := s.am.Find(account)
-	if err != nil {
-		return nil, err
-	}
-	// Set some sanity defaults and terminate on failure
-	if err := args.setDefaults(ctx, s.b); err != nil {
-		return nil, err
-	}
-	// Assemble the transaction and sign with the wallet
-	tx := args.toTransaction()
-
-	return wallet.SignTxWithPassphrase(account, passwd, tx, s.b.ChainConfig().ChainID)
+	// return s.ab.SignTransaction(args, passwd)
+	return nil, nil
 }
 
 // SendTransaction will create a transaction from the given arguments and
@@ -500,21 +444,22 @@ func (s *PersonalAccountAPI) SignTransaction(ctx context.Context, args Transacti
 //
 // https://github.com/ethereum/go-ethereum/wiki/Management-APIs#personal_sign
 func (s *PersonalAccountAPI) Sign(ctx context.Context, data hexutil.Bytes, addr common.Address, passwd string) (hexutil.Bytes, error) {
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: addr}
+	// // Look up the wallet containing the requested signer
+	// account := accounts.Account{Address: addr}
 
-	wallet, err := s.b.AccountManager().Find(account)
-	if err != nil {
-		return nil, err
-	}
-	// Assemble sign the data with the wallet
-	signature, err := wallet.SignTextWithPassphrase(account, passwd, data)
-	if err != nil {
-		log.Warn("Failed data sign attempt", "address", addr, "err", err)
-		return nil, err
-	}
-	signature[crypto.RecoveryIDOffset] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
-	return signature, nil
+	// wallet, err := s.b.AccountManager().Find(account)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// // Assemble sign the data with the wallet
+	// signature, err := wallet.SignTextWithPassphrase(account, passwd, data)
+	// if err != nil {
+	// 	log.Warn("Failed data sign attempt", "address", addr, "err", err)
+	// 	return nil, err
+	// }
+	// signature[crypto.RecoveryIDOffset] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
+	// return signature, nil
+	return nil, nil
 }
 
 // EcRecover returns the address for the account that was used to create the signature.
@@ -545,44 +490,46 @@ func (s *PersonalAccountAPI) EcRecover(ctx context.Context, data, sig hexutil.By
 
 // InitializeWallet initializes a new wallet at the provided URL, by generating and returning a new private key.
 func (s *PersonalAccountAPI) InitializeWallet(ctx context.Context, url string) (string, error) {
-	wallet, err := s.am.Wallet(url)
-	if err != nil {
-		return "", err
-	}
+	// wallet, err := s.am.Wallet(url)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	entropy, err := bip39.NewEntropy(256)
-	if err != nil {
-		return "", err
-	}
+	// entropy, err := bip39.NewEntropy(256)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	mnemonic, err := bip39.NewMnemonic(entropy)
-	if err != nil {
-		return "", err
-	}
+	// mnemonic, err := bip39.NewMnemonic(entropy)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	seed := bip39.NewSeed(mnemonic, "")
+	// seed := bip39.NewSeed(mnemonic, "")
 
-	switch wallet := wallet.(type) {
-	case *scwallet.Wallet:
-		return mnemonic, wallet.Initialize(seed)
-	default:
-		return "", errors.New("specified wallet does not support initialization")
-	}
+	// switch wallet := wallet.(type) {
+	// case *scwallet.Wallet:
+	// 	return mnemonic, wallet.Initialize(seed)
+	// default:
+	// 	return "", errors.New("specified wallet does not support initialization")
+	// }
+	return "", nil
 }
 
 // Unpair deletes a pairing between wallet and geth.
 func (s *PersonalAccountAPI) Unpair(ctx context.Context, url string, pin string) error {
-	wallet, err := s.am.Wallet(url)
-	if err != nil {
-		return err
-	}
+	// wallet, err := s.am.Wallet(url)
+	// if err != nil {
+	// 	return err
+	// }
 
-	switch wallet := wallet.(type) {
-	case *scwallet.Wallet:
-		return wallet.Unpair([]byte(pin))
-	default:
-		return errors.New("specified wallet does not support pairing")
-	}
+	// switch wallet := wallet.(type) {
+	// case *scwallet.Wallet:
+	// 	return wallet.Unpair([]byte(pin))
+	// default:
+	// 	return errors.New("specified wallet does not support pairing")
+	// }
+	return nil
 }
 
 // BlockChainAPI provides an API to access Ethereum blockchain data.
@@ -1680,15 +1627,9 @@ func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.
 
 // sign is a helper function that signs a transaction with the private key of the given address.
 func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: addr}
-
-	wallet, err := s.b.AccountManager().Find(account)
-	if err != nil {
-		return nil, err
-	}
-	// Request the wallet to sign the transaction
-	return wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
+	// return s.b.AccountManager().SignTransaction()
+	// TODO
+	return nil, nil
 }
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
@@ -1725,30 +1666,9 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
 func (s *TransactionAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: args.from()}
-
-	wallet, err := s.b.AccountManager().Find(account)
+	signed, err := s.b.AccountManager().SignTransaction(&args)
 	if err != nil {
-		return common.Hash{}, err
-	}
-
-	if args.Nonce == nil {
-		// Hold the mutex around signing to prevent concurrent assignment of
-		// the same nonce to multiple accounts.
-		s.nonceLock.LockAddr(args.from())
-		defer s.nonceLock.UnlockAddr(args.from())
-	}
-
-	// Set some sanity defaults and terminate on failure
-	if err := args.setDefaults(ctx, s.b); err != nil {
-		return common.Hash{}, err
-	}
-	// Assemble the transaction and sign with the wallet
-	tx := args.toTransaction()
-
-	signed, err := wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
-	if err != nil {
+		log.Warn("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
 		return common.Hash{}, err
 	}
 	return SubmitTransaction(ctx, s.b, signed)
@@ -1791,19 +1711,20 @@ func (s *TransactionAPI) SendRawTransaction(ctx context.Context, input hexutil.B
 //
 // https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sign
 func (s *TransactionAPI) Sign(addr common.Address, data hexutil.Bytes) (hexutil.Bytes, error) {
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: addr}
+	// // Look up the wallet containing the requested signer
+	// account := accounts.Account{Address: addr}
 
-	wallet, err := s.b.AccountManager().Find(account)
-	if err != nil {
-		return nil, err
-	}
-	// Sign the requested hash with the wallet
-	signature, err := wallet.SignText(account, data)
-	if err == nil {
-		signature[64] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
-	}
-	return signature, err
+	// wallet, err := s.b.AccountManager().Find(account)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// // Sign the requested hash with the wallet
+	// signature, err := wallet.SignText(account, data)
+	// if err == nil {
+	// 	signature[64] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
+	// }
+	// return signature, err
+	return nil, nil
 }
 
 // SignTransactionResult represents a RLP encoded signed transaction.
@@ -1816,27 +1737,12 @@ type SignTransactionResult struct {
 // The node needs to have the private key of the account corresponding with
 // the given from address and it needs to be unlocked.
 func (s *TransactionAPI) SignTransaction(ctx context.Context, args TransactionArgs) (*SignTransactionResult, error) {
-	if args.Gas == nil {
-		return nil, errors.New("gas not specified")
-	}
-	if args.GasPrice == nil && (args.MaxPriorityFeePerGas == nil || args.MaxFeePerGas == nil) {
-		return nil, errors.New("missing gasPrice or maxFeePerGas/maxPriorityFeePerGas")
-	}
-	if args.Nonce == nil {
-		return nil, errors.New("nonce not specified")
-	}
-	if err := args.setDefaults(ctx, s.b); err != nil {
-		return nil, err
-	}
-	// Before actually sign the transaction, ensure the transaction fee is reasonable.
-	tx := args.toTransaction()
-	if err := checkTxFee(tx.GasPrice(), tx.Gas(), s.b.RPCTxFeeCap()); err != nil {
-		return nil, err
-	}
-	signed, err := s.sign(args.from(), tx)
+	// gas, gas limit, nonce checking are made in SignTransaction
+	signed, err := s.b.AccountManager().SignTransaction(&args)
 	if err != nil {
 		return nil, err
 	}
+
 	data, err := signed.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -1847,25 +1753,26 @@ func (s *TransactionAPI) SignTransaction(ctx context.Context, args TransactionAr
 // PendingTransactions returns the transactions that are in the transaction pool
 // and have a from address that is one of the accounts this node manages.
 func (s *TransactionAPI) PendingTransactions() ([]*RPCTransaction, error) {
-	pending, err := s.b.GetPoolTransactions()
-	if err != nil {
-		return nil, err
-	}
-	accounts := make(map[common.Address]struct{})
-	for _, wallet := range s.b.AccountManager().Wallets() {
-		for _, account := range wallet.Accounts() {
-			accounts[account.Address] = struct{}{}
-		}
-	}
-	curHeader := s.b.CurrentHeader()
-	transactions := make([]*RPCTransaction, 0, len(pending))
-	for _, tx := range pending {
-		from, _ := types.Sender(s.signer, tx)
-		if _, exists := accounts[from]; exists {
-			transactions = append(transactions, NewRPCPendingTransaction(tx, curHeader, s.b.ChainConfig()))
-		}
-	}
-	return transactions, nil
+	// pending, err := s.b.GetPoolTransactions()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// accounts := make(map[common.Address]struct{})
+	// for _, wallet := range s.b.AccountManager().Wallets() {
+	// 	for _, account := range wallet.Accounts() {
+	// 		accounts[account.Address] = struct{}{}
+	// 	}
+	// }
+	// curHeader := s.b.CurrentHeader()
+	// transactions := make([]*RPCTransaction, 0, len(pending))
+	// for _, tx := range pending {
+	// 	from, _ := types.Sender(s.signer, tx)
+	// 	if _, exists := accounts[from]; exists {
+	// 		transactions = append(transactions, NewRPCPendingTransaction(tx, curHeader, s.b.ChainConfig()))
+	// 	}
+	// }
+	// return transactions, nil
+	return nil, nil
 }
 
 // Resend accepts an existing transaction and a new gas price and limit. It will remove

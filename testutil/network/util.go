@@ -3,6 +3,7 @@ package network
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"time"
 
 	tmos "github.com/cometbft/cometbft/libs/os"
@@ -13,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/local"
 	"github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
+	"github.com/ethereum/go-ethereum/accounts"
 
 	"github.com/cosmos/cosmos-sdk/server/api"
 	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
@@ -26,6 +28,7 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/artela-network/artela/rpc"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
@@ -139,6 +142,24 @@ func startInProcess(cfg Config, val *Validator) error {
 		if err != nil {
 			return fmt.Errorf("failed to dial JSON-RPC at %s: %w", val.AppConfig.JSONRPC.Address, err)
 		}*/
+		cfg := rpc.DefaultConfig()
+		nodeCfg := rpc.DefaultGethNodeConfig()
+
+		httpEndpoint := strings.Split(val.AppConfig.JSONRPC.Address, ":")
+		if len(httpEndpoint) > 0 {
+			nodeCfg.HTTPHost = strings.Split(val.AppConfig.JSONRPC.Address, ":")[0]
+		}
+		if len(httpEndpoint) > 1 {
+			nodeCfg.HTTPHost = strings.Split(val.AppConfig.JSONRPC.Address, ":")[1]
+		}
+
+		node, err := rpc.NewNode(nodeCfg)
+		if err != nil {
+			panic(err)
+		}
+
+		val.artelaService = rpc.NewArtelaService(val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}))
+		val.artelaService.Start()
 	}
 
 	return nil

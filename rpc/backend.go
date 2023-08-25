@@ -6,8 +6,10 @@ import (
 	"math/big"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -24,6 +26,8 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela/rpc/ethapi"
+	rpctypes "github.com/artela-network/artela/rpc/types"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 // Backend represents the backend object for a artela. It extends the standard
@@ -49,26 +53,34 @@ type backend struct {
 	chainSideFeed   event.Feed
 	newTxsFeed      event.Feed
 
+	ctx         context.Context
+	clientCtx   client.Context
+	queryClient *rpctypes.QueryClient
 	// am manage etherum account, any updates of the artela account should also update to am.
-	am *accounts.Manager
+	ab ethapi.AccountBackend
 }
 
 // NewBackend create the backend instance
 func NewBackend(
+	clientCtx client.Context,
 	artela *ArtelaService,
 	extRPCEnabled bool,
 	cfg *Config,
-	am *accounts.Manager,
 ) Backend {
 	b := &backend{
+		ctx:           context.Background(),
 		extRPCEnabled: extRPCEnabled,
 		artela:        artela,
 		cfg:           cfg,
 		logger:        log.Root(),
-		am:            am,
+		clientCtx:     clientCtx,
+		queryClient:   rpctypes.NewQueryClient(clientCtx),
 
 		scope: event.SubscriptionScope{},
 	}
+
+	// Set the Backend.
+	b.ab = NewAccountBackend(b.ctx, clientCtx, b.queryClient)
 
 	if cfg.GPO.Default == nil {
 		panic("cfg.GPO.Default is nil")
@@ -103,8 +115,8 @@ func (b *backend) ChainDb() ethdb.Database { //nolint:stylecheck // conforms to 
 	return ethdb.Database(nil)
 }
 
-func (b *backend) AccountManager() *accounts.Manager {
-	return b.am
+func (b *backend) AccountManager() ethapi.AccountBackend {
+	return b.ab
 }
 
 func (b *backend) ExtRPCEnabled() bool {
@@ -216,8 +228,50 @@ func (b *backend) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.S
 // Transaction pool API
 
 func (b *backend) SendTx(ctx context.Context, signedTx *types.Transaction) error {
-	// eth tx -> cosmos tx
-	// broadcast tx
+	// verify the ethereum tx
+	ethereumTx := &evmtypes.MsgEthereumTx{}
+	if err := ethereumTx.FromEthereumTx(signedTx); err != nil {
+		b.logger.Error("transaction converting failed", "error", err.Error())
+		return err
+	}
+
+	if err := ethereumTx.ValidateBasic(); err != nil {
+		b.logger.Debug("tx failed basic validation", "error", err.Error())
+		return err
+	}
+
+	// Query params to use the EVM denomination
+	res, err := b.queryClient.QueryClient.Params(b.ctx, &evmtypes.QueryParamsRequest{})
+	if err != nil {
+		b.logger.Error("failed to query evm params", "error", err.Error())
+		return err
+	}
+
+	cosmosTx, err := ethereumTx.BuildTx(b.clientCtx.TxConfig.NewTxBuilder(), res.Params.EvmDenom)
+	if err != nil {
+		b.logger.Error("failed to build cosmos tx", "error", err.Error())
+		return err
+	}
+
+	// Encode transaction by default Tx encoder
+	txBytes, err := b.clientCtx.TxConfig.TxEncoder()(cosmosTx)
+	if err != nil {
+		b.logger.Error("failed to encode eth tx using default encoder", "error", err.Error())
+		return err
+	}
+
+	// txHash := ethereumTx.AsTransaction().Hash()
+
+	syncCtx := b.clientCtx.WithBroadcastMode(flags.BroadcastSync)
+	rsp, err := syncCtx.BroadcastTx(txBytes)
+	if rsp != nil && rsp.Code != 0 {
+		err = errorsmod.ABCIError(rsp.Codespace, rsp.Code, rsp.RawLog)
+	}
+	if err != nil {
+		b.logger.Error("failed to broadcast tx", "error", err.Error())
+		return err
+	}
+
 	return nil
 }
 

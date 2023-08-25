@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -14,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 // TransactionArgs represents the arguments to construct a new transaction
@@ -312,4 +315,116 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 // This assumes that setDefaults has been called.
 func (args *TransactionArgs) ToTransaction() *types.Transaction {
 	return args.toTransaction()
+}
+
+func (args *TransactionArgs) toEVMTransaction() *evmtypes.MsgEthereumTx {
+	var (
+		chainID, value, gasPrice, maxFeePerGas, maxPriorityFeePerGas sdkmath.Int
+		gas, nonce                                                   uint64
+		from, to                                                     string
+	)
+
+	// Set sender address or use zero address if none specified.
+	if args.ChainID != nil {
+		chainID = sdkmath.NewIntFromBigInt(args.ChainID.ToInt())
+	}
+
+	if args.Nonce != nil {
+		nonce = uint64(*args.Nonce)
+	}
+
+	if args.Gas != nil {
+		gas = uint64(*args.Gas)
+	}
+
+	if args.GasPrice != nil {
+		gasPrice = sdkmath.NewIntFromBigInt(args.GasPrice.ToInt())
+	}
+
+	if args.MaxFeePerGas != nil {
+		maxFeePerGas = sdkmath.NewIntFromBigInt(args.MaxFeePerGas.ToInt())
+	}
+
+	if args.MaxPriorityFeePerGas != nil {
+		maxPriorityFeePerGas = sdkmath.NewIntFromBigInt(args.MaxPriorityFeePerGas.ToInt())
+	}
+
+	if args.Value != nil {
+		value = sdkmath.NewIntFromBigInt(args.Value.ToInt())
+	}
+
+	if args.To != nil {
+		to = args.To.Hex()
+	}
+
+	var data evmtypes.TxData
+	switch {
+	case args.MaxFeePerGas != nil:
+		al := evmtypes.AccessList{}
+		if args.AccessList != nil {
+			al = evmtypes.NewAccessList(args.AccessList)
+		}
+
+		data = &evmtypes.DynamicFeeTx{
+			To:        to,
+			ChainID:   &chainID,
+			Nonce:     nonce,
+			GasLimit:  gas,
+			GasFeeCap: &maxFeePerGas,
+			GasTipCap: &maxPriorityFeePerGas,
+			Amount:    &value,
+			Data:      args.GetData(),
+			Accesses:  al,
+		}
+	case args.AccessList != nil:
+		data = &evmtypes.AccessListTx{
+			To:       to,
+			ChainID:  &chainID,
+			Nonce:    nonce,
+			GasLimit: gas,
+			GasPrice: &gasPrice,
+			Amount:   &value,
+			Data:     args.GetData(),
+			Accesses: evmtypes.NewAccessList(args.AccessList),
+		}
+	default:
+		data = &evmtypes.LegacyTx{
+			To:       to,
+			Nonce:    nonce,
+			GasLimit: gas,
+			GasPrice: &gasPrice,
+			Amount:   &value,
+			Data:     args.GetData(),
+		}
+	}
+
+	anyData, err := evmtypes.PackTxData(data)
+	if err != nil {
+		return nil
+	}
+
+	if args.From != nil {
+		from = args.From.Hex()
+	}
+
+	msg := evmtypes.MsgEthereumTx{
+		Data: anyData,
+		From: from,
+	}
+	msg.Hash = msg.AsTransaction().Hash().Hex()
+	return &msg
+}
+
+func (args *TransactionArgs) ToEVMTransaction() *evmtypes.MsgEthereumTx {
+	return args.toEVMTransaction()
+}
+
+func (args *TransactionArgs) GetData() []byte {
+	if args.Input != nil {
+		return *args.Input
+	}
+	if args.Data != nil {
+		return *args.Data
+	}
+	return nil
 }

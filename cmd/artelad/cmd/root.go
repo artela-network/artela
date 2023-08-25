@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
+	"github.com/artela-network/artela/ethereum/eip712"
 
 	dbm "github.com/cometbft/cometbft-db"
 	tmcfg "github.com/cometbft/cometbft/config"
@@ -21,7 +22,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
-	"github.com/cosmos/cosmos-sdk/server"
+	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
@@ -42,6 +43,8 @@ import (
 
 	"github.com/artela-network/artela/app"
 	appparams "github.com/artela-network/artela/app/params"
+	"github.com/artela-network/artela/server"
+	artelacfg "github.com/artela-network/artela/server/config"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
@@ -58,6 +61,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithKeyringOptions(artelakeyring.Option()).
 		WithViper("")
 
+	eip712.SetEncodingConfig(encodingConfig)
 	rootCmd := &cobra.Command{
 		Use:   app.Name + "d",
 		Short: "Start artela node",
@@ -80,7 +84,8 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 
 			customAppTemplate, customAppConfig := initAppConfig()
 			customTMConfig := initTendermintConfig()
-			return server.InterceptConfigsPreRunHandler(
+
+			return sdkserver.InterceptConfigsPreRunHandler(
 				cmd, customAppTemplate, customAppConfig, customTMConfig,
 			)
 		},
@@ -244,7 +249,7 @@ func (a appCreator) newApp(
 		skipUpgradeHeights[int64(h)] = true
 	}
 
-	pruningOpts, err := server.GetPruningOptionsFromFlags(appOpts)
+	pruningOpts, err := sdkserver.GetPruningOptionsFromFlags(appOpts)
 	if err != nil {
 		panic(err)
 	}
@@ -345,6 +350,10 @@ func initAppConfig() (string, interface{}) {
 
 	type CustomAppConfig struct {
 		serverconfig.Config
+
+		EVM     artelacfg.EVMConfig     `mapstructure:"evm"`
+		JSONRPC artelacfg.JSONRPCConfig `mapstructure:"json-rpc"`
+		TLS     artelacfg.TLSConfig     `mapstructure:"tls"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -365,9 +374,12 @@ func initAppConfig() (string, interface{}) {
 	srvCfg.MinGasPrices = "0stake"
 
 	customAppConfig := CustomAppConfig{
-		Config: *srvCfg,
+		Config:  *srvCfg,
+		EVM:     *artelacfg.DefaultEVMConfig(),
+		JSONRPC: *artelacfg.DefaultJSONRPCConfig(),
+		TLS:     *artelacfg.DefaultTLSConfig(),
 	}
-	customAppTemplate := serverconfig.DefaultConfigTemplate
+	customAppTemplate := serverconfig.DefaultConfigTemplate + artelacfg.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }

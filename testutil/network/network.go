@@ -30,6 +30,7 @@ import (
 
 	"github.com/artela-network/artela/app"
 	"github.com/artela-network/artela/app/params"
+	"github.com/artela-network/artela/rpc"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -181,6 +182,9 @@ type (
 		grpcWeb     *http.Server
 		jsonrpc     *http.Server
 		jsonrpcDone chan struct{}
+
+		artelaService     *rpc.ArtelaService
+		artelaServiceDone chan struct{}
 	}
 )
 
