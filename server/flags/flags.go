@@ -60,7 +60,7 @@ const (
 // EVM flags
 const (
 	EVMTracer         = "evm.tracer"
-	EVMMaxTxGasWanted = "evm.max-tx-gas-wanted"
+	EVMMaxTxGasWanted = "evm.max-process-gas-wanted"
 )
 
 // TLS flags
@@ -69,20 +69,20 @@ const (
 	TLSKeyPath  = "tls.key-path"
 )
 
-// AddTxFlags adds common flags for commands to post tx
+// AddTxFlags adds common flags for commands to post process
 func AddTxFlags(cmd *cobra.Command) (*cobra.Command, error) {
 	cmd.PersistentFlags().String(flags.FlagChainID, "testnet", "Specify Chain ID for sending Tx")
 	cmd.PersistentFlags().String(flags.FlagFrom, "", "Name or address of private key with which to sign")
-	cmd.PersistentFlags().String(flags.FlagFees, "", "Fees to pay along with transaction; eg: 10aphoton")
-	cmd.PersistentFlags().String(flags.FlagGasPrices, "", "Gas prices to determine the transaction fee (e.g. 10aphoton)")
-	cmd.PersistentFlags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")                                                                                                   //nolint:lll
-	cmd.PersistentFlags().Float64(flags.FlagGasAdjustment, flags.DefaultGasAdjustment, "adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored ") //nolint:lll
+	cmd.PersistentFlags().String(flags.FlagFees, "", "Fees to pay along with process; eg: 10aphoton")
+	cmd.PersistentFlags().String(flags.FlagGasPrices, "", "Gas prices to determine the process fee (e.g. 10aphoton)")
+	cmd.PersistentFlags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")                                                                                                        //nolint:lll
+	cmd.PersistentFlags().Float64(flags.FlagGasAdjustment, flags.DefaultGasAdjustment, "adjustment factor to be multiplied against the estimate returned by the process simulation; if the gas limit is set manually this flag is ignored ") //nolint:lll
 	cmd.PersistentFlags().StringP(flags.FlagBroadcastMode, "b", flags.BroadcastSync, "Transaction broadcasting mode (sync|async|block)")
 	cmd.PersistentFlags().String(flags.FlagKeyringBackend, keyring.BackendOS, "Select keyring's backend")
 
 	// --gas can accept integers and "simulate"
 	// cmd.PersistentFlags().Var(&flags.GasFlagVar, "gas", fmt.Sprintf(
-	//	"gas limit to set per-transaction; set to %q to calculate required gas automatically (default %d)",
+	//	"gas limit to set per-process; set to %q to calculate required gas automatically (default %d)",
 	//	flags.GasFlagAuto, flags.DefaultGasLimit,
 	// ))
 

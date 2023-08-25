@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"errors"
+	"github.com/artela-network/artela/x/evm/process"
 	"math/big"
 	"time"
 
@@ -27,7 +28,6 @@ import (
 
 	"github.com/artela-network/artela/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/rpc/types"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 // Backend represents the backend object for a artela. It extends the standard
@@ -229,7 +229,7 @@ func (b *backend) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.S
 
 func (b *backend) SendTx(ctx context.Context, signedTx *types.Transaction) error {
 	// verify the ethereum tx
-	ethereumTx := &evmtypes.MsgEthereumTx{}
+	ethereumTx := &process.MsgEthereumTx{}
 	if err := ethereumTx.FromEthereumTx(signedTx); err != nil {
 		b.logger.Error("transaction converting failed", "error", err.Error())
 		return err
@@ -241,7 +241,7 @@ func (b *backend) SendTx(ctx context.Context, signedTx *types.Transaction) error
 	}
 
 	// Query params to use the EVM denomination
-	res, err := b.queryClient.QueryClient.Params(b.ctx, &evmtypes.QueryParamsRequest{})
+	res, err := b.queryClient.QueryClient.Params(b.ctx, &process.QueryParamsRequest{})
 	if err != nil {
 		b.logger.Error("failed to query evm params", "error", err.Error())
 		return err

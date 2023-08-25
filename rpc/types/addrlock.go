@@ -25,9 +25,9 @@ func (l *AddrLocker) lock(address common.Address) *sync.Mutex {
 	return l.locks[address]
 }
 
-// LockAddr locks an account's mutex. This is used to prevent another tx getting the
+// LockAddr locks an account's mutex. This is used to prevent another process getting the
 // same nonce until the lock is released. The mutex prevents the (an identical nonce) from
-// being read again during the time that the first transaction is being signed.
+// being read again during the time that the first process is being signed.
 func (l *AddrLocker) LockAddr(address common.Address) {
 	l.lock(address).Lock()
 }

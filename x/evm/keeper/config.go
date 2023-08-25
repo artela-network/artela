@@ -1,11 +1,11 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/process/support"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela/x/evm/statedb"
-	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artela/x/evm/vmstate"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -13,7 +13,7 @@ import (
 )
 
 // EVMConfig creates the EVMConfig based on current state
-func (k *Keeper) EVMConfig(ctx sdk.Context, proposerAddress sdk.ConsAddress, chainID *big.Int) (*statedb.EVMConfig, error) {
+func (k *Keeper) EVMConfig(ctx sdk.Context, proposerAddress sdk.ConsAddress, chainID *big.Int) (*vmstate.EVMConfig, error) {
 	params := k.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(chainID)
 
@@ -24,7 +24,7 @@ func (k *Keeper) EVMConfig(ctx sdk.Context, proposerAddress sdk.ConsAddress, cha
 	}
 
 	baseFee := k.GetBaseFee(ctx, ethCfg)
-	return &statedb.EVMConfig{
+	return &vmstate.EVMConfig{
 		Params:      params,
 		ChainConfig: ethCfg,
 		CoinBase:    coinbase,
@@ -33,8 +33,8 @@ func (k *Keeper) EVMConfig(ctx sdk.Context, proposerAddress sdk.ConsAddress, cha
 }
 
 // TxConfig loads `TxConfig` from current transient storage
-func (k *Keeper) TxConfig(ctx sdk.Context, txHash common.Hash) statedb.TxConfig {
-	return statedb.NewTxConfig(
+func (k *Keeper) TxConfig(ctx sdk.Context, txHash common.Hash) vmstate.TxConfig {
+	return vmstate.NewTxConfig(
 		common.BytesToHash(ctx.HeaderHash()), // BlockHash
 		txHash,                               // TxHash
 		uint(k.GetTxIndexTransient(ctx)),     // TxIndex
@@ -43,10 +43,10 @@ func (k *Keeper) TxConfig(ctx sdk.Context, txHash common.Hash) statedb.TxConfig 
 }
 
 // VMConfig creates an EVM configuration from the debug setting and the extra EIPs enabled on the
-// module parameters. The config generated uses the default JumpTable from the EVM.
-func (k Keeper) VMConfig(ctx sdk.Context, _ core.Message, cfg *statedb.EVMConfig, tracer vm.EVMLogger) vm.Config {
+// module parameters. The config support uses the default JumpTable from the EVM.
+func (k Keeper) VMConfig(ctx sdk.Context, _ core.Message, cfg *vmstate.EVMConfig, tracer vm.EVMLogger) vm.Config {
 	noBaseFee := true
-	if types.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
+	if support.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
 		noBaseFee = k.feeKeeper.GetParams(ctx).NoBaseFee
 	}
 

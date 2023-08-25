@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"fmt"
+	"github.com/artela-network/artela/x/evm/process"
 	"os"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -16,7 +17,7 @@ import (
 	"github.com/artela-network/artela/x/evm/types"
 )
 
-// GetTxCmd returns the transaction commands for this module
+// GetTxCmd returns the process commands for this module
 func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        types.ModuleName,
@@ -29,19 +30,19 @@ func GetTxCmd() *cobra.Command {
 	return cmd
 }
 
-// NewRawTxCmd command build cosmos transaction from raw ethereum transaction
+// NewRawTxCmd command build cosmos process from raw ethereum process
 func NewRawTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "raw TX_HEX",
-		Short: "Build cosmos transaction from raw ethereum transaction",
+		Short: "Build cosmos process from raw ethereum process",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			data, err := hexutil.Decode(args[0])
 			if err != nil {
-				return errors.Wrap(err, "failed to decode ethereum tx hex bytes")
+				return errors.Wrap(err, "failed to decode ethereum process hex bytes")
 			}
 
-			msg := &types.MsgEthereumTx{}
+			msg := &process.MsgEthereumTx{}
 			if err := msg.UnmarshalBinary(data); err != nil {
 				return err
 			}
@@ -55,7 +56,7 @@ func NewRawTxCmd() *cobra.Command {
 				return err
 			}
 
-			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &types.QueryParamsRequest{})
+			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &process.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}
@@ -83,10 +84,10 @@ func NewRawTxCmd() *cobra.Command {
 				_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", out)
 
 				buf := bufio.NewReader(os.Stdin)
-				ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
+				ok, err := input.GetConfirmation("confirm process before signing and broadcasting", buf, os.Stderr)
 
 				if err != nil || !ok {
-					_, _ = fmt.Fprintf(os.Stderr, "%s\n", "canceled transaction")
+					_, _ = fmt.Fprintf(os.Stderr, "%s\n", "canceled process")
 					return err
 				}
 			}

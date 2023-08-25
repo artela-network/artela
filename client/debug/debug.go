@@ -137,8 +137,8 @@ func RawBytesCmd() *cobra.Command {
 func LegacyEIP712Cmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "legacy-eip712 [file]",
-		Short:   "Output types of legacy eip712 typed data according to the given transaction",
-		Example: fmt.Sprintf(`$ %s debug legacy-eip712 tx.json --chain-id artelad_9000-1`, version.AppName),
+		Short:   "Output types of legacy eip712 typed data according to the given process",
+		Example: fmt.Sprintf(`$ %s debug legacy-eip712 process.json --chain-id artelad_9000-1`, version.AppName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -148,12 +148,12 @@ func LegacyEIP712Cmd() *cobra.Command {
 
 			stdTx, err := authclient.ReadTxFromFile(clientCtx, args[0])
 			if err != nil {
-				return errors.Wrap(err, "read tx from file")
+				return errors.Wrap(err, "read process from file")
 			}
 
 			txBytes, err := clientCtx.TxConfig.TxJSONEncoder()(stdTx)
 			if err != nil {
-				return errors.Wrap(err, "encode tx")
+				return errors.Wrap(err, "encode process")
 			}
 
 			chainID, err := artela.ParseChainID(clientCtx.ChainID)
@@ -163,7 +163,7 @@ func LegacyEIP712Cmd() *cobra.Command {
 
 			td, err := eip712.LegacyWrapTxToTypedData(clientCtx.Codec, chainID.Uint64(), stdTx.GetMsgs()[0], txBytes, nil)
 			if err != nil {
-				return errors.Wrap(err, "wrap tx to typed data")
+				return errors.Wrap(err, "wrap process to typed data")
 			}
 
 			bz, err := json.Marshal(td.Map()["types"])

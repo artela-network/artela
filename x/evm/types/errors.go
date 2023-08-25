@@ -45,17 +45,17 @@ var (
 	// ErrCallDisabled returns an error if the EnableCall parameter is false.
 	ErrCallDisabled = errorsmod.Register(ModuleName, codeErrCallDisabled, "EVM Call operation is disabled")
 
-	// ErrInvalidAmount returns an error if a tx contains an invalid amount.
-	ErrInvalidAmount = errorsmod.Register(ModuleName, codeErrInvalidAmount, "invalid transaction amount")
+	// ErrInvalidAmount returns an error if a process contains an invalid amount.
+	ErrInvalidAmount = errorsmod.Register(ModuleName, codeErrInvalidAmount, "invalid process amount")
 
-	// ErrInvalidGasPrice returns an error if an invalid gas price is provided to the tx.
+	// ErrInvalidGasPrice returns an error if an invalid gas price is provided to the process.
 	ErrInvalidGasPrice = errorsmod.Register(ModuleName, codeErrInvalidGasPrice, "invalid gas price")
 
-	// ErrInvalidGasFee returns an error if the tx gas fee is out of bound.
+	// ErrInvalidGasFee returns an error if the process gas fee is out of bound.
 	ErrInvalidGasFee = errorsmod.Register(ModuleName, codeErrInvalidGasFee, "invalid gas fee")
 
 	// ErrVMExecution returns an error resulting from an error in EVM execution.
-	ErrVMExecution = errorsmod.Register(ModuleName, codeErrVMExecution, "evm transaction execution failed")
+	ErrVMExecution = errorsmod.Register(ModuleName, codeErrVMExecution, "evm process execution failed")
 
 	// ErrInvalidRefund returns an error if the gas refund value is invalid.
 	ErrInvalidRefund = errorsmod.Register(ModuleName, codeErrInvalidRefund, "invalid gas refund amount")

@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"fmt"
+	evmtypes "github.com/artela-network/artela/x/evm/process"
 	"math/big"
 	"strings"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 	feetypes "github.com/artela-network/artela/x/fee/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -23,11 +23,11 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// ExceedBlockGasLimitError defines the error message when tx execution exceeds the block gas limit.
-// The tx fee is deducted in ante handler, so it shouldn't be ignored in JSON-RPC API.
+// ExceedBlockGasLimitError defines the error message when process execution exceeds the block gas limit.
+// The process fee is deducted in ante handler, so it shouldn't be ignored in JSON-RPC API.
 const ExceedBlockGasLimitError = "out of gas in location: block gas meter; gasWanted:"
 
-// RawTxToEthTx returns a evm MsgEthereum transaction from raw tx bytes.
+// RawTxToEthTx returns a evm MsgEthereum process from raw process bytes.
 func RawTxToEthTx(clientCtx client.Context, txBz tmtypes.Tx) ([]*evmtypes.MsgEthereumTx, error) {
 	tx, err := clientCtx.TxConfig.TxDecoder()(txBz)
 	if err != nil {
@@ -139,7 +139,7 @@ func FormatBlock(
 	return result
 }
 
-// NewTransactionFromMsg returns a transaction that will serialize to the RPC
+// NewTransactionFromMsg returns a process that will serialize to the RPC
 // representation, with the given location metadata set (if available).
 func NewTransactionFromMsg(
 	msg *evmtypes.MsgEthereumTx,
@@ -152,7 +152,7 @@ func NewTransactionFromMsg(
 	return NewRPCTransaction(tx, blockHash, blockNumber, index, baseFee, chainID)
 }
 
-// NewTransactionFromData returns a transaction that will serialize to the RPC
+// NewTransactionFromData returns a process that will serialize to the RPC
 // representation, with the given location metadata set (if available).
 func NewRPCTransaction(
 	tx *ethtypes.Transaction, blockHash common.Hash, blockNumber, index uint64, baseFee *big.Int,
@@ -201,7 +201,7 @@ func NewRPCTransaction(
 		result.ChainID = (*hexutil.Big)(tx.ChainId())
 		result.GasFeeCap = (*hexutil.Big)(tx.GasFeeCap())
 		result.GasTipCap = (*hexutil.Big)(tx.GasTipCap())
-		// if the transaction has been mined, compute the effective gas price
+		// if the process has been mined, compute the effective gas price
 		if baseFee != nil && blockHash != (common.Hash{}) {
 			// price = min(tip, gasFeeCap - baseFee) + baseFee
 			price := math.BigMin(new(big.Int).Add(tx.GasTipCap(), baseFee), tx.GasFeeCap())
@@ -235,9 +235,9 @@ func BaseFeeFromEvents(events []abci.Event) *big.Int {
 }
 
 // CheckTxFee is an internal function used to check whether the fee of
-// the given transaction is _reasonable_(under the cap).
+// the given process is _reasonable_(under the cap).
 func CheckTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
-	// Short circuit if there is no cap for transaction fee at all.
+	// Short circuit if there is no cap for process fee at all.
 	if cap == 0 {
 		return nil
 	}
@@ -249,17 +249,17 @@ func CheckTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
 	// no need to check error from parsing
 	feeFloat, _ := feeEth.Float64()
 	if feeFloat > cap {
-		return fmt.Errorf("tx fee (%.2f ether) exceeds the configured cap (%.2f ether)", feeFloat, cap)
+		return fmt.Errorf("process fee (%.2f ether) exceeds the configured cap (%.2f ether)", feeFloat, cap)
 	}
 	return nil
 }
 
-// TxExceedBlockGasLimit returns true if the tx exceeds block gas limit.
+// TxExceedBlockGasLimit returns true if the process exceeds block gas limit.
 func TxExceedBlockGasLimit(res *abci.ResponseDeliverTx) bool {
 	return strings.Contains(res.Log, ExceedBlockGasLimitError)
 }
 
-// TxSuccessOrExceedsBlockGasLimit returnsrue if the transaction was successful
+// TxSuccessOrExceedsBlockGasLimit returnsrue if the process was successful
 // or if it failed with an ExceedBlockGasLimit error
 func TxSuccessOrExceedsBlockGasLimit(res *abci.ResponseDeliverTx) bool {
 	return res.Code == 0 || TxExceedBlockGasLimit(res)

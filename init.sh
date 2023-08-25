@@ -57,6 +57,7 @@ cat $HOME/.artelad/config/genesis.json | jq '.app_state["evm"]["params"]["extra_
 ./cmd/artelad/artelad add-genesis-account $KEY4 100000000000000000000000000aphoton --keyring-backend $KEYRING
 echo ./cmd/artelad/artelad add-genesis-account $KEY 100000000000000000000000000aphoton --keyring-backend $KEYRING
 
+
 # Sign genesis transaction
 ./cmd/artelad/artelad gentx $KEY 1000000000000000000000aphoton --keyring-backend $KEYRING --chain-id $CHAINID
 

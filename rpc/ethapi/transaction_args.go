@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/x/evm/process"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -15,8 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
-
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 // TransactionArgs represents the arguments to construct a new transaction
@@ -317,7 +316,7 @@ func (args *TransactionArgs) ToTransaction() *types.Transaction {
 	return args.toTransaction()
 }
 
-func (args *TransactionArgs) toEVMTransaction() *evmtypes.MsgEthereumTx {
+func (args *TransactionArgs) toEVMTransaction() *process.MsgEthereumTx {
 	var (
 		chainID, value, gasPrice, maxFeePerGas, maxPriorityFeePerGas sdkmath.Int
 		gas, nonce                                                   uint64
@@ -357,15 +356,15 @@ func (args *TransactionArgs) toEVMTransaction() *evmtypes.MsgEthereumTx {
 		to = args.To.Hex()
 	}
 
-	var data evmtypes.TxData
+	var data process.TxData
 	switch {
 	case args.MaxFeePerGas != nil:
-		al := evmtypes.AccessList{}
+		al := process.AccessList{}
 		if args.AccessList != nil {
-			al = evmtypes.NewAccessList(args.AccessList)
+			al = process.NewAccessList(args.AccessList)
 		}
 
-		data = &evmtypes.DynamicFeeTx{
+		data = &process.DynamicFeeTx{
 			To:        to,
 			ChainID:   &chainID,
 			Nonce:     nonce,
@@ -377,7 +376,7 @@ func (args *TransactionArgs) toEVMTransaction() *evmtypes.MsgEthereumTx {
 			Accesses:  al,
 		}
 	case args.AccessList != nil:
-		data = &evmtypes.AccessListTx{
+		data = &process.AccessListTx{
 			To:       to,
 			ChainID:  &chainID,
 			Nonce:    nonce,
@@ -385,10 +384,10 @@ func (args *TransactionArgs) toEVMTransaction() *evmtypes.MsgEthereumTx {
 			GasPrice: &gasPrice,
 			Amount:   &value,
 			Data:     args.GetData(),
-			Accesses: evmtypes.NewAccessList(args.AccessList),
+			Accesses: process.NewAccessList(args.AccessList),
 		}
 	default:
-		data = &evmtypes.LegacyTx{
+		data = &process.LegacyTx{
 			To:       to,
 			Nonce:    nonce,
 			GasLimit: gas,
@@ -398,7 +397,7 @@ func (args *TransactionArgs) toEVMTransaction() *evmtypes.MsgEthereumTx {
 		}
 	}
 
-	anyData, err := evmtypes.PackTxData(data)
+	anyData, err := process.PackTxData(data)
 	if err != nil {
 		return nil
 	}
@@ -407,7 +406,7 @@ func (args *TransactionArgs) toEVMTransaction() *evmtypes.MsgEthereumTx {
 		from = args.From.Hex()
 	}
 
-	msg := evmtypes.MsgEthereumTx{
+	msg := process.MsgEthereumTx{
 		Data: anyData,
 		From: from,
 	}
@@ -415,7 +414,7 @@ func (args *TransactionArgs) toEVMTransaction() *evmtypes.MsgEthereumTx {
 	return &msg
 }
 
-func (args *TransactionArgs) ToEVMTransaction() *evmtypes.MsgEthereumTx {
+func (args *TransactionArgs) ToEVMTransaction() *process.MsgEthereumTx {
 	return args.toEVMTransaction()
 }
 

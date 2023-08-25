@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/process/support"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -17,8 +19,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	artela "github.com/artela-network/artela/types"
-	"github.com/artela-network/artela/x/evm/statedb"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artela/x/evm/vmstate"
 )
 
 // Keeper grants access to the EVM module state and implements the go-ethereum StateDB interface.
@@ -28,7 +30,7 @@ type Keeper struct {
 	// Store key required for the EVM Prefix KVStore. It is required by:
 	// - storing account's Storage State
 	// - storing account's Code
-	// - storing transaction Logs
+	// - storing process Logs
 	// - storing Bloom filters by block height. Needed for the Web3 API.
 	storeKey storetypes.StoreKey
 
@@ -49,7 +51,7 @@ type Keeper struct {
 	// chain ID number obtained from the context's chain id
 	eip155ChainID *big.Int
 
-	// Tracer used to collect execution traces from the EVM transaction execution
+	// Tracer used to collect execution traces from the EVM process execution
 	tracer string
 
 	// Legacy subspace
@@ -167,13 +169,13 @@ func (k Keeper) SetBlockBloomTransient(ctx sdk.Context, bloom *big.Int) {
 // Tx
 // ----------------------------------------------------------------------------
 
-// SetTxIndexTransient set the index of processing transaction
+// SetTxIndexTransient set the index of processing process
 func (k Keeper) SetTxIndexTransient(ctx sdk.Context, index uint64) {
 	store := ctx.TransientStore(k.transientKey)
 	store.Set(types.KeyPrefixTransientTxIndex, sdk.Uint64ToBigEndian(index))
 }
 
-// GetTxIndexTransient returns EVM transaction index on the current block.
+// GetTxIndexTransient returns EVM process index on the current block.
 func (k Keeper) GetTxIndexTransient(ctx sdk.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientTxIndex)
@@ -211,11 +213,11 @@ func (k Keeper) SetLogSizeTransient(ctx sdk.Context, logSize uint64) {
 // ----------------------------------------------------------------------------
 
 // GetAccountStorage return state storage associated with an account
-func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) types.Storage {
-	storage := types.Storage{}
+func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) support.Storage {
+	storage := support.Storage{}
 
 	k.ForEachStorage(ctx, address, func(key, value common.Hash) bool {
-		storage = append(storage, types.NewState(key, value))
+		storage = append(storage, support.NewState(key, value))
 		return true
 	})
 
@@ -233,36 +235,36 @@ func (k Keeper) Tracer(ctx sdk.Context, msg core.Message, ethCfg *params.ChainCo
 
 // GetAccountWithoutBalance load nonce and codeHash without balance,
 // more efficient in cases where balance is not needed.
-func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *statedb.Account {
+func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *vmstate.Account {
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
 		return nil
 	}
 
-	codeHash := types.EmptyCodeHash
+	codeHash := process.EmptyCodeHash
 	ethAcct, ok := acct.(artela.EthAccountI)
 	if ok {
 		codeHash = ethAcct.GetCodeHash().Bytes()
 	}
 
-	return &statedb.Account{
+	return &vmstate.Account{
 		Nonce:    acct.GetSequence(),
 		CodeHash: codeHash,
 	}
 }
 
 // GetAccountOrEmpty returns empty account if not exist, returns error if it's not `EthAccount`
-func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) statedb.Account {
+func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) vmstate.Account {
 	acct := k.GetAccount(ctx, addr)
 	if acct != nil {
 		return *acct
 	}
 
 	// empty account
-	return statedb.Account{
+	return vmstate.Account{
 		Balance:  new(big.Int),
-		CodeHash: types.EmptyCodeHash,
+		CodeHash: process.EmptyCodeHash,
 	}
 }
 
@@ -295,7 +297,7 @@ func (k *Keeper) GetBalance(ctx sdk.Context, addr common.Address) *big.Int {
 // - `0`: london hardfork enabled but fee is not enabled.
 // - `n`: both london hardfork and fee are enabled.
 func (k Keeper) GetBaseFee(ctx sdk.Context, ethCfg *params.ChainConfig) *big.Int {
-	return k.getBaseFee(ctx, types.IsLondon(ethCfg, ctx.BlockHeight()))
+	return k.getBaseFee(ctx, support.IsLondon(ethCfg, ctx.BlockHeight()))
 }
 
 func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {
@@ -320,13 +322,13 @@ func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) sdk.Dec {
 	return feeParams.MinGasMultiplier
 }
 
-// ResetTransientGasUsed reset gas used to prepare for execution of current cosmos tx, called in ante handler.
+// ResetTransientGasUsed reset gas used to prepare for execution of current cosmos process, called in ante handler.
 func (k Keeper) ResetTransientGasUsed(ctx sdk.Context) {
 	store := ctx.TransientStore(k.transientKey)
 	store.Delete(types.KeyPrefixTransientGasUsed)
 }
 
-// GetTransientGasUsed returns the gas used by current cosmos tx.
+// GetTransientGasUsed returns the gas used by current cosmos process.
 func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientGasUsed)
@@ -336,14 +338,14 @@ func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
 	return sdk.BigEndianToUint64(bz)
 }
 
-// SetTransientGasUsed sets the gas used by current cosmos tx.
+// SetTransientGasUsed sets the gas used by current cosmos process.
 func (k Keeper) SetTransientGasUsed(ctx sdk.Context, gasUsed uint64) {
 	store := ctx.TransientStore(k.transientKey)
 	bz := sdk.Uint64ToBigEndian(gasUsed)
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 }
 
-// AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos tx.
+// AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos process.
 func (k Keeper) AddTransientGasUsed(ctx sdk.Context, gasUsed uint64) (uint64, error) {
 	result := k.GetTransientGasUsed(ctx) + gasUsed
 	if result < gasUsed {

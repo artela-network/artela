@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	evmtypes "github.com/artela-network/artela/x/evm/process"
 	"net/http"
 	"net/url"
 	"os"
@@ -56,7 +57,6 @@ import (
 	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"github.com/artela-network/artela/server/config"
 	artelatypes "github.com/artela-network/artela/types"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 // package-wide network lock to only allow one test network at a time

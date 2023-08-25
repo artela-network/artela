@@ -126,7 +126,7 @@ import (
 )
 
 const (
-	AccountAddressPrefix = "cosmos"
+	AccountAddressPrefix = "artela"
 	Name                 = "artela"
 	ExeName              = "artelad"
 )
@@ -260,7 +260,7 @@ type Artela struct {
 
 	EvmKeeper *evmmodulekeeper.Keeper
 
-	FeeKeeper feemodulekeeper.Keeper
+	FeeKeeper *feemodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -448,8 +448,6 @@ func NewArtela(
 		app.BaseApp,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
-
-	// ... other modules keepers
 
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -753,8 +751,9 @@ func NewArtela(
 	return app
 }
 
+// TODO mark
 func (app *Artela) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
-	options := ante.HandlerOptions{
+	options := ante.AnteDecorators{
 		Cdc:                    app.appCodec,
 		AccountKeeper:          app.AccountKeeper,
 		BankKeeper:             app.BankKeeper,
@@ -890,7 +889,7 @@ func (app *Artela) GetSubspace(moduleName string) paramstypes.Subspace {
 // API server.
 func (app *Artela) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
-	// Register new tx routes from grpc-gateway.
+	// Register new process routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
 	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)

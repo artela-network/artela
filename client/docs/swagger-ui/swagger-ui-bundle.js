@@ -2988,7 +2988,7 @@
                     n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : {};
                 if (/xml/.test(t)) {
                     if (!e.xml || !e.xml.name) {
-                        if (e.xml = e.xml || {}, !e.$$ref) return e.type || e.items || e.properties || e.additionalProperties ? '<?xml version="1.0" encoding="UTF-8"?>\n\x3c!-- XML example cannot be generated --\x3e' : null;
+                        if (e.xml = e.xml || {}, !e.$$ref) return e.type || e.items || e.properties || e.additionalProperties ? '<?xml version="1.0" encoding="UTF-8"?>\n\x3c!-- XML example cannot be support --\x3e' : null;
                         var o = e.$$ref.match(/\S*\/(\S+)$/);
                         e.xml.name = o[1]
                     }

@@ -2,7 +2,7 @@ package types
 
 import (
 	"fmt"
-
+	evmtypes "github.com/artela-network/artela/x/evm/process"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 

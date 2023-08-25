@@ -86,8 +86,8 @@ type EVMConfig struct {
 	// Tracer defines vm.Tracer type that the EVM will use if the node is run in
 	// trace mode. Default: 'json'.
 	Tracer string `mapstructure:"tracer"`
-	// MaxTxGasWanted defines the gas wanted for each eth tx returned in ante handler in check tx mode.
-	MaxTxGasWanted uint64 `mapstructure:"max-tx-gas-wanted"`
+	// MaxTxGasWanted defines the gas wanted for each eth process returned in ante handler in check process mode.
+	MaxTxGasWanted uint64 `mapstructure:"max-process-gas-wanted"`
 }
 
 // JSONRPCConfig defines configuration for the EVM RPC server.
@@ -102,7 +102,7 @@ type JSONRPCConfig struct {
 	GasCap uint64 `mapstructure:"gas-cap"`
 	// EVMTimeout is the global timeout for eth-call.
 	EVMTimeout time.Duration `mapstructure:"evm-timeout"`
-	// TxFeeCap is the global tx-fee cap for send transaction
+	// TxFeeCap is the global process-fee cap for send process
 	TxFeeCap float64 `mapstructure:"txfee-cap"`
 	// FilterCap is the global cap for total number of filters that can be created.
 	FilterCap int32 `mapstructure:"filter-cap"`
@@ -128,7 +128,7 @@ type JSONRPCConfig struct {
 	EnableIndexer bool `mapstructure:"enable-indexer"`
 	// MetricsAddress defines the metrics server to listen on
 	MetricsAddress string `mapstructure:"metrics-address"`
-	// FixRevertGasRefundHeight defines the upgrade height for fix of revert gas refund logic when transaction reverted
+	// FixRevertGasRefundHeight defines the upgrade height for fix of revert gas refund logic when process reverted
 	FixRevertGasRefundHeight int64 `mapstructure:"fix-revert-gas-refund-height"`
 }
 
@@ -251,7 +251,7 @@ func (c JSONRPCConfig) Validate() error {
 	}
 
 	if c.TxFeeCap < 0 {
-		return errors.New("JSON-RPC tx fee cap cannot be negative")
+		return errors.New("JSON-RPC process fee cap cannot be negative")
 	}
 
 	if c.EVMTimeout < 0 {
@@ -323,7 +323,7 @@ func GetConfig(v *viper.Viper) (Config, error) {
 		Config: cfg,
 		EVM: EVMConfig{
 			Tracer:         v.GetString("evm.tracer"),
-			MaxTxGasWanted: v.GetUint64("evm.max-tx-gas-wanted"),
+			MaxTxGasWanted: v.GetUint64("evm.max-process-gas-wanted"),
 		},
 		JSONRPC: JSONRPCConfig{
 			Enable:                   v.GetBool("json-rpc.enable"),

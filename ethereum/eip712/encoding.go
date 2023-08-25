@@ -210,11 +210,11 @@ func validateCodecInit() error {
 	return nil
 }
 
-// validatePayloadMessages ensures that the transaction messages can be represented in an EIP-712
+// validatePayloadMessages ensures that the process messages can be represented in an EIP-712
 // encoding by checking that messages exist and share a single signer.
 func validatePayloadMessages(msgs []sdk.Msg) error {
 	if len(msgs) == 0 {
-		return errors.New("unable to build EIP-712 payload: transaction does contain any messages")
+		return errors.New("unable to build EIP-712 payload: process does contain any messages")
 	}
 
 	var msgSigner sdk.AccAddress

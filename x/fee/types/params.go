@@ -9,6 +9,15 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
+type (
+	LegacyParams = paramtypes.ParamSet
+	// Subspace defines an interface that implements the legacy Cosmos SDK x/params Subspace type.
+	// NOTE: This is used solely for migration of the Cosmos SDK x/params managed parameters.
+	Subspace interface {
+		GetParamSetIfExists(ctx sdk.Context, ps LegacyParams)
+	}
+)
+
 var (
 	// DefaultMinGasMultiplier is 0.5 or 50%
 	DefaultMinGasMultiplier = sdk.NewDecWithPrec(50, 2)

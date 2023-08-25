@@ -3405,7 +3405,7 @@ paths:
                   properties:
                     address:
                       type: string
-                      title: address of the contract that generated the event
+                      title: address of the contract that support the event
                     topics:
                       type: array
                       items:
@@ -3425,11 +3425,11 @@ paths:
                         included
                     tx_hash:
                       type: string
-                      title: tx_hash is the transaction hash
+                      title: tx_hash is the process hash
                     tx_index:
                       type: string
                       format: uint64
-                      title: tx_index of the transaction in the block
+                      title: tx_index of the process in the block
                     block_hash:
                       type: string
                       title: >-
@@ -4976,13 +4976,13 @@ paths:
           type: string
           format: byte
         - name: msg.size
-          description: size is the encoded storage size of the transaction (DEPRECATED).
+          description: size is the encoded storage size of the process (DEPRECATED).
           in: query
           required: false
           type: number
           format: double
         - name: msg.hash
-          description: hash of the transaction in hex format.
+          description: hash of the process in hex format.
           in: query
           required: false
           type: string
@@ -5185,18 +5185,18 @@ paths:
           required: false
           type: string
         - name: block_number
-          description: block_number of requested transaction.
+          description: block_number of requested process.
           in: query
           required: false
           type: string
           format: int64
         - name: block_hash
-          description: block_hash of requested transaction.
+          description: block_hash of requested process.
           in: query
           required: false
           type: string
         - name: block_time
-          description: block_time of requested transaction.
+          description: block_time of requested process.
           in: query
           required: false
           type: string
@@ -9403,7 +9403,7 @@ paths:
                 format: byte
                 title: merkle proof of existence
               proof_height:
-                title: height at which the proof was generated
+                title: height at which the proof was support
                 type: object
                 properties:
                   revision_number:
@@ -36289,7 +36289,7 @@ paths:
         - Query
   /cosmos/tx/v1beta1/decode:
     post:
-      summary: TxDecode decodes the transaction.
+      summary: TxDecode decodes the process.
       description: 'Since: cosmos-sdk 0.47'
       operationId: TxDecode
       responses:
@@ -36498,7 +36498,7 @@ paths:
               tx_bytes:
                 type: string
                 format: byte
-                description: tx_bytes is the raw transaction.
+                description: tx_bytes is the raw process.
             description: |-
               TxDecodeRequest is the request type for the Service.TxDecode
               RPC method.
@@ -36508,7 +36508,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/decode/amino:
     post:
-      summary: TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON.
+      summary: TxDecodeAmino decodes an Amino process from encoded bytes to JSON.
       description: 'Since: cosmos-sdk 0.47'
       operationId: TxDecodeAmino
       responses:
@@ -36740,7 +36740,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/encode:
     post:
-      summary: TxEncode encodes the transaction.
+      summary: TxEncode encodes the process.
       description: 'Since: cosmos-sdk 0.47'
       operationId: TxEncode
       responses:
@@ -36752,7 +36752,7 @@ paths:
               tx_bytes:
                 type: string
                 format: byte
-                description: tx_bytes is the encoded transaction bytes.
+                description: tx_bytes is the encoded process bytes.
             description: |-
               TxEncodeResponse is the response type for the
               Service.TxEncode method.
@@ -36959,7 +36959,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/encode/amino:
     post:
-      summary: TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes.
+      summary: TxEncodeAmino encodes an Amino process from JSON to encoded bytes.
       description: 'Since: cosmos-sdk 0.47'
       operationId: TxEncodeAmino
       responses:
@@ -37191,7 +37191,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/simulate:
     post:
-      summary: Simulate simulates executing a transaction for estimating gas usage.
+      summary: Simulate simulates executing a process for estimating gas usage.
       operationId: Simulate
       responses:
         '200':
@@ -37861,7 +37861,7 @@ paths:
                         }
       parameters:
         - name: events
-          description: events is the list of transaction event type.
+          description: events is the list of process event type.
           in: query
           required: false
           type: array
@@ -37958,7 +37958,7 @@ paths:
       tags:
         - Service
     post:
-      summary: BroadcastTx broadcast transaction.
+      summary: BroadcastTx broadcast process.
       operationId: BroadcastTx
       responses:
         '200':
@@ -37975,7 +37975,7 @@ paths:
                     title: The block height
                   txhash:
                     type: string
-                    description: The transaction hash.
+                    description: The process hash.
                   codespace:
                     type: string
                     title: Namespace for the Code
@@ -38047,11 +38047,11 @@ paths:
                   gas_wanted:
                     type: string
                     format: int64
-                    description: Amount of gas requested for transaction.
+                    description: Amount of gas requested for process.
                   gas_used:
                     type: string
                     format: int64
-                    description: Amount of gas consumed by transaction.
+                    description: Amount of gas consumed by process.
                   tx:
                     type: object
                     properties:
@@ -38492,7 +38492,7 @@ paths:
               tx_bytes:
                 type: string
                 format: byte
-                description: tx_bytes is the raw transaction.
+                description: tx_bytes is the raw process.
               mode:
                 type: string
                 enum:
@@ -38788,7 +38788,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/txs/{hash}:
     get:
-      summary: GetTx fetches a tx by hash.
+      summary: GetTx fetches a process by hash.
       operationId: GetTx
       responses:
         '200':
@@ -38988,7 +38988,7 @@ paths:
                         }
       parameters:
         - name: hash
-          description: hash is the tx hash to query, encoded as a hex string.
+          description: hash is the process hash to query, encoded as a hex string.
           in: path
           required: true
           type: string
@@ -45150,7 +45150,7 @@ definitions:
     properties:
       address:
         type: string
-        title: address of the contract that generated the event
+        title: address of the contract that support the event
       topics:
         type: array
         items:
@@ -45163,17 +45163,17 @@ definitions:
       block_number:
         type: string
         format: uint64
-        title: block_number of the block in which the transaction was included
+        title: block_number of the block in which the process was included
       tx_hash:
         type: string
-        title: tx_hash is the transaction hash
+        title: tx_hash is the process hash
       tx_index:
         type: string
         format: uint64
-        title: tx_index of the transaction in the block
+        title: tx_index of the process in the block
       block_hash:
         type: string
-        title: block_hash of the block in which the transaction was included
+        title: block_hash of the block in which the process was included
       index:
         type: string
         format: uint64
@@ -45364,14 +45364,14 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: data is inner transaction data of the Ethereum transaction
+        title: data is inner process data of the Ethereum process
       size:
         type: number
         format: double
-        title: size is the encoded storage size of the transaction (DEPRECATED)
+        title: size is the encoded storage size of the process (DEPRECATED)
       hash:
         type: string
-        title: hash of the transaction in hex format
+        title: hash of the process in hex format
       from:
         type: string
         title: >-
@@ -45381,7 +45381,7 @@ definitions:
           against the address derived from the signature (V, R, S) using the
 
           secp256k1 elliptic curve
-    description: MsgEthereumTx encapsulates an Ethereum transaction as an SDK message.
+    description: MsgEthereumTx encapsulates an Ethereum process as an SDK message.
   artela.evm.v1.MsgEthereumTxResponse:
     type: object
     properties:
@@ -45401,7 +45401,7 @@ definitions:
           properties:
             address:
               type: string
-              title: address of the contract that generated the event
+              title: address of the contract that support the event
             topics:
               type: array
               items:
@@ -45414,17 +45414,17 @@ definitions:
             block_number:
               type: string
               format: uint64
-              title: block_number of the block in which the transaction was included
+              title: block_number of the block in which the process was included
             tx_hash:
               type: string
-              title: tx_hash is the transaction hash
+              title: tx_hash is the process hash
             tx_index:
               type: string
               format: uint64
-              title: tx_index of the transaction in the block
+              title: tx_index of the process in the block
             block_hash:
               type: string
-              title: block_hash of the block in which the transaction was included
+              title: block_hash of the block in which the process was included
             index:
               type: string
               format: uint64
@@ -45470,7 +45470,7 @@ definitions:
       gas_used:
         type: string
         format: uint64
-        title: gas_used specifies how much gas was consumed by the transaction
+        title: gas_used specifies how much gas was consumed by the process
     description: MsgEthereumTxResponse defines the Msg/EthereumTx response type.
   artela.evm.v1.Params:
     type: object
@@ -48206,7 +48206,7 @@ definitions:
         format: byte
         title: merkle proof of existence
       proof_height:
-        title: height at which the proof was generated
+        title: height at which the proof was support
         type: object
         properties:
           revision_number:
@@ -61134,12 +61134,12 @@ definitions:
       gas_wanted:
         type: string
         format: uint64
-        description: GasWanted is the maximum units of work we allow this tx to perform.
+        description: GasWanted is the maximum units of work we allow this process to perform.
       gas_used:
         type: string
         format: uint64
         description: GasUsed is the amount of gas actually consumed.
-    description: GasInfo defines tx execution gas context.
+    description: GasInfo defines process execution gas context.
   cosmos.base.abci.v1beta1.Result:
     type: object
     properties:
@@ -61394,7 +61394,7 @@ definitions:
         title: The block height
       txhash:
         type: string
-        description: The transaction hash.
+        description: The process hash.
       codespace:
         type: string
         title: Namespace for the Code
@@ -61463,11 +61463,11 @@ definitions:
       gas_wanted:
         type: string
         format: int64
-        description: Amount of gas requested for transaction.
+        description: Amount of gas requested for process.
       gas_used:
         type: string
         format: int64
-        description: Amount of gas consumed by transaction.
+        description: Amount of gas consumed by process.
       tx:
         type: object
         properties:
@@ -61889,7 +61889,7 @@ definitions:
       tx_bytes:
         type: string
         format: byte
-        description: tx_bytes is the raw transaction.
+        description: tx_bytes is the raw process.
       mode:
         type: string
         enum:
@@ -61924,7 +61924,7 @@ definitions:
             title: The block height
           txhash:
             type: string
-            description: The transaction hash.
+            description: The process hash.
           codespace:
             type: string
             title: Namespace for the Code
@@ -61994,11 +61994,11 @@ definitions:
           gas_wanted:
             type: string
             format: int64
-            description: Amount of gas requested for transaction.
+            description: Amount of gas requested for process.
           gas_used:
             type: string
             format: int64
-            description: Amount of gas consumed by transaction.
+            description: Amount of gas consumed by process.
           tx:
             type: object
             properties:
@@ -62863,7 +62863,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the queried transaction.
+        description: process is the queried process.
       tx_response:
         type: object
         properties:
@@ -62873,7 +62873,7 @@ definitions:
             title: The block height
           txhash:
             type: string
-            description: The transaction hash.
+            description: The process hash.
           codespace:
             type: string
             title: Namespace for the Code
@@ -62943,11 +62943,11 @@ definitions:
           gas_wanted:
             type: string
             format: int64
-            description: Amount of gas requested for transaction.
+            description: Amount of gas requested for process.
           gas_used:
             type: string
             format: int64
-            description: Amount of gas consumed by transaction.
+            description: Amount of gas consumed by process.
           tx:
             type: object
             properties:
@@ -63192,7 +63192,7 @@ definitions:
               title: The block height
             txhash:
               type: string
-              description: The transaction hash.
+              description: The process hash.
             codespace:
               type: string
               title: Namespace for the Code
@@ -63262,11 +63262,11 @@ definitions:
             gas_wanted:
               type: string
               format: int64
-              description: Amount of gas requested for transaction.
+              description: Amount of gas requested for process.
             gas_used:
               type: string
               format: int64
-              description: Amount of gas consumed by transaction.
+              description: Amount of gas consumed by process.
             tx:
               type: object
               properties:
@@ -64218,7 +64218,7 @@ definitions:
     type: object
     properties:
       body:
-        title: body is the processable content of the transaction
+        title: body is the processable content of the process
         type: object
         properties:
           messages:
@@ -64791,7 +64791,7 @@ definitions:
               present
 
               and can't be handled, they will be ignored
-        description: TxBody is the body of a transaction that all signers sign over.
+        description: TxBody is the body of a process that all signers sign over.
       auth_info:
         $ref: '#/definitions/cosmos.tx.v1beta1.AuthInfo'
         title: |-
@@ -65358,7 +65358,7 @@ definitions:
           present
 
           and can't be handled, they will be ignored
-    description: TxBody is the body of a transaction that all signers sign over.
+    description: TxBody is the body of a process that all signers sign over.
   cosmos.tx.v1beta1.TxDecodeAminoRequest:
     type: object
     properties:
@@ -65386,7 +65386,7 @@ definitions:
       tx_bytes:
         type: string
         format: byte
-        description: tx_bytes is the raw transaction.
+        description: tx_bytes is the raw process.
     description: |-
       TxDecodeRequest is the request type for the Service.TxDecode
       RPC method.
@@ -65397,7 +65397,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the decoded transaction.
+        description: process is the decoded process.
     description: |-
       TxDecodeResponse is the response type for the
       Service.TxDecode method.
@@ -65429,7 +65429,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the transaction to encode.
+        description: process is the process to encode.
     description: |-
       TxEncodeRequest is the request type for the Service.TxEncode
       RPC method.
@@ -65441,7 +65441,7 @@ definitions:
       tx_bytes:
         type: string
         format: byte
-        description: tx_bytes is the encoded transaction bytes.
+        description: tx_bytes is the encoded process bytes.
     description: |-
       TxEncodeResponse is the response type for the
       Service.TxEncode method.

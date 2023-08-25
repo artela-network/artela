@@ -7,8 +7,8 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
-	artelatypes "github.com/artela-network/artela/types"
-	"github.com/artela-network/artela/x/evm/types"
+	artela "github.com/artela-network/artela/types"
+	"github.com/artela-network/artela/x/evm/process"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -45,7 +45,7 @@ func NewDynamicFeeChecker(k DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
 		// get the priority tip cap from the extension option.
 		if hasExtOptsTx, ok := feeTx.(authante.HasExtensionOptionsTx); ok {
 			for _, opt := range hasExtOptsTx.GetExtensionOptions() {
-				if extOpt, ok := opt.GetCachedValue().(*artelatypes.ExtensionOptionDynamicFeeTx); ok {
+				if extOpt, ok := opt.GetCachedValue().(*artela.ExtensionOptionDynamicFeeTx); ok {
 					maxPriorityPrice = extOpt.MaxPriorityPrice
 					break
 				}
@@ -69,7 +69,7 @@ func NewDynamicFeeChecker(k DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
 		}
 
 		// calculate the effective gas price using the EIP-1559 logic.
-		effectivePrice := sdkmath.NewIntFromBigInt(types.EffectiveGasPrice(baseFeeInt.BigInt(), feeCap.BigInt(), maxPriorityPrice.BigInt()))
+		effectivePrice := sdkmath.NewIntFromBigInt(process.EffectiveGasPrice(baseFeeInt.BigInt(), feeCap.BigInt(), maxPriorityPrice.BigInt()))
 
 		// NOTE: create a new coins slice without having to validate the denom
 		effectiveFee := sdk.Coins{
@@ -79,7 +79,7 @@ func NewDynamicFeeChecker(k DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
 			},
 		}
 
-		bigPriority := effectivePrice.Sub(baseFeeInt).Quo(types.DefaultPriorityReduction)
+		bigPriority := effectivePrice.Sub(baseFeeInt).Quo(process.DefaultPriorityReduction)
 		priority := int64(math.MaxInt64)
 
 		if bigPriority.IsInt64() {
@@ -127,7 +127,7 @@ func getTxPriority(fees sdk.Coins, gas int64) int64 {
 
 	for _, fee := range fees {
 		gasPrice := fee.Amount.QuoRaw(gas)
-		amt := gasPrice.Quo(types.DefaultPriorityReduction)
+		amt := gasPrice.Quo(process.DefaultPriorityReduction)
 		p := int64(math.MaxInt64)
 
 		if amt.IsInt64() {
