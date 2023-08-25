@@ -3,7 +3,7 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	"math"
 	"math/big"
 	"strconv"
@@ -186,7 +186,7 @@ func (ab *AccountBackend) Sign(address common.Address, data hexutil.Bytes) (hexu
 func (ab *AccountBackend) BlockNumber() (hexutil.Uint64, error) {
 	// do any grpc query, ignore the response and use the returned block height
 	var header metadata.MD
-	_, err := ab.queryClient.Params(ab.ctx, &process.QueryParamsRequest{}, grpc.Header(&header))
+	_, err := ab.queryClient.Params(ab.ctx, &txs.QueryParamsRequest{}, grpc.Header(&header))
 	if err != nil {
 		return hexutil.Uint64(0), err
 	}
@@ -218,7 +218,7 @@ func (ab *AccountBackend) BlockTimeByNumber(blockNum int64) (uint64, error) {
 
 // ChainConfig returns the latest ethereum chain configuration
 func (ab *AccountBackend) ChainConfig() *params.ChainConfig {
-	params, err := ab.queryClient.Params(ab.ctx, &process.QueryParamsRequest{})
+	params, err := ab.queryClient.Params(ab.ctx, &txs.QueryParamsRequest{})
 	if err != nil {
 		return nil
 	}

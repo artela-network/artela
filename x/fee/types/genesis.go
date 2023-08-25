@@ -1,6 +1,6 @@
 package types
 
-// DefaultGenesisState sets default fee market genesis state.
+// DefaultGenesisState sets default fee market genesis states.
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
 		Params:   DefaultParams(),
@@ -8,7 +8,7 @@ func DefaultGenesisState() *GenesisState {
 	}
 }
 
-// NewGenesisState creates a new genesis state.
+// NewGenesisState creates a new genesis states.
 func NewGenesisState(params Params, blockGas uint64) *GenesisState {
 	return &GenesisState{
 		Params:   params,
@@ -16,7 +16,7 @@ func NewGenesisState(params Params, blockGas uint64) *GenesisState {
 	}
 }
 
-// Validate performs basic genesis state validation returning an error upon any
+// Validate performs basic genesis states validation returning an error upon any
 // failure.
 func (gs GenesisState) Validate() error {
 	return gs.Params.Validate()

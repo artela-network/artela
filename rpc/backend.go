@@ -3,7 +3,7 @@ package rpc
 import (
 	"context"
 	"errors"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	"math/big"
 	"time"
 
@@ -229,7 +229,7 @@ func (b *backend) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.S
 
 func (b *backend) SendTx(ctx context.Context, signedTx *types.Transaction) error {
 	// verify the ethereum tx
-	ethereumTx := &process.MsgEthereumTx{}
+	ethereumTx := &txs.MsgEthereumTx{}
 	if err := ethereumTx.FromEthereumTx(signedTx); err != nil {
 		b.logger.Error("transaction converting failed", "error", err.Error())
 		return err
@@ -241,7 +241,7 @@ func (b *backend) SendTx(ctx context.Context, signedTx *types.Transaction) error
 	}
 
 	// Query params to use the EVM denomination
-	res, err := b.queryClient.QueryClient.Params(b.ctx, &process.QueryParamsRequest{})
+	res, err := b.queryClient.QueryClient.Params(b.ctx, &txs.QueryParamsRequest{})
 	if err != nil {
 		b.logger.Error("failed to query evm params", "error", err.Error())
 		return err

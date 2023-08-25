@@ -2,7 +2,7 @@ package types
 
 import (
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	"strconv"
 
 	"github.com/artela-network/artela/types"
@@ -15,7 +15,7 @@ import (
 
 // EventFormat is the format version of the events.
 //
-// To fix the issue of process exceeds block gas limit, we changed the event format in a breaking way.
+// To fix the issue of txs exceeds block gas limit, we changed the event format in a breaking way.
 // But to avoid forcing clients to re-sync from scatch, we make json-rpc logic to be compatible with both formats.
 type EventFormat int
 
@@ -43,11 +43,11 @@ const (
 	// tx_log(txLog, txLog, ...)
 	// ...
 	// ```
-	// If the process exceeds block gas limit, it only emits the first part.
+	// If the txs exceeds block gas limit, it only emits the first part.
 	eventFormat2
 )
 
-// ParsedTx is the process infos parsed from events.
+// ParsedTx is the txs infos parsed from events.
 type ParsedTx struct {
 	MsgIndex int
 
@@ -65,15 +65,15 @@ func NewParsedTx(msgIndex int) ParsedTx {
 	return ParsedTx{MsgIndex: msgIndex, EthTxIndex: -1}
 }
 
-// ParsedTxs is the process infos parsed from eth process events.
+// ParsedTxs is the txs infos parsed from eth txs events.
 type ParsedTxs struct {
 	// one item per message
 	Txs []ParsedTx
-	// map process hash to msg index
+	// map txs hash to msg index
 	TxHashes map[common.Hash]int
 }
 
-// ParseTxResult parse eth process infos from cosmos-sdk events.
+// ParseTxResult parse eth txs infos from cosmos-sdk events.
 // It supports two event formats, the formats are described in the comments of the format constants.
 func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error) {
 	format := eventFormatUnknown
@@ -106,12 +106,12 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 			// format 1 or second part of format 2
 			eventIndex++
 			if format == eventFormat1 {
-				// append process
+				// append txs
 				if err := p.newTx(event.Attributes); err != nil {
 					return nil, err
 				}
 			} else {
-				// the second part of format 2, update process fields
+				// the second part of format 2, update txs fields
 				if err := p.updateTx(eventIndex, event.Attributes); err != nil {
 					return nil, err
 				}
@@ -119,35 +119,35 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 		}
 	}
 
-	// some old versions miss some events, fill it with process result
+	// some old versions miss some events, fill it with txs result
 	gasUsed := uint64(result.GasUsed) // #nosec G701
 	if len(p.Txs) == 1 {
 		p.Txs[0].GasUsed = gasUsed
 	}
 
-	// this could only happen if process exceeds block gas limit
+	// this could only happen if txs exceeds block gas limit
 	if result.Code != 0 && tx != nil {
 		for i := 0; i < len(p.Txs); i++ {
 			p.Txs[i].Failed = true
 
 			// replace gasUsed with gasLimit because that's what's actually deducted.
-			gasLimit := tx.GetMsgs()[i].(*process.MsgEthereumTx).GetGas()
+			gasLimit := tx.GetMsgs()[i].(*txs.MsgEthereumTx).GetGas()
 			p.Txs[i].GasUsed = gasLimit
 		}
 	}
 	return p, nil
 }
 
-// ParseTxIndexerResult parse tm process result to a format compatible with the custom process indexer.
+// ParseTxIndexerResult parse tm txs result to a format compatible with the custom txs indexer.
 func ParseTxIndexerResult(txResult *tmrpctypes.ResultTx, tx sdk.Tx, getter func(*ParsedTxs) *ParsedTx) (*types.TxResult, error) {
 	txs, err := ParseTxResult(&txResult.TxResult, tx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse process events: block %d, index %d, %v", txResult.Height, txResult.Index, err)
+		return nil, fmt.Errorf("failed to parse txs events: block %d, index %d, %v", txResult.Height, txResult.Index, err)
 	}
 
 	parsedTx := getter(txs)
 	if parsedTx == nil {
-		return nil, fmt.Errorf("ethereum process not found in msgs: block %d, index %d", txResult.Height, txResult.Index)
+		return nil, fmt.Errorf("ethereum txs not found in msgs: block %d, index %d", txResult.Height, txResult.Index)
 	}
 	index := uint32(parsedTx.MsgIndex) // #nosec G701
 	return &types.TxResult{
@@ -161,7 +161,7 @@ func ParseTxIndexerResult(txResult *tmrpctypes.ResultTx, tx sdk.Tx, getter func(
 	}, nil
 }
 
-// newTx parse a new process from events, called during parsing.
+// newTx parse a new txs from events, called during parsing.
 func (p *ParsedTxs) newTx(attrs []abci.EventAttribute) error {
 	msgIndex := len(p.Txs)
 	tx := NewParsedTx(msgIndex)
@@ -173,8 +173,8 @@ func (p *ParsedTxs) newTx(attrs []abci.EventAttribute) error {
 	return nil
 }
 
-// updateTx updates an exiting process from events, called during parsing.
-// In event format 2, we update the process with the attributes of the second `ethereum_tx` event,
+// updateTx updates an exiting txs from events, called during parsing.
+// In event format 2, we update the txs with the attributes of the second `ethereum_tx` event,
 // so we prefer the second event and override the first one.
 func (p *ParsedTxs) updateTx(eventIndex int, attrs []abci.EventAttribute) error {
 	tx := NewParsedTx(eventIndex)
@@ -185,12 +185,12 @@ func (p *ParsedTxs) updateTx(eventIndex int, attrs []abci.EventAttribute) error 
 		// if hash is different, index the new one too
 		p.TxHashes[tx.Hash] = eventIndex
 	}
-	// override the process because the second event is more trustworthy
+	// override the txs because the second event is more trustworthy
 	p.Txs[eventIndex] = tx
 	return nil
 }
 
-// GetTxByHash find ParsedTx by process hash, returns nil if not exists.
+// GetTxByHash find ParsedTx by txs hash, returns nil if not exists.
 func (p *ParsedTxs) GetTxByHash(hash common.Hash) *ParsedTx {
 	if idx, ok := p.TxHashes[hash]; ok {
 		return &p.Txs[idx]
@@ -206,7 +206,7 @@ func (p *ParsedTxs) GetTxByMsgIndex(i int) *ParsedTx {
 	return &p.Txs[i]
 }
 
-// GetTxByTxIndex returns ParsedTx by process index
+// GetTxByTxIndex returns ParsedTx by txs index
 func (p *ParsedTxs) GetTxByTxIndex(txIndex int) *ParsedTx {
 	if len(p.Txs) == 0 {
 		return nil

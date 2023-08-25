@@ -1,7 +1,7 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/vmstate"
+	"github.com/artela-network/artela/x/evm/states"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,16 +11,16 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	evmtypes "github.com/artela-network/artela/x/evm/process/support"
+	evmtypes "github.com/artela-network/artela/x/evm/txs/support"
 	feemarkettypes "github.com/artela-network/artela/x/fee/types"
 )
 
 // EVMKeeper defines the expected keeper interface used on the AnteHandler
 type EVMKeeper interface { //nolint: revive
-	vmstate.Keeper
+	states.Keeper
 	DynamicFeeEVMKeeper
 
-	NewEVM(ctx sdk.Context, msg core.Message, cfg *vmstate.EVMConfig, tracer vm.EVMLogger, stateDB vm.StateDB) *vm.EVM
+	NewEVM(ctx sdk.Context, msg core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger, stateDB vm.StateDB) *vm.EVM
 	DeductTxCostsFromUserBalance(ctx sdk.Context, fees sdk.Coins, from common.Address) error
 	GetBalance(ctx sdk.Context, addr common.Address) *big.Int
 	ResetTransientGasUsed(ctx sdk.Context)

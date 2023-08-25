@@ -1,4 +1,4 @@
-package process
+package txs
 
 import (
 	"github.com/artela-network/artela/x/evm/types"
@@ -59,7 +59,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	return txData, nil
 }
 
-// TxType returns the process type
+// TxType returns the txs type
 func (tx *DynamicFeeTx) TxType() uint8 {
 	return ethereum.DynamicFeeTxType
 }
@@ -82,7 +82,7 @@ func (tx *DynamicFeeTx) Copy() TxData {
 	}
 }
 
-// Validate performs a stateless validation of the process fields.
+// Validate performs a stateless validation of the txs fields.
 func (tx DynamicFeeTx) Validate() error {
 	if tx.GasTipCap == nil {
 		return errorsmod.Wrap(types.ErrInvalidGasCap, "gas tip cap cannot nil")
@@ -226,7 +226,7 @@ func (tx DynamicFeeTx) EffectiveCost(baseFee *big.Int) *big.Int {
 	return cost(tx.EffectiveFee(baseFee), tx.GetValue())
 }
 
-// GetValue returns the process amount.
+// GetValue returns the txs amount.
 func (tx *DynamicFeeTx) GetValue() *big.Int {
 	if tx.Amount == nil {
 		return nil
@@ -235,7 +235,7 @@ func (tx *DynamicFeeTx) GetValue() *big.Int {
 	return tx.Amount.BigInt()
 }
 
-// GetNonce returns the account sequence for the process.
+// GetNonce returns the account sequence for the txs.
 func (tx *DynamicFeeTx) GetNonce() uint64 { return tx.Nonce }
 
 // GetTo returns the pointer to the recipient address.
@@ -247,7 +247,7 @@ func (tx *DynamicFeeTx) GetTo() *common.Address {
 	return &to
 }
 
-// AsEthereumData returns an DynamicFeeTx process process from the proto-formatted
+// AsEthereumData returns an DynamicFeeTx txs txs from the proto-formatted
 // TxData defined on the Cosmos EVM.
 func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
@@ -267,13 +267,13 @@ func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
 	}
 }
 
-// GetRawSignatureValues returns the V, R, S signature values of the process.
+// GetRawSignatureValues returns the V, R, S signature values of the txs.
 // The return values should not be modified by the caller.
 func (tx *DynamicFeeTx) GetRawSignatureValues() (v, r, s *big.Int) {
 	return rawSignatureValues(tx.V, tx.R, tx.S)
 }
 
-// SetSignatureValues sets the signature values to the process.
+// SetSignatureValues sets the signature values to the txs.
 func (tx *DynamicFeeTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 	if v != nil {
 		tx.V = v.Bytes()

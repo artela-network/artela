@@ -245,7 +245,7 @@ func (b testBackend) GetBody(ctx context.Context, hash common.Hash, number rpc.B
 }
 func (b testBackend) StateAndHeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*state.StateDB, *types.Header, error) {
 	if number == rpc.PendingBlockNumber {
-		panic("pending state not implemented")
+		panic("pending states not implemented")
 	}
 	header, err := b.HeaderByNumber(ctx, number)
 	if err != nil {
@@ -485,7 +485,7 @@ func TestCall(t *testing.T) {
 			expectErr: nil,
 			want:      "0x",
 		},
-		// Call which can only succeed if state is state overridden
+		// Call which can only succeed if states is states overridden
 		{
 			blockNumber: rpc.LatestBlockNumber,
 			call: TransactionArgs{
@@ -498,7 +498,7 @@ func TestCall(t *testing.T) {
 			},
 			want: "0x",
 		},
-		// Invalid call without state overriding
+		// Invalid call without states overriding
 		{
 			blockNumber: rpc.LatestBlockNumber,
 			call: TransactionArgs{

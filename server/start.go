@@ -66,9 +66,9 @@ const (
 	FlagDisableIAVLFastNode = "iavl-disable-fastnode"
 	FlagIAVLLazyLoading     = "iavl-lazy-loading"
 
-	// state sync-related flags
-	FlagStateSyncSnapshotInterval   = "state-sync.snapshot-interval"
-	FlagStateSyncSnapshotKeepRecent = "state-sync.snapshot-keep-recent"
+	// states sync-related flags
+	FlagStateSyncSnapshotInterval   = "states-sync.snapshot-interval"
+	FlagStateSyncSnapshotKeepRecent = "states-sync.snapshot-keep-recent"
 
 	// api-related flags
 	FlagAPIEnable             = "api.enable"
@@ -91,14 +91,14 @@ const (
 	FlagMempoolMaxTxs = "mempool.max-txs"
 )
 
-// StartCmd runs the service passed in, either stand-alone or in-process with
+// StartCmd runs the service passed in, either stand-alone or in-txs with
 // Tendermint.
 func StartCmd(appCreator types.AppCreator, defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Run the full node",
-		Long: `Run the full node application with Tendermint in or out of process. By
-default, the application will run with Tendermint in process.
+		Long: `Run the full node application with Tendermint in or out of txs. By
+default, the application will run with Tendermint in txs.
 
 Pruning options can be provided via the '--pruning' flag or alternatively with '--pruning-keep-recent', and
 'pruning-interval' together.
@@ -166,7 +166,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 	}
 
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
-	cmd.Flags().Bool(flagWithTendermint, true, "Run abci app embedded in-process with tendermint")
+	cmd.Flags().Bool(flagWithTendermint, true, "Run abci app embedded in-txs with tendermint")
 	cmd.Flags().String(flagAddress, "tcp://0.0.0.0:26658", "Listen address")
 	cmd.Flags().String(flagTransport, "socket", "Transport protocol: socket, grpc")
 	cmd.Flags().String(flagTraceStore, "", "Enable KVStore tracing to an output file")
@@ -192,7 +192,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 	cmd.Flags().Uint(FlagRPCMaxBodyBytes, 1000000, "Define the Tendermint maximum request body (in bytes)")
 	cmd.Flags().Bool(FlagAPIEnableUnsafeCORS, false, "Define if CORS should be enabled (unsafe - use it at your own risk)")
 
-	cmd.Flags().Bool(flagGRPCOnly, false, "Start the node in gRPC query only mode (no Tendermint process is started)")
+	cmd.Flags().Bool(flagGRPCOnly, false, "Start the node in gRPC query only mode (no Tendermint txs is started)")
 	cmd.Flags().Bool(flagGRPCEnable, true, "Define if the gRPC server should be enabled")
 	cmd.Flags().String(flagGRPCAddress, serverconfig.DefaultGRPCAddress, "the gRPC server address to listen on")
 
@@ -343,7 +343,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		ctx.Logger.Info("starting node in gRPC only mode; Tendermint is disabled")
 		config.GRPC.Enable = true
 	} else {
-		ctx.Logger.Info("starting node with ABCI Tendermint in-process")
+		ctx.Logger.Info("starting node with ABCI Tendermint in-txs")
 
 		tmNode, err = node.NewNode(
 			cfg,
@@ -506,7 +506,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		}
 	}
 
-	// At this point it is safe to block the process if we're in gRPC only mode as
+	// At this point it is safe to block the txs if we're in gRPC only mode as
 	// we do not need to start Rosetta or handle any Tendermint related processes.
 	if gRPCOnly {
 		// wait for signal capture and gracefully return

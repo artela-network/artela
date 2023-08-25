@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process"
-	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -41,15 +41,15 @@ func (AppModuleBasic) Name() string {
 
 // RegisterLegacyAminoCodec registers the module's types with the given codec.
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	process.RegisterLegacyAminoCodec(cdc)
+	txs.RegisterLegacyAminoCodec(cdc)
 }
 
-// ConsensusVersion returns the consensus state-breaking version for the module.
+// ConsensusVersion returns the consensus states-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
 	return ConsensusVersion
 }
 
-// DefaultGenesis returns default genesis state as raw bytes for the evm
+// DefaultGenesis returns default genesis states as raw bytes for the evm
 // module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(support.DefaultGenesisState())
@@ -59,7 +59,7 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var data support.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+		return fmt.Errorf("failed to unmarshal %s genesis states: %w", types.ModuleName, err)
 	}
 
 	return data.Validate()
@@ -67,12 +67,12 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the evm module.
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *runtime.ServeMux) {
-	if err := process.RegisterQueryHandlerClient(context.Background(), serveMux, process.NewQueryClient(c)); err != nil {
+	if err := txs.RegisterQueryHandlerClient(context.Background(), serveMux, txs.NewQueryClient(c)); err != nil {
 		panic(err)
 	}
 }
 
-// GetTxCmd returns the root process command for the evm module.
+// GetTxCmd returns the root txs command for the evm module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.GetTxCmd()
 }
@@ -84,7 +84,7 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 
 // RegisterInterfaces registers interfaces and implementations of the evm module.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	process.RegisterInterfaces(registry)
+	txs.RegisterInterfaces(registry)
 }
 
 // AppModule implements an application module for the evm module.
@@ -106,8 +106,8 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	process.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	process.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	txs.RegisterMsgServer(cfg.MsgServer(), am.keeper)
+	txs.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	// TODO mark
 	//m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
@@ -148,7 +148,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the evm
+// ExportGenesis returns the exported genesis states as raw bytes for the evm
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	gs := ExportGenesis(ctx, am.keeper, am.ak)

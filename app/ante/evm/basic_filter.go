@@ -2,7 +2,7 @@ package evm
 
 import (
 	"errors"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	"strconv"
 
 	errorsmod "cosmossdk.io/errors"
@@ -62,9 +62,9 @@ func (eeed EthEmitEventDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 	txIndex := eeed.evmKeeper.GetTxIndexTransient(ctx)
 
 	for i, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*process.MsgEthereumTx)
+		msgEthTx, ok := msg.(*txs.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*txs.MsgEthereumTx)(nil))
 		}
 
 		// emit ethereum tx hash as an event so that it can be indexed by Tendermint for query purposes
@@ -149,9 +149,9 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 	evmDenom := evmParams.GetEvmDenom()
 
 	for _, msg := range protoTx.GetMsgs() {
-		msgEthTx, ok := msg.(*process.MsgEthereumTx)
+		msgEthTx, ok := msg.(*txs.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*txs.MsgEthereumTx)(nil))
 		}
 
 		// Validate `From` field
@@ -161,7 +161,7 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 
 		txGasLimit += msgEthTx.GetGas()
 
-		txData, err := process.UnpackTxData(msgEthTx.Data)
+		txData, err := txs.UnpackTxData(msgEthTx.Data)
 		if err != nil {
 			return ctx, errorsmod.Wrap(err, "failed to unpack MsgEthereumTx Data")
 		}

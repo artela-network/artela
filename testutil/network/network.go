@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	evmtypes "github.com/artela-network/artela/x/evm/process"
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	"net/http"
 	"net/url"
 	"os"
@@ -67,7 +67,7 @@ var lock = new(sync.Mutex)
 type AppConstructor = func(val Validator) servertypes.Application
 
 // Config defines the necessary configuration used to bootstrap and start an
-// in-process local testing network.
+// in-txs local testing network.
 type Config struct {
 	KeyringOptions    []keyring.Option // keyring configuration options
 	Codec             codec.Codec
@@ -76,7 +76,7 @@ type Config struct {
 	TxConfig          client.TxConfig
 	AccountRetriever  client.AccountRetriever
 	AppConstructor    AppConstructor   // the ABCI application constructor
-	GenesisState      app.GenesisState // custom gensis state to provide
+	GenesisState      app.GenesisState // custom gensis states to provide
 	TimeoutCommit     time.Duration    // the consensus commitment timeout
 	AccountTokens     math.Int         // the amount of unique validator tokens (e.g. 1000node0)
 	StakingTokens     math.Int         // the amount of tokens each validator has available to stake
@@ -139,7 +139,7 @@ func NewAppConstructor(encodingCfg params.EncodingConfig) AppConstructor {
 }
 
 type (
-	// Network defines a local in-process testing network using SimApp. It can be
+	// Network defines a local in-txs testing network using SimApp. It can be
 	// configured to start any number of validators, each with its own RPC and API
 	// clients. Typically, this test network would be used in client and integration
 	// testing where user input is expected.
@@ -157,7 +157,7 @@ type (
 		Config Config
 	}
 
-	// Validator defines an in-process Tendermint validator node. Through this object,
+	// Validator defines an in-txs Tendermint validator node. Through this object,
 	// a client can make RPC and API calls and interact with any client command
 	// or handler.
 	Validator struct {
@@ -188,7 +188,7 @@ type (
 	}
 )
 
-// Logger is a network logger interface that exposes testnet-level Log() methods for an in-process testing network
+// Logger is a network logger interface that exposes testnet-level Log() methods for an in-txs testing network
 // This is not to be confused with logging that may happen at an individual node or validator level
 type Logger interface {
 	Log(args ...interface{})
@@ -216,7 +216,7 @@ func NewCLILogger(cmd *cobra.Command) CLILogger {
 	return CLILogger{cmd}
 }
 
-// New creates a new Network for integration tests or in-process testnets run via the CLI
+// New creates a new Network for integration tests or in-txs testnets run via the CLI
 func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 	// only one caller/test can create and use a network at a time
 	l.Log("acquiring test network lock")
@@ -262,7 +262,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		tmCfg.Consensus.TimeoutCommit = cfg.TimeoutCommit
 
 		// Only allow the first validator to expose an RPC, API and gRPC
-		// server/client due to Tendermint in-process constraints.
+		// server/client due to Tendermint in-txs constraints.
 		apiAddr := ""
 		tmCfg.RPC.ListenAddress = ""
 		appCfg.GRPC.Enable = false

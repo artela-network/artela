@@ -29,7 +29,7 @@ type StorageResult struct {
 	Proof []string     `json:"proof"`
 }
 
-// RPCTransaction represents a process that will serialize to the RPC representation of a process
+// RPCTransaction represents a txs that will serialize to the RPC representation of a txs
 type RPCTransaction struct {
 	BlockHash        *common.Hash         `json:"blockHash"`
 	BlockNumber      *hexutil.Big         `json:"blockNumber"`
@@ -57,15 +57,15 @@ type StateOverride map[common.Address]OverrideAccount
 
 // OverrideAccount indicates the overriding fields of account during the execution of
 // a message call.
-// Note, state and stateDiff can't be specified at the same time. If state is
-// set, message execution will only use the data in the given state. Otherwise
+// Note, states and stateDiff can't be specified at the same time. If states is
+// set, message execution will only use the data in the given states. Otherwise
 // if statDiff is set, all diff will be applied first and then execute the call
 // message.
 type OverrideAccount struct {
 	Nonce     *hexutil.Uint64              `json:"nonce"`
 	Code      *hexutil.Bytes               `json:"code"`
 	Balance   **hexutil.Big                `json:"balance"`
-	State     *map[common.Hash]common.Hash `json:"state"`
+	State     *map[common.Hash]common.Hash `json:"states"`
 	StateDiff *map[common.Hash]common.Hash `json:"stateDiff"`
 }
 
@@ -76,10 +76,10 @@ type FeeHistoryResult struct {
 	GasUsedRatio []float64        `json:"gasUsedRatio"`
 }
 
-// SignTransactionResult represents a RLP encoded signed process.
+// SignTransactionResult represents a RLP encoded signed txs.
 type SignTransactionResult struct {
 	Raw hexutil.Bytes         `json:"raw"`
-	Tx  *ethtypes.Transaction `json:"process"`
+	Tx  *ethtypes.Transaction `json:"txs"`
 }
 
 type OneFeeHistory struct {

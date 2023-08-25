@@ -8,10 +8,10 @@ import (
 )
 
 // Validate performs a basic validation of the State fields.
-// NOTE: state value can be empty
+// NOTE: states value can be empty
 func (s State) Validate() error {
 	if strings.TrimSpace(s.Key) == "" {
-		return errorsmod.Wrap(types.ErrInvalidState, "state key hash cannot be blank")
+		return errorsmod.Wrap(types.ErrInvalidState, "states key hash cannot be blank")
 	}
 
 	return nil

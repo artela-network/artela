@@ -13,7 +13,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// ExportAppStateAndValidators exports the state of the application for a genesis
+// ExportAppStateAndValidators exports the states of the application for a genesis
 // file.
 func (app *Artela) ExportAppStateAndValidators(
 	forZeroHeight bool,
@@ -68,10 +68,10 @@ func (app *Artela) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []
 		allowedAddrsMap[addr] = true
 	}
 
-	/* Just to be safe, assert the invariants on current state. */
+	/* Just to be safe, assert the invariants on current states. */
 	app.CrisisKeeper.AssertInvariants(ctx)
 
-	/* Handle fee distribution state. */
+	/* Handle fee distribution states. */
 
 	// withdraw all validator commission
 	app.StakingKeeper.IterateValidators(ctx, func(_ int64, val stakingtypes.ValidatorI) (stop bool) {
@@ -138,7 +138,7 @@ func (app *Artela) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []
 	// reset context height
 	ctx = ctx.WithBlockHeight(height)
 
-	/* Handle staking state. */
+	/* Handle staking states. */
 
 	// iterate through redelegations, reset creation height
 	app.StakingKeeper.IterateRedelegations(ctx, func(_ int64, red stakingtypes.Redelegation) (stop bool) {
@@ -159,7 +159,7 @@ func (app *Artela) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []
 	})
 
 	// Iterate through validators by power descending, reset bond heights, and
-	// update bond intra-process counters.
+	// update bond intra-txs counters.
 	store := ctx.KVStore(app.GetKey(stakingtypes.StoreKey))
 	iter := sdk.KVStoreReversePrefixIterator(store, stakingtypes.ValidatorsKey)
 	counter := int16(0)
@@ -190,7 +190,7 @@ func (app *Artela) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []
 		log.Fatal(err)
 	}
 
-	/* Handle slashing state. */
+	/* Handle slashing states. */
 
 	// reset start height on signing infos
 	app.SlashingKeeper.IterateValidatorSigningInfos(

@@ -1,4 +1,4 @@
-package process
+package txs
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ var (
 	_ TxData = &DynamicFeeTx{}
 )
 
-// TxData implements the Ethereum process structure.
+// TxData implements the Ethereum txs structure.
 // See https://github.com/ethereum/go-ethereum/issues/23154
 type TxData interface {
 	TxType() byte
@@ -80,7 +80,7 @@ func (m *MsgEthereumTxResponse) Revert() []byte {
 //          		      TransactionArgs
 // ===============================================================
 
-// TransactionArgs represents the arguments of a process or message call
+// TransactionArgs represents the arguments of a txs or message call
 type TransactionArgs struct {
 	From                 *common.Address `json:"from"`
 	To                   *common.Address `json:"to"`
@@ -95,7 +95,7 @@ type TransactionArgs struct {
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input"`
 
-	// Introduced by AccessListTxType process.
+	// Introduced by AccessListTxType txs.
 	AccessList *ethereum.AccessList `json:"accessList,omitempty"`
 	ChainID    *hexutil.Big         `json:"chainId,omitempty"`
 }
@@ -339,7 +339,7 @@ type EvmTxArgs struct {
 	Accesses  *ethereum.AccessList
 }
 
-// NewTx returns a reference to a new Ethereum process message
+// NewTx returns a reference to a new Ethereum txs message
 func NewTx(
 	tx *EvmTxArgs,
 ) *MsgEthereumTx {

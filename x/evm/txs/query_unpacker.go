@@ -1,4 +1,4 @@
-package process
+package txs
 
 import (
 	codec "github.com/cosmos/cosmos-sdk/codec/types"

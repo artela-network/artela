@@ -4747,11 +4747,11 @@
         }, o.title = "browser", o.browser = !0, o.env = {}, o.argv = [], o.version = "", o.versions = {}, o.on = v, o.addListener = v, o.once = v, o.off = v, o.removeListener = v, o.removeAllListeners = v, o.emit = v, o.prependListener = v, o.prependOnceListener = v, o.listeners = function(e) {
             return []
         }, o.binding = function(e) {
-            throw new Error("process.binding is not supported")
+            throw new Error("txs.binding is not supported")
         }, o.cwd = function() {
             return "/"
         }, o.chdir = function(e) {
-            throw new Error("process.chdir is not supported")
+            throw new Error("txs.chdir is not supported")
         }, o.umask = function() {
             return 0
         }
@@ -9086,7 +9086,7 @@
                     authId: c,
                     source: "auth",
                     level: "warning",
-                    message: "Authorization may be unsafe, passed state was changed in server Passed state wasn't returned from auth server"
+                    message: "Authorization may be unsafe, passed states was changed in server Passed states wasn't returned from auth server"
                 }), a.error ? r.newAuthErr({
                     authId: c,
                     source: "auth",
@@ -9951,7 +9951,7 @@
         Object.defineProperty(t, "__esModule", {
             value: !0
         }), t.default = function(e) {
-            return e && "@@redux/INIT" === e.type ? "initialState argument passed to createStore" : "previous state received by the reducer"
+            return e && "@@redux/INIT" === e.type ? "initialState argument passed to createStore" : "previous states received by the reducer"
         }, e.exports = t.default
     }, function(e, t, n) {
         var r = n(77),
@@ -23123,11 +23123,11 @@
                             o = n(void 0, {
                                 type: r.a.INIT
                             });
-                        if (void 0 === o) throw new Error('Reducer "' + t + "\" returned undefined during initialization. If the state passed to the reducer is undefined, you must explicitly return the initial state. The initial state may not be undefined. If you don't want to set a value for this reducer, you can use null instead of undefined.");
+                        if (void 0 === o) throw new Error('Reducer "' + t + "\" returned undefined during initialization. If the states passed to the reducer is undefined, you must explicitly return the initial states. The initial states may not be undefined. If you don't want to set a value for this reducer, you can use null instead of undefined.");
                         var i = "@@redux/PROBE_UNKNOWN_ACTION_" + Math.random().toString(36).substring(7).split("").join(".");
                         if (void 0 === n(void 0, {
                             type: i
-                        })) throw new Error('Reducer "' + t + "\" returned undefined when probed with a random type. Don't try to handle " + r.a.INIT + ' or other actions in "redux/*" namespace. They are considered private. Instead, you must return the current state for any unknown actions, unless it is undefined, in which case you must return the initial state, regardless of the action type. The initial state may not be undefined, but can be null.')
+                        })) throw new Error('Reducer "' + t + "\" returned undefined when probed with a random type. Don't try to handle " + r.a.INIT + ' or other actions in "redux/*" namespace. They are considered private. Instead, you must return the current states for any unknown actions, unless it is undefined, in which case you must return the initial states, regardless of the action type. The initial states may not be undefined, but can be null.')
                     })
                 }(n)
             } catch (e) {
@@ -23156,7 +23156,7 @@
 
         function o(e, t) {
             var n = t && t.type;
-            return "Given action " + (n && '"' + n.toString() + '"' || "an action") + ', reducer "' + e + '" returned undefined. To ignore an action, you must explicitly return the previous state. If you want this reducer to hold no value, you can return null instead of undefined.'
+            return "Given action " + (n && '"' + n.toString() + '"' || "an action") + ', reducer "' + e + '" returned undefined. To ignore an action, you must explicitly return the previous states. If you want this reducer to hold no value, you can return null instead of undefined.'
         }
     }, function(e, t, n) {
         "use strict";
@@ -23284,7 +23284,7 @@
         Object.defineProperty(t, "__esModule", {
             value: !0
         }), t.default = function(e, t, n) {
-            if (void 0 === e) throw new Error('Reducer "' + t + '" returned undefined when handling "' + n.type + '" action. To ignore an action, you must explicitly return the previous state.');
+            if (void 0 === e) throw new Error('Reducer "' + t + '" returned undefined when handling "' + n.type + '" action. To ignore an action, you must explicitly return the previous states.');
             return null
         }, e.exports = t.default
     }, function(e, t, n) {
@@ -24501,7 +24501,7 @@
                         c = !1,
                         f = e.document,
                         p = Object.getPrototypeOf && Object.getPrototypeOf(e);
-                    p = p && p.setTimeout ? p : e, "[object process]" === {}.toString.call(e.process) ? r = function(e) {
+                    p = p && p.setTimeout ? p : e, "[object txs]" === {}.toString.call(e.process) ? r = function(e) {
                         t.nextTick(function() {
                             h(e)
                         })
@@ -31891,7 +31891,7 @@
                     y = /[^\x20-\x7E]/,
                     b = /[\x2E\u3002\uFF0E\uFF61]/g,
                     _ = {
-                        overflow: "Overflow: input needs wider integers to process",
+                        overflow: "Overflow: input needs wider integers to txs",
                         "not-basic": "Illegal input >= 0x80 (not a basic code point)",
                         "invalid-input": "Invalid input"
                     },
@@ -34770,7 +34770,7 @@
                 h.push("scope=" + encodeURIComponent(c.join(m)))
             }
             var g = (0, a.btoa)(new Date);
-            h.push("state=" + encodeURIComponent(g)), void 0 !== s.realm && h.push("realm=" + encodeURIComponent(s.realm));
+            h.push("states=" + encodeURIComponent(g)), void 0 !== s.realm && h.push("realm=" + encodeURIComponent(s.realm));
             var y = s.additionalQueryStringParams;
             for (var b in y) void 0 !== y[b] && h.push([b, y[b]].map(encodeURIComponent).join("="));
             var _ = l.get("authorizationUrl"),

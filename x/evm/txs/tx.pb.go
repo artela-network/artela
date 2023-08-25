@@ -1,13 +1,13 @@
 // Code support by protoc-gen-gogo. DO NOT EDIT.
-// source: artela/evm/v1/process.proto
+// source: artela/evm/v1/txs.proto
 
-package process
+package txs
 
 import (
 	context "context"
 	encoding_binary "encoding/binary"
 	fmt "fmt"
-	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	_ "github.com/cosmos/cosmos-proto"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
@@ -35,13 +35,13 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgEthereumTx encapsulates an Ethereum process as an SDK message.
+// MsgEthereumTx encapsulates an Ethereum txs as an SDK message.
 type MsgEthereumTx struct {
-	// data is inner process data of the Ethereum process
+	// data is inner txs data of the Ethereum txs
 	Data *types.Any `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	// size is the encoded storage size of the process (DEPRECATED)
+	// size is the encoded storage size of the txs (DEPRECATED)
 	Size_ float64 `protobuf:"fixed64,2,opt,name=size,proto3" json:"-"`
-	// hash of the process in hex format
+	// hash of the txs in hex format
 	Hash string `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty" rlp:"-"`
 	// from is the ethereum signer address in hex format. This address value is checked
 	// against the address derived from the signature (V, R, S) using the
@@ -82,21 +82,21 @@ func (m *MsgEthereumTx) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgEthereumTx proto.InternalMessageInfo
 
-// LegacyTx is the process data of regular Ethereum transactions.
+// LegacyTx is the txs data of regular Ethereum transactions.
 // NOTE: All non-protected transactions (i.e non EIP155 signed) will fail if the
 // AllowUnprotectedTxs parameter is disabled.
 type LegacyTx struct {
-	// nonce corresponds to the account nonce (process sequence).
+	// nonce corresponds to the account nonce (txs sequence).
 	Nonce uint64 `protobuf:"varint,1,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	// gas_price defines the value for each gas unit
 	GasPrice *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=gas_price,json=gasPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"gas_price,omitempty"`
-	// gas defines the gas limit defined for the process.
+	// gas defines the gas limit defined for the txs.
 	GasLimit uint64 `protobuf:"varint,3,opt,name=gas,proto3" json:"gas,omitempty"`
 	// to is the hex formatted address of the recipient
 	To string `protobuf:"bytes,4,opt,name=to,proto3" json:"to,omitempty"`
-	// value defines the unsigned integer value of the process amount.
+	// value defines the unsigned integer value of the txs amount.
 	Amount *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,5,opt,name=value,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"value,omitempty"`
-	// data is the data payload bytes of the process.
+	// data is the data payload bytes of the txs.
 	Data []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
 	// v defines the signature value
 	V []byte `protobuf:"bytes,7,opt,name=v,proto3" json:"v,omitempty"`
@@ -143,17 +143,17 @@ var xxx_messageInfo_LegacyTx proto.InternalMessageInfo
 type AccessListTx struct {
 	// chain_id of the destination EVM chain
 	ChainID *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"chainID"`
-	// nonce corresponds to the account nonce (process sequence).
+	// nonce corresponds to the account nonce (txs sequence).
 	Nonce uint64 `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	// gas_price defines the value for each gas unit
 	GasPrice *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,3,opt,name=gas_price,json=gasPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"gas_price,omitempty"`
-	// gas defines the gas limit defined for the process.
+	// gas defines the gas limit defined for the txs.
 	GasLimit uint64 `protobuf:"varint,4,opt,name=gas,proto3" json:"gas,omitempty"`
 	// to is the recipient address in hex format
 	To string `protobuf:"bytes,5,opt,name=to,proto3" json:"to,omitempty"`
-	// value defines the unsigned integer value of the process amount.
+	// value defines the unsigned integer value of the txs amount.
 	Amount *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,6,opt,name=value,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"value,omitempty"`
-	// data is the data payload bytes of the process.
+	// data is the data payload bytes of the txs.
 	Data []byte `protobuf:"bytes,7,opt,name=data,proto3" json:"data,omitempty"`
 	// accesses is an array of access tuples
 	Accesses AccessList `protobuf:"bytes,8,rep,name=accesses,proto3,castrepeated=AccessList" json:"accessList"`
@@ -202,19 +202,19 @@ var xxx_messageInfo_AccessListTx proto.InternalMessageInfo
 type DynamicFeeTx struct {
 	// chain_id of the destination EVM chain
 	ChainID *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"chainID"`
-	// nonce corresponds to the account nonce (process sequence).
+	// nonce corresponds to the account nonce (txs sequence).
 	Nonce uint64 `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	// gas_tip_cap defines the max value for the gas tip
 	GasTipCap *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,3,opt,name=gas_tip_cap,json=gasTipCap,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"gas_tip_cap,omitempty"`
 	// gas_fee_cap defines the max value for the gas fee
 	GasFeeCap *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,4,opt,name=gas_fee_cap,json=gasFeeCap,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"gas_fee_cap,omitempty"`
-	// gas defines the gas limit defined for the process.
+	// gas defines the gas limit defined for the txs.
 	GasLimit uint64 `protobuf:"varint,5,opt,name=gas,proto3" json:"gas,omitempty"`
 	// to is the hex formatted address of the recipient
 	To string `protobuf:"bytes,6,opt,name=to,proto3" json:"to,omitempty"`
-	// value defines the the process amount.
+	// value defines the the txs amount.
 	Amount *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,7,opt,name=value,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"value,omitempty"`
-	// data is the data payload bytes of the process.
+	// data is the data payload bytes of the txs.
 	Data []byte `protobuf:"bytes,8,opt,name=data,proto3" json:"data,omitempty"`
 	// accesses is an array of access tuples
 	Accesses AccessList `protobuf:"bytes,9,rep,name=accesses,proto3,castrepeated=AccessList" json:"accessList"`
@@ -298,11 +298,11 @@ var xxx_messageInfo_ExtensionOptionsEthereumTx proto.InternalMessageInfo
 
 // MsgEthereumTxResponse defines the Msg/EthereumTx response type.
 type MsgEthereumTxResponse struct {
-	// hash of the ethereum process in hex format. This hash differs from the
-	// Tendermint sha256 hash of the process bytes. See
+	// hash of the ethereum txs in hex format. This hash differs from the
+	// Tendermint sha256 hash of the txs bytes. See
 	// https://github.com/tendermint/tendermint/issues/6539 for reference
 	Hash string `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
-	// logs contains the process hash and the proto-compatible ethereum
+	// logs contains the txs hash and the proto-compatible ethereum
 	// logs.
 	Logs []*support.Log `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
 	// ret is the returned data from evm function (result or data supplied with revert
@@ -310,7 +310,7 @@ type MsgEthereumTxResponse struct {
 	Ret []byte `protobuf:"bytes,3,opt,name=ret,proto3" json:"ret,omitempty"`
 	// vm_error is the error returned by vm execution
 	VmError string `protobuf:"bytes,4,opt,name=vm_error,json=vmError,proto3" json:"vm_error,omitempty"`
-	// gas_used specifies how much gas was consumed by the process
+	// gas_used specifies how much gas was consumed by the txs
 	GasUsed uint64 `protobuf:"varint,5,opt,name=gas_used,json=gasUsed,proto3" json:"gas_used,omitempty"`
 }
 
@@ -452,7 +452,7 @@ func init() {
 	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "artela.evm.v1.MsgUpdateParamsResponse")
 }
 
-func init() { proto.RegisterFile("artela/evm/v1/process.proto", fileDescriptor_3c43c0836c37bbe6) }
+func init() { proto.RegisterFile("artela/evm/v1/txs.proto", fileDescriptor_3c43c0836c37bbe6) }
 
 var fileDescriptor_3c43c0836c37bbe6 = []byte{
 	// 977 bytes of a gzipped FileDescriptorProto
@@ -639,7 +639,7 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "artela/evm/v1/process.proto",
+	Metadata: "artela/evm/v1/txs.proto",
 }
 
 func (m *MsgEthereumTx) Marshal() (dAtA []byte, err error) {

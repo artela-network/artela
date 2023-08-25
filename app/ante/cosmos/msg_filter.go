@@ -2,7 +2,7 @@ package cosmos
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	evmtypes "github.com/artela-network/artela/x/evm/process"
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 )

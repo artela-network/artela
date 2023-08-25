@@ -1,4 +1,4 @@
-package vmstate
+package states
 
 import (
 	"bytes"
@@ -9,14 +9,14 @@ import (
 
 var emptyCodeHash = crypto.Keccak256(nil)
 
-// stateObject is the state of an account
+// stateObject is the states of an account
 type stateObject struct {
 	db *StateDB
 
 	account Account
 	code    []byte
 
-	// state storage
+	// states storage
 	originStorage Storage
 	dirtyStorage  Storage
 
@@ -27,7 +27,7 @@ type stateObject struct {
 	suicided  bool
 }
 
-// newObject creates a state object.
+// newObject creates a states object.
 func newObject(db *StateDB, address common.Address, account Account) *stateObject {
 	if account.Balance == nil {
 		account.Balance = new(big.Int)
@@ -153,7 +153,7 @@ func (s *stateObject) Nonce() uint64 {
 	return s.account.Nonce
 }
 
-// GetCommittedState query the committed state
+// GetCommittedState query the committed states
 func (s *stateObject) GetCommittedState(key common.Hash) common.Hash {
 	if value, cached := s.originStorage[key]; cached {
 		return value
@@ -164,7 +164,7 @@ func (s *stateObject) GetCommittedState(key common.Hash) common.Hash {
 	return value
 }
 
-// GetState query the current state (including dirty state)
+// GetState query the current states (including dirty states)
 func (s *stateObject) GetState(key common.Hash) common.Hash {
 	if value, dirty := s.dirtyStorage[key]; dirty {
 		return value
@@ -172,7 +172,7 @@ func (s *stateObject) GetState(key common.Hash) common.Hash {
 	return s.GetCommittedState(key)
 }
 
-// SetState sets the contract state
+// SetState sets the contract states
 func (s *stateObject) SetState(key common.Hash, value common.Hash) {
 	// If the new value is the same as old, don't set
 	prev := s.GetState(key)

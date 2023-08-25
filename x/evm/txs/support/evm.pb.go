@@ -26,19 +26,19 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Params defines the EVM module parameters
 type Params struct {
-	// evm_denom represents the token denomination used to run the EVM state
+	// evm_denom represents the token denomination used to run the EVM states
 	// transitions.
 	EvmDenom string `protobuf:"bytes,1,opt,name=evm_denom,json=evmDenom,proto3" json:"evm_denom,omitempty" yaml:"evm_denom"`
-	// enable_create toggles state transitions that use the vm.Create function
+	// enable_create toggles states transitions that use the vm.Create function
 	EnableCreate bool `protobuf:"varint,2,opt,name=enable_create,json=enableCreate,proto3" json:"enable_create,omitempty" yaml:"enable_create"`
-	// enable_call toggles state transitions that use the vm.Call function
+	// enable_call toggles states transitions that use the vm.Call function
 	EnableCall bool `protobuf:"varint,3,opt,name=enable_call,json=enableCall,proto3" json:"enable_call,omitempty" yaml:"enable_call"`
 	// extra_eips defines the additional EIPs for the vm.Config
 	ExtraEIPs []int64 `protobuf:"varint,4,rep,packed,name=extra_eips,json=extraEips,proto3" json:"extra_eips,omitempty" yaml:"extra_eips"`
 	// chain_config defines the EVM chain configuration parameters
 	ChainConfig ChainConfig `protobuf:"bytes,5,opt,name=chain_config,json=chainConfig,proto3" json:"chain_config" yaml:"chain_config"`
 	// allow_unprotected_txs defines if replay-protected (i.e non EIP155
-	// signed) transactions can be executed on the state machine.
+	// signed) transactions can be executed on the states machine.
 	AllowUnprotectedTxs bool `protobuf:"varint,6,opt,name=allow_unprotected_txs,json=allowUnprotectedTxs,proto3" json:"allow_unprotected_txs,omitempty"`
 }
 
@@ -263,13 +263,13 @@ func (m *State) GetValue() string {
 	return ""
 }
 
-// TransactionLogs define the logs support from a process execution
+// TransactionLogs define the logs support from a txs execution
 // with a given hash. It it used for import/export data as transactions are not
-// persisted on blockchain state after an upgrade.
+// persisted on blockchain states after an upgrade.
 type TransactionLogs struct {
-	// hash of the process
+	// hash of the txs
 	Hash string `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
-	// logs is an array of Logs for the given process hash
+	// logs is an array of Logs for the given txs hash
 	Logs []*Log `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
 }
 
@@ -333,13 +333,13 @@ type Log struct {
 	Topics []string `protobuf:"bytes,2,rep,name=topics,proto3" json:"topics,omitempty"`
 	// data which is supplied by the contract, usually ABI-encoded
 	Data []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	// block_number of the block in which the process was included
+	// block_number of the block in which the txs was included
 	BlockNumber uint64 `protobuf:"varint,4,opt,name=block_number,json=blockNumber,proto3" json:"blockNumber"`
-	// tx_hash is the process hash
+	// tx_hash is the txs hash
 	TxHash string `protobuf:"bytes,5,opt,name=tx_hash,json=txHash,proto3" json:"transactionHash"`
-	// tx_index of the process in the block
+	// tx_index of the txs in the block
 	TxIndex uint64 `protobuf:"varint,6,opt,name=tx_index,json=txIndex,proto3" json:"transactionIndex"`
-	// block_hash of the block in which the process was included
+	// block_hash of the block in which the txs was included
 	BlockHash string `protobuf:"bytes,7,opt,name=block_hash,json=blockHash,proto3" json:"blockHash"`
 	// index of the log in the block
 	Index uint64 `protobuf:"varint,8,opt,name=index,proto3" json:"logIndex"`
@@ -448,12 +448,12 @@ func (m *Log) GetRemoved() bool {
 // TxResult stores results of Tx execution.
 type TxResult struct {
 	// contract_address contains the ethereum address of the created contract (if
-	// any). If the state transition is an evm.Call, the contract address will be
+	// any). If the states transition is an evm.Call, the contract address will be
 	// empty.
 	ContractAddress string `protobuf:"bytes,1,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty" yaml:"contract_address"`
 	// bloom represents the bloom filter bytes
 	Bloom []byte `protobuf:"bytes,2,opt,name=bloom,proto3" json:"bloom,omitempty"`
-	// tx_logs contains the process hash and the proto-compatible ethereum
+	// tx_logs contains the txs hash and the proto-compatible ethereum
 	// logs.
 	TxLogs TransactionLogs `protobuf:"bytes,3,opt,name=tx_logs,json=txLogs,proto3" json:"tx_logs" yaml:"tx_logs"`
 	// ret defines the bytes from the execution.

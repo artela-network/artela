@@ -3,7 +3,7 @@ package evm
 import (
 	"bytes"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/txs/support"
 
 	"github.com/artela-network/artela/x/evm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -16,7 +16,7 @@ import (
 	"github.com/artela-network/artela/x/evm/types"
 )
 
-// InitGenesis initializes genesis state based on exported genesis
+// InitGenesis initializes genesis states based on exported genesis
 func InitGenesis(
 	ctx sdk.Context,
 	k *keeper.Keeper,
@@ -57,8 +57,8 @@ func InitGenesis(
 		codeHash := crypto.Keccak256Hash(code)
 
 		if len(account.Code) != 0 && !bytes.Equal(ethAcct.GetCodeHash().Bytes(), codeHash.Bytes()) {
-			s := "the evm state code doesn't match with the codehash\n"
-			panic(fmt.Sprintf("%s account: %s , evm state codehash: %v, ethAccount codehash: %v, evm state code: %s\n",
+			s := "the evm states code doesn't match with the codehash\n"
+			panic(fmt.Sprintf("%s account: %s , evm states codehash: %v, ethAccount codehash: %v, evm states code: %s\n",
 				s, account.Address, codeHash, ethAcct.GetCodeHash(), account.Code))
 		}
 
@@ -72,7 +72,7 @@ func InitGenesis(
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis exports genesis state of the EVM module
+// ExportGenesis exports genesis states of the EVM module
 func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *support.GenesisState {
 	var ethGenAccounts []support.GenesisAccount
 	ak.IterateAccounts(ctx, func(account authtypes.AccountI) bool {

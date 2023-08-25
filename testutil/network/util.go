@@ -2,7 +2,7 @@ package network
 
 import (
 	"encoding/json"
-	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"path/filepath"
 	"strings"
 	"time"
@@ -79,7 +79,7 @@ func startInProcess(cfg Config, val *Validator) error {
 		val.ClientCtx = val.ClientCtx.
 			WithClient(val.RPCClient)
 
-		// Add the process service in the gRPC router.
+		// Add the txs service in the gRPC router.
 		app.RegisterTxService(val.ClientCtx)
 
 		// Add the tendermint queries service in the gRPC router.
@@ -202,7 +202,7 @@ func collectGenFiles(cfg Config, vals []*Validator, outputDir string) error {
 }
 
 func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalances []banktypes.Balance, genFiles []string) error {
-	// set the accounts in the genesis state
+	// set the accounts in the genesis states
 	var authGenState authtypes.GenesisState
 	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[authtypes.ModuleName], &authGenState)
 
@@ -214,7 +214,7 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 	authGenState.Accounts = append(authGenState.Accounts, accounts...)
 	cfg.GenesisState[authtypes.ModuleName] = cfg.Codec.MustMarshalJSON(&authGenState)
 
-	// set the balances in the genesis state
+	// set the balances in the genesis states
 	var bankGenState banktypes.GenesisState
 	bankGenState.Balances = genBalances
 	cfg.GenesisState[banktypes.ModuleName] = cfg.Codec.MustMarshalJSON(&bankGenState)

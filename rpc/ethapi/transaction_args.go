@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -316,7 +316,7 @@ func (args *TransactionArgs) ToTransaction() *types.Transaction {
 	return args.toTransaction()
 }
 
-func (args *TransactionArgs) toEVMTransaction() *process.MsgEthereumTx {
+func (args *TransactionArgs) toEVMTransaction() *txs.MsgEthereumTx {
 	var (
 		chainID, value, gasPrice, maxFeePerGas, maxPriorityFeePerGas sdkmath.Int
 		gas, nonce                                                   uint64
@@ -356,15 +356,15 @@ func (args *TransactionArgs) toEVMTransaction() *process.MsgEthereumTx {
 		to = args.To.Hex()
 	}
 
-	var data process.TxData
+	var data txs.TxData
 	switch {
 	case args.MaxFeePerGas != nil:
-		al := process.AccessList{}
+		al := txs.AccessList{}
 		if args.AccessList != nil {
-			al = process.NewAccessList(args.AccessList)
+			al = txs.NewAccessList(args.AccessList)
 		}
 
-		data = &process.DynamicFeeTx{
+		data = &txs.DynamicFeeTx{
 			To:        to,
 			ChainID:   &chainID,
 			Nonce:     nonce,
@@ -376,7 +376,7 @@ func (args *TransactionArgs) toEVMTransaction() *process.MsgEthereumTx {
 			Accesses:  al,
 		}
 	case args.AccessList != nil:
-		data = &process.AccessListTx{
+		data = &txs.AccessListTx{
 			To:       to,
 			ChainID:  &chainID,
 			Nonce:    nonce,
@@ -384,10 +384,10 @@ func (args *TransactionArgs) toEVMTransaction() *process.MsgEthereumTx {
 			GasPrice: &gasPrice,
 			Amount:   &value,
 			Data:     args.GetData(),
-			Accesses: process.NewAccessList(args.AccessList),
+			Accesses: txs.NewAccessList(args.AccessList),
 		}
 	default:
-		data = &process.LegacyTx{
+		data = &txs.LegacyTx{
 			To:       to,
 			Nonce:    nonce,
 			GasLimit: gas,
@@ -397,7 +397,7 @@ func (args *TransactionArgs) toEVMTransaction() *process.MsgEthereumTx {
 		}
 	}
 
-	anyData, err := process.PackTxData(data)
+	anyData, err := txs.PackTxData(data)
 	if err != nil {
 		return nil
 	}
@@ -406,7 +406,7 @@ func (args *TransactionArgs) toEVMTransaction() *process.MsgEthereumTx {
 		from = args.From.Hex()
 	}
 
-	msg := process.MsgEthereumTx{
+	msg := txs.MsgEthereumTx{
 		Data: anyData,
 		From: from,
 	}
@@ -414,7 +414,7 @@ func (args *TransactionArgs) toEVMTransaction() *process.MsgEthereumTx {
 	return &msg
 }
 
-func (args *TransactionArgs) ToEVMTransaction() *process.MsgEthereumTx {
+func (args *TransactionArgs) ToEVMTransaction() *txs.MsgEthereumTx {
 	return args.toEVMTransaction()
 }
 

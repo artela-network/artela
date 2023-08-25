@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	"strconv"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -20,13 +20,13 @@ import (
 	"github.com/artela-network/artela/x/evm/types"
 )
 
-var _ process.MsgServer = &Keeper{}
+var _ txs.MsgServer = &Keeper{}
 
-// EthereumTx implements the gRPC MsgServer interface. It receives a process which is then
+// EthereumTx implements the gRPC MsgServer interface. It receives a txs which is then
 // executed (i.e applied) against the go-ethereum EVM. The provided SDK Context is set to the Keeper
 // so that it can implements and call the StateDB methods without receiving it as a function
 // parameter.
-func (k *Keeper) EthereumTx(goCtx context.Context, msg *process.MsgEthereumTx) (*process.MsgEthereumTxResponse, error) {
+func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs.MsgEthereumTxResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	sender := msg.From
@@ -44,19 +44,19 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *process.MsgEthereumTx) (
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to apply process")
+		return nil, errorsmod.Wrap(err, "failed to apply txs")
 	}
 
 	defer func() {
 		telemetry.IncrCounterWithLabels(
-			[]string{"process", "msg", "ethereum_tx", "total"},
+			[]string{"txs", "msg", "ethereum_tx", "total"},
 			1,
 			labels,
 		)
 
 		if response.GasUsed != 0 {
 			telemetry.IncrCounterWithLabels(
-				[]string{"process", "msg", "ethereum_tx", "gas_used", "total"},
+				[]string{"txs", "msg", "ethereum_tx", "gas_used", "total"},
 				float32(response.GasUsed),
 				labels,
 			)
@@ -67,7 +67,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *process.MsgEthereumTx) (
 			gasRatio, err := gasLimit.QuoInt64(int64(response.GasUsed)).Float64()
 			if err == nil {
 				telemetry.SetGaugeWithLabels(
-					[]string{"process", "msg", "ethereum_tx", "gas_limit", "per", "gas_used"},
+					[]string{"txs", "msg", "ethereum_tx", "gas_limit", "per", "gas_used"},
 					float32(gasRatio),
 					labels,
 				)
@@ -77,16 +77,16 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *process.MsgEthereumTx) (
 
 	attrs := []sdk.Attribute{
 		sdk.NewAttribute(sdk.AttributeKeyAmount, tx.Value().String()),
-		// add event for ethereum process hash format
+		// add event for ethereum txs hash format
 		sdk.NewAttribute(types.AttributeKeyEthereumTxHash, response.Hash),
-		// add event for index of valid ethereum process
+		// add event for index of valid ethereum txs
 		sdk.NewAttribute(types.AttributeKeyTxIndex, strconv.FormatUint(txIndex, 10)),
-		// add event for eth process gas used, we can't get it from cosmos process result when it contains multiple eth process msgs.
+		// add event for eth txs gas used, we can't get it from cosmos txs result when it contains multiple eth txs msgs.
 		sdk.NewAttribute(types.AttributeKeyTxGasUsed, strconv.FormatUint(response.GasUsed, 10)),
 	}
 
 	if len(ctx.TxBytes()) > 0 {
-		// add event for tendermint process hash format
+		// add event for tendermint txs hash format
 		hash := tmbytes.HexBytes(tmtypes.Tx(ctx.TxBytes()).Hash())
 		attrs = append(attrs, sdk.NewAttribute(types.AttributeKeyTxHash, hash.String()))
 	}
@@ -133,7 +133,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *process.MsgEthereumTx) (
 // proposal passes, it updates the module parameters. The update can only be
 // performed if the requested authority is the Cosmos SDK governance module
 // account.
-func (k *Keeper) UpdateParams(goCtx context.Context, req *process.MsgUpdateParams) (*process.MsgUpdateParamsResponse, error) {
+func (k *Keeper) UpdateParams(goCtx context.Context, req *txs.MsgUpdateParams) (*txs.MsgUpdateParamsResponse, error) {
 	if k.authority.String() != req.Authority {
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority, expected %s, got %s", k.authority.String(), req.Authority)
 	}
@@ -143,5 +143,5 @@ func (k *Keeper) UpdateParams(goCtx context.Context, req *process.MsgUpdateParam
 		return nil, err
 	}
 
-	return &process.MsgUpdateParamsResponse{}, nil
+	return &txs.MsgUpdateParamsResponse{}, nil
 }

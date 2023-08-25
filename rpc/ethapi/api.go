@@ -102,8 +102,8 @@ func (s *EthereumAPI) FeeHistory(ctx context.Context, blockCount math.HexOrDecim
 // - startingBlock: block number this node started to synchronize from
 // - currentBlock:  block number this node is currently importing
 // - highestBlock:  block number of the highest block header this node has received from peers
-// - pulledStates:  number of state entries processed until now
-// - knownStates:   number of known state entries that still need to be pulled
+// - pulledStates:  number of states entries processed until now
+// - knownStates:   number of known states entries that still need to be pulled
 func (s *EthereumAPI) Syncing() (interface{}, error) {
 	progress := s.b.SyncProgress()
 
@@ -558,7 +558,7 @@ func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
 	return hexutil.Uint64(header.Number.Uint64())
 }
 
-// GetBalance returns the amount of wei for the given address in the state of the
+// GetBalance returns the amount of wei for the given address in the states of the
 // given block number. The rpc.LatestBlockNumber and rpc.PendingBlockNumber meta
 // block numbers are also allowed.
 func (s *BlockChainAPI) GetBalance(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
@@ -766,7 +766,7 @@ func (s *BlockChainAPI) GetUncleCountByBlockHash(ctx context.Context, blockHash 
 	return nil
 }
 
-// GetCode returns the code stored at the given address in the state for the given block number.
+// GetCode returns the code stored at the given address in the states for the given block number.
 func (s *BlockChainAPI) GetCode(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
@@ -776,7 +776,7 @@ func (s *BlockChainAPI) GetCode(ctx context.Context, address common.Address, blo
 	return code, state.Error()
 }
 
-// GetStorageAt returns the storage from the state at the given address, key and
+// GetStorageAt returns the storage from the states at the given address, key and
 // block number. The rpc.LatestBlockNumber and rpc.PendingBlockNumber meta block
 // numbers are also allowed.
 func (s *BlockChainAPI) GetStorageAt(ctx context.Context, address common.Address, hexKey string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
@@ -794,22 +794,22 @@ func (s *BlockChainAPI) GetStorageAt(ctx context.Context, address common.Address
 
 // OverrideAccount indicates the overriding fields of account during the execution
 // of a message call.
-// Note, state and stateDiff can't be specified at the same time. If state is
-// set, message execution will only use the data in the given state. Otherwise
+// Note, states and stateDiff can't be specified at the same time. If states is
+// set, message execution will only use the data in the given states. Otherwise
 // if statDiff is set, all diff will be applied first and then execute the call
 // message.
 type OverrideAccount struct {
 	Nonce     *hexutil.Uint64              `json:"nonce"`
 	Code      *hexutil.Bytes               `json:"code"`
 	Balance   **hexutil.Big                `json:"balance"`
-	State     *map[common.Hash]common.Hash `json:"state"`
+	State     *map[common.Hash]common.Hash `json:"states"`
 	StateDiff *map[common.Hash]common.Hash `json:"stateDiff"`
 }
 
 // StateOverride is the collection of overridden accounts.
 type StateOverride map[common.Address]OverrideAccount
 
-// Apply overrides the fields of specified accounts into the given state.
+// Apply overrides the fields of specified accounts into the given states.
 func (diff *StateOverride) Apply(state *state.StateDB) error {
 	if diff == nil {
 		return nil
@@ -828,13 +828,13 @@ func (diff *StateOverride) Apply(state *state.StateDB) error {
 			state.SetBalance(addr, (*big.Int)(*account.Balance))
 		}
 		if account.State != nil && account.StateDiff != nil {
-			return fmt.Errorf("account %s has both 'state' and 'stateDiff'", addr.Hex())
+			return fmt.Errorf("account %s has both 'states' and 'stateDiff'", addr.Hex())
 		}
-		// Replace entire state if caller requires.
+		// Replace entire states if caller requires.
 		if account.State != nil {
 			state.SetStorage(addr, *account.State)
 		}
-		// Apply state diff into specified accounts.
+		// Apply states diff into specified accounts.
 		if account.StateDiff != nil {
 			for key, value := range *account.StateDiff {
 				state.SetState(addr, key, value)
@@ -1006,11 +1006,11 @@ func (e *revertError) ErrorData() interface{} {
 	return e.reason
 }
 
-// Call executes the given transaction on the state for the given block number.
+// Call executes the given transaction on the states for the given block number.
 //
 // Additionally, the caller can specify a batch of contract for fields overriding.
 //
-// Note, this function doesn't make and changes in the state/blockchain and is
+// Note, this function doesn't make and changes in the states/blockchain and is
 // useful to execute and retrieve values.
 func (s *BlockChainAPI) Call(ctx context.Context, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, blockOverrides *BlockOverrides) (hexutil.Bytes, error) {
 	result, err := DoCall(ctx, s.b, args, blockNrOrHash, overrides, blockOverrides, s.b.RPCEVMTimeout(), s.b.RPCGasCap())
@@ -1363,7 +1363,7 @@ type accessListResult struct {
 }
 
 // CreateAccessList creates an EIP-2930 type AccessList for the given transaction.
-// Reexec and BlockNrOrHash can be specified to create the accessList on top of a certain state.
+// Reexec and BlockNrOrHash can be specified to create the accessList on top of a certain states.
 func (s *BlockChainAPI) CreateAccessList(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (*accessListResult, error) {
 	bNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 	if blockNrOrHash != nil {
@@ -1518,7 +1518,7 @@ func (s *TransactionAPI) GetTransactionCount(ctx context.Context, address common
 		}
 		return (*hexutil.Uint64)(&nonce), nil
 	}
-	// Resolve block number and use its state to ask for the nonce
+	// Resolve block number and use its states to ask for the nonce
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
 		return nil, err
@@ -1608,7 +1608,7 @@ func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.
 		"effectiveGasPrice": (*hexutil.Big)(receipt.EffectiveGasPrice),
 	}
 
-	// Assign receipt status or post state.
+	// Assign receipt status or post states.
 	if len(receipt.PostState) > 0 {
 		fields["root"] = hexutil.Bytes(receipt.PostState)
 	} else {

@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

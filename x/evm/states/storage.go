@@ -1,4 +1,4 @@
-package vmstate
+package states
 
 import (
 	"bytes"

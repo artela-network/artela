@@ -1369,11 +1369,11 @@ func (s *SyncState) HealingBytecode() hexutil.Uint64 {
 // - syncedBytecodeBytes: number of bytecode bytes downloaded
 // - syncedStorage:       number of storage slots downloaded
 // - syncedStorageBytes:  number of storage trie bytes persisted to disk
-// - healedTrienodes:     number of state trie nodes downloaded
-// - healedTrienodeBytes: number of state trie bytes persisted to disk
+// - healedTrienodes:     number of states trie nodes downloaded
+// - healedTrienodeBytes: number of states trie bytes persisted to disk
 // - healedBytecodes:     number of bytecodes downloaded
 // - healedBytecodeBytes: number of bytecodes persisted to disk
-// - healingTrienodes:    number of state trie nodes pending
+// - healingTrienodes:    number of states trie nodes pending
 // - healingBytecode:     number of bytecodes pending
 func (r *Resolver) Syncing() (*SyncState, error) {
 	progress := r.backend.SyncProgress()

@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// EthereumConfig returns an Ethereum ChainConfig for EVM state transitions.
+// EthereumConfig returns an Ethereum ChainConfig for EVM states transitions.
 // All the negative or nil values are converted to nil
 func (cc ChainConfig) EthereumConfig(chainID *big.Int) *params.ChainConfig {
 	return &params.ChainConfig{

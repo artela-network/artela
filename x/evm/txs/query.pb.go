@@ -1,14 +1,14 @@
 // Code support by protoc-gen-gogo. DO NOT EDIT.
 // source: artela/evm/v1/query.proto
 
-package process
+package txs
 
 import (
 	context "context"
 	fmt "fmt"
-	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/txs/support"
 
-	//"github.com/artela-network/artela/x/evm/process"
+	//"github.com/artela-network/artela/x/evm/txs"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/gogoproto/gogoproto"
@@ -438,9 +438,9 @@ func (m *QueryBalanceResponse) GetBalance() string {
 
 // QueryStorageRequest is the request type for the Query/Storage RPC method.
 type QueryStorageRequest struct {
-	// address is the ethereum hex address to query the storage state for.
+	// address is the ethereum hex address to query the storage states for.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	// key defines the key of the storage state
+	// key defines the key of the storage states
 	Key string `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 }
 
@@ -480,7 +480,7 @@ var xxx_messageInfo_QueryStorageRequest proto.InternalMessageInfo
 // QueryStorageResponse is the response type for the Query/Storage RPC
 // method.
 type QueryStorageResponse struct {
-	// value defines the storage state value hash associated with the given key.
+	// value defines the storage states value hash associated with the given key.
 	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
@@ -612,7 +612,7 @@ func (m *QueryCodeResponse) GetCode() []byte {
 
 // QueryTxLogsRequest is the request type for the Query/TxLogs RPC method.
 type QueryTxLogsRequest struct {
-	// hash is the ethereum process hex hash to query the logs for.
+	// hash is the ethereum txs hex hash to query the logs for.
 	Hash string `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 	// pagination defines an optional pagination for the request.
 	Pagination *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
@@ -653,7 +653,7 @@ var xxx_messageInfo_QueryTxLogsRequest proto.InternalMessageInfo
 
 // QueryTxLogsResponse is the response type for the Query/TxLogs RPC method.
 type QueryTxLogsResponse struct {
-	// logs represents the ethereum logs support from the given process.
+	// logs represents the ethereum logs support from the given txs.
 	Logs []*support.Log `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
 	// pagination defines the pagination in the response.
 	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
@@ -910,18 +910,18 @@ func (m *EstimateGasResponse) GetGas() uint64 {
 
 // QueryTraceTxRequest defines TraceTx request
 type QueryTraceTxRequest struct {
-	// msg is the MsgEthereumTx for the requested process
+	// msg is the MsgEthereumTx for the requested txs
 	Msg *MsgEthereumTx `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
 	// trace_config holds extra parameters to trace functions.
 	TraceConfig *support.TraceConfig `protobuf:"bytes,3,opt,name=trace_config,json=traceConfig,proto3" json:"trace_config,omitempty"`
 	// predecessors is an array of transactions included in the same block
 	// need to be replayed first to get correct context for tracing.
 	Predecessors []*MsgEthereumTx `protobuf:"bytes,4,rep,name=predecessors,proto3" json:"predecessors,omitempty"`
-	// block_number of requested process
+	// block_number of requested txs
 	BlockNumber int64 `protobuf:"varint,5,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
-	// block_hash of requested process
+	// block_hash of requested txs
 	BlockHash string `protobuf:"bytes,6,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	// block_time of requested process
+	// block_time of requested txs
 	BlockTime time.Time `protobuf:"bytes,7,opt,name=block_time,json=blockTime,proto3,stdtime" json:"block_time"`
 	// proposer_address is the proposer of the requested block
 	ProposerAddress github_com_cosmos_cosmos_sdk_types.ConsAddress `protobuf:"bytes,8,opt,name=proposer_address,json=proposerAddress,proto3,casttype=github.com/cosmos/cosmos-sdk/types.ConsAddress" json:"proposer_address,omitempty"`

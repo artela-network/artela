@@ -15,7 +15,7 @@ const (
 	// - Mint parameters: denomination minted due to fee distribution rewards
 	// - Governance parameters: denomination used for spam prevention in proposal deposits
 	// - Crisis parameters: constant fee denomination used for spam prevention to check broken invariant
-	// - EVM parameters: denomination used for running EVM state transitions in Artela.
+	// - EVM parameters: denomination used for running EVM states transitions in Artela.
 	AttoArtela string = "aartela"
 
 	// BaseDenomUnit defines the base denomination unit for Artela.

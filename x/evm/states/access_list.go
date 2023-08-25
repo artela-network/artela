@@ -1,4 +1,4 @@
-package vmstate
+package states
 
 import (
 	"github.com/ethereum/go-ethereum/common"

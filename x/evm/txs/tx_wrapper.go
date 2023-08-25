@@ -1,4 +1,4 @@
-package process
+package txs
 
 import (
 	"errors"
@@ -163,12 +163,12 @@ func (msg MsgEthereumTx) ValidateBasic() error {
 
 	// Validate Size_ field, should be kept empty
 	if msg.Size_ != 0 {
-		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "process size is deprecated")
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "txs size is deprecated")
 	}
 
 	txData, err := UnpackTxData(msg.Data)
 	if err != nil {
-		return errorsmod.Wrap(err, "failed to unpack process data")
+		return errorsmod.Wrap(err, "failed to unpack txs data")
 	}
 
 	gas := txData.GetGas()
@@ -190,16 +190,16 @@ func (msg MsgEthereumTx) ValidateBasic() error {
 	// Validate Hash field after validated txData to avoid panic
 	txHash := msg.AsTransaction().Hash().Hex()
 	if msg.Hash != txHash {
-		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid process hash %s, expected: %s", msg.Hash, txHash)
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid txs hash %s, expected: %s", msg.Hash, txHash)
 	}
 
 	return nil
 }
 
 // Sign calculates a secp256k1 ECDSA signature and signs the  It
-// takes a keyring signer and the chainID to sign an Ethereum process according to
+// takes a keyring signer and the chainID to sign an Ethereum txs according to
 // EIP155 standard.
-// This method mutates the process as it populates the V, R, S
+// This method mutates the txs as it populates the V, R, S
 // fields of the Transaction's Signature.
 // The function will fail if the sender address is not defined for the msg or if
 // the sender is not registered on the keyring
@@ -234,7 +234,7 @@ func (msg *MsgEthereumTx) GetMsgs() []sdk.Msg {
 	return []sdk.Msg{msg}
 }
 
-// GetSigners returns the expected signers for an Ethereum process message.
+// GetSigners returns the expected signers for an Ethereum txs message.
 // For such a message, there should exist only a single 'signer'.
 //
 // NOTE: This method panics if 'Sign' hasn't been called first.
@@ -253,7 +253,7 @@ func (msg *MsgEthereumTx) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{signer}
 }
 
-// GetSignBytes returns the Amino bytes of an Ethereum process message used
+// GetSignBytes returns the Amino bytes of an Ethereum txs message used
 // for signing.
 //
 // NOTE: This method cannot be used as a chain ID is needed to create valid bytes
@@ -271,7 +271,7 @@ func (msg MsgEthereumTx) GetGas() uint64 {
 	return txData.GetGas()
 }
 
-// GetFee returns the fee for non dynamic fee process
+// GetFee returns the fee for non dynamic fee txs
 func (msg MsgEthereumTx) GetFee() *big.Int {
 	txData, err := UnpackTxData(msg.Data)
 	if err != nil {
@@ -280,7 +280,7 @@ func (msg MsgEthereumTx) GetFee() *big.Int {
 	return txData.Fee()
 }
 
-// GetEffectiveFee returns the fee for dynamic fee process
+// GetEffectiveFee returns the fee for dynamic fee txs
 func (msg MsgEthereumTx) GetEffectiveFee(baseFee *big.Int) *big.Int {
 	txData, err := UnpackTxData(msg.Data)
 	if err != nil {

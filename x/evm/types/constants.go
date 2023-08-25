@@ -6,7 +6,7 @@ import (
 
 // message type and route constants
 const (
-	// TypeMsgEthereumTx defines the type string of an Ethereum process
+	// TypeMsgEthereumTx defines the type string of an Ethereum txs
 	TypeMsgEthereumTx = "ethereum_tx"
 )
 
@@ -56,7 +56,7 @@ const (
 	AttributeKeyTxGasUsed       = "txGasUsed"
 	AttributeKeyTxType          = "txType"
 	AttributeKeyTxLog           = "txLog"
-	// AttributeKeyEthereumTxFailed process failed in evm execution
+	// AttributeKeyEthereumTxFailed txs failed in evm execution
 	AttributeKeyEthereumTxFailed = "ethereumTxFailed"
 	AttributeValueCategory       = ModuleName
 	AttributeKeyEthereumBloom    = "bloom"
@@ -85,7 +85,7 @@ func AddressStoragePrefix(address common.Address) []byte {
 	return append(KeyPrefixStorage, address.Bytes()...)
 }
 
-// StateKey defines the full key under which an account state is stored.
+// StateKey defines the full key under which an account states is stored.
 func StateKey(address common.Address, key []byte) []byte {
 	return append(AddressStoragePrefix(address), key...)
 }

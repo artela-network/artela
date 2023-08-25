@@ -1,4 +1,4 @@
-package vmstate
+package states
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// revision is the identifier of a version of state.
+// revision is the identifier of a version of states.
 // it consists of an auto-increment id and a journal index.
 // it's safer to use than using journal index alone.
 type revision struct {
@@ -33,7 +33,7 @@ type StateDB struct {
 	keeper Keeper
 	ctx    sdk.Context
 
-	// Journal of state modifications. This is the backbone of
+	// Journal of states modifications. This is the backbone of
 	// Snapshot and RevertToSnapshot.
 	journal        *journal
 	validRevisions []revision
@@ -43,17 +43,17 @@ type StateDB struct {
 
 	txConfig TxConfig
 
-	// The refund counter, also used by state transitioning.
+	// The refund counter, also used by states transitioning.
 	refund uint64
 
-	// Per-process logs
+	// Per-txs logs
 	logs []*ethereum.Log
 
-	// Per-process access list
+	// Per-txs access list
 	accessList *accessList
 }
 
-// New creates a new state from a given trie.
+// New creates a new states from a given trie.
 func New(ctx sdk.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 	return &StateDB{
 		keeper:       keeper,
@@ -83,12 +83,12 @@ func (s *StateDB) Keeper() Keeper {
 	return s.keeper
 }
 
-// Context returns the process Context.
+// Context returns the txs Context.
 func (s *StateDB) Context() sdk.Context {
 	return s.ctx
 }
 
-// Logs returns the logs of current process.
+// Logs returns the logs of current txs.
 func (s *StateDB) Logs() []*ethereum.Log {
 	return s.logs
 }
@@ -127,13 +127,13 @@ func (s *StateDB) SubRefund(gas uint64) {
 	s.refund -= gas
 }
 
-// Exist reports whether the given account address exists in the state.
+// Exist reports whether the given account address exists in the states.
 // Notably this also returns true for suicided accounts.
 func (s *StateDB) Exist(addr common.Address) bool {
 	return s.getStateObject(addr) != nil
 }
 
-// Empty returns whether the state object is either non-existent
+// Empty returns whether the states object is either non-existent
 // or empty according to the EIP161 specification (balance = nonce = code = 0)
 func (s *StateDB) Empty(addr common.Address) bool {
 	so := s.getStateObject(addr)
@@ -204,7 +204,7 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 	return common.Hash{}
 }
 
-// HasSuicided returns if the contract is suicided in current process.
+// HasSuicided returns if the contract is suicided in current txs.
 func (s *StateDB) HasSuicided(addr common.Address) bool {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -215,11 +215,11 @@ func (s *StateDB) HasSuicided(addr common.Address) bool {
 
 // AddPreimage records a SHA3 preimage seen by the VM.
 // AddPreimage performs a no-op since the EnablePreimageRecording flag is disabled
-// on the vm.Config during state transitions. No store trie preimages are written
+// on the vm.Config during states transitions. No store trie preimages are written
 // to the database.
 func (s *StateDB) AddPreimage(_ common.Hash, _ []byte) {}
 
-// getStateObject retrieves a state object given by the address, returning nil if
+// getStateObject retrieves a states object given by the address, returning nil if
 // the object is not found.
 func (s *StateDB) getStateObject(addr common.Address) *stateObject {
 	// Prefer live objects if any is available
@@ -237,7 +237,7 @@ func (s *StateDB) getStateObject(addr common.Address) *stateObject {
 	return obj
 }
 
-// getOrNewStateObject retrieves a state object or create a new state object if nil.
+// getOrNewStateObject retrieves a states object or create a new states object if nil.
 func (s *StateDB) getOrNewStateObject(addr common.Address) *stateObject {
 	stateObject := s.getStateObject(addr)
 	if stateObject == nil {
@@ -246,7 +246,7 @@ func (s *StateDB) getOrNewStateObject(addr common.Address) *stateObject {
 	return stateObject
 }
 
-// createObject creates a new state object. If there is an existing account with
+// createObject creates a new states object. If there is an existing account with
 // the given address, it is overwritten and returned as the second return value.
 func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) {
 	prev = s.getStateObject(addr)
@@ -264,7 +264,7 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 	return newobj, nil
 }
 
-// CreateAccount explicitly creates a state object. If a state object with the address
+// CreateAccount explicitly creates a states object. If a states object with the address
 // already exists the balance is carried over to the new account.
 //
 // CreateAccount is called during the EVM CREATE operation. The situation might arise that
@@ -335,7 +335,7 @@ func (s *StateDB) SetCode(addr common.Address, code []byte) {
 	}
 }
 
-// SetState sets the contract state.
+// SetState sets the contract states.
 func (s *StateDB) SetState(addr common.Address, key, value common.Hash) {
 	stateObject := s.getOrNewStateObject(addr)
 	if stateObject != nil {
@@ -346,7 +346,7 @@ func (s *StateDB) SetState(addr common.Address, key, value common.Hash) {
 // Suicide marks the given account as suicided.
 // This clears the account balance.
 //
-// The account's state object is still available until the state is committed,
+// The account's states object is still available until the states is committed,
 // getStateObject will return a non-nil account after Suicide.
 func (s *StateDB) Suicide(addr common.Address) bool {
 	stateObject := s.getStateObject(addr)
@@ -364,20 +364,20 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 	return true
 }
 
-// PrepareAccessList handles the preparatory steps for executing a state transition with
+// PrepareAccessList handles the preparatory steps for executing a states transition with
 // regards both EIP-2929 and EIP-2930:
 //
 // - Add sender to access list (2929)
 // - Add destination to access list (2929)
 // - Add precompiles to access list (2929)
-// - Add the contents of the optional process access list (2930)
+// - Add the contents of the optional txs access list (2930)
 //
 // This method should only be called if Yolov3/Berlin/2929+2930 is applicable at the current number.
 func (s *StateDB) PrepareAccessList(sender common.Address, dst *common.Address, precompiles []common.Address, list ethereum.AccessList) {
 	s.AddAddressToAccessList(sender)
 	if dst != nil {
 		s.AddAddressToAccessList(*dst)
-		// If it's a create-process, the destination will be added inside evm.create
+		// If it's a create-txs, the destination will be added inside evm.create
 	}
 	for _, addr := range precompiles {
 		s.AddAddressToAccessList(addr)
@@ -425,7 +425,7 @@ func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addre
 	return s.accessList.Contains(addr, slot)
 }
 
-// Snapshot returns an identifier for the current revision of the state.
+// Snapshot returns an identifier for the current revision of the states.
 func (s *StateDB) Snapshot() int {
 	id := s.nextRevisionID
 	s.nextRevisionID++
@@ -433,7 +433,7 @@ func (s *StateDB) Snapshot() int {
 	return id
 }
 
-// RevertToSnapshot reverts all state changes made since the given revision.
+// RevertToSnapshot reverts all states changes made since the given revision.
 func (s *StateDB) RevertToSnapshot(revid int) {
 	// Find the snapshot in the stack of valid snapshots.
 	idx := sort.Search(len(s.validRevisions), func(i int) bool {

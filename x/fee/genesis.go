@@ -9,7 +9,7 @@ import (
 	"github.com/artela-network/artela/x/fee/types"
 )
 
-// InitGenesis initializes genesis state based on exported genesis
+// InitGenesis initializes genesis states based on exported genesis
 func InitGenesis(
 	ctx sdk.Context,
 	k *keeper.Keeper,
@@ -25,7 +25,7 @@ func InitGenesis(
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis exports genesis state of the fee market module
+// ExportGenesis exports genesis states of the fee market module
 func ExportGenesis(ctx sdk.Context, k *keeper.Keeper) *types.GenesisState {
 	return &types.GenesisState{
 		Params:   k.GetParams(ctx),

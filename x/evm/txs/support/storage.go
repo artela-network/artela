@@ -15,7 +15,7 @@ func (s Storage) Validate() error {
 	seenStorage := make(map[string]bool)
 	for i, state := range s {
 		if seenStorage[state.Key] {
-			return errorsmod.Wrapf(types.ErrInvalidState, "duplicate state key %d: %s", i, state.Key)
+			return errorsmod.Wrapf(types.ErrInvalidState, "duplicate states key %d: %s", i, state.Key)
 		}
 
 		if err := state.Validate(); err != nil {

@@ -1,4 +1,4 @@
-package vmstate
+package states
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -7,9 +7,9 @@ import (
 )
 
 // ExtStateDB defines an extension to the interface provided by the go-ethereum
-// codebase to support additional state transition functionalities. In particular
-// it supports appending a new entry to the state journal through
-// AppendJournalEntry so that the state can be reverted after running
+// codebase to support additional states transition functionalities. In particular
+// it supports appending a new entry to the states journal through
+// AppendJournalEntry so that the states can be reverted after running
 // stateful precompiled contracts.
 type ExtStateDB interface {
 	vm.StateDB

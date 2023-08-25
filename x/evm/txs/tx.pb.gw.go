@@ -1,12 +1,12 @@
 // Code support by protoc-gen-grpc-gateway. DO NOT EDIT.
-// source: artela/evm/v1/process.proto
+// source: artela/evm/v1/txs.proto
 
 /*
 Package types is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package process
+package txs
 
 import (
 	"context"

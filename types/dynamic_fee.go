@@ -4,7 +4,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
 
-// HasDynamicFeeExtensionOption returns true if the process implements the `ExtensionOptionDynamicFeeTx` extension option.
+// HasDynamicFeeExtensionOption returns true if the txs implements the `ExtensionOptionDynamicFeeTx` extension option.
 func HasDynamicFeeExtensionOption(any *codectypes.Any) bool {
 	_, ok := any.GetCachedValue().(*ExtensionOptionDynamicFeeTx)
 	return ok

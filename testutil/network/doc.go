@@ -1,11 +1,11 @@
 /*
-Package network implements and exposes a fully operational in-process Tendermint
+Package network implements and exposes a fully operational in-txs Tendermint
 test network that consists of at least one or potentially many validators. This
 test network can be used primarily for integration tests or unit test suites.
 
 The test network utilizes SimApp as the ABCI application and uses all the modules
-defined in the Cosmos SDK. An in-process test network can be configured with any
-number of validators as well as account funds and even custom genesis state.
+defined in the Cosmos SDK. An in-txs test network can be configured with any
+number of validators as well as account funds and even custom genesis states.
 
 When creating a test network, a series of Validator objects are returned. Each
 Validator object has useful information such as their address and public key. A

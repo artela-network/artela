@@ -1,7 +1,7 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/process"
+	"github.com/artela-network/artela/x/evm/txs"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -36,9 +36,9 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 	signer := ethtypes.MakeSigner(ethCfg, blockNum, uint64(ctx.BlockTime().Unix()))
 
 	for _, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*process.MsgEthereumTx)
+		msgEthTx, ok := msg.(*txs.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*txs.MsgEthereumTx)(nil))
 		}
 
 		allowUnprotectedTxs := evmParams.GetAllowUnprotectedTxs()

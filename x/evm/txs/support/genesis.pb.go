@@ -23,7 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// GenesisState defines the evm module's genesis state.
+// GenesisState defines the evm module's genesis states.
 type GenesisState struct {
 	// accounts is an array containing the ethereum genesis accounts.
 	Accounts []GenesisAccount `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts"`
@@ -78,7 +78,7 @@ func (m *GenesisState) GetParams() Params {
 	return Params{}
 }
 
-// GenesisAccount defines an account to be initialized in the genesis state.
+// GenesisAccount defines an account to be initialized in the genesis states.
 // Its main difference between with Geth's GenesisAccount is that it uses a
 // custom storage type and that it doesn't contain the private key field.
 type GenesisAccount struct {
@@ -86,7 +86,7 @@ type GenesisAccount struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// code defines the hex bytes of the account code.
 	Code string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	// storage defines the set of state key values for the account.
+	// storage defines the set of states key values for the account.
 	Storage Storage `protobuf:"bytes,3,rep,name=storage,proto3,castrepeated=Storage" json:"storage"`
 }
 

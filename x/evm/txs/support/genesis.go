@@ -13,7 +13,7 @@ func (ga GenesisAccount) Validate() error {
 	return ga.Storage.Validate()
 }
 
-// DefaultGenesisState sets default evm genesis state with empty accounts and default params and
+// DefaultGenesisState sets default evm genesis states with empty accounts and default params and
 // chain config values.
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
@@ -22,7 +22,7 @@ func DefaultGenesisState() *GenesisState {
 	}
 }
 
-// NewGenesisState creates a new genesis state.
+// NewGenesisState creates a new genesis states.
 func NewGenesisState(params Params, accounts []GenesisAccount) *GenesisState {
 	return &GenesisState{
 		Accounts: accounts,
@@ -30,7 +30,7 @@ func NewGenesisState(params Params, accounts []GenesisAccount) *GenesisState {
 	}
 }
 
-// Validate performs basic genesis state validation returning an error upon any
+// Validate performs basic genesis states validation returning an error upon any
 // failure.
 func (gs GenesisState) Validate() error {
 	seenAccounts := make(map[string]bool)

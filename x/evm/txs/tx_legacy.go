@@ -1,4 +1,4 @@
-package process
+package txs
 
 import (
 	"github.com/artela-network/artela/x/evm/types"
@@ -44,7 +44,7 @@ func newLegacyTx(tx *ethereum.Transaction) (*LegacyTx, error) {
 	return txData, nil
 }
 
-// TxType returns the process type
+// TxType returns the txs type
 func (tx *LegacyTx) TxType() uint8 {
 	return ethereum.LegacyTxType
 }
@@ -64,7 +64,7 @@ func (tx *LegacyTx) Copy() TxData {
 	}
 }
 
-// Validate performs a stateless validation of the process fields.
+// Validate performs a stateless validation of the txs fields.
 func (tx LegacyTx) Validate() error {
 	gasPrice := tx.GetGasPrice()
 	if gasPrice == nil {
@@ -179,7 +179,7 @@ func (tx LegacyTx) EffectiveCost(_ *big.Int) *big.Int {
 	return tx.Cost()
 }
 
-// GetValue returns the process amount.
+// GetValue returns the txs amount.
 func (tx *LegacyTx) GetValue() *big.Int {
 	if tx.Amount == nil {
 		return nil
@@ -187,7 +187,7 @@ func (tx *LegacyTx) GetValue() *big.Int {
 	return tx.Amount.BigInt()
 }
 
-// GetNonce returns the account sequence for the process.
+// GetNonce returns the account sequence for the txs.
 func (tx *LegacyTx) GetNonce() uint64 { return tx.Nonce }
 
 // GetTo returns the pointer to the recipient address.
@@ -199,7 +199,7 @@ func (tx *LegacyTx) GetTo() *common.Address {
 	return &to
 }
 
-// AsEthereumData returns an AccessListTx process process from the proto-formatted
+// AsEthereumData returns an AccessListTx txs txs from the proto-formatted
 // TxData defined on the Cosmos EVM.
 func (tx *LegacyTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
@@ -216,13 +216,13 @@ func (tx *LegacyTx) AsEthereumData() ethereum.TxData {
 	}
 }
 
-// GetRawSignatureValues returns the V, R, S signature values of the process.
+// GetRawSignatureValues returns the V, R, S signature values of the txs.
 // The return values should not be modified by the caller.
 func (tx *LegacyTx) GetRawSignatureValues() (v, r, s *big.Int) {
 	return rawSignatureValues(tx.V, tx.R, tx.S)
 }
 
-// SetSignatureValues sets the signature values to the process.
+// SetSignatureValues sets the signature values to the txs.
 func (tx *LegacyTx) SetSignatureValues(_, v, r, s *big.Int) {
 	if v != nil {
 		tx.V = v.Bytes()

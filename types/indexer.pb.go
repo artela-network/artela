@@ -23,24 +23,24 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// TxResult is the value stored in eth process indexer
+// TxResult is the value stored in eth txs indexer
 type TxResult struct {
 	// height of the blockchain
 	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
-	// tx_index of the cosmos process
+	// tx_index of the cosmos txs
 	TxIndex uint32 `protobuf:"varint,2,opt,name=tx_index,json=txIndex,proto3" json:"tx_index,omitempty"`
-	// msg_index in a batch process
+	// msg_index in a batch txs
 	MsgIndex uint32 `protobuf:"varint,3,opt,name=msg_index,json=msgIndex,proto3" json:"msg_index,omitempty"`
-	// eth_tx_index is the index in the list of valid eth process in the block,
-	// aka. the process list returned by eth_getBlock api.
+	// eth_tx_index is the index in the list of valid eth txs in the block,
+	// aka. the txs list returned by eth_getBlock api.
 	EthTxIndex int32 `protobuf:"varint,4,opt,name=eth_tx_index,json=ethTxIndex,proto3" json:"eth_tx_index,omitempty"`
-	// failed is true if the eth process did not go succeed
+	// failed is true if the eth txs did not go succeed
 	Failed bool `protobuf:"varint,5,opt,name=failed,proto3" json:"failed,omitempty"`
-	// gas_used by the process. If it exceeds the block gas limit,
+	// gas_used by the txs. If it exceeds the block gas limit,
 	// it's set to gas limit, which is what's actually deducted by ante handler.
 	GasUsed uint64 `protobuf:"varint,6,opt,name=gas_used,json=gasUsed,proto3" json:"gas_used,omitempty"`
 	// cumulative_gas_used specifies the cumulated amount of gas used for all
-	// processed messages within the current batch process.
+	// processed messages within the current batch txs.
 	CumulativeGasUsed uint64 `protobuf:"varint,7,opt,name=cumulative_gas_used,json=cumulativeGasUsed,proto3" json:"cumulative_gas_used,omitempty"`
 }
 

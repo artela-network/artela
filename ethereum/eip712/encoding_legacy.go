@@ -206,11 +206,11 @@ func legacyDecodeProtobufSignDoc(signDocBytes []byte) (apitypes.TypedData, error
 	return typedData, nil
 }
 
-// validatePayloadMessages ensures that the process messages can be represented in an EIP-712
+// validatePayloadMessages ensures that the txs messages can be represented in an EIP-712
 // encoding by checking that messages exist, are of the same type, and share a single signer.
 func legacyValidatePayloadMessages(msgs []sdk.Msg) error {
 	if len(msgs) == 0 {
-		return errors.New("unable to build EIP-712 payload: process does contain any messages")
+		return errors.New("unable to build EIP-712 payload: txs does contain any messages")
 	}
 
 	var msgType string

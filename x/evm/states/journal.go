@@ -1,4 +1,4 @@
-package vmstate
+package states
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// JournalEntry is a modification entry in the state change journal that can be
+// JournalEntry is a modification entry in the states change journal that can be
 // Reverted on demand.
 type JournalEntry interface {
 	// Revert undoes the changes introduced by this journal entry.
@@ -18,7 +18,7 @@ type JournalEntry interface {
 	Dirtied() *common.Address
 }
 
-// journal contains the list of state modifications applied since the last state
+// journal contains the list of states modifications applied since the last states
 // commit. These are tracked to be able to be reverted in the case of an execution
 // exception or request for reversal.
 type journal struct {
@@ -107,7 +107,7 @@ type (
 		prevcode, prevhash []byte
 	}
 
-	// Changes to other state values.
+	// Changes to other states values.
 	refundChange struct {
 		prev uint64
 	}

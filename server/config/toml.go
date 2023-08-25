@@ -13,8 +13,8 @@ const DefaultConfigTemplate = `
 # Valid types are: json|struct|access_list|markdown
 tracer = "{{ .EVM.Tracer }}"
 
-# MaxTxGasWanted defines the gas wanted for each eth process returned in ante handler in check process mode.
-max-process-gas-wanted = {{ .EVM.MaxTxGasWanted }}
+# MaxTxGasWanted defines the gas wanted for each eth txs returned in ante handler in check txs mode.
+max-txs-gas-wanted = {{ .EVM.MaxTxGasWanted }}
 
 ###############################################################################
 ###                           JSON RPC Configuration                        ###
@@ -41,7 +41,7 @@ gas-cap = {{ .JSONRPC.GasCap }}
 # EVMTimeout is the global timeout for eth_call. Default: 5s.
 evm-timeout = "{{ .JSONRPC.EVMTimeout }}"
 
-# TxFeeCap is the global process-fee cap for send process. Default: 1eth.
+# TxFeeCap is the global txs-fee cap for send txs. Default: 1eth.
 txfee-cap = {{ .JSONRPC.TxFeeCap }}
 
 # FilterCap sets the global cap for total number of filters that can be created
@@ -70,14 +70,14 @@ allow-unprotected-txs = {{ .JSONRPC.AllowUnprotectedTxs }}
 # for the server listener.
 max-open-connections = {{ .JSONRPC.MaxOpenConnections }}
 
-# EnableIndexer enables the custom process indexer for the EVM (ethereum transactions).
+# EnableIndexer enables the custom txs indexer for the EVM (ethereum transactions).
 enable-indexer = {{ .JSONRPC.EnableIndexer }}
 
 # MetricsAddress defines the EVM Metrics server address to bind to. Pass --metrics in CLI to enable
 # Prometheus metrics path: /debug/metrics/prometheus
 metrics-address = "{{ .JSONRPC.MetricsAddress }}"
 
-# Upgrade height for fix of revert gas refund logic when process reverted.
+# Upgrade height for fix of revert gas refund logic when txs reverted.
 fix-revert-gas-refund-height = {{ .JSONRPC.FixRevertGasRefundHeight }}
 
 ###############################################################################

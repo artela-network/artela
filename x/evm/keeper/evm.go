@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/process"
-	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
 
 	cometbft "github.com/cometbft/cometbft/types"
@@ -11,8 +11,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	artela "github.com/artela-network/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
-	"github.com/artela-network/artela/x/evm/vmstate"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -25,14 +25,14 @@ import (
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
 // (ChainConfig and module Params). It additionally sets the validator operator address as the
 // coinbase address to make it available for the COINBASE opcode, even though there is no
-// beneficiary of the coinbase process (since we're not mining).
+// beneficiary of the coinbase txs (since we're not mining).
 //
 // NOTE: the RANDOM opcode is currently not supported
 
 func (k *Keeper) NewEVM(
 	ctx sdk.Context,
 	msg core.Message,
-	cfg *vmstate.EVMConfig,
+	cfg *states.EVMConfig,
 	tracer vm.EVMLogger,
 	stateDB vm.StateDB,
 ) *vm.EVM {
@@ -113,30 +113,30 @@ func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
 	}
 }
 
-// ApplyTransaction runs and attempts to perform a state transition with the given process (i.e Message), that will
-// only be persisted (committed) to the underlying KVStore if the process does not fail.
+// ApplyTransaction runs and attempts to perform a states transition with the given txs (i.e Message), that will
+// only be persisted (committed) to the underlying KVStore if the txs does not fail.
 //
 // # Gas tracking
 //
 // Ethereum consumes gas according to the EVM opcodes instead of general reads and writes to store. Because of this, the
-// state transition needs to ignore the SDK gas consumption mechanism defined by the GasKVStore and instead consume the
+// states transition needs to ignore the SDK gas consumption mechanism defined by the GasKVStore and instead consume the
 // amount of gas used by the VM execution. The amount of gas used is tracked by the EVM and returned in the execution
 // result.
 //
-// Prior to the execution, the starting process gas meter is saved and replaced with an infinite gas meter in a new context
+// Prior to the execution, the starting txs gas meter is saved and replaced with an infinite gas meter in a new context
 // in order to ignore the SDK gas consumption config values (read, write, has, delete).
 // After the execution, the gas used from the message execution will be added to the starting gas consumed, taking into
 // consideration the amount of gas returned. Finally, the context is updated with the EVM gas consumed value prior to
 // returning.
 //
 // For relevant discussion see: https://github.com/cosmos/cosmos-sdk/discussions/9072
-func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*process.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*txs.MsgEthereumTxResponse, error) {
 	var (
 		bloom        *big.Int
 		bloomReceipt ethereum.Bloom
 	)
 
-	// build evm config and process config
+	// build evm config and txs config
 	evmConfig, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
@@ -147,10 +147,10 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*p
 	signer := ethereum.MakeSigner(evmConfig.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 	msg, err := core.TransactionToMessage(tx, signer, evmConfig.BaseFee)
 	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to return ethereum process as core message")
+		return nil, errorsmod.Wrap(err, "failed to return ethereum txs as core message")
 	}
 
-	// snapshot to contain the process processing and post processing in same scope
+	// snapshot to contain the txs processing and post processing in same scope
 	var commit func()
 	tmpCtx := ctx
 	tmpCtx, commit = ctx.CacheContext()
@@ -186,7 +186,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*p
 
 	receipt := &ethereum.Receipt{
 		Type:              tx.Type(),
-		PostState:         nil, // TODO: intermediate state root
+		PostState:         nil, // TODO: intermediate states root
 		CumulativeGasUsed: cumulativeGasUsed,
 		Bloom:             bloomReceipt,
 		Logs:              logs,
@@ -225,44 +225,44 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*p
 		return nil, errorsmod.Wrap(err, "failed to add transient gas used")
 	}
 
-	// reset the gas meter for current cosmos process
+	// reset the gas meter for current cosmos txs
 	k.ResetGasMeterAndConsumeGas(ctx, totalGasUsed)
 	return res, nil
 }
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
-func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*process.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
 	evmConfig, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
 
-	txConfig := vmstate.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 	return k.ApplyMessageWithConfig(ctx, msg, tracer, commit, evmConfig, txConfig)
 }
 
-// ApplyMessageWithConfig computes the new state by applying the given message against the existing state.
+// ApplyMessageWithConfig computes the new states by applying the given message against the existing states.
 // If the message fails, the VM execution error with the reason will be returned to the client
-// and the process won't be committed to the store.
+// and the txs won't be committed to the store.
 //
-// # Reverted state
+// # Reverted states
 //
-// The snapshot and rollback are supported by the `vmstate.StateDB`.
+// The snapshot and rollback are supported by the `states.StateDB`.
 //
 // # Different Callers
 //
 // It's called in three scenarios:
-// 1. `ApplyTransaction`, in the process processing flow.
+// 1. `ApplyTransaction`, in the txs processing flow.
 // 2. `EthCall/EthEstimateGas` grpc query handler.
 // 3. Called by other native modules directly.
 //
 // # PreChecks and Preprocessing
 //
-// All relevant state transition preChecks for the MsgEthereumTx are performed on the AnteHandler,
-// prior to running the process against the state. The PreChecks run are the following:
+// All relevant states transition preChecks for the MsgEthereumTx are performed on the AnteHandler,
+// prior to running the txs against the states. The PreChecks run are the following:
 //
 // 1. the nonce of the message caller is correct
-// 2. caller has enough balance to cover process fee(gasLimit * gasPrice)
+// 2. caller has enough balance to cover txs fee(gasLimit * gasPrice)
 // 3. the amount of gas required is available in the block
 // 4. the purchased gas is enough to cover intrinsic usage
 // 5. there is no overflow when calculating intrinsic gas
@@ -283,9 +283,9 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	msg core.Message,
 	tracer vm.EVMLogger,
 	commit bool,
-	cfg *vmstate.EVMConfig,
-	txConfig vmstate.TxConfig,
-) (*process.MsgEthereumTxResponse, error) {
+	cfg *states.EVMConfig,
+	txConfig states.TxConfig,
+) (*txs.MsgEthereumTxResponse, error) {
 	var (
 		ret   []byte // return bytes from evm execution
 		vmErr error  // vm errors do not effect consensus and are therefore not assigned to err
@@ -298,12 +298,12 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 		return nil, errorsmod.Wrap(types.ErrCallDisabled, "failed to call contract")
 	}
 
-	stateDB := vmstate.New(ctx, k, txConfig)
+	stateDB := states.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
 
 	leftoverGas := msg.GasLimit
 
-	// Allow the tracer captures the process level events, mainly the gas consumption.
+	// Allow the tracer captures the txs level events, mainly the gas consumption.
 	//evmCfg := evm.Config
 	//if evmCfg.Debug {
 	//	evmCfg.Tracer.CaptureTxStart(leftoverGas)
@@ -394,7 +394,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	// reset leftoverGas, to be used by the tracer
 	leftoverGas = msg.GasLimit - gasUsed
 
-	return &process.MsgEthereumTxResponse{
+	return &txs.MsgEthereumTxResponse{
 		GasUsed: gasUsed,
 		VmError: vmError,
 		Ret:     ret,

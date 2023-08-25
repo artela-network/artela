@@ -1,4 +1,4 @@
-package process
+package txs
 
 import (
 	errorsmod "cosmossdk.io/errors"
@@ -55,7 +55,7 @@ func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
 	return alTx, nil
 }
 
-// TxType returns the process type
+// TxType returns the txs type
 func (tx *AccessListTx) TxType() uint8 {
 	return ethereum.AccessListTxType
 }
@@ -77,7 +77,7 @@ func (tx *AccessListTx) Copy() TxData {
 	}
 }
 
-// Validate performs a stateless validation of the process fields
+// Validate performs a stateless validation of the txs fields
 func (tx AccessListTx) Validate() error {
 	gasPrice := tx.GetGasPrice()
 	if gasPrice == nil {
@@ -200,7 +200,7 @@ func (tx *AccessListTx) GetGasFeeCap() *big.Int {
 	return tx.GetGasPrice()
 }
 
-// GetValue returns the process amount
+// GetValue returns the txs amount
 func (tx *AccessListTx) GetValue() *big.Int {
 	if tx.Amount == nil {
 		return nil
@@ -209,7 +209,7 @@ func (tx *AccessListTx) GetValue() *big.Int {
 	return tx.Amount.BigInt()
 }
 
-// GetNonce returns the account sequence for the process
+// GetNonce returns the account sequence for the txs
 func (tx *AccessListTx) GetNonce() uint64 { return tx.Nonce }
 
 // GetTo returns the pointer to the recipient address
@@ -221,7 +221,7 @@ func (tx *AccessListTx) GetTo() *common.Address {
 	return &to
 }
 
-// AsEthereumData returns an AccessListTx process from the proto-formatted
+// AsEthereumData returns an AccessListTx txs from the proto-formatted
 func (tx *AccessListTx) AsEthereumData() ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
 	return &ethereum.AccessListTx{
@@ -239,12 +239,12 @@ func (tx *AccessListTx) AsEthereumData() ethereum.TxData {
 	}
 }
 
-// GetRawSignatureValues returns the V, R, S signature values of the process
+// GetRawSignatureValues returns the V, R, S signature values of the txs
 func (tx *AccessListTx) GetRawSignatureValues() (v, r, s *big.Int) {
 	return rawSignatureValues(tx.V, tx.R, tx.S)
 }
 
-// SetSignatureValues sets the signature values to the process
+// SetSignatureValues sets the signature values to the txs
 func (tx *AccessListTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 	if v != nil {
 		tx.V = v.Bytes()

@@ -1,8 +1,8 @@
-package process
+package txs
 
 import (
 	"fmt"
-	"github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
@@ -68,8 +68,8 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
-// PackTxData constructs a new Any packed with the given process data value. It returns
-// an error if the client state can't be casted to a protobuf message or if the concrete
+// PackTxData constructs a new Any packed with the given txs data value. It returns
+// an error if the client states can't be casted to a protobuf message or if the concrete
 // implementation is not registered to the protobuf codec.
 func PackTxData(txData TxData) (*codectypes.Any, error) {
 	msg, ok := txData.(proto.Message)
@@ -86,7 +86,7 @@ func PackTxData(txData TxData) (*codectypes.Any, error) {
 }
 
 // UnpackTxData unpacks an Any into a TxData. It returns an error if the
-// client state can't be unpacked into a TxData.
+// client states can't be unpacked into a TxData.
 func UnpackTxData(any *codectypes.Any) (TxData, error) {
 	if any == nil {
 		return nil, errorsmod.Wrap(errortypes.ErrUnpackAny, "protobuf Any message cannot be nil")
@@ -125,7 +125,7 @@ func DecodeTxResponse(in []byte) (*MsgEthereumTxResponse, error) {
 
 	var res MsgEthereumTxResponse
 	if err := proto.Unmarshal(txMsgData.MsgResponses[0].Value, &res); err != nil {
-		return nil, errorsmod.Wrap(err, "failed to unmarshal process response message data")
+		return nil, errorsmod.Wrap(err, "failed to unmarshal txs response message data")
 	}
 
 	return &res, nil
@@ -149,13 +149,13 @@ func DecodeTransactionLogs(data []byte) (support.TransactionLogs, error) {
 // UnwrapEthereumMsg extract MsgEthereumTx from wrapping sdk.Tx
 func UnwrapEthereumMsg(tx *sdk.Tx, ethHash common.Hash) (*MsgEthereumTx, error) {
 	if tx == nil {
-		return nil, fmt.Errorf("invalid process: nil")
+		return nil, fmt.Errorf("invalid txs: nil")
 	}
 
 	for _, msg := range (*tx).GetMsgs() {
 		ethMsg, ok := msg.(*MsgEthereumTx)
 		if !ok {
-			return nil, fmt.Errorf("invalid process type: %T", tx)
+			return nil, fmt.Errorf("invalid txs type: %T", tx)
 		}
 		txHash := ethMsg.AsTransaction().Hash()
 		ethMsg.Hash = txHash.Hex()
@@ -164,7 +164,7 @@ func UnwrapEthereumMsg(tx *sdk.Tx, ethHash common.Hash) (*MsgEthereumTx, error) 
 		}
 	}
 
-	return nil, fmt.Errorf("eth process not found: %s", ethHash)
+	return nil, fmt.Errorf("eth txs not found: %s", ethHash)
 }
 
 // BinSearch execute the binary search and hone in on an executable gas limit
@@ -173,7 +173,7 @@ func BinSearch(lo, hi uint64, executable func(uint64) (bool, *MsgEthereumTxRespo
 		mid := (hi + lo) / 2
 		failed, _, err := executable(mid)
 		// If the error is not nil(consensus error), it means the provided message
-		// call or process will never be accepted no matter how much gas it is
+		// call or txs will never be accepted no matter how much gas it is
 		// assigned. Return the error directly, don't struggle any more.
 		if err != nil {
 			return 0, err
@@ -193,8 +193,8 @@ func EffectiveGasPrice(baseFee, feeCap, tipCap *big.Int) *big.Int {
 	return math.BigMin(new(big.Int).Add(tipCap, baseFee), feeCap)
 }
 
-// GetTxPriority returns the priority of a given Ethereum process. It relies of the
-// priority reduction global variable to calculate the process priority given the process
+// GetTxPriority returns the priority of a given Ethereum txs. It relies of the
+// priority reduction global variable to calculate the txs priority given the txs
 // tip price:
 //
 //	tx_priority = tip_price / priority_reduction

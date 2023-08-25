@@ -170,7 +170,7 @@ const schema string = `
         # TransactionCount is the number of transactions in this block. if
         # transactions are not available for this block, this field will be null.
         transactionCount: Long
-        # StateRoot is the keccak256 hash of the state trie after this block was processed.
+        # StateRoot is the keccak256 hash of the states trie after this block was processed.
         stateRoot: Bytes32!
         # ReceiptsRoot is the keccak256 hash of the trie of transaction receipts in this block.
         receiptsRoot: Bytes32!
@@ -191,7 +191,7 @@ const schema string = `
         # LogsBloom is a bloom filter that can be used to check if a block may
         # contain log entries matching a filter.
         logsBloom: Bytes!
-        # MixHash is the hash that was used as an input to the PoW process.
+        # MixHash is the hash that was used as an input to the PoW txs.
         mixHash: Bytes32!
         # Difficulty is a measure of the difficulty of mining this block.
         difficulty: BigInt!
@@ -221,12 +221,12 @@ const schema string = `
         transactionAt(index: Long!): Transaction
         # Logs returns a filtered set of logs from this block.
         logs(filter: BlockFilterCriteria!): [Log!]!
-        # Account fetches an Ethereum account at the current block's state.
+        # Account fetches an Ethereum account at the current block's states.
         account(address: Address!): Account!
-        # Call executes a local call operation at the current block's state.
+        # Call executes a local call operation at the current block's states.
         call(data: CallData!): CallResult
         # EstimateGas estimates the amount of gas that will be required for
-        # successful execution of a transaction at the current block's state.
+        # successful execution of a transaction at the current block's states.
         estimateGas(data: CallData!): Long!
         # RawHeader is the RLP encoding of the block's header.
         rawHeader: Bytes!
@@ -290,7 +290,7 @@ const schema string = `
         topics: [[Bytes32!]!]
     }
 
-    # SyncState contains the current synchronisation state of the client.
+    # SyncState contains the current synchronisation states of the client.
     type SyncState{
         # StartingBlock is the block number at which synchronisation started.
         startingBlock: Long!
@@ -300,18 +300,18 @@ const schema string = `
         highestBlock: Long!
     }
 
-    # Pending represents the current pending state.
+    # Pending represents the current pending states.
     type Pending {
-      # TransactionCount is the number of transactions in the pending state.
+      # TransactionCount is the number of transactions in the pending states.
       transactionCount: Long!
-      # Transactions is a list of transactions in the current pending state.
+      # Transactions is a list of transactions in the current pending states.
       transactions: [Transaction!]
-      # Account fetches an Ethereum account for the pending state.
+      # Account fetches an Ethereum account for the pending states.
       account(address: Address!): Account!
-      # Call executes a local call operation for the pending state.
+      # Call executes a local call operation for the pending states.
       call(data: CallData!): CallResult
       # EstimateGas estimates the amount of gas that will be required for
-      # successful execution of a transaction for the pending state.
+      # successful execution of a transaction for the pending states.
       estimateGas(data: CallData!): Long!
     }
 
@@ -322,7 +322,7 @@ const schema string = `
         # Blocks returns all the blocks between two numbers, inclusive. If
         # to is not supplied, it defaults to the most recent known block.
         blocks(from: Long, to: Long): [Block!]!
-        # Pending returns the current pending state.
+        # Pending returns the current pending states.
         pending: Pending!
         # Transaction returns a transaction specified by its hash.
         transaction(hash: Bytes32!): Transaction
@@ -334,7 +334,7 @@ const schema string = `
         # MaxPriorityFeePerGas returns the node's estimate of a gas tip sufficient
         # to ensure a transaction is mined in a timely fashion.
         maxPriorityFeePerGas: BigInt!
-        # Syncing returns information on the current synchronisation state.
+        # Syncing returns information on the current synchronisation states.
         syncing: SyncState
         # ChainID returns the current chain ID for transaction replay protection.
         chainID: BigInt!
