@@ -12,7 +12,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
-// DeductFeeDecorator deducts fees from the first signer of the process.
+// DeductFeeDecorator deducts fees from the first signer of the tx.
 // If the first signer does not have the funds to pay for the fees,
 // and does not have enough unclaimed staking rewards, then return
 // with InsufficientFunds error.
@@ -51,8 +51,8 @@ func NewDeductFeeDecorator(
 	}
 }
 
-// AnteHandle ensures that the process contains valid fee requirements and tries to deduct those
-// from the account balance or unclaimed staking rewards, which the process sender might have.
+// AnteHandle ensures that the transaction contains valid fee requirements and tries to deduct those
+// from the account balance or unclaimed staking rewards, which the transaction sender might have.
 func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	feeTx, ok := tx.(sdk.FeeTx)
 	if !ok {
@@ -124,10 +124,10 @@ func (dfd DeductFeeDecorator) deductFee(ctx sdk.Context, sdkTx sdk.Tx, fees sdk.
 		return errortypes.ErrUnknownAddress.Wrapf("fee payer address: %s does not exist", deductFeesFrom)
 	}
 
-	// deduct the fees
-	if err := deductFeesFromBalanceOrUnclaimedStakingRewards(ctx, dfd, deductFeesFromAcc, fees); err != nil {
-		return fmt.Errorf("insufficient funds and failed to claim sufficient staking rewards to pay for fees: %w", err)
-	}
+	// TODO mark deduct the fees
+	//if err := deductFeesFromBalanceOrUnclaimedStakingRewards(ctx, dfd, deductFeesFromAcc, fees); err != nil {
+	//	return fmt.Errorf("insufficient funds and failed to claim sufficient staking rewards to pay for fees: %w", err)
+	//}
 
 	events := sdk.Events{
 		sdk.NewEvent(
@@ -152,12 +152,12 @@ func deductFeesFromBalanceOrUnclaimedStakingRewards(
 		return err
 	}
 
-	// TODO mark  return authante.DeductFees(dfd.bankKeeper, ctx, deductFeesFromAcc, fees)
+	// TODO mark return authante.DeductFees(dfd.bankKeeper, ctx, deductFeesFromAcc, fees)
 	return nil
 }
 
 // checkTxFeeWithValidatorMinGasPrices implements the default fee logic, where the minimum price per
-// unit of gas is fixed and set by each validator, and the process priority is computed from the gas price.
+// unit of gas is fixed and set by each validator, and the tx priority is computed from the gas price.
 func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, feeTx sdk.FeeTx) (sdk.Coins, int64, error) {
 	feeCoins := feeTx.GetFee()
 	gas := feeTx.GetGas()
@@ -200,8 +200,8 @@ func checkFeeCoinsAgainstMinGasPrices(ctx sdk.Context, feeCoins sdk.Coins, gas u
 	return nil
 }
 
-// getTxPriority returns a naive process priority based on the amount of the smallest denomination of the gas price
-// provided in a process.
+// getTxPriority returns a naive tx priority based on the amount of the smallest denomination of the gas price
+// provided in a transaction.
 // NOTE: This implementation should be used with a great consideration as it opens potential attack vectors
 // where txs with multiple coins could not be prioritized as expected.
 func getTxPriority(fees sdk.Coins, gas int64) int64 {

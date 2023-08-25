@@ -1,12 +1,10 @@
 package ante
 
 import (
-	errorsmod "cosmossdk.io/errors"
-	cosmosante "github.com/artela-network/artela/app/ante/cosmos"
-	evmante "github.com/artela-network/artela/app/ante/evm"
-	anteutils "github.com/artela-network/artela/app/ante/utils"
 	"github.com/artela-network/artela/x/evm/process"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
+
+	errorsmod "cosmossdk.io/errors"
+	anteutils "github.com/artela-network/artela/app/ante/utils"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
@@ -14,7 +12,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	ibcante "github.com/cosmos/ibc-go/v7/modules/core/ante"
+	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
+	cosmosante "github.com/artela-network/artela/app/ante/cosmos"
+	evmante "github.com/artela-network/artela/app/ante/evm"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
+
+	// vestingtypes "github.com/artela-network/artela/x/vesting/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 )
 
@@ -25,8 +30,8 @@ type HandlerOptions struct {
 	AccountKeeper      evmtypes.AccountKeeper
 	BankKeeper         evmtypes.BankKeeper
 	DistributionKeeper anteutils.DistributionKeeper
-	// TODO mark IBCKeeper              *ibckeeper.Keeper
-	// TODO mark StakingKeeper          vestingtypes.StakingKeeper
+	IBCKeeper          *ibckeeper.Keeper
+	// StakingKeeper          vestingtypes.StakingKeeper
 	FeeKeeper              evmante.FeeKeeper
 	EvmKeeper              evmante.EVMKeeper
 	FeegrantKeeper         ante.FeegrantKeeper
@@ -48,11 +53,9 @@ func (options HandlerOptions) Validate() error {
 	if options.BankKeeper == nil {
 		return errorsmod.Wrap(errortypes.ErrLogic, "bank keeper is required for AnteHandler")
 	}
-	// TODO mark
-	//if options.IBCKeeper == nil {
-	//	return errorsmod.Wrap(errortypes.ErrLogic, "ibc keeper is required for AnteHandler")
-	//}
-	// TODO mark
+	if options.IBCKeeper == nil {
+		return errorsmod.Wrap(errortypes.ErrLogic, "ibc keeper is required for AnteHandler")
+	}
 	//if options.StakingKeeper == nil {
 	//	return errorsmod.Wrap(errortypes.ErrLogic, "staking keeper is required for AnteHandler")
 	//}
@@ -72,7 +75,7 @@ func (options HandlerOptions) Validate() error {
 		return errorsmod.Wrap(errortypes.ErrLogic, "distribution keeper is required for AnteHandler")
 	}
 	if options.TxFeeChecker == nil {
-		return errorsmod.Wrap(errortypes.ErrLogic, "process fee checker is required for AnteHandler")
+		return errorsmod.Wrap(errortypes.ErrLogic, "tx fee checker is required for AnteHandler")
 	}
 	return nil
 }
@@ -90,11 +93,11 @@ func newEVMAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		evmante.NewEthSigVerificationDecorator(options.EvmKeeper),
 		evmante.NewEthAccountVerificationDecorator(options.AccountKeeper, options.EvmKeeper),
 		evmante.NewCanTransferDecorator(options.EvmKeeper),
-		// TODO mark evmante.NewEthVestingTransactionDecorator(options.AccountKeeper, options.BankKeeper, options.EvmKeeper),
-		// TODO mark evmante.NewEthGasConsumeDecorator(options.BankKeeper, options.DistributionKeeper, options.EvmKeeper, options.StakingKeeper, options.MaxTxGasWanted),
+		// evmante.NewEthVestingTransactionDecorator(options.AccountKeeper, options.BankKeeper, options.EvmKeeper),
+		//evmante.NewEthGasConsumeDecorator(options.BankKeeper, options.DistributionKeeper, options.EvmKeeper, options.StakingKeeper, options.MaxTxGasWanted),
 		evmante.NewEthIncrementSenderSequenceDecorator(options.AccountKeeper),
 		evmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeKeeper),
-		// emit eth process hash and index at the very last ante handler.
+		// emit eth tx hash and index at the very last ante handler.
 		evmante.NewEthEmitEventDecorator(options.EvmKeeper),
 	)
 }
@@ -114,15 +117,15 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		cosmosante.NewMinGasPriceDecorator(options.FeeKeeper, options.EvmKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		// TODO mark cosmosante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.DistributionKeeper, options.FeegrantKeeper, options.StakingKeeper, options.TxFeeChecker),
-		// TODO mark cosmosante.NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.Cdc),
+		//cosmosante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.DistributionKeeper, options.FeegrantKeeper, options.StakingKeeper, options.TxFeeChecker),
+		// cosmosante.NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.Cdc),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
-		// TODO mark ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
+		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
 		evmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeKeeper),
 	)
 }
@@ -141,8 +144,8 @@ func newLegacyCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 		cosmosante.NewMinGasPriceDecorator(options.FeeKeeper, options.EvmKeeper),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		// TODO mark cosmosante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.DistributionKeeper, options.FeegrantKeeper, options.StakingKeeper, options.TxFeeChecker),
-		// TODO mark cosmosante.NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.Cdc),
+		//cosmosante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.DistributionKeeper, options.FeegrantKeeper, options.StakingKeeper, options.TxFeeChecker),
+		//cosmosante.NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.Cdc),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
@@ -151,7 +154,7 @@ func newLegacyCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 		//nolint: staticcheck
 		cosmosante.NewLegacyEip712SigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
-		// TODO mark ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
+		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
 		evmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeKeeper),
 	)
 }

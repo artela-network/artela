@@ -18,7 +18,7 @@ func (rmd RejectMessagesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 		if _, ok := msg.(*evmtypes.MsgEthereumTx); ok {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrInvalidType,
-				"MsgEthereumTx needs to be contained within a process with 'ExtensionOptionsEthereumTx' option",
+				"MsgEthereumTx needs to be contained within a tx with 'ExtensionOptionsEthereumTx' option",
 			)
 		}
 	}

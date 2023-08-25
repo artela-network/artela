@@ -380,7 +380,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 
 	// calculate a minimum amount of gas to be charged to sender if GasLimit
 	// is considerably higher than GasUsed to stay more aligned with Tendermint gas mechanics
-	// for more info https://github.com/evmos/ethermint/issues/1085
 	gasLimit := sdk.NewDec(int64(msg.Gas()))
 	minGasMultiplier := k.GetMinGasMultiplier(ctx)
 	minimumGasUsed := gasLimit.Mul(minGasMultiplier)

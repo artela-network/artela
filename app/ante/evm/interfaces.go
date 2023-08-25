@@ -1,7 +1,7 @@
 package evm
 
 import (
-	evmtypes "github.com/artela-network/artela/x/evm/process/support"
+	"github.com/artela-network/artela/x/evm/vmstate"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/artela-network/artela/x/evm/vmstate"
-	feetypes "github.com/artela-network/artela/x/fee/types"
+	evmtypes "github.com/artela-network/artela/x/evm/process/support"
+	feemarkettypes "github.com/artela-network/artela/x/fee/types"
 )
 
 // EVMKeeper defines the expected keeper interface used on the AnteHandler
@@ -29,7 +29,7 @@ type EVMKeeper interface { //nolint: revive
 }
 
 type FeeKeeper interface {
-	GetParams(ctx sdk.Context) (params feetypes.Params)
+	GetParams(ctx sdk.Context) (params feemarkettypes.Params)
 	AddTransientGasWanted(ctx sdk.Context, gasWanted uint64) (uint64, error)
 	GetBaseFeeEnabled(ctx sdk.Context) bool
 }

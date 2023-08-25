@@ -61,7 +61,6 @@ func EndBlock(ctx sdk.Context, k *keeper.Keeper, _ abci.RequestEndBlock) {
 	// to prevent BaseFee manipulation we limit the gasWanted so that
 	// gasWanted = max(gasWanted * MinGasMultiplier, gasUsed)
 	// this will be keep BaseFee protected from un-penalized manipulation
-	// more info here https://github.com/evmos/ethermint/pull/1105#discussion_r888798925
 	minGasMultiplier := k.GetParams(ctx).MinGasMultiplier
 	limitedGasWanted := sdk.NewDec(gasWanted.Int64()).Mul(minGasMultiplier)
 	updatedGasWanted := sdk.MaxDec(limitedGasWanted, sdk.NewDec(gasUsed.Int64())).TruncateInt().Uint64()

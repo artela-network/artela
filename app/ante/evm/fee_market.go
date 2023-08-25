@@ -13,8 +13,8 @@ import (
 // for BaseFee calculation.
 // NOTE: This decorator does not perform any validation
 type GasWantedDecorator struct {
-	evmKeeper EVMKeeper
-	feeKeeper FeeKeeper
+	evmKeeper       EVMKeeper
+	feeMarketKeeper FeeKeeper
 }
 
 // NewGasWantedDecorator creates a new NewGasWantedDecorator
@@ -42,22 +42,22 @@ func (gwd GasWantedDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	}
 
 	gasWanted := feeTx.GetGas()
-	// return error if the process gas is greater than the block limit (max gas)
+	// return error if the tx gas is greater than the block limit (max gas)
 	blockGasLimit := types.BlockGasLimit(ctx)
 	if gasWanted > blockGasLimit {
 		return ctx, errorsmod.Wrapf(
 			errortypes.ErrOutOfGas,
-			"process gas (%d) exceeds block gas limit (%d)",
+			"tx gas (%d) exceeds block gas limit (%d)",
 			gasWanted,
 			blockGasLimit,
 		)
 	}
 
-	isBaseFeeEnabled := gwd.feeKeeper.GetBaseFeeEnabled(ctx)
+	isBaseFeeEnabled := gwd.feeMarketKeeper.GetBaseFeeEnabled(ctx)
 
 	// Add total gasWanted to cumulative in block transientStore in FeeMarket module
 	if isBaseFeeEnabled {
-		if _, err := gwd.feeKeeper.AddTransientGasWanted(ctx, gasWanted); err != nil {
+		if _, err := gwd.feeMarketKeeper.AddTransientGasWanted(ctx, gasWanted); err != nil {
 			return ctx, errorsmod.Wrapf(err, "failed to add gas wanted to transient store")
 		}
 	}

@@ -31,7 +31,7 @@ func (esc EthSetupContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 	// all transactions must implement GasTx
 	_, ok := tx.(authante.GasTx)
 	if !ok {
-		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "invalid process type %T, expected GasTx", tx)
+		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "invalid transaction type %T, expected GasTx", tx)
 	}
 
 	// We need to setup an empty gas config so that the gas is consistent with Ethereum.
@@ -39,13 +39,13 @@ func (esc EthSetupContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 		WithKVGasConfig(storetypes.GasConfig{}).
 		WithTransientKVGasConfig(storetypes.GasConfig{})
 
-	// Reset transient gas used to prepare the execution of current cosmos process.
-	// Transient gas-used is necessary to sum the gas-used of cosmos process, when it contains multiple eth msgs.
+	// Reset transient gas used to prepare the execution of current cosmos tx.
+	// Transient gas-used is necessary to sum the gas-used of cosmos tx, when it contains multiple eth msgs.
 	esc.evmKeeper.ResetTransientGasUsed(ctx)
 	return next(newCtx, tx, simulate)
 }
 
-// EthEmitEventDecorator emit events in ante handler in case of process execution failed (out of block gas limit).
+// EthEmitEventDecorator emit events in ante handler in case of tx execution failed (out of block gas limit).
 type EthEmitEventDecorator struct {
 	evmKeeper EVMKeeper
 }
@@ -57,7 +57,7 @@ func NewEthEmitEventDecorator(evmKeeper EVMKeeper) EthEmitEventDecorator {
 
 // AnteHandle emits some basic events for the eth messages
 func (eeed EthEmitEventDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	// After eth process passed ante handler, the fee is deducted and nonce increased, it shouldn't be ignored by json-rpc,
+	// After eth tx passed ante handler, the fee is deducted and nonce increased, it shouldn't be ignored by json-rpc,
 	// we need to emit some basic events at the very end of ante handler to be indexed by tendermint.
 	txIndex := eeed.evmKeeper.GetTxIndexTransient(ctx)
 
@@ -67,8 +67,8 @@ func (eeed EthEmitEventDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
 		}
 
-		// emit ethereum process hash as an event so that it can be indexed by Tendermint for query purposes
-		// it's emitted in ante handler, so we can query failed process (out of block gas limit).
+		// emit ethereum tx hash as an event so that it can be indexed by Tendermint for query purposes
+		// it's emitted in ante handler, so we can query failed transaction (out of block gas limit).
 		ctx.EventManager().EmitEvent(sdk.NewEvent(
 			evmtypes.EventTypeEthereumTx,
 			sdk.NewAttribute(evmtypes.AttributeKeyEthereumTxHash, msgEthTx.Hash),
@@ -91,49 +91,49 @@ func NewEthValidateBasicDecorator(ek EVMKeeper) EthValidateBasicDecorator {
 	}
 }
 
-// AnteHandle handles basic validation of process
+// AnteHandle handles basic validation of tx
 func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
-	// no need to validate basic on recheck process, call next antehandler
+	// no need to validate basic on recheck tx, call next antehandler
 	if ctx.IsReCheckTx() {
 		return next(ctx, tx, simulate)
 	}
 
 	err := tx.ValidateBasic()
-	// ErrNoSignatures is fine with eth process
+	// ErrNoSignatures is fine with eth tx
 	if err != nil && !errors.Is(err, errortypes.ErrNoSignatures) {
-		return ctx, errorsmod.Wrap(err, "process basic validation failed")
+		return ctx, errorsmod.Wrap(err, "tx basic validation failed")
 	}
 
-	// For eth type cosmos process, some fields should be verified as zero values,
+	// For eth type cosmos tx, some fields should be verified as zero values,
 	// since we will only verify the signature against the hash of the MsgEthereumTx.Data
 	wrapperTx, ok := tx.(protoTxProvider)
 	if !ok {
-		return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid process type %T, didn't implement interface protoTxProvider", tx)
+		return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid tx type %T, didn't implement interface protoTxProvider", tx)
 	}
 
 	protoTx := wrapperTx.GetProtoTx()
 	body := protoTx.Body
 	if body.Memo != "" || body.TimeoutHeight != uint64(0) || len(body.NonCriticalExtensionOptions) > 0 {
 		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest,
-			"for eth process body Memo TimeoutHeight NonCriticalExtensionOptions should be empty")
+			"for eth tx body Memo TimeoutHeight NonCriticalExtensionOptions should be empty")
 	}
 
 	if len(body.ExtensionOptions) != 1 {
-		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth process length of ExtensionOptions should be 1")
+		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx length of ExtensionOptions should be 1")
 	}
 
 	authInfo := protoTx.AuthInfo
 	if len(authInfo.SignerInfos) > 0 {
-		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth process AuthInfo SignerInfos should be empty")
+		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx AuthInfo SignerInfos should be empty")
 	}
 
 	if authInfo.Fee.Payer != "" || authInfo.Fee.Granter != "" {
-		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth process AuthInfo Fee payer and granter should be empty")
+		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx AuthInfo Fee payer and granter should be empty")
 	}
 
 	sigs := protoTx.Signatures
 	if len(sigs) > 0 {
-		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth process Signatures should be empty")
+		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx Signatures should be empty")
 	}
 
 	txFee := sdk.Coins{}
@@ -174,7 +174,7 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 		}
 
 		if baseFee == nil && txData.TxType() == ethtypes.DynamicFeeTxType {
-			return ctx, errorsmod.Wrap(ethtypes.ErrTxTypeNotSupported, "dynamic fee process not supported")
+			return ctx, errorsmod.Wrap(ethtypes.ErrTxTypeNotSupported, "dynamic fee tx not supported")
 		}
 
 		txFee = txFee.Add(sdk.Coin{Denom: evmDenom, Amount: sdkmath.NewIntFromBigInt(txData.Fee())})

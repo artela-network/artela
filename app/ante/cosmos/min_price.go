@@ -9,8 +9,8 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// MinGasPriceDecorator will check if the process's fee is at least as large
-// as the MinGasPrices param. If fee is too low, decorator returns error and process
+// MinGasPriceDecorator will check if the transaction's fee is at least as large
+// as the MinGasPrices param. If fee is too low, decorator returns error and tx
 // is rejected. This applies for both CheckTx and DeliverTx
 // If fee is high enough, then call next AnteHandler
 // CONTRACT: Tx must implement FeeTx to use MinGasPriceDecorator
@@ -28,7 +28,7 @@ func NewMinGasPriceDecorator(fk evmante.FeeKeeper, ek evmante.EVMKeeper) MinGasP
 func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
 	feeTx, ok := tx.(sdk.FeeTx)
 	if !ok {
-		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "invalid process type %T, expected sdk.FeeTx", tx)
+		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "invalid transaction type %T, expected sdk.FeeTx", tx)
 	}
 
 	minGasPrice := mpd.feesKeeper.GetParams(ctx).MinGasPrice
@@ -65,7 +65,7 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	// Fees not provided (or flag "auto"). Then use the base fee to make the check pass
 	if feeCoins == nil {
 		return ctx, errorsmod.Wrapf(errortypes.ErrInsufficientFee,
-			"fee not provided. Please use the --fees flag or the --gas-price flag along with the --gas flag to estimate the fee. The minimun global fee for this process is: %s",
+			"fee not provided. Please use the --fees flag or the --gas-price flag along with the --gas flag to estimate the fee. The minimun global fee for this tx is: %s",
 			requiredFees)
 	}
 

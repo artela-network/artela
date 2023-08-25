@@ -1,18 +1,18 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/process"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
+	evmtypes "github.com/artela-network/artela/x/evm/process"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-// EthMinGasPriceDecorator will check if the process's fee is at least as large
-// as the MinGasPrices param. If fee is too low, decorator returns error and process
+// EthMinGasPriceDecorator will check if the transaction's fee is at least as large
+// as the MinGasPrices param. If fee is too low, decorator returns error and tx
 // is rejected. This applies to both CheckTx and DeliverTx and regardless
 // if London hard fork or fee market params (EIP-1559) are enabled.
 // If fee is high enough, then call next AnteHandler
@@ -21,9 +21,9 @@ type EthMinGasPriceDecorator struct {
 	evmKeeper  EVMKeeper
 }
 
-// EthMempoolFeeDecorator will check if the process's effective fee is at least as large
+// EthMempoolFeeDecorator will check if the transaction's effective fee is at least as large
 // as the local validator's minimum gasFee (defined in validator config).
-// If fee is too low, decorator returns error and process is rejected from mempool.
+// If fee is too low, decorator returns error and tx is rejected from mempool.
 // Note this only applies when ctx.CheckTx = true
 // If fee is high enough or not CheckTx, then call next AnteHandler
 // CONTRACT: Tx must implement FeeTx to use MempoolFeeDecorator
@@ -45,8 +45,8 @@ func NewEthMempoolFeeDecorator(ek EVMKeeper) EthMempoolFeeDecorator {
 	}
 }
 
-// AnteHandle ensures that the effective fee from the process is greater than the
-// minimum global fee, which is defined by the  MinGasPrice (parameter) * GasLimit (process argument).
+// AnteHandle ensures that the effective fee from the transaction is greater than the
+// minimum global fee, which is defined by the  MinGasPrice (parameter) * GasLimit (tx argument).
 func (empd EthMinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
 	minGasPrice := empd.feesKeeper.GetParams(ctx).MinGasPrice
 
@@ -61,12 +61,12 @@ func (empd EthMinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 	baseFee := empd.evmKeeper.GetBaseFee(ctx, ethCfg)
 
 	for _, msg := range tx.GetMsgs() {
-		ethMsg, ok := msg.(*process.MsgEthereumTx)
+		ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
 		if !ok {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrUnknownRequest,
 				"invalid message type %T, expected %T",
-				msg, (*process.MsgEthereumTx)(nil),
+				msg, (*evmtypes.MsgEthereumTx)(nil),
 			)
 		}
 
@@ -78,12 +78,12 @@ func (empd EthMinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 		// we use the EffectiveFee. If the feemarket formula results in a BaseFee
 		// that lowers EffectivePrice until it is < MinGasPrices, the users must
 		// increase the GasTipCap (priority fee) until EffectivePrice > MinGasPrices.
-		// Transactions with MinGasPrices * gasUsed < process fees < EffectiveFee are rejected
+		// Transactions with MinGasPrices * gasUsed < tx fees < EffectiveFee are rejected
 		// by the feemarket AnteHandle
 
-		txData, err := process.UnpackTxData(ethMsg.Data)
+		txData, err := evmtypes.UnpackTxData(ethMsg.Data)
 		if err != nil {
-			return ctx, errorsmod.Wrapf(err, "failed to unpack process data %s", ethMsg.Hash)
+			return ctx, errorsmod.Wrapf(err, "failed to unpack tx data %s", ethMsg.Hash)
 		}
 
 		if txData.TxType() != ethtypes.LegacyTxType {
@@ -128,9 +128,9 @@ func (mfd EthMempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 	minGasPrice := ctx.MinGasPrices().AmountOf(evmDenom)
 
 	for _, msg := range tx.GetMsgs() {
-		ethMsg, ok := msg.(*process.MsgEthereumTx)
+		ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
 		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*process.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
 		}
 
 		fee := sdk.NewDecFromBigInt(ethMsg.GetFee())

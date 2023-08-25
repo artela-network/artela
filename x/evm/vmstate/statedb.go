@@ -70,9 +70,19 @@ func (s *StateDB) Keeper() Keeper {
 	return s.keeper
 }
 
-// GetContext returns the process Context.
-func (s *StateDB) GetContext() sdk.Context {
+// Context returns the process Context.
+func (s *StateDB) Context() sdk.Context {
 	return s.ctx
+}
+
+// Logs returns the logs of current process.
+func (s *StateDB) Logs() []*ethereum.Log {
+	return s.logs
+}
+
+// GetRefund returns the current value of the refund counter.
+func (s *StateDB) GetRefund() uint64 {
+	return s.refund
 }
 
 // AddLog adds a log, called by evm.
@@ -83,17 +93,14 @@ func (s *StateDB) AddLog(log *ethereum.Log) {
 	log.BlockHash = s.txConfig.BlockHash
 	log.TxIndex = s.txConfig.TxIndex
 	log.Index = s.txConfig.LogIndex + uint(len(s.logs))
-	s.logs = append(s.logs, log)
-}
 
-// Logs returns the logs of current process.
-func (s *StateDB) Logs() []*ethereum.Log {
-	return s.logs
+	s.logs = append(s.logs, log)
 }
 
 // AddRefund adds gas to the refund counter
 func (s *StateDB) AddRefund(gas uint64) {
 	s.journal.append(refundChange{prev: s.refund})
+
 	s.refund += gas
 }
 
@@ -102,7 +109,7 @@ func (s *StateDB) AddRefund(gas uint64) {
 func (s *StateDB) SubRefund(gas uint64) {
 	s.journal.append(refundChange{prev: s.refund})
 	if gas > s.refund {
-		panic(fmt.Sprintf("Refund counter below zero (gas: %d > refund: %d)", gas, s.refund))
+		panic(fmt.Sprintf("GetRefund counter below zero (gas: %d > refund: %d)", gas, s.refund))
 	}
 	s.refund -= gas
 }
@@ -182,11 +189,6 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 		return stateObject.GetCommittedState(hash)
 	}
 	return common.Hash{}
-}
-
-// GetRefund returns the current value of the refund counter.
-func (s *StateDB) GetRefund() uint64 {
-	return s.refund
 }
 
 // HasSuicided returns if the contract is suicided in current process.
@@ -288,10 +290,6 @@ func (s *StateDB) setStateObject(object *stateObject) {
 	s.stateObjects[object.Address()] = object
 }
 
-/*
- * SETTERS
- */
-
 // AddBalance adds amount to the account associated with addr.
 func (s *StateDB) AddBalance(addr common.Address, amount *big.Int) {
 	stateObject := s.getOrNewStateObject(addr)
@@ -354,7 +352,7 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 }
 
 // PrepareAccessList handles the preparatory steps for executing a state transition with
-// regards to both EIP-2929 and EIP-2930:
+// regards both EIP-2929 and EIP-2930:
 //
 // - Add sender to access list (2929)
 // - Add destination to access list (2929)

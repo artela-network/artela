@@ -84,9 +84,9 @@ func ClaimSufficientStakingRewards(
 		return errorsmod.Wrap(err, "error while withdrawing delegation rewards")
 	}
 
-	// only write to state if there are enough rewards to cover the process fees
+	// only write to state if there are enough rewards to cover the transaction fees
 	if rewards.AmountOf(amount.Denom).LT(amount.Amount) {
-		return errortypes.ErrInsufficientFee.Wrapf("insufficient staking rewards to cover process fees")
+		return errortypes.ErrInsufficientFee.Wrapf("insufficient staking rewards to cover transaction fees")
 	}
 	writeFn() // commit state changes
 	return nil

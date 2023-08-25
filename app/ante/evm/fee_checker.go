@@ -1,14 +1,14 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/process"
 	"math"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
-	artelatypes "github.com/artela-network/artela/types"
+	artela "github.com/artela-network/artela/types"
+	"github.com/artela-network/artela/x/evm/process"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -17,8 +17,8 @@ import (
 // NewDynamicFeeChecker returns a `TxFeeChecker` that applies a dynamic fee to
 // Cosmos txs using the EIP-1559 fee market logic.
 // This can be called in both CheckTx and deliverTx modes.
-// a) feeCap = process.fees / process.gas
-// b) tipFeeCap = process.MaxPriorityPrice (default) or MaxInt64
+// a) feeCap = tx.fees / tx.gas
+// b) tipFeeCap = tx.MaxPriorityPrice (default) or MaxInt64
 // - when `ExtensionOptionDynamicFeeTx` is omitted, `tipFeeCap` defaults to `MaxInt64`.
 // - when london hardfork is not enabled, it falls back to SDK default behavior (validator min-gas-prices).
 // - Tx priority is set to `effectiveGasPrice / DefaultPriorityReduction`.
@@ -45,7 +45,7 @@ func NewDynamicFeeChecker(k DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
 		// get the priority tip cap from the extension option.
 		if hasExtOptsTx, ok := feeTx.(authante.HasExtensionOptionsTx); ok {
 			for _, opt := range hasExtOptsTx.GetExtensionOptions() {
-				if extOpt, ok := opt.GetCachedValue().(*artelatypes.ExtensionOptionDynamicFeeTx); ok {
+				if extOpt, ok := opt.GetCachedValue().(*artela.ExtensionOptionDynamicFeeTx); ok {
 					maxPriorityPrice = extOpt.MaxPriorityPrice
 					break
 				}
@@ -91,7 +91,7 @@ func NewDynamicFeeChecker(k DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
 }
 
 // checkTxFeeWithValidatorMinGasPrices implements the default fee logic, where the minimum price per
-// unit of gas is fixed and set by each validator, and the process priority is computed from the gas price.
+// unit of gas is fixed and set by each validator, and the tx priority is computed from the gas price.
 func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, tx sdk.FeeTx) (sdk.Coins, int64, error) {
 	feeCoins := tx.GetFee()
 	minGasPrices := ctx.MinGasPrices()
@@ -99,7 +99,7 @@ func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, tx sdk.FeeTx) (sdk.Coi
 
 	// Ensure that the provided fees meet a minimum threshold for the validator,
 	// if this is a CheckTx. This is only for local mempool purposes, and thus
-	// is only ran on check process.
+	// is only ran on check tx.
 	if ctx.IsCheckTx() && !minGasPrices.IsZero() {
 		requiredFees := make(sdk.Coins, len(minGasPrices))
 
@@ -120,8 +120,8 @@ func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, tx sdk.FeeTx) (sdk.Coi
 	return feeCoins, priority, nil
 }
 
-// getTxPriority returns a naive process priority based on the amount of the smallest denomination of the gas price
-// provided in a process.
+// getTxPriority returns a naive tx priority based on the amount of the smallest denomination of the gas price
+// provided in a transaction.
 func getTxPriority(fees sdk.Coins, gas int64) int64 {
 	var priority int64
 
