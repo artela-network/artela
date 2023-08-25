@@ -128,7 +128,7 @@ func (ab *AccountBackend) ImportRawKey(privkey, password string) (common.Address
 	return ethereumAddr, nil
 }
 
-func (ab *AccountBackend) SignTransaction(args *ethapi.TransactionArgs, passwd string) (*ethtypes.Transaction, error) {
+func (ab *AccountBackend) SignTransaction(args *ethapi.TransactionArgs) (*ethtypes.Transaction, error) {
 	_, err := ab.clientCtx.Keyring.KeyByAddress(sdktypes.AccAddress(args.From.Bytes()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to find key in the node's keyring; %s; %s", keystore.ErrNoMatch, err.Error())

@@ -376,7 +376,8 @@ func (s *PersonalAccountAPI) LockAccount(addr common.Address) bool {
 // NOTE: the caller needs to ensure that the nonceLock is held, if applicable,
 // and release it after the transaction has been submitted to the tx pool
 func (s *PersonalAccountAPI) signTransaction(ctx context.Context, args *TransactionArgs, passwd string) (*types.Transaction, error) {
-	return s.ab.SignTransaction(args, passwd)
+	// return s.ab.SignTransaction(args, passwd)
+	return nil, nil
 }
 
 // SendTransaction will create a transaction from the given arguments and
@@ -1626,15 +1627,8 @@ func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.
 
 // sign is a helper function that signs a transaction with the private key of the given address.
 func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-	// // Look up the wallet containing the requested signer
-	// account := accounts.Account{Address: addr}
-
-	// wallet, err := s.b.AccountManager().Find(account)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// // Request the wallet to sign the transaction
-	// return wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
+	// return s.b.AccountManager().SignTransaction()
+	// TODO
 	return nil, nil
 }
 
@@ -1672,34 +1666,12 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
 func (s *TransactionAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
-	// // Look up the wallet containing the requested signer
-	// account := accounts.Account{Address: args.from()}
-
-	// wallet, err := s.b.AccountManager().Find(account)
-	// if err != nil {
-	// 	return common.Hash{}, err
-	// }
-
-	// if args.Nonce == nil {
-	// 	// Hold the mutex around signing to prevent concurrent assignment of
-	// 	// the same nonce to multiple accounts.
-	// 	s.nonceLock.LockAddr(args.from())
-	// 	defer s.nonceLock.UnlockAddr(args.from())
-	// }
-
-	// // Set some sanity defaults and terminate on failure
-	// if err := args.setDefaults(ctx, s.b); err != nil {
-	// 	return common.Hash{}, err
-	// }
-	// // Assemble the transaction and sign with the wallet
-	// tx := args.toTransaction()
-
-	// signed, err := wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
-	// if err != nil {
-	// 	return common.Hash{}, err
-	// }
-	// return SubmitTransaction(ctx, s.b, signed)
-	return common.Hash{}, nil
+	signed, err := s.b.AccountManager().SignTransaction(&args)
+	if err != nil {
+		log.Warn("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
+		return common.Hash{}, err
+	}
+	return SubmitTransaction(ctx, s.b, signed)
 }
 
 // FillTransaction fills the defaults (nonce, gas, gasPrice or 1559 fields)
@@ -1765,27 +1737,12 @@ type SignTransactionResult struct {
 // The node needs to have the private key of the account corresponding with
 // the given from address and it needs to be unlocked.
 func (s *TransactionAPI) SignTransaction(ctx context.Context, args TransactionArgs) (*SignTransactionResult, error) {
-	if args.Gas == nil {
-		return nil, errors.New("gas not specified")
-	}
-	if args.GasPrice == nil && (args.MaxPriorityFeePerGas == nil || args.MaxFeePerGas == nil) {
-		return nil, errors.New("missing gasPrice or maxFeePerGas/maxPriorityFeePerGas")
-	}
-	if args.Nonce == nil {
-		return nil, errors.New("nonce not specified")
-	}
-	if err := args.setDefaults(ctx, s.b); err != nil {
-		return nil, err
-	}
-	// Before actually sign the transaction, ensure the transaction fee is reasonable.
-	tx := args.toTransaction()
-	if err := checkTxFee(tx.GasPrice(), tx.Gas(), s.b.RPCTxFeeCap()); err != nil {
-		return nil, err
-	}
-	signed, err := s.sign(args.from(), tx)
+	// gas, gas limit, nonce checking are made in SignTransaction
+	signed, err := s.b.AccountManager().SignTransaction(&args)
 	if err != nil {
 		return nil, err
 	}
+
 	data, err := signed.MarshalBinary()
 	if err != nil {
 		return nil, err

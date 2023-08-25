@@ -9,5 +9,5 @@ type AccountBackend interface {
 	Accounts() []common.Address
 	NewAccount(password string) (common.AddressEIP55, error)
 	ImportRawKey(privkey, password string) (common.Address, error)
-	SignTransaction(args *TransactionArgs, passwd string) (*ethtypes.Transaction, error)
+	SignTransaction(args *TransactionArgs) (*ethtypes.Transaction, error)
 }
