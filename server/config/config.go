@@ -16,6 +16,13 @@ import (
 )
 
 const (
+	DefaultAPIEnable       = false
+	DefaultGRPCEnable      = false
+	DefaultGRPCWebEnable   = false
+	DefaultJSONRPCEnable   = false
+	DefaultRosettaEnable   = false
+	DefaultTelemetryEnable = false
+
 	// DefaultGRPCAddress is the default address the gRPC server binds to.
 	DefaultGRPCAddress = "0.0.0.0:9900"
 

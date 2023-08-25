@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -113,7 +114,7 @@ func (args *TransactionArgs) String() string {
 		args.AccessList)
 }
 
-// GetFrom retrieves the process sender address
+// GetFrom retrieves the transaction sender address.
 func (args *TransactionArgs) GetFrom() common.Address {
 	if args.From == nil {
 		return common.Address{}
@@ -121,7 +122,7 @@ func (args *TransactionArgs) GetFrom() common.Address {
 	return *args.From
 }
 
-// GetData retrieves the process call data. Input field is preferred
+// GetData retrieves the transaction calldata. Input field is preferred.
 func (args *TransactionArgs) GetData() []byte {
 	if args.Input != nil {
 		return *args.Input
@@ -132,7 +133,8 @@ func (args *TransactionArgs) GetData() []byte {
 	return nil
 }
 
-// ToTransaction converts the arguments to an ethereum process
+// ToTransaction converts the arguments to an ethereum transaction.
+// This assumes that setTxDefaults has been called.
 func (args *TransactionArgs) ToTransaction() *MsgEthereumTx {
 	var (
 		chainID, value, gasPrice, maxFeePerGas, maxPriorityFeePerGas sdkmath.Int
@@ -231,11 +233,12 @@ func (args *TransactionArgs) ToTransaction() *MsgEthereumTx {
 	return &msg
 }
 
-// ToMessage converts the arguments to the Message type used by the core evm
-func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (ethereum.Message, error) {
+// ToMessage converts the arguments to the Message type used by the core evm.
+// This assumes that setTxDefaults has been called.
+func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (*core.Message, error) {
 	// Reject invalid combinations of pre- and post-1559 fee styles
 	if args.GasPrice != nil && (args.MaxFeePerGas != nil || args.MaxPriorityFeePerGas != nil) {
-		return ethereum.Message{}, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
+		return &core.Message{}, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
 	}
 
 	// Set sender address or use zero address if none specified.
@@ -265,7 +268,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (e
 		}
 		gasFeeCap, gasTipCap = gasPrice, gasPrice
 	} else {
-		// basefee is provided, necessitating 1559-type execution
+		// A basefee is provided, necessitating 1559-type execution
 		if args.GasPrice != nil {
 			// User specified the legacy gas field, convert to 1559 gas typing
 			gasPrice = args.GasPrice.ToInt()
@@ -302,7 +305,19 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (e
 		nonce = uint64(*args.Nonce)
 	}
 
-	msg := ethereum.NewMessage(addr, args.To, nonce, value, gas, gasPrice, gasFeeCap, gasTipCap, data, accessList, true)
+	msg := &core.Message{
+		From:              addr,
+		To:                args.To,
+		Nonce:             nonce,
+		Value:             value,
+		GasLimit:          gas,
+		GasPrice:          gasPrice,
+		GasFeeCap:         gasFeeCap,
+		GasTipCap:         gasTipCap,
+		Data:              data,
+		AccessList:        accessList,
+		SkipAccountChecks: true,
+	}
 	return msg, nil
 }
 

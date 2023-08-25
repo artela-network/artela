@@ -81,7 +81,7 @@ func NewKeeper(
 	}
 
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
-	return &Keeper{
+	k := &Keeper{
 		cdc:           cdc,
 		authority:     authority,
 		accountKeeper: accountKeeper,
@@ -93,6 +93,8 @@ func NewKeeper(
 		tracer:        tracer,
 		ss:            subSpace,
 	}
+
+	return k
 }
 
 // Logger returns a module-specific logger.

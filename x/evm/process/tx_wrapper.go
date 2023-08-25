@@ -73,7 +73,7 @@ func (msg MsgEthereumTx) AsTransaction() *ethereum.Transaction {
 	return ethereum.NewTx(txData.AsEthereumData())
 }
 
-// FromEthereumTx populates the message fields from the given ethereum process
+// FromEthereumTx populates the message fields from the given ethereum transaction
 func (msg *MsgEthereumTx) FromEthereumTx(tx *ethereum.Transaction) error {
 	txData, err := NewTxDataFromTx(tx)
 	if err != nil {
@@ -91,8 +91,8 @@ func (msg *MsgEthereumTx) FromEthereumTx(tx *ethereum.Transaction) error {
 }
 
 // AsMessage creates an Ethereum core.Message from the msg fields
-func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (core.Message, error) {
-	return msg.AsTransaction().AsMessage(signer, baseFee)
+func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
+	return core.TransactionToMessage(msg.AsTransaction(), signer, baseFee)
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnPackInterfaces
@@ -109,7 +109,7 @@ func (msg *MsgEthereumTx) UnmarshalBinary(b []byte) error {
 	return msg.FromEthereumTx(tx)
 }
 
-// BuildTx builds the canonical cosmos process from ethereum msg
+// BuildTx builds the canonical cosmos tx from ethereum msg
 func (msg *MsgEthereumTx) BuildTx(b client.TxBuilder, evmDenom string) (signing.Tx, error) {
 	builder, ok := b.(authtx.ExtensionOptionsTxBuilder)
 	if !ok {
@@ -204,9 +204,18 @@ func (msg MsgEthereumTx) ValidateBasic() error {
 // The function will fail if the sender address is not defined for the msg or if
 // the sender is not registered on the keyring
 func (msg *MsgEthereumTx) Sign(ethSigner ethereum.Signer, keyringSigner keyring.Signer) error {
+	tx, err := msg.SignEthereumTx(ethSigner, keyringSigner)
+	if err != nil {
+		return err
+	}
+
+	return msg.FromEthereumTx(tx)
+}
+
+func (msg *MsgEthereumTx) SignEthereumTx(ethSigner ethereum.Signer, keyringSigner keyring.Signer) (*ethereum.Transaction, error) {
 	from := msg.GetFrom()
 	if from.Empty() {
-		return fmt.Errorf("sender address not defined for message")
+		return nil, fmt.Errorf("sender address not defined for message")
 	}
 
 	tx := msg.AsTransaction()
@@ -214,15 +223,10 @@ func (msg *MsgEthereumTx) Sign(ethSigner ethereum.Signer, keyringSigner keyring.
 
 	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	tx, err = tx.WithSignature(ethSigner, sig)
-	if err != nil {
-		return err
-	}
-
-	return msg.FromEthereumTx(tx)
+	return tx.WithSignature(ethSigner, sig)
 }
 
 // GetMsgs returns a single MsgEthereumTx as an sdk.Msg.
