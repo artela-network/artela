@@ -5,6 +5,10 @@ import (
 	"github.com/artela-network/artela/ethereum/types"
 )
 
+// ----------------------------------------------------------------------------
+// 							 Genesis Account
+// ----------------------------------------------------------------------------
+
 // Validate performs a basic validation of a GenesisAccount fields.
 func (ga GenesisAccount) Validate() error {
 	if err := types.ValidateAddress(ga.Address); err != nil {
@@ -12,6 +16,10 @@ func (ga GenesisAccount) Validate() error {
 	}
 	return ga.Storage.Validate()
 }
+
+// ----------------------------------------------------------------------------
+// 							 Genesis State
+// ----------------------------------------------------------------------------
 
 // DefaultGenesisState sets default evm genesis states with empty accounts and default params and
 // chain config values.
@@ -43,6 +51,5 @@ func (gs GenesisState) Validate() error {
 		}
 		seenAccounts[acc.Address] = true
 	}
-
 	return gs.Params.Validate()
 }

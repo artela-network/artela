@@ -87,14 +87,6 @@ func DefaultChainConfig() ChainConfig {
 	}
 }
 
-func getBlockValue(block *sdkmath.Int) *big.Int {
-	if block == nil || block.IsNegative() {
-		return nil
-	}
-
-	return block.BigInt()
-}
-
 // Validate performs a basic validation of the ChainConfig params. The function will return an error
 // if any of the block values is uninitialized (i.e nil) or if the EIP150Hash is an invalid hash.
 func (cc ChainConfig) Validate() error {
@@ -157,6 +149,14 @@ func (cc ChainConfig) Validate() error {
 		return errorsmod.Wrap(err, "invalid config fork order")
 	}
 	return nil
+}
+
+func getBlockValue(block *sdkmath.Int) *big.Int {
+	if block == nil || block.IsNegative() {
+		return nil
+	}
+
+	return block.BigInt()
 }
 
 func validateHash(hex string) error {

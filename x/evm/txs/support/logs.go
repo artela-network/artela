@@ -5,10 +5,15 @@ import (
 	"fmt"
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
+// ----------------------------------------------------------------------------
+// 							 Transaction Logs
+// ----------------------------------------------------------------------------
+
 // NewTransactionLogs creates a new NewTransactionLogs instance.
+// TransactionLogs define the logs support from a txs execution with a given hash.
 func NewTransactionLogs(hash common.Hash, logs []*Log) TransactionLogs {
 	return TransactionLogs{
 		Hash: hash.String(),
@@ -16,8 +21,8 @@ func NewTransactionLogs(hash common.Hash, logs []*Log) TransactionLogs {
 	}
 }
 
-// NewTransactionLogsFromEth creates a new NewTransactionLogs instance using []*ethtypes.Log.
-func NewTransactionLogsFromEth(hash common.Hash, ethlogs []*ethtypes.Log) TransactionLogs {
+// NewTransactionLogsFromEth creates a new NewTransactionLogs instance using []*ethereum.Log.
+func NewTransactionLogsFromEth(hash common.Hash, ethlogs []*ethereum.Log) TransactionLogs {
 	return TransactionLogs{
 		Hash: hash.String(),
 		Logs: NewLogsFromEth(ethlogs),
@@ -45,11 +50,17 @@ func (tx TransactionLogs) Validate() error {
 }
 
 // EthLogs returns the Ethereum type Logs from the Transaction Logs.
-func (tx TransactionLogs) EthLogs() []*ethtypes.Log {
+func (tx TransactionLogs) EthLogs() []*ethereum.Log {
 	return LogsToEthereum(tx.Logs)
 }
 
+// ----------------------------------------------------------------------------
+// 							     Log
+// ----------------------------------------------------------------------------
+
 // Validate performs a basic validation of an ethereum Log fields.
+// Log represents a protobuf compatible Ethereum Log that defines a contract
+// log event.
 func (log *Log) Validate() error {
 	if err := artela.ValidateAddress(log.Address); err != nil {
 		return fmt.Errorf("invalid log address %w", err)
@@ -67,13 +78,13 @@ func (log *Log) Validate() error {
 }
 
 // ToEthereum returns the Ethereum type Log from a artela proto compatible Log.
-func (log *Log) ToEthereum() *ethtypes.Log {
+func (log *Log) ToEthereum() *ethereum.Log {
 	topics := make([]common.Hash, len(log.Topics))
 	for i, topic := range log.Topics {
 		topics[i] = common.HexToHash(topic)
 	}
 
-	return &ethtypes.Log{
+	return &ethereum.Log{
 		Address:     common.HexToAddress(log.Address),
 		Topics:      topics,
 		Data:        log.Data,
@@ -86,7 +97,7 @@ func (log *Log) ToEthereum() *ethtypes.Log {
 	}
 }
 
-func NewLogsFromEth(ethlogs []*ethtypes.Log) []*Log {
+func NewLogsFromEth(ethlogs []*ethereum.Log) []*Log {
 	var logs []*Log //nolint: prealloc
 	for _, ethlog := range ethlogs {
 		logs = append(logs, NewLogFromEth(ethlog))
@@ -96,8 +107,8 @@ func NewLogsFromEth(ethlogs []*ethtypes.Log) []*Log {
 }
 
 // LogsToEthereum casts the Artela Logs to a slice of Ethereum Logs.
-func LogsToEthereum(logs []*Log) []*ethtypes.Log {
-	var ethLogs []*ethtypes.Log //nolint: prealloc
+func LogsToEthereum(logs []*Log) []*ethereum.Log {
+	var ethLogs []*ethereum.Log //nolint: prealloc
 	for i := range logs {
 		ethLogs = append(ethLogs, logs[i].ToEthereum())
 	}
@@ -105,7 +116,7 @@ func LogsToEthereum(logs []*Log) []*ethtypes.Log {
 }
 
 // NewLogFromEth creates a new Log instance from a Ethereum type Log.
-func NewLogFromEth(log *ethtypes.Log) *Log {
+func NewLogFromEth(log *ethereum.Log) *Log {
 	topics := make([]string, len(log.Topics))
 	for i, topic := range log.Topics {
 		topics[i] = topic.String()
