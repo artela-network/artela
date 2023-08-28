@@ -1,11 +1,12 @@
 package evm
 
 import (
+	"math"
+	"math/big"
+
 	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
-	"math"
-	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
@@ -190,10 +191,12 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 		}
 
 		// If the account balance is not sufficient, try to withdraw enough staking rewards
-		err = anteutils.ClaimStakingRewardsIfNecessary(ctx, egcd.bankKeeper, egcd.distributionKeeper, egcd.stakingKeeper, from, fees)
-		if err != nil {
-			return ctx, err
-		}
+		// TODO artela staking.
+		_ = from // TODO remove this after fix staking.
+		// err = anteutils.ClaimStakingRewardsIfNecessary(ctx, egcd.bankKeeper, egcd.distributionKeeper, egcd.stakingKeeper, from, fees)
+		// if err != nil {
+		// 	return ctx, err
+		// }
 
 		err = egcd.evmKeeper.DeductTxCostsFromUserBalance(ctx, fees, common.HexToAddress(msgEthTx.From))
 		if err != nil {

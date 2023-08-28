@@ -5,14 +5,15 @@ package server
 import (
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/ethereum/rpc"
-	"github.com/artela-network/artela/ethereum/server/config"
-	artelaflag "github.com/artela-network/artela/ethereum/server/flags"
 	"net"
 	"net/http"
 	"os"
 	"runtime/pprof"
 	"time"
+
+	"github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
+	artelaflag "github.com/artela-network/artela/ethereum/server/flags"
 
 	"github.com/cometbft/cometbft/abci/server"
 	tcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -467,6 +468,8 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		}
 
 		go func() {
+			// wait for the start of the RPC server.
+			time.Sleep(4 * time.Second)
 			if err := jsonrpcSrv.Start(); err != nil {
 				errCh <- err
 			}

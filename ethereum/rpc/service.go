@@ -1,12 +1,6 @@
 package rpc
 
 import (
-	"github.com/artela-network/artela/ethereum/rpc/ethapi"
-	"github.com/artela-network/artela/ethereum/rpc/graphql"
-	"github.com/artela-network/artela/ethereum/rpc/types"
-	"os"
-	"time"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -15,6 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/eth/filters"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/artela-network/artela/ethereum/rpc/ethapi"
+	"github.com/artela-network/artela/ethereum/rpc/graphql"
+	"github.com/artela-network/artela/ethereum/rpc/types"
 )
 
 var defaultEthConfig = ethconfig.Config{
@@ -77,16 +75,7 @@ func (art *ArtelaService) Start() error {
 		return err
 	}
 
-	go func() {
-		// wait for the start of the node.
-		time.Sleep(2 * time.Second)
-
-		if art.stack.Start() != nil {
-			os.Exit(1)
-		}
-	}()
-
-	return nil
+	return art.stack.Start()
 }
 
 func (art *ArtelaService) Shutdown() error {
