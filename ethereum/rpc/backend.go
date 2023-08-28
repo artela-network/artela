@@ -3,15 +3,22 @@ package rpc
 import (
 	"context"
 	"errors"
+	"math"
+	"math/big"
+	"strconv"
+	"time"
+
 	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	ethereumtypes "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
-	"math/big"
-	"time"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -40,6 +47,7 @@ type backend struct {
 	extRPCEnabled bool
 	artela        *ArtelaService
 	cfg           *Config
+	chainID       *big.Int
 	gpo           *gasprice.Oracle
 	logger        log.Logger
 
@@ -78,6 +86,12 @@ func NewBackend(
 		scope: event.SubscriptionScope{},
 	}
 
+	var err error
+	b.chainID, err = ethereumtypes.ParseChainID(clientCtx.ChainID)
+	if err != nil {
+		panic(err)
+	}
+
 	// Set the Backend.
 	b.ab = NewAccountBackend(b.ctx, clientCtx, b.queryClient)
 
@@ -102,7 +116,12 @@ func (b *backend) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 }
 
 func (b *backend) ChainConfig() *params.ChainConfig {
-	return &params.ChainConfig{ChainID: big.NewInt(9000)}
+	params, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{})
+	if err != nil {
+		return nil
+	}
+
+	return params.Params.ChainConfig.EthereumConfig(b.chainID)
 }
 
 func (b *backend) FeeHistory(ctx context.Context, blockCount uint64, lastBlock rpc.BlockNumber,
@@ -159,11 +178,55 @@ func (b *backend) HeaderByNumberOrHash(ctx context.Context,
 }
 
 func (b *backend) CurrentHeader() *types.Header {
-	return nil
+	return b.CurrentBlock()
 }
 
 func (b *backend) CurrentBlock() *types.Header {
-	return nil
+	var header metadata.MD
+	_, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{}, grpc.Header(&header))
+	if err != nil {
+		return nil
+	}
+
+	blockHeightHeader := header.Get(grpctypes.GRPCBlockHeightHeader)
+	if headerLen := len(blockHeightHeader); headerLen != 1 {
+		return nil
+	}
+
+	height, err := strconv.ParseInt(blockHeightHeader[0], 10, 64)
+	if err != nil {
+		return nil
+	}
+
+	if height > math.MaxInt64 {
+		return nil
+	}
+
+	res, err := b.clientCtx.Client.Block(b.ctx, &height)
+	if err != nil {
+		return nil
+	}
+	return &types.Header{
+		// TODO fill more header fileds
+		ParentHash:      common.BytesToHash(res.Block.LastCommitHash),
+		UncleHash:       [32]byte{},
+		Coinbase:        common.BytesToAddress(res.Block.ProposerAddress),
+		Root:            [32]byte{},
+		TxHash:          [32]byte{},
+		ReceiptHash:     [32]byte{},
+		Bloom:           [256]byte{},
+		Difficulty:      &big.Int{},
+		Number:          big.NewInt(res.Block.Height),
+		GasLimit:        0,
+		GasUsed:         0,
+		Time:            uint64(res.Block.Time.Unix()),
+		Extra:           []byte{},
+		MixDigest:       [32]byte{},
+		Nonce:           [8]byte{},
+		BaseFee:         &big.Int{},
+		WithdrawalsHash: nil,
+		ExcessDataGas:   &big.Int{},
+	}
 }
 
 func (b *backend) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*types.Block, error) {
