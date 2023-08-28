@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	types2 "github.com/artela-network/artela/ethereum/types"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
@@ -9,7 +9,7 @@ import (
 	cometbft "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
@@ -30,7 +30,7 @@ import (
 // NOTE: the RANDOM opcode is currently not supported
 
 func (k *Keeper) NewEVM(
-	ctx sdk.Context,
+	ctx cosmos.Context,
 	msg core.Message,
 	cfg *states.EVMConfig,
 	tracer vm.EVMLogger,
@@ -41,7 +41,7 @@ func (k *Keeper) NewEVM(
 		Transfer:    core.Transfer,
 		GetHash:     k.GetHashFn(ctx),
 		Coinbase:    cfg.CoinBase,
-		GasLimit:    types2.BlockGasLimit(ctx),
+		GasLimit:    artela.BlockGasLimit(ctx),
 		BlockNumber: big.NewInt(ctx.BlockHeight()),
 		Time:        uint64(ctx.BlockHeader().Time.Unix()),
 		Difficulty:  big.NewInt(0), // unused. Only required in PoW context
@@ -61,9 +61,9 @@ func (k *Keeper) NewEVM(
 //  1. The requested height matches the current height from context (and thus same epoch number)
 //  2. The requested height is from a previous height from the same chain epoch
 //  3. The requested height is from a height greater than the latest one
-func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
+func (k Keeper) GetHashFn(ctx cosmos.Context) vm.GetHashFunc {
 	return func(height uint64) common.Hash {
-		h, err := types2.SafeInt64(height)
+		h, err := artela.SafeInt64(height)
 		if err != nil {
 			k.Logger(ctx).Error("failed to cast height to int64", "error", err)
 			return common.Hash{}
@@ -130,14 +130,14 @@ func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
 // returning.
 //
 // For relevant discussion see: https://github.com/cosmos/cosmos-sdk/discussions/9072
-func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*txs.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) (*txs.MsgEthereumTxResponse, error) {
 	var (
 		bloom        *big.Int
 		bloomReceipt ethereum.Bloom
 	)
 
 	// build evm config and txs config
-	evmConfig, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
+	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
@@ -231,8 +231,8 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethereum.Transaction) (*t
 }
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
-func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
-	evmConfig, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
+func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
+	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
@@ -279,7 +279,7 @@ func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLo
 // # Commit parameter
 //
 // If commit is true, the `StateDB` will be committed, otherwise discarded.
-func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
+func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	msg core.Message,
 	tracer vm.EVMLogger,
 	commit bool,
@@ -382,7 +382,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	// is considerably higher than GasUsed to stay more aligned with Tendermint gas mechanics
 
 	// for more info https://github.com/evmos/ethermint/issues/1085
-	gasLimit := sdk.NewDec(int64(msg.GasLimit))
+	gasLimit := cosmos.NewDec(int64(msg.GasLimit))
 	minGasMultiplier := k.GetMinGasMultiplier(ctx)
 	minimumGasUsed := gasLimit.Mul(minGasMultiplier)
 
@@ -390,7 +390,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 		return nil, errorsmod.Wrapf(types.ErrGasOverflow, "message gas limit < leftover gas (%d < %d)", msg.GasLimit, leftoverGas)
 	}
 
-	gasUsed := sdk.MaxDec(minimumGasUsed, sdk.NewDec(int64(temporaryGasUsed))).TruncateInt().Uint64()
+	gasUsed := cosmos.MaxDec(minimumGasUsed, cosmos.NewDec(int64(temporaryGasUsed))).TruncateInt().Uint64()
 	// reset leftoverGas, to be used by the tracer
 	leftoverGas = msg.GasLimit - gasUsed
 

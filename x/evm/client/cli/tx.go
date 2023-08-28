@@ -3,7 +3,7 @@ package cli
 import (
 	"bufio"
 	"fmt"
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	rpc "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"os"
 
@@ -56,7 +56,7 @@ func NewRawTxCmd() *cobra.Command {
 				return err
 			}
 
-			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &txs.QueryParamsRequest{})
+			rsp, err := rpc.NewQueryClient(clientCtx).Params(cmd.Context(), &txs.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

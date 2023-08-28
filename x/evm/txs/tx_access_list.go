@@ -2,8 +2,8 @@ package txs
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	types3 "github.com/artela-network/artela/ethereum/types"
-	types2 "github.com/artela-network/artela/x/evm/types"
+	artela "github.com/artela-network/artela/ethereum/types"
+	evmmodule "github.com/artela-network/artela/x/evm/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"math/big"
 
@@ -27,7 +27,7 @@ func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
 
 	// fill the amount
 	if tx.Value() != nil {
-		amountInt, err := types3.SafeNewIntFromBigInt(tx.Value())
+		amountInt, err := artela.SafeNewIntFromBigInt(tx.Value())
 		if err != nil {
 			return nil, err
 		}
@@ -36,7 +36,7 @@ func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
 
 	// fill the gas price
 	if tx.GasPrice() != nil {
-		gasPriceInt, err := types3.SafeNewIntFromBigInt(tx.GasPrice())
+		gasPriceInt, err := artela.SafeNewIntFromBigInt(tx.GasPrice())
 		if err != nil {
 			return nil, err
 		}
@@ -80,31 +80,31 @@ func (tx *AccessListTx) Copy() TxData {
 func (tx AccessListTx) Validate() error {
 	gasPrice := tx.GetGasPrice()
 	if gasPrice == nil {
-		return errorsmod.Wrap(types2.ErrInvalidGasPrice, "cannot be nil")
+		return errorsmod.Wrap(evmmodule.ErrInvalidGasPrice, "cannot be nil")
 	}
-	if !types3.IsValidInt256(gasPrice) {
-		return errorsmod.Wrap(types2.ErrInvalidGasPrice, "out of bound")
+	if !artela.IsValidInt256(gasPrice) {
+		return errorsmod.Wrap(evmmodule.ErrInvalidGasPrice, "out of bound")
 	}
 
 	if gasPrice.Sign() == -1 {
-		return errorsmod.Wrapf(types2.ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
+		return errorsmod.Wrapf(evmmodule.ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
 	}
 
 	amount := tx.GetValue()
 	// Amount can be 0
 	if amount != nil && amount.Sign() == -1 {
-		return errorsmod.Wrapf(types2.ErrInvalidAmount, "amount cannot be negative %s", amount)
+		return errorsmod.Wrapf(evmmodule.ErrInvalidAmount, "amount cannot be negative %s", amount)
 	}
-	if !types3.IsValidInt256(amount) {
-		return errorsmod.Wrap(types2.ErrInvalidAmount, "out of bound")
+	if !artela.IsValidInt256(amount) {
+		return errorsmod.Wrap(evmmodule.ErrInvalidAmount, "out of bound")
 	}
 
-	if !types3.IsValidInt256(tx.Fee()) {
-		return errorsmod.Wrap(types2.ErrInvalidGasFee, "out of bound")
+	if !artela.IsValidInt256(tx.Fee()) {
+		return errorsmod.Wrap(evmmodule.ErrInvalidGasFee, "out of bound")
 	}
 
 	if tx.To != "" {
-		if err := types3.ValidateAddress(tx.To); err != nil {
+		if err := artela.ValidateAddress(tx.To); err != nil {
 			return errorsmod.Wrap(err, "invalid to address")
 		}
 	}

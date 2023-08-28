@@ -7,15 +7,15 @@ import (
 	"github.com/artela-network/artela/x/evm/txs"
 	"strconv"
 
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govmodule "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	tmbytes "github.com/cometbft/cometbft/libs/bytes"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cometbft "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/artela-network/artela/x/evm/types"
 )
@@ -27,7 +27,7 @@ var _ txs.MsgServer = &Keeper{}
 // so that it can implements and call the StateDB methods without receiving it as a function
 // parameter.
 func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs.MsgEthereumTxResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	ctx := cosmos.UnwrapSDKContext(goCtx)
 
 	sender := msg.From
 	tx := msg.AsTransaction()
@@ -63,7 +63,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 
 			// Observe which users define a gas limit >> gas used. Note, that
 			// gas_limit and gas_used are always > 0
-			gasLimit := sdk.NewDec(int64(tx.Gas()))
+			gasLimit := cosmos.NewDec(int64(tx.Gas()))
 			gasRatio, err := gasLimit.QuoInt64(int64(response.GasUsed)).Float64()
 			if err == nil {
 				telemetry.SetGaugeWithLabels(
@@ -75,54 +75,54 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 		}
 	}()
 
-	attrs := []sdk.Attribute{
-		sdk.NewAttribute(sdk.AttributeKeyAmount, tx.Value().String()),
+	attrs := []cosmos.Attribute{
+		cosmos.NewAttribute(cosmos.AttributeKeyAmount, tx.Value().String()),
 		// add event for ethereum txs hash format
-		sdk.NewAttribute(types.AttributeKeyEthereumTxHash, response.Hash),
+		cosmos.NewAttribute(types.AttributeKeyEthereumTxHash, response.Hash),
 		// add event for index of valid ethereum txs
-		sdk.NewAttribute(types.AttributeKeyTxIndex, strconv.FormatUint(txIndex, 10)),
+		cosmos.NewAttribute(types.AttributeKeyTxIndex, strconv.FormatUint(txIndex, 10)),
 		// add event for eth txs gas used, we can't get it from cosmos txs result when it contains multiple eth txs msgs.
-		sdk.NewAttribute(types.AttributeKeyTxGasUsed, strconv.FormatUint(response.GasUsed, 10)),
+		cosmos.NewAttribute(types.AttributeKeyTxGasUsed, strconv.FormatUint(response.GasUsed, 10)),
 	}
 
 	if len(ctx.TxBytes()) > 0 {
 		// add event for tendermint txs hash format
-		hash := tmbytes.HexBytes(tmtypes.Tx(ctx.TxBytes()).Hash())
-		attrs = append(attrs, sdk.NewAttribute(types.AttributeKeyTxHash, hash.String()))
+		hash := tmbytes.HexBytes(cometbft.Tx(ctx.TxBytes()).Hash())
+		attrs = append(attrs, cosmos.NewAttribute(types.AttributeKeyTxHash, hash.String()))
 	}
 
 	if to := tx.To(); to != nil {
-		attrs = append(attrs, sdk.NewAttribute(types.AttributeKeyRecipient, to.Hex()))
+		attrs = append(attrs, cosmos.NewAttribute(types.AttributeKeyRecipient, to.Hex()))
 	}
 
 	if response.Failed() {
-		attrs = append(attrs, sdk.NewAttribute(types.AttributeKeyEthereumTxFailed, response.VmError))
+		attrs = append(attrs, cosmos.NewAttribute(types.AttributeKeyEthereumTxFailed, response.VmError))
 	}
 
-	txLogAttrs := make([]sdk.Attribute, len(response.Logs))
+	txLogAttrs := make([]cosmos.Attribute, len(response.Logs))
 	for i, log := range response.Logs {
 		value, err := json.Marshal(log)
 		if err != nil {
 			return nil, errorsmod.Wrap(err, "failed to encode log")
 		}
-		txLogAttrs[i] = sdk.NewAttribute(types.AttributeKeyTxLog, string(value))
+		txLogAttrs[i] = cosmos.NewAttribute(types.AttributeKeyTxLog, string(value))
 	}
 
 	// emit events
-	ctx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
+	ctx.EventManager().EmitEvents(cosmos.Events{
+		cosmos.NewEvent(
 			types.EventTypeEthereumTx,
 			attrs...,
 		),
-		sdk.NewEvent(
+		cosmos.NewEvent(
 			types.EventTypeTxLog,
 			txLogAttrs...,
 		),
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, sender),
-			sdk.NewAttribute(types.AttributeKeyTxType, fmt.Sprintf("%d", tx.Type())),
+		cosmos.NewEvent(
+			cosmos.EventTypeMessage,
+			cosmos.NewAttribute(cosmos.AttributeKeyModule, types.AttributeValueCategory),
+			cosmos.NewAttribute(cosmos.AttributeKeySender, sender),
+			cosmos.NewAttribute(types.AttributeKeyTxType, fmt.Sprintf("%d", tx.Type())),
 		),
 	})
 
@@ -135,10 +135,10 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 // account.
 func (k *Keeper) UpdateParams(goCtx context.Context, req *txs.MsgUpdateParams) (*txs.MsgUpdateParamsResponse, error) {
 	if k.authority.String() != req.Authority {
-		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority, expected %s, got %s", k.authority.String(), req.Authority)
+		return nil, errorsmod.Wrapf(govmodule.ErrInvalidSigner, "invalid authority, expected %s, got %s", k.authority.String(), req.Authority)
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	ctx := cosmos.UnwrapSDKContext(goCtx)
 	if err := k.SetParams(ctx, req.Params); err != nil {
 		return nil, err
 	}

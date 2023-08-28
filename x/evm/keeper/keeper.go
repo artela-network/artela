@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	types2 "github.com/artela-network/artela/ethereum/types"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
@@ -11,11 +11,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -38,7 +38,7 @@ type Keeper struct {
 	transientKey storetypes.StoreKey
 
 	// the address capable of executing a MsgUpdateParams message. Typically, this should be the x/gov module account.
-	authority sdk.AccAddress
+	authority cosmos.AccAddress
 	// access to account states
 	accountKeeper types.AccountKeeper
 	// update balance and accounting operations with coins
@@ -62,7 +62,7 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeKey, transientKey storetypes.StoreKey,
-	authority sdk.AccAddress,
+	authority cosmos.AccAddress,
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	stakingKeeper types.StakingKeeper,
@@ -76,7 +76,7 @@ func NewKeeper(
 	}
 
 	// ensure the authority account is correct
-	if err := sdk.VerifyAddressFormat(authority); err != nil {
+	if err := cosmos.VerifyAddressFormat(authority); err != nil {
 		panic(err)
 	}
 
@@ -98,13 +98,13 @@ func NewKeeper(
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k Keeper) Logger(ctx cosmos.Context) log.Logger {
 	return ctx.Logger().With("module", types.ModuleName)
 }
 
 // WithChainID sets the chain id to the local variable in the keeper
-func (k *Keeper) WithChainID(ctx sdk.Context) {
-	chainID, err := types2.ParseChainID(ctx.ChainID())
+func (k *Keeper) WithChainID(ctx cosmos.Context) {
+	chainID, err := artela.ParseChainID(ctx.ChainID())
 	if err != nil {
 		panic(err)
 	}
@@ -131,24 +131,24 @@ func (k Keeper) ChainID() *big.Int {
 // ----------------------------------------------------------------------------
 
 // EmitBlockBloomEvent emit block bloom events
-func (k Keeper) EmitBlockBloomEvent(ctx sdk.Context, bloom ethtypes.Bloom) {
+func (k Keeper) EmitBlockBloomEvent(ctx cosmos.Context, bloom ethereum.Bloom) {
 	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
+		cosmos.NewEvent(
 			types.EventTypeBlockBloom,
-			sdk.NewAttribute(types.AttributeKeyEthereumBloom, string(bloom.Bytes())),
+			cosmos.NewAttribute(types.AttributeKeyEthereumBloom, string(bloom.Bytes())),
 		),
 	)
 }
 
 // GetAuthority returns the x/evm module authority address
-func (k Keeper) GetAuthority() sdk.AccAddress {
+func (k Keeper) GetAuthority() cosmos.AccAddress {
 	return k.authority
 }
 
 // GetBlockBloomTransient returns bloom bytes for the current block height
-func (k Keeper) GetBlockBloomTransient(ctx sdk.Context) *big.Int {
+func (k Keeper) GetBlockBloomTransient(ctx cosmos.Context) *big.Int {
 	store := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
-	heightBz := sdk.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
+	heightBz := cosmos.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
 	bz := store.Get(heightBz)
 	if len(bz) == 0 {
 		return big.NewInt(0)
@@ -159,9 +159,9 @@ func (k Keeper) GetBlockBloomTransient(ctx sdk.Context) *big.Int {
 
 // SetBlockBloomTransient sets the given bloom bytes to the transient store. This value is reset on
 // every block.
-func (k Keeper) SetBlockBloomTransient(ctx sdk.Context, bloom *big.Int) {
+func (k Keeper) SetBlockBloomTransient(ctx cosmos.Context, bloom *big.Int) {
 	store := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
-	heightBz := sdk.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
+	heightBz := cosmos.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
 	store.Set(heightBz, bloom.Bytes())
 }
 
@@ -170,20 +170,20 @@ func (k Keeper) SetBlockBloomTransient(ctx sdk.Context, bloom *big.Int) {
 // ----------------------------------------------------------------------------
 
 // SetTxIndexTransient set the index of processing txs
-func (k Keeper) SetTxIndexTransient(ctx sdk.Context, index uint64) {
+func (k Keeper) SetTxIndexTransient(ctx cosmos.Context, index uint64) {
 	store := ctx.TransientStore(k.transientKey)
-	store.Set(types.KeyPrefixTransientTxIndex, sdk.Uint64ToBigEndian(index))
+	store.Set(types.KeyPrefixTransientTxIndex, cosmos.Uint64ToBigEndian(index))
 }
 
 // GetTxIndexTransient returns EVM txs index on the current block.
-func (k Keeper) GetTxIndexTransient(ctx sdk.Context) uint64 {
+func (k Keeper) GetTxIndexTransient(ctx cosmos.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientTxIndex)
 	if len(bz) == 0 {
 		return 0
 	}
 
-	return sdk.BigEndianToUint64(bz)
+	return cosmos.BigEndianToUint64(bz)
 }
 
 // ----------------------------------------------------------------------------
@@ -191,21 +191,21 @@ func (k Keeper) GetTxIndexTransient(ctx sdk.Context) uint64 {
 // ----------------------------------------------------------------------------
 
 // GetLogSizeTransient returns EVM log index on the current block.
-func (k Keeper) GetLogSizeTransient(ctx sdk.Context) uint64 {
+func (k Keeper) GetLogSizeTransient(ctx cosmos.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientLogSize)
 	if len(bz) == 0 {
 		return 0
 	}
 
-	return sdk.BigEndianToUint64(bz)
+	return cosmos.BigEndianToUint64(bz)
 }
 
 // SetLogSizeTransient fetches the current EVM log index from the transient store, increases its
 // value by one and then sets the new index back to the transient store.
-func (k Keeper) SetLogSizeTransient(ctx sdk.Context, logSize uint64) {
+func (k Keeper) SetLogSizeTransient(ctx cosmos.Context, logSize uint64) {
 	store := ctx.TransientStore(k.transientKey)
-	store.Set(types.KeyPrefixTransientLogSize, sdk.Uint64ToBigEndian(logSize))
+	store.Set(types.KeyPrefixTransientLogSize, cosmos.Uint64ToBigEndian(logSize))
 }
 
 // ----------------------------------------------------------------------------
@@ -213,7 +213,7 @@ func (k Keeper) SetLogSizeTransient(ctx sdk.Context, logSize uint64) {
 // ----------------------------------------------------------------------------
 
 // GetAccountStorage return states storage associated with an account
-func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) support.Storage {
+func (k Keeper) GetAccountStorage(ctx cosmos.Context, address common.Address) support.Storage {
 	storage := support.Storage{}
 
 	k.ForEachStorage(ctx, address, func(key, value common.Hash) bool {
@@ -229,21 +229,21 @@ func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) suppo
 // ----------------------------------------------------------------------------
 
 // Tracer return a default vm.Tracer based on current keeper states
-func (k Keeper) Tracer(ctx sdk.Context, msg core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
+func (k Keeper) Tracer(ctx cosmos.Context, msg core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
 	return types.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
 }
 
 // GetAccountWithoutBalance load nonce and codeHash without balance,
 // more efficient in cases where balance is not needed.
-func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *states.StateAccount {
-	cosmosAddr := sdk.AccAddress(addr.Bytes())
+func (k *Keeper) GetAccountWithoutBalance(ctx cosmos.Context, addr common.Address) *states.StateAccount {
+	cosmosAddr := cosmos.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
 		return nil
 	}
 
 	codeHash := txs.EmptyCodeHash
-	ethAcct, ok := acct.(types2.EthAccountI)
+	ethAcct, ok := acct.(artela.EthAccountI)
 	if ok {
 		codeHash = ethAcct.GetCodeHash().Bytes()
 	}
@@ -255,7 +255,7 @@ func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) 
 }
 
 // GetAccountOrEmpty returns empty account if not exist, returns error if it's not `EthAccount`
-func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) states.StateAccount {
+func (k *Keeper) GetAccountOrEmpty(ctx cosmos.Context, addr common.Address) states.StateAccount {
 	acct := k.GetAccount(ctx, addr)
 	if acct != nil {
 		return *acct
@@ -269,8 +269,8 @@ func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) states.
 }
 
 // GetNonce returns the sequence number of an account, returns 0 if not exists.
-func (k *Keeper) GetNonce(ctx sdk.Context, addr common.Address) uint64 {
-	cosmosAddr := sdk.AccAddress(addr.Bytes())
+func (k *Keeper) GetNonce(ctx cosmos.Context, addr common.Address) uint64 {
+	cosmosAddr := cosmos.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
 		return 0
@@ -280,8 +280,8 @@ func (k *Keeper) GetNonce(ctx sdk.Context, addr common.Address) uint64 {
 }
 
 // GetBalance load account's balance of gas token
-func (k *Keeper) GetBalance(ctx sdk.Context, addr common.Address) *big.Int {
-	cosmosAddr := sdk.AccAddress(addr.Bytes())
+func (k *Keeper) GetBalance(ctx cosmos.Context, addr common.Address) *big.Int {
+	cosmosAddr := cosmos.AccAddress(addr.Bytes())
 	evmParams := k.GetParams(ctx)
 	evmDenom := evmParams.GetEvmDenom()
 	// if node is pruned, params is empty. Return invalid value
@@ -296,11 +296,11 @@ func (k *Keeper) GetBalance(ctx sdk.Context, addr common.Address) *big.Int {
 // - `nil`: london hardfork not enabled.
 // - `0`: london hardfork enabled but fee is not enabled.
 // - `n`: both london hardfork and fee are enabled.
-func (k Keeper) GetBaseFee(ctx sdk.Context, ethCfg *params.ChainConfig) *big.Int {
+func (k Keeper) GetBaseFee(ctx cosmos.Context, ethCfg *params.ChainConfig) *big.Int {
 	return k.getBaseFee(ctx, support.IsLondon(ethCfg, ctx.BlockHeight()))
 }
 
-func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {
+func (k Keeper) getBaseFee(ctx cosmos.Context, london bool) *big.Int {
 	if !london {
 		return nil
 	}
@@ -313,40 +313,40 @@ func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {
 }
 
 // GetMinGasMultiplier returns the MinGasMultiplier param from the fee market module
-func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) sdk.Dec {
+func (k Keeper) GetMinGasMultiplier(ctx cosmos.Context) cosmos.Dec {
 	feeParams := k.feeKeeper.GetParams(ctx)
 	if feeParams.MinGasMultiplier.IsNil() {
 		// in case we are executing eth_call on a legacy block, returns a zero value.
-		return sdk.ZeroDec()
+		return cosmos.ZeroDec()
 	}
 	return feeParams.MinGasMultiplier
 }
 
 // ResetTransientGasUsed reset gas used to prepare for execution of current cosmos txs, called in ante handler.
-func (k Keeper) ResetTransientGasUsed(ctx sdk.Context) {
+func (k Keeper) ResetTransientGasUsed(ctx cosmos.Context) {
 	store := ctx.TransientStore(k.transientKey)
 	store.Delete(types.KeyPrefixTransientGasUsed)
 }
 
 // GetTransientGasUsed returns the gas used by current cosmos txs.
-func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
+func (k Keeper) GetTransientGasUsed(ctx cosmos.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientGasUsed)
 	if len(bz) == 0 {
 		return 0
 	}
-	return sdk.BigEndianToUint64(bz)
+	return cosmos.BigEndianToUint64(bz)
 }
 
 // SetTransientGasUsed sets the gas used by current cosmos txs.
-func (k Keeper) SetTransientGasUsed(ctx sdk.Context, gasUsed uint64) {
+func (k Keeper) SetTransientGasUsed(ctx cosmos.Context, gasUsed uint64) {
 	store := ctx.TransientStore(k.transientKey)
-	bz := sdk.Uint64ToBigEndian(gasUsed)
+	bz := cosmos.Uint64ToBigEndian(gasUsed)
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 }
 
 // AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos txs.
-func (k Keeper) AddTransientGasUsed(ctx sdk.Context, gasUsed uint64) (uint64, error) {
+func (k Keeper) AddTransientGasUsed(ctx cosmos.Context, gasUsed uint64) (uint64, error) {
 	result := k.GetTransientGasUsed(ctx) + gasUsed
 	if result < gasUsed {
 		return 0, errorsmod.Wrap(types.ErrGasOverflow, "transient gas used")

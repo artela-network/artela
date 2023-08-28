@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	types2 "github.com/artela-network/artela/ethereum/types"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
@@ -18,12 +18,12 @@ import (
 	"google.golang.org/grpc/status"
 
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
-	eth "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
@@ -43,7 +43,7 @@ func (k Keeper) Account(c context.Context, req *txs.QueryAccountRequest) (*txs.Q
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := types2.ValidateAddress(req.Address); err != nil {
+	if err := artela.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -51,7 +51,7 @@ func (k Keeper) Account(c context.Context, req *txs.QueryAccountRequest) (*txs.Q
 
 	addr := common.HexToAddress(req.Address)
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 	acct := k.GetAccountOrEmpty(ctx, addr)
 
 	return &txs.QueryAccountResponse{
@@ -66,16 +66,16 @@ func (k Keeper) CosmosAccount(c context.Context, req *txs.QueryCosmosAccountRequ
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := types2.ValidateAddress(req.Address); err != nil {
+	if err := artela.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 
 	ethAddr := common.HexToAddress(req.Address)
-	cosmosAddr := sdk.AccAddress(ethAddr.Bytes())
+	cosmosAddr := cosmos.AccAddress(ethAddr.Bytes())
 
 	account := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	res := txs.QueryCosmosAccountResponse{
@@ -96,21 +96,21 @@ func (k Keeper) ValidatorAccount(c context.Context, req *txs.QueryValidatorAccou
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	consAddr, err := sdk.ConsAddressFromBech32(req.ConsAddress)
+	consAddr, err := cosmos.ConsAddressFromBech32(req.ConsAddress)
 	if err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 	if !found {
 		return nil, fmt.Errorf("validator not found for %s", consAddr.String())
 	}
 
-	accAddr := sdk.AccAddress(validator.GetOperator())
+	accAddr := cosmos.AccAddress(validator.GetOperator())
 
 	res := txs.QueryValidatorAccountResponse{
 		AccountAddress: accAddr.String(),
@@ -131,14 +131,14 @@ func (k Keeper) Balance(c context.Context, req *txs.QueryBalanceRequest) (*txs.Q
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := types2.ValidateAddress(req.Address); err != nil {
+	if err := artela.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
 		)
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 
 	balanceInt := k.GetBalance(ctx, common.HexToAddress(req.Address))
 
@@ -153,14 +153,14 @@ func (k Keeper) Storage(c context.Context, req *txs.QueryStorageRequest) (*txs.Q
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := types2.ValidateAddress(req.Address); err != nil {
+	if err := artela.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
 		)
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 
 	address := common.HexToAddress(req.Address)
 	key := common.HexToHash(req.Key)
@@ -179,14 +179,14 @@ func (k Keeper) Code(c context.Context, req *txs.QueryCodeRequest) (*txs.QueryCo
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := types2.ValidateAddress(req.Address); err != nil {
+	if err := artela.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
 		)
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 
 	address := common.HexToAddress(req.Address)
 	acct := k.GetAccountWithoutBalance(ctx, address)
@@ -203,7 +203,7 @@ func (k Keeper) Code(c context.Context, req *txs.QueryCodeRequest) (*txs.QueryCo
 
 // Params implements the Query/Params gRPC method
 func (k Keeper) Params(c context.Context, _ *txs.QueryParamsRequest) (*txs.QueryParamsResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 	params := k.GetParams(ctx)
 
 	return &txs.QueryParamsResponse{
@@ -217,7 +217,7 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 
 	var args txs.TransactionArgs
 	err := json.Unmarshal(req.Args, &args)
@@ -259,7 +259,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 	chainID, err := getChainID(ctx, req.ChainId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -382,7 +382,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		contextHeight = 1
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 	ctx = ctx.WithBlockHeight(contextHeight)
 	ctx = ctx.WithBlockTime(req.BlockTime)
 	ctx = ctx.WithHeaderHash(common.Hex2Bytes(req.BlockHash))
@@ -394,7 +394,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to load evm config: %s", err.Error())
 	}
-	signer := eth.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
+	signer := ethereum.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 	for i, tx := range req.Predecessors {
@@ -459,7 +459,7 @@ func (k Keeper) TraceBlock(c context.Context, req *txs.QueryTraceBlockRequest) (
 		contextHeight = 1
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 	ctx = ctx.WithBlockHeight(contextHeight)
 	ctx = ctx.WithBlockTime(req.BlockTime)
 	ctx = ctx.WithHeaderHash(common.Hex2Bytes(req.BlockHash))
@@ -472,7 +472,7 @@ func (k Keeper) TraceBlock(c context.Context, req *txs.QueryTraceBlockRequest) (
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to load evm config")
 	}
-	signer := eth.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
+	signer := ethereum.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 	txsLength := len(req.Txs)
 	results := make([]*types.TxTraceResult, 0, txsLength)
 
@@ -504,11 +504,11 @@ func (k Keeper) TraceBlock(c context.Context, req *txs.QueryTraceBlockRequest) (
 
 // traceTx do trace on one txs, it returns a tuple: (traceResult, nextLogIndex, error).
 func (k *Keeper) traceTx(
-	ctx sdk.Context,
+	ctx cosmos.Context,
 	cfg *states.EVMConfig,
 	txConfig states.TxConfig,
-	signer eth.Signer,
-	tx *eth.Transaction,
+	signer ethereum.Signer,
+	tx *ethereum.Transaction,
 	traceConfig *support.TraceConfig,
 	commitMessage bool,
 	tracerJSONConfig json.RawMessage,
@@ -591,7 +591,7 @@ func (k *Keeper) traceTx(
 
 // BaseFee implements the Query/BaseFee gRPC method
 func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.QueryBaseFeeResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 
 	params := k.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(k.eip155ChainID)
@@ -607,9 +607,9 @@ func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.Que
 }
 
 // getChainID parse chainID from current context if not provided
-func getChainID(ctx sdk.Context, chainID int64) (*big.Int, error) {
+func getChainID(ctx cosmos.Context, chainID int64) (*big.Int, error) {
 	if chainID == 0 {
-		return types2.ParseChainID(ctx.ChainID())
+		return artela.ParseChainID(ctx.ChainID())
 	}
 	return big.NewInt(chainID), nil
 }

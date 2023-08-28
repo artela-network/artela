@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -30,7 +30,7 @@ var _ vm.StateDB = &StateDB{}
 // * Accounts
 type StateDB struct {
 	keeper Keeper
-	ctx    sdk.Context
+	ctx    cosmos.Context
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects map[common.Address]*stateObject
@@ -54,7 +54,7 @@ type StateDB struct {
 }
 
 // New creates a new states from a given trie.
-func New(ctx sdk.Context, keeper Keeper, txConfig TxConfig) *StateDB {
+func New(ctx cosmos.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 	return &StateDB{
 		keeper:       keeper,
 		ctx:          ctx,
@@ -84,7 +84,7 @@ func (s *StateDB) Keeper() Keeper {
 }
 
 // Context returns the txs Context.
-func (s *StateDB) Context() sdk.Context {
+func (s *StateDB) Context() cosmos.Context {
 	return s.ctx
 }
 

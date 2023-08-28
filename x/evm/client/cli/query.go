@@ -1,7 +1,7 @@
 package cli
 
 import (
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	rpc "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/spf13/cobra"
 
@@ -56,7 +56,7 @@ func GetStorageCmd() *cobra.Command {
 				Key:     key,
 			}
 
-			res, err := queryClient.Storage(rpctypes.ContextWithHeight(clientCtx.Height), req)
+			res, err := queryClient.Storage(rpc.ContextWithHeight(clientCtx.Height), req)
 			if err != nil {
 				return err
 			}
@@ -93,7 +93,7 @@ func GetCodeCmd() *cobra.Command {
 				Address: address,
 			}
 
-			res, err := queryClient.Code(rpctypes.ContextWithHeight(clientCtx.Height), req)
+			res, err := queryClient.Code(rpc.ContextWithHeight(clientCtx.Height), req)
 			if err != nil {
 				return err
 			}

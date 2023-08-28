@@ -3,13 +3,13 @@ package support
 import (
 	"fmt"
 	"github.com/artela-network/artela/ethereum/utils"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (
@@ -106,22 +106,22 @@ func (p Params) EIPs() []int {
 // Usage of x/params to manage parameters is deprecated in favor of x/gov
 // controlled execution of MsgUpdateParams messages. These types remain solely
 // for migration purposes and will be removed in a future release.
-func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+func ParamKeyTable() paramsmodule.KeyTable {
+	return paramsmodule.NewKeyTable().RegisterParamSet(&Params{})
 }
 
 // Deprecated: ParamSetPairs returns the parameter set pairs.
 // Usage of x/params to manage parameters is deprecated in favor of x/gov
 // controlled execution of MsgUpdateParams messages. These types remain solely
 // for migration purposes and will be removed in a future release.
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyEVMDenom, &p.EvmDenom, validateEVMDenom),
-		paramtypes.NewParamSetPair(ParamStoreKeyEnableCreate, &p.EnableCreate, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyEnableCall, &p.EnableCall, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyExtraEIPs, &p.ExtraEIPs, validateEIPs),
-		paramtypes.NewParamSetPair(ParamStoreKeyChainConfig, &p.ChainConfig, validateChainConfig),
-		paramtypes.NewParamSetPair(ParamStoreKeyAllowUnprotectedTxs, &p.AllowUnprotectedTxs, validateBool),
+func (p *Params) ParamSetPairs() paramsmodule.ParamSetPairs {
+	return paramsmodule.ParamSetPairs{
+		paramsmodule.NewParamSetPair(ParamStoreKeyEVMDenom, &p.EvmDenom, validateEVMDenom),
+		paramsmodule.NewParamSetPair(ParamStoreKeyEnableCreate, &p.EnableCreate, validateBool),
+		paramsmodule.NewParamSetPair(ParamStoreKeyEnableCall, &p.EnableCall, validateBool),
+		paramsmodule.NewParamSetPair(ParamStoreKeyExtraEIPs, &p.ExtraEIPs, validateEIPs),
+		paramsmodule.NewParamSetPair(ParamStoreKeyChainConfig, &p.ChainConfig, validateChainConfig),
+		paramsmodule.NewParamSetPair(ParamStoreKeyAllowUnprotectedTxs, &p.AllowUnprotectedTxs, validateBool),
 	}
 }
 
@@ -131,7 +131,7 @@ func validateEVMDenom(i interface{}) error {
 		return fmt.Errorf("invalid parameter EVM denom type: %T", i)
 	}
 
-	return sdk.ValidateDenom(denom)
+	return cosmos.ValidateDenom(denom)
 }
 
 func validateBool(i interface{}) error {

@@ -1,7 +1,7 @@
 package txs
 
 import (
-	types2 "github.com/artela-network/artela/ethereum/types"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
@@ -25,7 +25,7 @@ func newLegacyTx(tx *ethereum.Transaction) (*LegacyTx, error) {
 	}
 
 	if tx.Value() != nil {
-		amountInt, err := types2.SafeNewIntFromBigInt(tx.Value())
+		amountInt, err := artela.SafeNewIntFromBigInt(tx.Value())
 		if err != nil {
 			return nil, err
 		}
@@ -33,7 +33,7 @@ func newLegacyTx(tx *ethereum.Transaction) (*LegacyTx, error) {
 	}
 
 	if tx.GasPrice() != nil {
-		gasPriceInt, err := types2.SafeNewIntFromBigInt(tx.GasPrice())
+		gasPriceInt, err := artela.SafeNewIntFromBigInt(tx.GasPrice())
 		if err != nil {
 			return nil, err
 		}
@@ -74,10 +74,10 @@ func (tx LegacyTx) Validate() error {
 	if gasPrice.Sign() == -1 {
 		return errorsmod.Wrapf(types.ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
 	}
-	if !types2.IsValidInt256(gasPrice) {
+	if !artela.IsValidInt256(gasPrice) {
 		return errorsmod.Wrap(types.ErrInvalidGasPrice, "out of bound")
 	}
-	if !types2.IsValidInt256(tx.Fee()) {
+	if !artela.IsValidInt256(tx.Fee()) {
 		return errorsmod.Wrap(types.ErrInvalidGasFee, "out of bound")
 	}
 
@@ -86,12 +86,12 @@ func (tx LegacyTx) Validate() error {
 	if amount != nil && amount.Sign() == -1 {
 		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount cannot be negative %s", amount)
 	}
-	if !types2.IsValidInt256(amount) {
+	if !artela.IsValidInt256(amount) {
 		return errorsmod.Wrap(types.ErrInvalidAmount, "out of bound")
 	}
 
 	if tx.To != "" {
-		if err := types2.ValidateAddress(tx.To); err != nil {
+		if err := artela.ValidateAddress(tx.To); err != nil {
 			return errorsmod.Wrap(err, "invalid to address")
 		}
 	}

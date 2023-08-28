@@ -2,10 +2,10 @@ package keeper
 
 import (
 	"github.com/artela-network/artela/x/evm/txs"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	authmodule "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
@@ -77,7 +77,7 @@ func VerifyFee(
 
 	gasLimit := txData.GetGas()
 
-	var accessList ethtypes.AccessList
+	var accessList ethereum.AccessList
 	if txData.GetAccessList() != nil {
 		accessList = txData.GetAccessList()
 	}
@@ -116,7 +116,7 @@ func VerifyFee(
 }
 
 // ----------------------------------------------------------------------------
-// gas
+// 							      gas opt
 // ----------------------------------------------------------------------------
 
 // GetEthIntrinsicGas returns the intrinsic gas cost for the transaction
@@ -146,7 +146,7 @@ func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64
 
 		// refund to sender from the fee collector module account, which is the escrow account in charge of collecting tx fees
 
-		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, msg.From.Bytes(), refundedCoins)
+		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, authmodule.FeeCollectorName, msg.From.Bytes(), refundedCoins)
 		if err != nil {
 			err = errorsmod.Wrapf(errortypes.ErrInsufficientFunds, "fee collector account failed to refund fees: %s", err.Error())
 			return errorsmod.Wrapf(err, "failed to refund %d leftover gas (%s)", leftoverGas, refundedCoins.String())

@@ -1,7 +1,7 @@
 package txs
 
 import (
-	types2 "github.com/artela-network/artela/ethereum/types"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
 	"math/big"
 
@@ -26,7 +26,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	}
 
 	if tx.Value() != nil {
-		amountInt, err := types2.SafeNewIntFromBigInt(tx.Value())
+		amountInt, err := artela.SafeNewIntFromBigInt(tx.Value())
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +34,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	}
 
 	if tx.GasFeeCap() != nil {
-		gasFeeCapInt, err := types2.SafeNewIntFromBigInt(tx.GasFeeCap())
+		gasFeeCapInt, err := artela.SafeNewIntFromBigInt(tx.GasFeeCap())
 		if err != nil {
 			return nil, err
 		}
@@ -42,7 +42,7 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 	}
 
 	if tx.GasTipCap() != nil {
-		gasTipCapInt, err := types2.SafeNewIntFromBigInt(tx.GasTipCap())
+		gasTipCapInt, err := artela.SafeNewIntFromBigInt(tx.GasTipCap())
 		if err != nil {
 			return nil, err
 		}
@@ -99,11 +99,11 @@ func (tx DynamicFeeTx) Validate() error {
 		return errorsmod.Wrapf(types.ErrInvalidGasCap, "gas fee cap cannot be negative %s", tx.GasFeeCap)
 	}
 
-	if !types2.IsValidInt256(tx.GetGasTipCap()) {
+	if !artela.IsValidInt256(tx.GetGasTipCap()) {
 		return errorsmod.Wrap(types.ErrInvalidGasCap, "out of bound")
 	}
 
-	if !types2.IsValidInt256(tx.GetGasFeeCap()) {
+	if !artela.IsValidInt256(tx.GetGasFeeCap()) {
 		return errorsmod.Wrap(types.ErrInvalidGasCap, "out of bound")
 	}
 
@@ -114,7 +114,7 @@ func (tx DynamicFeeTx) Validate() error {
 		)
 	}
 
-	if !types2.IsValidInt256(tx.Fee()) {
+	if !artela.IsValidInt256(tx.Fee()) {
 		return errorsmod.Wrap(types.ErrInvalidGasFee, "out of bound")
 	}
 
@@ -123,12 +123,12 @@ func (tx DynamicFeeTx) Validate() error {
 	if amount != nil && amount.Sign() == -1 {
 		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount cannot be negative %s", amount)
 	}
-	if !types2.IsValidInt256(amount) {
+	if !artela.IsValidInt256(amount) {
 		return errorsmod.Wrap(types.ErrInvalidAmount, "out of bound")
 	}
 
 	if tx.To != "" {
-		if err := types2.ValidateAddress(tx.To); err != nil {
+		if err := artela.ValidateAddress(tx.To); err != nil {
 			return errorsmod.Wrap(err, "invalid to address")
 		}
 	}

@@ -14,10 +14,21 @@ import (
 
 const (
 	TracerAccessList = "access_list"
-	TracerJSON       = "json"
-	TracerStruct     = "struct"
-	TracerMarkdown   = "markdown"
+
+	TracerJSON = "json"
+
+	TracerStruct = "struct"
+
+	TracerMarkdown = "markdown"
 )
+
+var _ vm.EVMLogger = &NoOpTracer{}
+
+// TxTraceResult is the result of a single txs trace during a block trace.
+type TxTraceResult struct {
+	Result interface{} `json:"result,omitempty"` // Trace results produced by the tracer
+	Error  string      `json:"error,omitempty"`  // Trace failure produced by the tracer
+}
 
 // NewTracer creates a new Logger tracer to collect execution traces from an
 // EVM txs.
@@ -42,13 +53,9 @@ func NewTracer(tracer string, msg core.Message, cfg *params.ChainConfig, height 
 	}
 }
 
-// TxTraceResult is the result of a single txs trace during a block trace.
-type TxTraceResult struct {
-	Result interface{} `json:"result,omitempty"` // Trace results produced by the tracer
-	Error  string      `json:"error,omitempty"`  // Trace failure produced by the tracer
-}
-
-var _ vm.EVMLogger = &NoOpTracer{}
+// ===============================================================
+//          		        NoOp Tracer
+// ===============================================================
 
 // NoOpTracer is an empty implementation of vm.Tracer interface
 type NoOpTracer struct{}
