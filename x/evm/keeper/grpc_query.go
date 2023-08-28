@@ -37,7 +37,7 @@ const (
 	defaultTraceTimeout = 5 * time.Second
 )
 
-// Account implements the Query/Account gRPC method
+// Account implements the Query/StateAccount gRPC method
 func (k Keeper) Account(c context.Context, req *txs.QueryAccountRequest) (*txs.QueryAccountResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")

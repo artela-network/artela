@@ -1,5 +1,7 @@
 package states
 
+//Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/state_object.go
+
 import (
 	"bytes"
 	"github.com/ethereum/go-ethereum/common"
@@ -13,22 +15,30 @@ var emptyCodeHash = crypto.Keccak256(nil)
 type stateObject struct {
 	db *StateDB
 
-	account Account
+	account StateAccount
 	code    []byte
 
-	// states storage
+	// Storage cache of original entries to dedup rewrites, reset for every transaction
 	originStorage Storage
-	dirtyStorage  Storage
+	// Storage entries that have been modified in the current transaction execution
+	dirtyStorage Storage
 
 	address common.Address
 
-	// flags
-	dirtyCode bool
+	// Cache flags.
+	// When an object is marked suicided it will be deleted from the trie
+	// during the "update" phase of the state transition.
+	dirtyCode bool // true if the code was updated
 	suicided  bool
 }
 
+// empty returns whether the account is considered empty.
+func (s *stateObject) empty() bool {
+	return s.account.Nonce == 0 && s.account.Balance.Sign() == 0 && bytes.Equal(s.account.CodeHash, emptyCodeHash)
+}
+
 // newObject creates a states object.
-func newObject(db *StateDB, address common.Address, account Account) *stateObject {
+func newObject(db *StateDB, address common.Address, account StateAccount) *stateObject {
 	if account.Balance == nil {
 		account.Balance = new(big.Int)
 	}
@@ -44,14 +54,13 @@ func newObject(db *StateDB, address common.Address, account Account) *stateObjec
 	}
 }
 
-// empty returns whether the account is considered empty.
-func (s *stateObject) empty() bool {
-	return s.account.Nonce == 0 && s.account.Balance.Sign() == 0 && bytes.Equal(s.account.CodeHash, emptyCodeHash)
-}
-
 func (s *stateObject) markSuicided() {
 	s.suicided = true
 }
+
+// ----------------------------------------------------------------------------
+// 							  balance option
+// ----------------------------------------------------------------------------
 
 // AddBalance adds amount to s's balance.
 // It is used to add funds to the destination account of a transfer.
@@ -84,7 +93,54 @@ func (s *stateObject) setBalance(amount *big.Int) {
 	s.account.Balance = amount
 }
 
-// Returns the address of the contract/account
+// ----------------------------------------------------------------------------
+// 							  state option
+// ----------------------------------------------------------------------------
+
+// GetCommittedState query the committed states
+func (s *stateObject) GetCommittedState(key common.Hash) common.Hash {
+	if value, cached := s.originStorage[key]; cached {
+		return value
+	}
+	// If no live objects are available, load it from keeper
+	value := s.db.keeper.GetState(s.db.ctx, s.Address(), key)
+	s.originStorage[key] = value
+	return value
+}
+
+// GetState query the current states (including dirty states)
+func (s *stateObject) GetState(key common.Hash) common.Hash {
+	if value, dirty := s.dirtyStorage[key]; dirty {
+		return value
+	}
+	return s.GetCommittedState(key)
+}
+
+// SetState sets the contract states
+func (s *stateObject) SetState(key common.Hash, value common.Hash) {
+	// If the new value is the same as old, don't set
+	prev := s.GetState(key)
+	if prev == value {
+		return
+	}
+	// New value is different, update and journal the change
+	s.db.journal.append(storageChange{
+		account:  &s.address,
+		key:      key,
+		prevalue: prev,
+	})
+	s.setState(key, value)
+}
+
+func (s *stateObject) setState(key, value common.Hash) {
+	s.dirtyStorage[key] = value
+}
+
+// ----------------------------------------------------------------------------
+// 							 attribute accessors
+// ----------------------------------------------------------------------------
+
+// Address returns the address of the contract/account
 func (s *stateObject) Address() common.Address {
 	return s.address
 }
@@ -125,7 +181,6 @@ func (s *stateObject) setCode(codeHash common.Hash, code []byte) {
 	s.dirtyCode = true
 }
 
-// SetCode set nonce to account
 func (s *stateObject) SetNonce(nonce uint64) {
 	s.db.journal.append(nonceChange{
 		account: &s.address,
@@ -151,43 +206,4 @@ func (s *stateObject) Balance() *big.Int {
 // Nonce returns the nonce of account
 func (s *stateObject) Nonce() uint64 {
 	return s.account.Nonce
-}
-
-// GetCommittedState query the committed states
-func (s *stateObject) GetCommittedState(key common.Hash) common.Hash {
-	if value, cached := s.originStorage[key]; cached {
-		return value
-	}
-	// If no live objects are available, load it from keeper
-	value := s.db.keeper.GetState(s.db.ctx, s.Address(), key)
-	s.originStorage[key] = value
-	return value
-}
-
-// GetState query the current states (including dirty states)
-func (s *stateObject) GetState(key common.Hash) common.Hash {
-	if value, dirty := s.dirtyStorage[key]; dirty {
-		return value
-	}
-	return s.GetCommittedState(key)
-}
-
-// SetState sets the contract states
-func (s *stateObject) SetState(key common.Hash, value common.Hash) {
-	// If the new value is the same as old, don't set
-	prev := s.GetState(key)
-	if prev == value {
-		return
-	}
-	// New value is different, update and journal the change
-	s.db.journal.append(storageChange{
-		account:  &s.address,
-		key:      key,
-		prevalue: prev,
-	})
-	s.setState(key, value)
-}
-
-func (s *stateObject) setState(key, value common.Hash) {
-	s.dirtyStorage[key] = value
 }

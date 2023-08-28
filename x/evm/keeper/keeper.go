@@ -225,7 +225,7 @@ func (k Keeper) GetAccountStorage(ctx sdk.Context, address common.Address) suppo
 }
 
 // ----------------------------------------------------------------------------
-// Account
+// StateAccount
 // ----------------------------------------------------------------------------
 
 // Tracer return a default vm.Tracer based on current keeper states
@@ -235,7 +235,7 @@ func (k Keeper) Tracer(ctx sdk.Context, msg core.Message, ethCfg *params.ChainCo
 
 // GetAccountWithoutBalance load nonce and codeHash without balance,
 // more efficient in cases where balance is not needed.
-func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *states.Account {
+func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *states.StateAccount {
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
@@ -248,21 +248,21 @@ func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) 
 		codeHash = ethAcct.GetCodeHash().Bytes()
 	}
 
-	return &states.Account{
+	return &states.StateAccount{
 		Nonce:    acct.GetSequence(),
 		CodeHash: codeHash,
 	}
 }
 
 // GetAccountOrEmpty returns empty account if not exist, returns error if it's not `EthAccount`
-func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) states.Account {
+func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) states.StateAccount {
 	acct := k.GetAccount(ctx, addr)
 	if acct != nil {
 		return *acct
 	}
 
 	// empty account
-	return states.Account{
+	return states.StateAccount{
 		Balance:  new(big.Int),
 		CodeHash: txs.EmptyCodeHash,
 	}

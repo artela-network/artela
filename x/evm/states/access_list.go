@@ -1,5 +1,7 @@
 package states
 
+//Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/access_list.go
+
 import (
 	"github.com/ethereum/go-ethereum/common"
 )

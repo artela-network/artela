@@ -1,5 +1,7 @@
 package states
 
+//Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/statedb.go
+
 import (
 	"fmt"
 	"math/big"
@@ -14,9 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// revision is the identifier of a version of states.
-// it consists of an auto-increment id and a journal index.
-// it's safer to use than using journal index alone.
 type revision struct {
 	id           int
 	journalIndex int
@@ -33,12 +32,7 @@ type StateDB struct {
 	keeper Keeper
 	ctx    sdk.Context
 
-	// Journal of states modifications. This is the backbone of
-	// Snapshot and RevertToSnapshot.
-	journal        *journal
-	validRevisions []revision
-	nextRevisionID int
-
+	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects map[common.Address]*stateObject
 
 	txConfig TxConfig
@@ -51,6 +45,12 @@ type StateDB struct {
 
 	// Per-txs access list
 	accessList *accessList
+
+	// Journal of states modifications. This is the backbone of
+	// Snapshot and RevertToSnapshot.
+	journal        *journal
+	validRevisions []revision
+	nextRevisionId int
 }
 
 // New creates a new states from a given trie.
@@ -67,7 +67,7 @@ func New(ctx sdk.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 }
 
 func (s *StateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses ethereum.AccessList) {
-	// TOOD this is a new method in ethereum 1.20, implement this here.
+	//TODO mark this is a new method in ethereum 1.20, implement this here.
 }
 
 func (s *StateDB) GetTransientState(addr common.Address, key common.Hash) common.Hash {
@@ -251,7 +251,7 @@ func (s *StateDB) getOrNewStateObject(addr common.Address) *stateObject {
 func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) {
 	prev = s.getStateObject(addr)
 
-	newobj = newObject(s, addr, Account{})
+	newobj = newObject(s, addr, StateAccount{})
 	if prev == nil {
 		s.journal.append(createObjectChange{account: &addr})
 	} else {
@@ -427,8 +427,8 @@ func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addre
 
 // Snapshot returns an identifier for the current revision of the states.
 func (s *StateDB) Snapshot() int {
-	id := s.nextRevisionID
-	s.nextRevisionID++
+	id := s.nextRevisionId
+	s.nextRevisionId++
 	s.validRevisions = append(s.validRevisions, revision{id, s.journal.length()})
 	return id
 }
