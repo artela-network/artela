@@ -40,25 +40,25 @@ echo ./build/artelad config chain-id $CHAINID
 echo ./build/artelad init $MONIKER --chain-id $CHAINID
 ./build/artelad init $MONIKER --chain-id $CHAINID
 
-# Change parameter token denominations to aphoton
-cat $HOME/.artelad/config/genesis.json | jq '.app_state["staking"]["params"]["bond_denom"]="aphoton"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
-cat $HOME/.artelad/config/genesis.json | jq '.app_state["crisis"]["constant_fee"]["denom"]="aphoton"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
-cat $HOME/.artelad/config/genesis.json | jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="aphoton"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
-cat $HOME/.artelad/config/genesis.json | jq '.app_state["mint"]["params"]["mint_denom"]="aphoton"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
+# Change parameter token denominations to aartela
+cat $HOME/.artelad/config/genesis.json | jq '.app_state["staking"]["params"]["bond_denom"]="aartela"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
+cat $HOME/.artelad/config/genesis.json | jq '.app_state["crisis"]["constant_fee"]["denom"]="aartela"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
+cat $HOME/.artelad/config/genesis.json | jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="aartela"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
+cat $HOME/.artelad/config/genesis.json | jq '.app_state["mint"]["params"]["mint_denom"]="aartela"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
 
 # Set gas limit in genesis
 cat $HOME/.artelad/config/genesis.json | jq '.consensus_params["block"]["max_gas"]="20000000"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
 cat $HOME/.artelad/config/genesis.json | jq '.app_state["evm"]["params"]["extra_eips"]=[3855]' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
 
 # Allocate genesis accounts (cosmos formatted addresses)
-./build/artelad add-genesis-account $KEY 100000000000000000000000000aphoton --keyring-backend $KEYRING
-./build/artelad add-genesis-account $KEY2 100000000000000000000000000aphoton --keyring-backend $KEYRING
-./build/artelad add-genesis-account $KEY3 100000000000000000000000000aphoton --keyring-backend $KEYRING
-./build/artelad add-genesis-account $KEY4 100000000000000000000000000aphoton --keyring-backend $KEYRING
-echo ./build/artelad add-genesis-account $KEY 100000000000000000000000000aphoton --keyring-backend $KEYRING
+./build/artelad add-genesis-account $KEY 100000000000000000000000000aartela --keyring-backend $KEYRING
+./build/artelad add-genesis-account $KEY2 100000000000000000000000000aartela --keyring-backend $KEYRING
+./build/artelad add-genesis-account $KEY3 100000000000000000000000000aartela --keyring-backend $KEYRING
+./build/artelad add-genesis-account $KEY4 100000000000000000000000000aartela --keyring-backend $KEYRING
+echo ./build/artelad add-genesis-account $KEY 100000000000000000000000000aartela --keyring-backend $KEYRING
 
 # Sign genesis transaction
-./build/artelad gentx $KEY 1000000000000000000000aphoton --keyring-backend $KEYRING --chain-id $CHAINID
+./build/artelad gentx $KEY 1000000000000000000000aartela --keyring-backend $KEYRING --chain-id $CHAINID
 
 # Collect genesis tx
 ./build/artelad collect-gentxs
