@@ -3,8 +3,6 @@ package txs
 import (
 	"fmt"
 	"github.com/artela-network/artela/x/evm/txs/support"
-	ethereum "github.com/ethereum/go-ethereum/core/types"
-
 	//"github.com/artela-network/artela/x/evm/txs"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -276,22 +274,4 @@ func cost(fee, value *big.Int) *big.Int {
 		return new(big.Int).Add(fee, value)
 	}
 	return fee
-}
-
-func NewTxDataFromTx(tx *ethereum.Transaction) (TxData, error) {
-	var txData TxData
-	var err error
-	switch tx.Type() {
-	case ethereum.DynamicFeeTxType:
-		txData, err = newDynamicFeeTx(tx)
-	case ethereum.AccessListTxType:
-		txData, err = newAccessListTx(tx)
-	default:
-		txData, err = newLegacyTx(tx)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return txData, nil
 }

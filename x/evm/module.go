@@ -23,13 +23,17 @@ import (
 	"github.com/artela-network/artela/x/evm/types"
 )
 
-// ConsensusVersion defines the current x/evm module consensus version.
+// TODO mark ConsensusVersion defines the current x/evm module consensus version.
 const ConsensusVersion = 5
 
 var (
 	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
+
+// ===============================================================
+//          		      AppModuleBasic
+// ===============================================================
 
 // AppModuleBasic defines the basic application module used by the evm module.
 type AppModuleBasic struct{}
@@ -86,6 +90,10 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	txs.RegisterInterfaces(registry)
 }
+
+// ===============================================================
+//          		        AppModule
+// ===============================================================
 
 // AppModule implements an application module for the evm module.
 type AppModule struct {

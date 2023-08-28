@@ -15,10 +15,13 @@ import (
 var (
 	// DefaultEVMDenom defines the default EVM denomination on Artela
 	DefaultEVMDenom = utils.BaseDenom
+
 	// DefaultAllowUnprotectedTxs rejects all unprotected txs (i.e false)
 	DefaultAllowUnprotectedTxs = false
+
 	// DefaultEnableCreate enables contract creation (i.e true)
 	DefaultEnableCreate = true
+
 	// DefaultEnableCall enables contract calls (i.e true)
 	DefaultEnableCall = true
 )
@@ -29,6 +32,16 @@ var (
 // more info check:
 // https://github.com/ethereum/go-ethereum/blob/master/core/vm/interpreter.go#L97
 var AvailableExtraEIPs = []int64{1344, 1884, 2200, 2929, 3198, 3529}
+
+// Parameter keys
+var (
+	ParamStoreKeyEVMDenom            = []byte("EVMDenom")
+	ParamStoreKeyEnableCreate        = []byte("EnableCreate")
+	ParamStoreKeyEnableCall          = []byte("EnableCall")
+	ParamStoreKeyExtraEIPs           = []byte("EnableExtraEIPs")
+	ParamStoreKeyChainConfig         = []byte("ChainConfig")
+	ParamStoreKeyAllowUnprotectedTxs = []byte("AllowUnprotectedTxs")
+)
 
 // NewParams creates a new Params instance
 func NewParams(evmDenom string, allowUnprotectedTxs, enableCreate, enableCall bool, config ChainConfig, extraEIPs []int64) Params {
@@ -89,6 +102,29 @@ func (p Params) EIPs() []int {
 	return eips
 }
 
+// Deprecated: ParamKeyTable returns the parameter key table.
+// Usage of x/params to manage parameters is deprecated in favor of x/gov
+// controlled execution of MsgUpdateParams messages. These types remain solely
+// for migration purposes and will be removed in a future release.
+func ParamKeyTable() paramtypes.KeyTable {
+	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+}
+
+// Deprecated: ParamSetPairs returns the parameter set pairs.
+// Usage of x/params to manage parameters is deprecated in favor of x/gov
+// controlled execution of MsgUpdateParams messages. These types remain solely
+// for migration purposes and will be removed in a future release.
+func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
+	return paramtypes.ParamSetPairs{
+		paramtypes.NewParamSetPair(ParamStoreKeyEVMDenom, &p.EvmDenom, validateEVMDenom),
+		paramtypes.NewParamSetPair(ParamStoreKeyEnableCreate, &p.EnableCreate, validateBool),
+		paramtypes.NewParamSetPair(ParamStoreKeyEnableCall, &p.EnableCall, validateBool),
+		paramtypes.NewParamSetPair(ParamStoreKeyExtraEIPs, &p.ExtraEIPs, validateEIPs),
+		paramtypes.NewParamSetPair(ParamStoreKeyChainConfig, &p.ChainConfig, validateChainConfig),
+		paramtypes.NewParamSetPair(ParamStoreKeyAllowUnprotectedTxs, &p.AllowUnprotectedTxs, validateBool),
+	}
+}
+
 func validateEVMDenom(i interface{}) error {
 	denom, ok := i.(string)
 	if !ok {
@@ -133,37 +169,4 @@ func validateChainConfig(i interface{}) error {
 // IsLondon returns if london hardfork is enabled.
 func IsLondon(ethConfig *params.ChainConfig, height int64) bool {
 	return ethConfig.IsLondon(big.NewInt(height))
-}
-
-// Parameter keys
-var (
-	ParamStoreKeyEVMDenom            = []byte("EVMDenom")
-	ParamStoreKeyEnableCreate        = []byte("EnableCreate")
-	ParamStoreKeyEnableCall          = []byte("EnableCall")
-	ParamStoreKeyExtraEIPs           = []byte("EnableExtraEIPs")
-	ParamStoreKeyChainConfig         = []byte("ChainConfig")
-	ParamStoreKeyAllowUnprotectedTxs = []byte("AllowUnprotectedTxs")
-)
-
-// Deprecated: ParamKeyTable returns the parameter key table.
-// Usage of x/params to manage parameters is deprecated in favor of x/gov
-// controlled execution of MsgUpdateParams messages. These types remain solely
-// for migration purposes and will be removed in a future release.
-func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
-}
-
-// Deprecated: ParamSetPairs returns the parameter set pairs.
-// Usage of x/params to manage parameters is deprecated in favor of x/gov
-// controlled execution of MsgUpdateParams messages. These types remain solely
-// for migration purposes and will be removed in a future release.
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyEVMDenom, &p.EvmDenom, validateEVMDenom),
-		paramtypes.NewParamSetPair(ParamStoreKeyEnableCreate, &p.EnableCreate, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyEnableCall, &p.EnableCall, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyExtraEIPs, &p.ExtraEIPs, validateEIPs),
-		paramtypes.NewParamSetPair(ParamStoreKeyChainConfig, &p.ChainConfig, validateChainConfig),
-		paramtypes.NewParamSetPair(ParamStoreKeyAllowUnprotectedTxs, &p.AllowUnprotectedTxs, validateBool),
-	}
 }

@@ -21,13 +21,17 @@ import (
 	"github.com/artela-network/artela/x/fee/types"
 )
 
-// ConsensusVersion defines the current x/fee module consensus version.
+// TODO mark ConsensusVersion defines the current x/fee module consensus version.
 const ConsensusVersion = 4
 
 var (
 	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
+
+// ===============================================================
+//          		      AppModuleBasic
+// ===============================================================
 
 // AppModuleBasic defines the basic application module used by the fee market module.
 type AppModuleBasic struct{}
@@ -83,6 +87,10 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
+
+// ===============================================================
+//          		        AppModule
+// ===============================================================
 
 // AppModule implements an application module for the fee market module.
 type AppModule struct {

@@ -4,10 +4,39 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"fmt"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/ethereum/go-ethereum/common"
+	"strings"
 )
 
+// ----------------------------------------------------------------------------
+// 							       State
+// ----------------------------------------------------------------------------
+
+// Validate performs a basic validation of the State fields.
+// NOTE: states value can be empty
+// State represents a single Storage key value pair item.
+func (s State) Validate() error {
+	if strings.TrimSpace(s.Key) == "" {
+		return errorsmod.Wrap(types.ErrInvalidState, "states key hash cannot be blank")
+	}
+
+	return nil
+}
+
+// NewState creates a new State instance
+func NewState(key, value common.Hash) State {
+	return State{
+		Key:   key.String(),
+		Value: value.String(),
+	}
+}
+
+// ----------------------------------------------------------------------------
+// 						   State Array - Storage
+// ----------------------------------------------------------------------------
+
 // Storage represents the account Storage map as a slice of single key value
-// State pairs. This is to prevent non determinism at genesis initialization or export.
+// State pairs.
 type Storage []State
 
 // Validate performs a basic validation of the Storage fields.
@@ -33,7 +62,6 @@ func (s Storage) String() string {
 	for _, state := range s {
 		str += fmt.Sprintf("%s\n", state.String())
 	}
-
 	return str
 }
 
@@ -41,6 +69,5 @@ func (s Storage) String() string {
 func (s Storage) Copy() Storage {
 	cpy := make(Storage, len(s))
 	copy(cpy, s)
-
 	return cpy
 }

@@ -72,23 +72,6 @@ func (msg MsgEthereumTx) AsTransaction() *ethereum.Transaction {
 	return ethereum.NewTx(txData.AsEthereumData())
 }
 
-// FromEthereumTx populates the message fields from the given ethereum transaction
-func (msg *MsgEthereumTx) FromEthereumTx(tx *ethereum.Transaction) error {
-	txData, err := NewTxDataFromTx(tx)
-	if err != nil {
-		return err
-	}
-
-	anyTxData, err := PackTxData(txData)
-	if err != nil {
-		return err
-	}
-
-	msg.Data = anyTxData
-	msg.Hash = tx.Hash().Hex()
-	return nil
-}
-
 // AsMessage creates an Ethereum core.Message from the msg fields
 func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
 	return core.TransactionToMessage(msg.AsTransaction(), signer, baseFee)
@@ -308,4 +291,39 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (common.Address, error) {
 
 	msg.From = from.Hex()
 	return from, nil
+}
+
+// FromEthereumTx populates the message fields from the given ethereum transaction
+func (msg *MsgEthereumTx) FromEthereumTx(tx *ethereum.Transaction) error {
+	txData, err := NewTxDataFromTx(tx)
+	if err != nil {
+		return err
+	}
+
+	anyTxData, err := PackTxData(txData)
+	if err != nil {
+		return err
+	}
+
+	msg.Data = anyTxData
+	msg.Hash = tx.Hash().Hex()
+	return nil
+}
+
+func NewTxDataFromTx(tx *ethereum.Transaction) (TxData, error) {
+	var txData TxData
+	var err error
+	switch tx.Type() {
+	case ethereum.DynamicFeeTxType:
+		txData, err = newDynamicFeeTx(tx)
+	case ethereum.AccessListTxType:
+		txData, err = newAccessListTx(tx)
+	default:
+		txData, err = newLegacyTx(tx)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return txData, nil
 }
