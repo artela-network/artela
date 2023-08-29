@@ -18,7 +18,7 @@ import (
 var _ states.Keeper = &Keeper{}
 
 // ----------------------------------------------------------------------------
-// StateDB Keeper implementation
+// 								   Getter
 // ----------------------------------------------------------------------------
 
 // GetAccount returns nil if account is not exist, returns error if it's not `EthAccountI`
@@ -50,24 +50,9 @@ func (k *Keeper) GetCode(ctx cosmos.Context, codeHash common.Hash) []byte {
 	return store.Get(codeHash.Bytes())
 }
 
-// ForEachStorage iterate contract storage, callback return false to break early
-func (k *Keeper) ForEachStorage(ctx cosmos.Context, addr common.Address, cb func(key, value common.Hash) bool) {
-	store := ctx.KVStore(k.storeKey)
-	prefix := types.AddressStoragePrefix(addr)
-
-	iterator := cosmos.KVStorePrefixIterator(store, prefix)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		key := common.BytesToHash(iterator.Key())
-		value := common.BytesToHash(iterator.Value())
-
-		// check if iteration stops
-		if !cb(key, value) {
-			return
-		}
-	}
-}
+// ----------------------------------------------------------------------------
+// 								   Setter
+// ----------------------------------------------------------------------------
 
 // SetBalance update account's balance, compare with current balance first, then decide to mint or burn.
 func (k *Keeper) SetBalance(ctx cosmos.Context, addr common.Address, amount *big.Int) error {
@@ -172,6 +157,25 @@ func (k *Keeper) SetCode(ctx cosmos.Context, codeHash, code []byte) {
 		fmt.Sprintf("code %s", action),
 		"code-hash", common.BytesToHash(codeHash).Hex(),
 	)
+}
+
+// ForEachStorage iterate contract storage, callback return false to break early
+func (k *Keeper) ForEachStorage(ctx cosmos.Context, addr common.Address, cb func(key, value common.Hash) bool) {
+	store := ctx.KVStore(k.storeKey)
+	prefix := types.AddressStoragePrefix(addr)
+
+	iterator := cosmos.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := common.BytesToHash(iterator.Key())
+		value := common.BytesToHash(iterator.Value())
+
+		// check if iteration stops
+		if !cb(key, value) {
+			return
+		}
+	}
 }
 
 // DeleteAccount handles contract's suicide call:

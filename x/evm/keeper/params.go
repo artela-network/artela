@@ -9,10 +9,12 @@ import (
 // GetParams returns the total set of evm parameters.
 func (k Keeper) GetParams(ctx cosmos.Context) (params support.Params) {
 	store := ctx.KVStore(k.storeKey)
+
 	bz := store.Get(types.KeyPrefixParams)
 	if len(bz) == 0 {
 		return k.GetLegacyParams(ctx)
 	}
+
 	k.cdc.MustUnmarshal(bz, &params)
 	return
 }

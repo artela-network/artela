@@ -21,10 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// ===============================================================
-//          		          Codec
-// ===============================================================
-
 const (
 	// Amino names
 	updateParamsName = "artela/MsgUpdateParams"
@@ -38,6 +34,13 @@ var (
 
 	// AminoCdc is a amino codec created to support amino JSON compatible msgs.
 	AminoCdc = codec.NewAminoCodec(amino)
+
+	// DefaultPriorityReduction is the default amount of price values required for 1 unit of priority.
+	// Because priority is `int64` while price is `big.Int`, it's necessary to scale down the range to keep it more practical.
+	// The default value is the same as the `cosmos.DefaultPowerReduction`.
+	DefaultPriorityReduction = cosmos.DefaultPowerReduction
+
+	EmptyCodeHash = crypto.Keccak256(nil)
 )
 
 // This is required for the GetSignBytes function
@@ -67,6 +70,10 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
+
+// ===============================================================
+//          		      Pack and UnPack
+// ===============================================================
 
 // PackTxData constructs a new Any packed with the given txs data value. It returns
 // an error if the client states can't be casted to a protobuf message or if the concrete
@@ -100,17 +107,14 @@ func UnpackTxData(any *codectypes.Any) (TxData, error) {
 	return txData, nil
 }
 
+// ===============================================================
+//          		          Codec
+// ===============================================================
+
 // RegisterLegacyAminoCodec required for EIP-712
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgUpdateParams{}, updateParamsName, nil)
 }
-
-// DefaultPriorityReduction is the default amount of price values required for 1 unit of priority.
-// Because priority is `int64` while price is `big.Int`, it's necessary to scale down the range to keep it more practical.
-// The default value is the same as the `cosmos.DefaultPowerReduction`.
-var DefaultPriorityReduction = cosmos.DefaultPowerReduction
-
-var EmptyCodeHash = crypto.Keccak256(nil)
 
 // DecodeTxResponse decodes an protobuf-encoded byte slice into TxResponse
 func DecodeTxResponse(in []byte) (*MsgEthereumTxResponse, error) {
@@ -167,6 +171,10 @@ func UnwrapEthereumMsg(tx *cosmos.Tx, ethHash common.Hash) (*MsgEthereumTx, erro
 	return nil, fmt.Errorf("eth txs not found: %s", ethHash)
 }
 
+// ===============================================================
+//          		          For Gas
+// ===============================================================
+
 // BinSearch execute the binary search and hone in on an executable gas limit
 func BinSearch(lo, hi uint64, executable func(uint64) (bool, *MsgEthereumTxResponse, error)) (uint64, error) {
 	for lo+1 < hi {
@@ -218,7 +226,7 @@ func GetTxPriority(txData TxData, baseFee *big.Int) (priority int64) {
 }
 
 // ===============================================================
-//          		          Converter
+//          		          Others
 // ===============================================================
 
 // DeriveChainID derives the chain id from the given v parameter.

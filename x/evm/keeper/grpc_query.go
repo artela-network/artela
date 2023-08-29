@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	artela "github.com/artela-network/artela/ethereum/types"
+
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
@@ -17,9 +17,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/math"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -599,7 +600,7 @@ func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.Que
 
 	res := &txs.QueryBaseFeeResponse{}
 	if baseFee != nil {
-		aux := sdkmath.NewIntFromBigInt(baseFee)
+		aux := math.NewIntFromBigInt(baseFee)
 		res.BaseFee = &aux
 	}
 

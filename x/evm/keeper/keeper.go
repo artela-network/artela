@@ -2,6 +2,7 @@ package keeper
 
 import (
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
@@ -12,26 +13,27 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
 )
 
 // Keeper grants access to the EVM module states and implements the go-ethereum StateDB interface.
 type Keeper struct {
-	// Protobuf codec
+
+	// protobuf codec
 	cdc codec.BinaryCodec
-	// Store key required for the EVM Prefix KVStore. It is required by:
-	// - storing account's Storage State
-	// - storing account's Code
-	// - storing txs Logs
-	// - storing Bloom filters by block height. Needed for the Web3 API.
+
+	// store key required for the EVM Prefix KVStore. It is required by:
+	// 		- storing account's Storage State
+	// 		- storing account's Code
+	// 		- storing txs Logs
+	// 		- storing Bloom filters by block height. Needed for the Web3 API.
 	storeKey storetypes.StoreKey
 
 	// key to access the transient store, which is reset on every block during Commit
@@ -51,11 +53,11 @@ type Keeper struct {
 	// chain ID number obtained from the context's chain id
 	eip155ChainID *big.Int
 
-	// Tracer used to collect execution traces from the EVM txs execution
+	// tracer used to collect execution traces from the EVM txs execution
 	tracer string
 
-	// Legacy subspace
-	ss paramstypes.Subspace
+	// legacy subspace
+	ss paramsmodule.Subspace
 }
 
 // NewKeeper generates new evm module keeper
@@ -68,8 +70,9 @@ func NewKeeper(
 	stakingKeeper types.StakingKeeper,
 	feeKeeper types.FeeKeeper,
 	tracer string,
-	subSpace paramstypes.Subspace,
+	subSpace paramsmodule.Subspace,
 ) *Keeper {
+
 	// ensure evm module account is set
 	if addr := accountKeeper.GetModuleAddress(types.ModuleName); addr == nil {
 		panic("the EVM module account has not been set")
@@ -96,6 +99,10 @@ func NewKeeper(
 
 	return k
 }
+
+// ----------------------------------------------------------------------------
+// 								   Config
+// ----------------------------------------------------------------------------
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx cosmos.Context) log.Logger {
@@ -125,9 +132,14 @@ func (k Keeper) ChainID() *big.Int {
 	return k.eip155ChainID
 }
 
+// GetAuthority returns the x/evm module authority address
+func (k Keeper) GetAuthority() cosmos.AccAddress {
+	return k.authority
+}
+
 // ----------------------------------------------------------------------------
-// Block Bloom
-// Required by Web3 API.
+// 								Block Bloom
+// 							Required by Web3 API
 // ----------------------------------------------------------------------------
 
 // EmitBlockBloomEvent emit block bloom events
@@ -138,11 +150,6 @@ func (k Keeper) EmitBlockBloomEvent(ctx cosmos.Context, bloom ethereum.Bloom) {
 			cosmos.NewAttribute(types.AttributeKeyEthereumBloom, string(bloom.Bytes())),
 		),
 	)
-}
-
-// GetAuthority returns the x/evm module authority address
-func (k Keeper) GetAuthority() cosmos.AccAddress {
-	return k.authority
 }
 
 // GetBlockBloomTransient returns bloom bytes for the current block height
@@ -166,7 +173,7 @@ func (k Keeper) SetBlockBloomTransient(ctx cosmos.Context, bloom *big.Int) {
 }
 
 // ----------------------------------------------------------------------------
-// Tx
+// 								  Tx Index
 // ----------------------------------------------------------------------------
 
 // SetTxIndexTransient set the index of processing txs
@@ -187,7 +194,7 @@ func (k Keeper) GetTxIndexTransient(ctx cosmos.Context) uint64 {
 }
 
 // ----------------------------------------------------------------------------
-// Log
+// 									Log
 // ----------------------------------------------------------------------------
 
 // GetLogSizeTransient returns EVM log index on the current block.
@@ -209,7 +216,7 @@ func (k Keeper) SetLogSizeTransient(ctx cosmos.Context, logSize uint64) {
 }
 
 // ----------------------------------------------------------------------------
-// Storage
+// 									Storage
 // ----------------------------------------------------------------------------
 
 // GetAccountStorage return states storage associated with an account
@@ -225,13 +232,8 @@ func (k Keeper) GetAccountStorage(ctx cosmos.Context, address common.Address) su
 }
 
 // ----------------------------------------------------------------------------
-// StateAccount
+//									Account
 // ----------------------------------------------------------------------------
-
-// Tracer return a default vm.Tracer based on current keeper states
-func (k Keeper) Tracer(ctx cosmos.Context, msg core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
-	return types.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
-}
 
 // GetAccountWithoutBalance load nonce and codeHash without balance,
 // more efficient in cases where balance is not needed.
@@ -292,6 +294,15 @@ func (k *Keeper) GetBalance(ctx cosmos.Context, addr common.Address) *big.Int {
 	return coin.Amount.BigInt()
 }
 
+// ----------------------------------------------------------------------------
+// 								Gas and Fee
+// ----------------------------------------------------------------------------
+
+// Tracer return a default vm.Tracer based on current keeper states
+func (k Keeper) Tracer(ctx cosmos.Context, msg core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
+	return types.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
+}
+
 // GetBaseFee returns current base fee, return values:
 // - `nil`: london hardfork not enabled.
 // - `0`: london hardfork enabled but fee is not enabled.
@@ -345,12 +356,13 @@ func (k Keeper) SetTransientGasUsed(ctx cosmos.Context, gasUsed uint64) {
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 }
 
-// AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos txs.
+// AddTransientGasUsed accumulate gas used by each eth msg included in current cosmos txs.
 func (k Keeper) AddTransientGasUsed(ctx cosmos.Context, gasUsed uint64) (uint64, error) {
 	result := k.GetTransientGasUsed(ctx) + gasUsed
 	if result < gasUsed {
 		return 0, errorsmod.Wrap(types.ErrGasOverflow, "transient gas used")
 	}
+
 	k.SetTransientGasUsed(ctx, result)
 	return result, nil
 }
