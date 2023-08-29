@@ -7,15 +7,15 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
+	evmmodule "github.com/artela-network/artela/x/evm/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
-// EthSetupContextDecorator is adapted from SetUpContextDecorator from cosmos-sdk, it ignores gas consumption
+// EthSetupContextDecorator is adapted from SetUpContextDecorator from cosmos-cosmos, it ignores gas consumption
 // by setting the gas meter to infinite
 type EthSetupContextDecorator struct {
 	evmKeeper EVMKeeper
@@ -27,7 +27,7 @@ func NewEthSetUpContextDecorator(evmKeeper EVMKeeper) EthSetupContextDecorator {
 	}
 }
 
-func (esc EthSetupContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+func (esc EthSetupContextDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (newCtx cosmos.Context, err error) {
 	// all transactions must implement GasTx
 	_, ok := tx.(authante.GasTx)
 	if !ok {
@@ -35,7 +35,7 @@ func (esc EthSetupContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 	}
 
 	// We need to setup an empty gas config so that the gas is consistent with Ethereum.
-	newCtx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter()).
+	newCtx = ctx.WithGasMeter(cosmos.NewInfiniteGasMeter()).
 		WithKVGasConfig(storetypes.GasConfig{}).
 		WithTransientKVGasConfig(storetypes.GasConfig{})
 
@@ -56,7 +56,7 @@ func NewEthEmitEventDecorator(evmKeeper EVMKeeper) EthEmitEventDecorator {
 }
 
 // AnteHandle emits some basic events for the eth messages
-func (eeed EthEmitEventDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+func (eeed EthEmitEventDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (newCtx cosmos.Context, err error) {
 	// After eth tx passed ante handler, the fee is deducted and nonce increased, it shouldn't be ignored by json-rpc,
 	// we need to emit some basic events at the very end of ante handler to be indexed by tendermint.
 	txIndex := eeed.evmKeeper.GetTxIndexTransient(ctx)
@@ -69,17 +69,17 @@ func (eeed EthEmitEventDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 
 		// emit ethereum tx hash as an event so that it can be indexed by Tendermint for query purposes
 		// it's emitted in ante handler, so we can query failed transaction (out of block gas limit).
-		ctx.EventManager().EmitEvent(sdk.NewEvent(
-			evmtypes.EventTypeEthereumTx,
-			sdk.NewAttribute(evmtypes.AttributeKeyEthereumTxHash, msgEthTx.Hash),
-			sdk.NewAttribute(evmtypes.AttributeKeyTxIndex, strconv.FormatUint(txIndex+uint64(i), 10)), // #nosec G701
+		ctx.EventManager().EmitEvent(cosmos.NewEvent(
+			evmmodule.EventTypeEthereumTx,
+			cosmos.NewAttribute(evmmodule.AttributeKeyEthereumTxHash, msgEthTx.Hash),
+			cosmos.NewAttribute(evmmodule.AttributeKeyTxIndex, strconv.FormatUint(txIndex+uint64(i), 10)), // #nosec G701
 		))
 	}
 
 	return next(ctx, tx, simulate)
 }
 
-// EthValidateBasicDecorator is adapted from ValidateBasicDecorator from cosmos-sdk, it ignores ErrNoSignatures
+// EthValidateBasicDecorator is adapted from ValidateBasicDecorator from cosmos-cosmos, it ignores ErrNoSignatures
 type EthValidateBasicDecorator struct {
 	evmKeeper EVMKeeper
 }
@@ -92,7 +92,7 @@ func NewEthValidateBasicDecorator(ek EVMKeeper) EthValidateBasicDecorator {
 }
 
 // AnteHandle handles basic validation of tx
-func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
+func (vbd EthValidateBasicDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (cosmos.Context, error) {
 	// no need to validate basic on recheck tx, call next antehandler
 	if ctx.IsReCheckTx() {
 		return next(ctx, tx, simulate)
@@ -136,7 +136,7 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 		return ctx, errorsmod.Wrap(errortypes.ErrInvalidRequest, "for eth tx Signatures should be empty")
 	}
 
-	txFee := sdk.Coins{}
+	txFee := cosmos.Coins{}
 	txGasLimit := uint64(0)
 
 	evmParams := vbd.evmKeeper.GetParams(ctx)
@@ -168,16 +168,16 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 
 		// return error if contract creation or call are disabled through governance
 		if !enableCreate && txData.GetTo() == nil {
-			return ctx, errorsmod.Wrap(evmtypes.ErrCreateDisabled, "failed to create new contract")
+			return ctx, errorsmod.Wrap(evmmodule.ErrCreateDisabled, "failed to create new contract")
 		} else if !enableCall && txData.GetTo() != nil {
-			return ctx, errorsmod.Wrap(evmtypes.ErrCallDisabled, "failed to call contract")
+			return ctx, errorsmod.Wrap(evmmodule.ErrCallDisabled, "failed to call contract")
 		}
 
-		if baseFee == nil && txData.TxType() == ethtypes.DynamicFeeTxType {
-			return ctx, errorsmod.Wrap(ethtypes.ErrTxTypeNotSupported, "dynamic fee tx not supported")
+		if baseFee == nil && txData.TxType() == ethereum.DynamicFeeTxType {
+			return ctx, errorsmod.Wrap(ethereum.ErrTxTypeNotSupported, "dynamic fee tx not supported")
 		}
 
-		txFee = txFee.Add(sdk.Coin{Denom: evmDenom, Amount: sdkmath.NewIntFromBigInt(txData.Fee())})
+		txFee = txFee.Add(cosmos.Coin{Denom: evmDenom, Amount: sdkmath.NewIntFromBigInt(txData.Fee())})
 	}
 
 	if !authInfo.Fee.Amount.IsEqual(txFee) {

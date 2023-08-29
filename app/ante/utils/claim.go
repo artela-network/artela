@@ -2,20 +2,20 @@ package utils
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	stakingmodule "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // ClaimStakingRewardsIfNecessary checks if the given address has enough balance to cover the
 // given amount. If not, it attempts to claim enough staking rewards to cover the amount.
 func ClaimStakingRewardsIfNecessary(
-	ctx sdk.Context,
+	ctx cosmos.Context,
 	bankKeeper BankKeeper,
 	distributionKeeper DistributionKeeper,
 	stakingKeeper StakingKeeper,
-	addr sdk.AccAddress,
-	amount sdk.Coins,
+	addr cosmos.AccAddress,
+	amount cosmos.Coins,
 ) error {
 	stakingDenom := stakingKeeper.BondDenom(ctx)
 	found, amountInStakingDenom := amount.Find(stakingDenom)
@@ -48,16 +48,16 @@ func ClaimStakingRewardsIfNecessary(
 // to cover the given amount. If more than enough rewards are unclaimed, only those up to
 // the given amount are claimed.
 func ClaimSufficientStakingRewards(
-	ctx sdk.Context,
+	ctx cosmos.Context,
 	stakingKeeper StakingKeeper,
 	distributionKeeper DistributionKeeper,
-	addr sdk.AccAddress,
-	amount sdk.Coin,
+	addr cosmos.AccAddress,
+	amount cosmos.Coin,
 ) error {
 	var (
 		err     error
-		reward  sdk.Coins
-		rewards sdk.Coins
+		reward  cosmos.Coins
+		rewards cosmos.Coins
 	)
 
 	// Allocate a cached context to avoid writing to states if there are not enough rewards
@@ -68,7 +68,7 @@ func ClaimSufficientStakingRewards(
 	stakingKeeper.IterateDelegations(
 		cacheCtx,
 		addr,
-		func(_ int64, delegation stakingtypes.DelegationI) (stop bool) {
+		func(_ int64, delegation stakingmodule.DelegationI) (stop bool) {
 			reward, err = distributionKeeper.WithdrawDelegationRewards(cacheCtx, addr, delegation.GetValidatorAddr())
 			if err != nil {
 				return true

@@ -5,7 +5,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	evmante "github.com/artela-network/artela/app/ante/evm"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -25,10 +25,10 @@ func NewMinGasPriceDecorator(fk evmante.FeeKeeper, ek evmante.EVMKeeper) MinGasP
 	return MinGasPriceDecorator{feesKeeper: fk, evmKeeper: ek}
 }
 
-func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	feeTx, ok := tx.(sdk.FeeTx)
+func (mpd MinGasPriceDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (newCtx cosmos.Context, err error) {
+	feeTx, ok := tx.(cosmos.FeeTx)
 	if !ok {
-		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "invalid transaction type %T, expected sdk.FeeTx", tx)
+		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "invalid transaction type %T, expected cosmos.FeeTx", tx)
 	}
 
 	minGasPrice := mpd.feesKeeper.GetParams(ctx).MinGasPrice
@@ -39,7 +39,7 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	}
 	evmParams := mpd.evmKeeper.GetParams(ctx)
 	evmDenom := evmParams.GetEvmDenom()
-	minGasPrices := sdk.DecCoins{
+	minGasPrices := cosmos.DecCoins{
 		{
 			Denom:  evmDenom,
 			Amount: minGasPrice,
@@ -49,16 +49,16 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	feeCoins := feeTx.GetFee()
 	gas := feeTx.GetGas()
 
-	requiredFees := make(sdk.Coins, 0)
+	requiredFees := make(cosmos.Coins, 0)
 
 	// Determine the required fees by multiplying each required minimum gas
 	// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
-	gasLimit := sdk.NewDecFromBigInt(new(big.Int).SetUint64(gas))
+	gasLimit := cosmos.NewDecFromBigInt(new(big.Int).SetUint64(gas))
 
 	for _, gp := range minGasPrices {
 		fee := gp.Amount.Mul(gasLimit).Ceil().RoundInt()
 		if fee.IsPositive() {
-			requiredFees = requiredFees.Add(sdk.Coin{Denom: gp.Denom, Amount: fee})
+			requiredFees = requiredFees.Add(cosmos.Coin{Denom: gp.Denom, Amount: fee})
 		}
 	}
 

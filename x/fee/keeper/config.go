@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	"github.com/artela-network/artela/x/fee/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -13,7 +13,7 @@ import (
 // block during BeginBlock. If the NoBaseFee parameter is enabled or below activation height, this function returns nil.
 // NOTE: This code is inspired from the go-ethereum EIP1559 implementation and adapted to Cosmos SDK-based
 // chains. For the canonical code refer to: https://github.com/ethereum/go-ethereum/blob/master/consensus/misc/eip1559.go
-func (k Keeper) CalculateBaseFee(ctx sdk.Context) *big.Int {
+func (k Keeper) CalculateBaseFee(ctx cosmos.Context) *big.Int {
 	params := k.GetParams(ctx)
 
 	// Ignore the calculation if not enabled
@@ -92,7 +92,7 @@ func (k Keeper) CalculateBaseFee(ctx sdk.Context) *big.Int {
 }
 
 // GetParams returns the total set of fee market parameters.
-func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
+func (k Keeper) GetParams(ctx cosmos.Context) (params types.Params) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ParamsKey)
 	if len(bz) == 0 {
@@ -106,7 +106,7 @@ func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 }
 
 // SetParams sets the fee market params in a single key
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
+func (k Keeper) SetParams(ctx cosmos.Context, params types.Params) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(&params)
 	if err != nil {
@@ -124,13 +124,13 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 // ----------------------------------------------------------------------------
 
 // GetBaseFeeEnabled returns true if base fee is enabled
-func (k Keeper) GetBaseFeeEnabled(ctx sdk.Context) bool {
+func (k Keeper) GetBaseFeeEnabled(ctx cosmos.Context) bool {
 	params := k.GetParams(ctx)
 	return !params.NoBaseFee && ctx.BlockHeight() >= params.EnableHeight
 }
 
 // GetBaseFee gets the base fee from the store
-func (k Keeper) GetBaseFee(ctx sdk.Context) *big.Int {
+func (k Keeper) GetBaseFee(ctx cosmos.Context) *big.Int {
 	params := k.GetParams(ctx)
 	if params.NoBaseFee {
 		return nil
@@ -141,9 +141,9 @@ func (k Keeper) GetBaseFee(ctx sdk.Context) *big.Int {
 }
 
 // SetBaseFee set's the base fee in the store
-func (k Keeper) SetBaseFee(ctx sdk.Context, baseFee *big.Int) {
+func (k Keeper) SetBaseFee(ctx cosmos.Context, baseFee *big.Int) {
 	params := k.GetParams(ctx)
-	params.BaseFee = sdk.NewIntFromBigInt(baseFee)
+	params.BaseFee = cosmos.NewIntFromBigInt(baseFee)
 	err := k.SetParams(ctx, params)
 	if err != nil {
 		return

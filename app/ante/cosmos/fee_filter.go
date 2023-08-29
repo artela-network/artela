@@ -6,7 +6,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	anteutils "github.com/artela-network/artela/app/ante/utils"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -53,8 +53,8 @@ func NewDeductFeeDecorator(
 
 // AnteHandle ensures that the transaction contains valid fee requirements and tries to deduct those
 // from the account balance or unclaimed staking rewards, which the transaction sender might have.
-func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
-	feeTx, ok := tx.(sdk.FeeTx)
+func (dfd DeductFeeDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (cosmos.Context, error) {
+	feeTx, ok := tx.(cosmos.FeeTx)
 	if !ok {
 		return ctx, errorsmod.Wrap(errortypes.ErrTxDecode, "Tx must be a FeeTx")
 	}
@@ -90,7 +90,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 
 // deductFee checks if the fee payer has enough funds to pay for the fees and deducts them.
 // If the spendable balance is not enough, it tries to claim enough staking rewards to cover the fees.
-func (dfd DeductFeeDecorator) deductFee(ctx sdk.Context, sdkTx sdk.Tx, fees sdk.Coins, feePayer, feeGranter sdk.AccAddress) error {
+func (dfd DeductFeeDecorator) deductFee(ctx cosmos.Context, sdkTx cosmos.Tx, fees cosmos.Coins, feePayer, feeGranter cosmos.AccAddress) error {
 	if fees.IsZero() {
 		return nil
 	}
@@ -129,11 +129,11 @@ func (dfd DeductFeeDecorator) deductFee(ctx sdk.Context, sdkTx sdk.Tx, fees sdk.
 	//	return fmt.Errorf("insufficient funds and failed to claim sufficient staking rewards to pay for fees: %w", err)
 	//}
 
-	events := sdk.Events{
-		sdk.NewEvent(
-			sdk.EventTypeTx,
-			sdk.NewAttribute(sdk.AttributeKeyFee, fees.String()),
-			sdk.NewAttribute(sdk.AttributeKeyFeePayer, deductFeesFrom.String()),
+	events := cosmos.Events{
+		cosmos.NewEvent(
+			cosmos.EventTypeTx,
+			cosmos.NewAttribute(cosmos.AttributeKeyFee, fees.String()),
+			cosmos.NewAttribute(cosmos.AttributeKeyFeePayer, deductFeesFrom.String()),
 		),
 	}
 	ctx.EventManager().EmitEvents(events)
@@ -144,7 +144,7 @@ func (dfd DeductFeeDecorator) deductFee(ctx sdk.Context, sdkTx sdk.Tx, fees sdk.
 // deductFeesFromBalanceOrUnclaimedStakingRewards tries to deduct the fees from the account balance.
 // If the account balance is not enough, it tries to claim enough staking rewards to cover the fees.
 func deductFeesFromBalanceOrUnclaimedStakingRewards(
-	ctx sdk.Context, dfd DeductFeeDecorator, deductFeesFromAcc authtypes.AccountI, fees sdk.Coins,
+	ctx cosmos.Context, dfd DeductFeeDecorator, deductFeesFromAcc authtypes.AccountI, fees cosmos.Coins,
 ) error {
 	if err := anteutils.ClaimStakingRewardsIfNecessary(
 		ctx, dfd.bankKeeper, dfd.distributionKeeper, dfd.stakingKeeper, deductFeesFromAcc.GetAddress(), fees,
@@ -158,7 +158,7 @@ func deductFeesFromBalanceOrUnclaimedStakingRewards(
 
 // checkTxFeeWithValidatorMinGasPrices implements the default fee logic, where the minimum price per
 // unit of gas is fixed and set by each validator, and the tx priority is computed from the gas price.
-func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, feeTx sdk.FeeTx) (sdk.Coins, int64, error) {
+func checkTxFeeWithValidatorMinGasPrices(ctx cosmos.Context, feeTx cosmos.FeeTx) (cosmos.Coins, int64, error) {
 	feeCoins := feeTx.GetFee()
 	gas := feeTx.GetGas()
 
@@ -177,20 +177,20 @@ func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, feeTx sdk.FeeTx) (sdk.
 
 // checkFeeCoinsAgainstMinGasPrices checks if the provided fee coins are greater than or equal to the
 // required fees, that are based on the minimum gas prices and the gas. If not, it will return an error.
-func checkFeeCoinsAgainstMinGasPrices(ctx sdk.Context, feeCoins sdk.Coins, gas uint64) error {
+func checkFeeCoinsAgainstMinGasPrices(ctx cosmos.Context, feeCoins cosmos.Coins, gas uint64) error {
 	minGasPrices := ctx.MinGasPrices()
 	if minGasPrices.IsZero() {
 		return nil
 	}
 
-	requiredFees := make(sdk.Coins, len(minGasPrices))
+	requiredFees := make(cosmos.Coins, len(minGasPrices))
 
 	// Determine the required fees by multiplying each required minimum gas
 	// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
-	glDec := sdk.NewDec(int64(gas)) //#nosec G701 -- gosec warning about integer overflow is not relevant here
+	glDec := cosmos.NewDec(int64(gas)) //#nosec G701 -- gosec warning about integer overflow is not relevant here
 	for i, gp := range minGasPrices {
 		fee := gp.Amount.Mul(glDec)
-		requiredFees[i] = sdk.NewCoin(gp.Denom, fee.Ceil().RoundInt())
+		requiredFees[i] = cosmos.NewCoin(gp.Denom, fee.Ceil().RoundInt())
 	}
 
 	if !feeCoins.IsAnyGTE(requiredFees) {
@@ -204,7 +204,7 @@ func checkFeeCoinsAgainstMinGasPrices(ctx sdk.Context, feeCoins sdk.Coins, gas u
 // provided in a transaction.
 // NOTE: This implementation should be used with a great consideration as it opens potential attack vectors
 // where txs with multiple coins could not be prioritized as expected.
-func getTxPriority(fees sdk.Coins, gas int64) int64 {
+func getTxPriority(fees cosmos.Coins, gas int64) int64 {
 	var priority int64
 	for _, c := range fees {
 		p := int64(math.MaxInt64)

@@ -2,7 +2,7 @@ package cosmos
 
 import (
 	"fmt"
-	types2 "github.com/artela-network/artela/ethereum/types"
+	artela "github.com/artela-network/artela/ethereum/types"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -21,14 +21,14 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
-	evmtypes "github.com/artela-network/artela/x/evm/types"
+	evmmodule "github.com/artela-network/artela/x/evm/types"
 )
 
 var artelaCodec codec.ProtoCodecMarshaler
 
 func init() {
 	registry := codectypes.NewInterfaceRegistry()
-	types2.RegisterInterfaces(registry)
+	artela.RegisterInterfaces(registry)
 	artelaCodec = codec.NewProtoCodec(registry)
 }
 
@@ -39,13 +39,13 @@ func init() {
 // CONTRACT: Pubkeys are set in context for all signers before this decorator runs
 // CONTRACT: Tx must implement SigVerifiableTx interface
 type LegacyEip712SigVerificationDecorator struct {
-	ak              evmtypes.AccountKeeper
+	ak              evmmodule.AccountKeeper
 	signModeHandler authsigning.SignModeHandler
 }
 
 // Deprecated: NewLegacyEip712SigVerificationDecorator creates a new LegacyEip712SigVerificationDecorator
 func NewLegacyEip712SigVerificationDecorator(
-	ak evmtypes.AccountKeeper,
+	ak evmmodule.AccountKeeper,
 	signModeHandler authsigning.SignModeHandler,
 ) LegacyEip712SigVerificationDecorator {
 	return LegacyEip712SigVerificationDecorator{
@@ -56,11 +56,11 @@ func NewLegacyEip712SigVerificationDecorator(
 
 // AnteHandle handles validation of EIP712 signed cosmos txs.
 // it is not run on RecheckTx
-func (svd LegacyEip712SigVerificationDecorator) AnteHandle(ctx sdk.Context,
-	tx sdk.Tx,
+func (svd LegacyEip712SigVerificationDecorator) AnteHandle(ctx cosmos.Context,
+	tx cosmos.Tx,
 	simulate bool,
-	next sdk.AnteHandler,
-) (newCtx sdk.Context, err error) {
+	next cosmos.AnteHandler,
+) (newCtx cosmos.Context, err error) {
 	// no need to verify signatures on recheck tx
 	if ctx.IsReCheckTx() {
 		return next(ctx, tx, simulate)
@@ -189,7 +189,7 @@ func VerifySignature(
 			msgs, tx.GetMemo(), tx.GetTip(),
 		)
 
-		signerChainID, err := types2.ParseChainID(signerData.ChainID)
+		signerChainID, err := artela.ParseChainID(signerData.ChainID)
 		if err != nil {
 			return errorsmod.Wrapf(err, "failed to parse chain-id: %s", signerData.ChainID)
 		}
@@ -203,7 +203,7 @@ func VerifySignature(
 			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "tx doesnt contain expected amount of extension options")
 		}
 
-		extOpt, ok := opts[0].GetCachedValue().(*types2.ExtensionOptionsWeb3Tx)
+		extOpt, ok := opts[0].GetCachedValue().(*artela.ExtensionOptionsWeb3Tx)
 		if !ok {
 			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "unknown extension option")
 		}
@@ -215,7 +215,7 @@ func VerifySignature(
 		if len(extOpt.FeePayer) == 0 {
 			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "no feePayer on ExtensionOptionsWeb3Tx")
 		}
-		feePayer, err := sdk.AccAddressFromBech32(extOpt.FeePayer)
+		feePayer, err := cosmos.AccAddressFromBech32(extOpt.FeePayer)
 		if err != nil {
 			return errorsmod.Wrap(err, "failed to parse feePayer from ExtensionOptionsWeb3Tx")
 		}
@@ -262,7 +262,7 @@ func VerifySignature(
 			return errorsmod.Wrapf(errortypes.ErrInvalidPubKey, "feePayer pubkey %s is different from transaction pubkey %s", pubKey, pk)
 		}
 
-		recoveredFeePayerAcc := sdk.AccAddress(pk.Address().Bytes())
+		recoveredFeePayerAcc := cosmos.AccAddress(pk.Address().Bytes())
 
 		if !recoveredFeePayerAcc.Equals(feePayer) {
 			return errorsmod.Wrapf(errortypes.ErrorInvalidSigner, "failed to verify delegated fee payer %s signature", recoveredFeePayerAcc)

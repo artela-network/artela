@@ -9,11 +9,11 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 )
 
 // BeginBlock updates base fee
-func BeginBlock(ctx sdk.Context, k *keeper.Keeper, _ abci.RequestBeginBlock) {
+func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestBeginBlock) {
 	baseFee := k.CalculateBaseFee(ctx)
 
 	// return immediately if base fee is nil
@@ -28,10 +28,10 @@ func BeginBlock(ctx sdk.Context, k *keeper.Keeper, _ abci.RequestBeginBlock) {
 	}()
 
 	// Store current base fee in event
-	ctx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
+	ctx.EventManager().EmitEvents(cosmos.Events{
+		cosmos.NewEvent(
 			types.EventTypeFee,
-			sdk.NewAttribute(types.AttributeKeyBaseFee, baseFee.String()),
+			cosmos.NewAttribute(types.AttributeKeyBaseFee, baseFee.String()),
 		),
 	})
 }
@@ -39,7 +39,7 @@ func BeginBlock(ctx sdk.Context, k *keeper.Keeper, _ abci.RequestBeginBlock) {
 // EndBlock update block gas wanted.
 // The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
-func EndBlock(ctx sdk.Context, k *keeper.Keeper, _ abci.RequestEndBlock) {
+func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) {
 	if ctx.BlockGasMeter() == nil {
 		k.Logger(ctx).Error("block gas meter is nil when setting block gas wanted")
 		return
@@ -62,17 +62,17 @@ func EndBlock(ctx sdk.Context, k *keeper.Keeper, _ abci.RequestEndBlock) {
 	// gasWanted = max(gasWanted * MinGasMultiplier, gasUsed)
 	// this will be keep BaseFee protected from un-penalized manipulation
 	minGasMultiplier := k.GetParams(ctx).MinGasMultiplier
-	limitedGasWanted := sdk.NewDec(gasWanted.Int64()).Mul(minGasMultiplier)
-	updatedGasWanted := sdk.MaxDec(limitedGasWanted, sdk.NewDec(gasUsed.Int64())).TruncateInt().Uint64()
+	limitedGasWanted := cosmos.NewDec(gasWanted.Int64()).Mul(minGasMultiplier)
+	updatedGasWanted := cosmos.MaxDec(limitedGasWanted, cosmos.NewDec(gasUsed.Int64())).TruncateInt().Uint64()
 	k.SetBlockGasWanted(ctx, updatedGasWanted)
 
 	defer func() {
 		telemetry.SetGauge(float32(updatedGasWanted), "fee", "block_gas")
 	}()
 
-	ctx.EventManager().EmitEvent(sdk.NewEvent(
+	ctx.EventManager().EmitEvent(cosmos.NewEvent(
 		"block_gas",
-		sdk.NewAttribute("height", fmt.Sprintf("%d", ctx.BlockHeight())),
-		sdk.NewAttribute("amount", fmt.Sprintf("%d", updatedGasWanted)),
+		cosmos.NewAttribute("height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		cosmos.NewAttribute("amount", fmt.Sprintf("%d", updatedGasWanted)),
 	))
 }

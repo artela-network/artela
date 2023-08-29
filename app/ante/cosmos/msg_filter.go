@@ -2,8 +2,8 @@ package cosmos
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	evmtypes "github.com/artela-network/artela/x/evm/txs"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	evmmodule "github.com/artela-network/artela/x/evm/txs"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -13,9 +13,9 @@ type RejectMessagesDecorator struct{}
 // AnteHandle rejects messages that requires ethereum-specific authentication.
 // For example `MsgEthereumTx` requires fee to be deducted in the antehandler in
 // order to perform the refund.
-func (rmd RejectMessagesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+func (rmd RejectMessagesDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (newCtx cosmos.Context, err error) {
 	for _, msg := range tx.GetMsgs() {
-		if _, ok := msg.(*evmtypes.MsgEthereumTx); ok {
+		if _, ok := msg.(*evmmodule.MsgEthereumTx); ok {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrInvalidType,
 				"MsgEthereumTx needs to be contained within a tx with 'ExtensionOptionsEthereumTx' option",

@@ -6,18 +6,18 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	anteutils "github.com/artela-network/artela/app/ante/utils"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	authmodule "github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibcante "github.com/cosmos/ibc-go/v7/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
 	cosmosante "github.com/artela-network/artela/app/ante/cosmos"
 	evmante "github.com/artela-network/artela/app/ante/evm"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
+	evmmodule "github.com/artela-network/artela/x/evm/types"
 
 	// vestingtypes "github.com/artela-network/artela/x/vesting/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
@@ -27,8 +27,8 @@ import (
 // AnteHandler decorators.
 type AnteDecorators struct {
 	Cdc                codec.BinaryCodec
-	AccountKeeper      evmtypes.AccountKeeper
-	BankKeeper         evmtypes.BankKeeper
+	AccountKeeper      evmmodule.AccountKeeper
+	BankKeeper         evmmodule.BankKeeper
 	DistributionKeeper anteutils.DistributionKeeper
 	IBCKeeper          *ibckeeper.Keeper
 	// StakingKeeper          vestingtypes.StakingKeeper
@@ -37,7 +37,7 @@ type AnteDecorators struct {
 	FeegrantKeeper         ante.FeegrantKeeper
 	ExtensionOptionChecker ante.ExtensionOptionChecker
 	SignModeHandler        authsigning.SignModeHandler
-	SigGasConsumer         func(meter sdk.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
+	SigGasConsumer         func(meter cosmos.GasMeter, sig signing.SignatureV2, params authmodule.Params) error
 	MaxTxGasWanted         uint64
 	TxFeeChecker           anteutils.TxFeeChecker
 }
@@ -81,8 +81,8 @@ func (options AnteDecorators) Validate() error {
 }
 
 // newEVMAnteHandler creates the default ante handler for Ethereum transactions
-func newEVMAnteHandler(options AnteDecorators) sdk.AnteHandler {
-	return sdk.ChainAnteDecorators(
+func newEVMAnteHandler(options AnteDecorators) cosmos.AnteHandler {
+	return cosmos.ChainAnteDecorators(
 		// outermost AnteDecorator. SetUpContext must be called first
 		evmante.NewEthSetUpContextDecorator(options.EvmKeeper),
 		// Check eth effective gas price against the node's minimal-gas-prices config
@@ -103,12 +103,12 @@ func newEVMAnteHandler(options AnteDecorators) sdk.AnteHandler {
 }
 
 // newCosmosAnteHandler creates the default ante handler for Cosmos transactions
-func newCosmosAnteHandler(options AnteDecorators) sdk.AnteHandler {
-	return sdk.ChainAnteDecorators(
+func newCosmosAnteHandler(options AnteDecorators) cosmos.AnteHandler {
+	return cosmos.ChainAnteDecorators(
 		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
-			sdk.MsgTypeURL(&txs.MsgEthereumTx{}),
-			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
+			cosmos.MsgTypeURL(&txs.MsgEthereumTx{}),
+			cosmos.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
 		ante.NewSetUpContextDecorator(),
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
@@ -131,12 +131,12 @@ func newCosmosAnteHandler(options AnteDecorators) sdk.AnteHandler {
 }
 
 // newCosmosAnteHandlerEip712 creates the ante handler for transactions signed with EIP712
-func newLegacyCosmosAnteHandlerEip712(options AnteDecorators) sdk.AnteHandler {
-	return sdk.ChainAnteDecorators(
+func newLegacyCosmosAnteHandlerEip712(options AnteDecorators) cosmos.AnteHandler {
+	return cosmos.ChainAnteDecorators(
 		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
-			sdk.MsgTypeURL(&txs.MsgEthereumTx{}),
-			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
+			cosmos.MsgTypeURL(&txs.MsgEthereumTx{}),
+			cosmos.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
 		ante.NewSetUpContextDecorator(),
 		ante.NewValidateBasicDecorator(),

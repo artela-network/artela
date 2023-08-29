@@ -4,25 +4,25 @@ import (
 	"fmt"
 
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
+	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/ethereum/go-ethereum/params"
 )
 
 type (
-	LegacyParams = paramtypes.ParamSet
+	LegacyParams = paramsmodule.ParamSet
 	// Subspace defines an interface that implements the legacy Cosmos SDK x/params Subspace type.
 	// NOTE: This is used solely for migration of the Cosmos SDK x/params managed parameters.
 	Subspace interface {
-		GetParamSetIfExists(ctx sdk.Context, ps LegacyParams)
+		GetParamSetIfExists(ctx cosmos.Context, ps LegacyParams)
 	}
 )
 
 var (
 	// DefaultMinGasMultiplier is 0.5 or 50%
-	DefaultMinGasMultiplier = sdk.NewDecWithPrec(50, 2)
+	DefaultMinGasMultiplier = cosmos.NewDecWithPrec(50, 2)
 	// DefaultMinGasPrice is 0 (i.e disabled)
-	DefaultMinGasPrice = sdk.ZeroDec()
+	DefaultMinGasPrice = cosmos.ZeroDec()
 	// DefaultEnableHeight is 0 (i.e disabled)
 	DefaultEnableHeight = int64(0)
 	// DefaultNoBaseFee is false
@@ -42,20 +42,20 @@ var (
 )
 
 // ParamKeyTable returns the parameter key table.
-func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+func ParamKeyTable() paramsmodule.KeyTable {
+	return paramsmodule.NewKeyTable().RegisterParamSet(&Params{})
 }
 
 // ParamSetPairs returns the parameter set pairs.
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyNoBaseFee, &p.NoBaseFee, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyBaseFeeChangeDenominator, &p.BaseFeeChangeDenominator, validateBaseFeeChangeDenominator),
-		paramtypes.NewParamSetPair(ParamStoreKeyElasticityMultiplier, &p.ElasticityMultiplier, validateElasticityMultiplier),
-		paramtypes.NewParamSetPair(ParamStoreKeyBaseFee, &p.BaseFee, validateBaseFee),
-		paramtypes.NewParamSetPair(ParamStoreKeyEnableHeight, &p.EnableHeight, validateEnableHeight),
-		paramtypes.NewParamSetPair(ParamStoreKeyMinGasPrice, &p.MinGasPrice, validateMinGasPrice),
-		paramtypes.NewParamSetPair(ParamStoreKeyMinGasMultiplier, &p.MinGasMultiplier, validateMinGasPrice),
+func (p *Params) ParamSetPairs() paramsmodule.ParamSetPairs {
+	return paramsmodule.ParamSetPairs{
+		paramsmodule.NewParamSetPair(ParamStoreKeyNoBaseFee, &p.NoBaseFee, validateBool),
+		paramsmodule.NewParamSetPair(ParamStoreKeyBaseFeeChangeDenominator, &p.BaseFeeChangeDenominator, validateBaseFeeChangeDenominator),
+		paramsmodule.NewParamSetPair(ParamStoreKeyElasticityMultiplier, &p.ElasticityMultiplier, validateElasticityMultiplier),
+		paramsmodule.NewParamSetPair(ParamStoreKeyBaseFee, &p.BaseFee, validateBaseFee),
+		paramsmodule.NewParamSetPair(ParamStoreKeyEnableHeight, &p.EnableHeight, validateEnableHeight),
+		paramsmodule.NewParamSetPair(ParamStoreKeyMinGasPrice, &p.MinGasPrice, validateMinGasPrice),
+		paramsmodule.NewParamSetPair(ParamStoreKeyMinGasMultiplier, &p.MinGasMultiplier, validateMinGasPrice),
 	}
 }
 
@@ -66,8 +66,8 @@ func NewParams(
 	elasticityMultiplier uint32,
 	baseFee uint64,
 	enableHeight int64,
-	minGasPrice sdk.Dec,
-	minGasPriceMultiplier sdk.Dec,
+	minGasPrice cosmos.Dec,
+	minGasPriceMultiplier cosmos.Dec,
 ) Params {
 	return Params{
 		NoBaseFee:                noBaseFee,
@@ -127,7 +127,7 @@ func (p *Params) IsBaseFeeEnabled(height int64) bool {
 }
 
 func validateMinGasPrice(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(cosmos.Dec)
 
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -192,7 +192,7 @@ func validateEnableHeight(i interface{}) error {
 }
 
 func validateMinGasMultiplier(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(cosmos.Dec)
 
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -206,7 +206,7 @@ func validateMinGasMultiplier(i interface{}) error {
 		return fmt.Errorf("value cannot be negative: %s", v)
 	}
 
-	if v.GT(sdk.OneDec()) {
+	if v.GT(cosmos.OneDec()) {
 		return fmt.Errorf("value cannot be greater than 1: %s", v)
 	}
 	return nil

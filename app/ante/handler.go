@@ -2,7 +2,7 @@ package ante
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 )
@@ -11,11 +11,11 @@ import (
 // Ethereum or SDK transaction to an internal ante handler for performing
 // transaction-level processing (e.g. fee payment, signature verification) before
 // being passed onto it's respective handler.
-func NewAnteHandler(options AnteDecorators) sdk.AnteHandler {
+func NewAnteHandler(options AnteDecorators) cosmos.AnteHandler {
 	return func(
-		ctx sdk.Context, tx sdk.Tx, sim bool,
-	) (newCtx sdk.Context, err error) {
-		var anteHandler sdk.AnteHandler
+		ctx cosmos.Context, tx cosmos.Tx, sim bool,
+	) (newCtx cosmos.Context, err error) {
+		var anteHandler cosmos.AnteHandler
 
 		txWithExtensions, ok := tx.(authante.HasExtensionOptionsTx)
 		if ok {
@@ -29,7 +29,7 @@ func NewAnteHandler(options AnteDecorators) sdk.AnteHandler {
 					// handle as normal Cosmos SDK tx, except signature is checked for EIP712 representation
 					anteHandler = newLegacyCosmosAnteHandlerEip712(options)
 				case "/artela.types.v1.ExtensionOptionDynamicFeeTx":
-					// cosmos-sdk tx with dynamic fee extension
+					// cosmos-cosmos tx with dynamic fee extension
 					anteHandler = newCosmosAnteHandler(options)
 				default:
 					return ctx, errorsmod.Wrapf(
@@ -44,7 +44,7 @@ func NewAnteHandler(options AnteDecorators) sdk.AnteHandler {
 
 		// handle as totally normal Cosmos SDK tx
 		switch tx.(type) {
-		case sdk.Tx:
+		case cosmos.Tx:
 			anteHandler = newCosmosAnteHandler(options)
 		default:
 			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid transaction type: %T", tx)

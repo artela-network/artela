@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 )
@@ -26,7 +26,7 @@ func NewAuthzLimiterDecorator(disabledMsgTypes ...string) AuthzLimiterDecorator 
 	}
 }
 
-func (ald AuthzLimiterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+func (ald AuthzLimiterDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (newCtx cosmos.Context, err error) {
 	if err := ald.checkDisabledMsgs(tx.GetMsgs(), false, 1); err != nil {
 		return ctx, errorsmod.Wrapf(errortypes.ErrUnauthorized, err.Error())
 	}
@@ -40,7 +40,7 @@ func (ald AuthzLimiterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate
 //
 // This method is recursive as MsgExec's can wrap other MsgExecs. The check for nested messages is performed up to the
 // maxNestedMsgs threshold. If there are more than that limit, it returns an error
-func (ald AuthzLimiterDecorator) checkDisabledMsgs(msgs []sdk.Msg, isAuthzInnerMsg bool, nestedLvl int) error {
+func (ald AuthzLimiterDecorator) checkDisabledMsgs(msgs []cosmos.Msg, isAuthzInnerMsg bool, nestedLvl int) error {
 	if nestedLvl >= maxNestedMsgs {
 		return fmt.Errorf("found more nested msgs than permited. Limit is : %d", maxNestedMsgs)
 	}
@@ -66,7 +66,7 @@ func (ald AuthzLimiterDecorator) checkDisabledMsgs(msgs []sdk.Msg, isAuthzInnerM
 				return fmt.Errorf("found disabled msg type: %s", url)
 			}
 		default:
-			url := sdk.MsgTypeURL(msg)
+			url := cosmos.MsgTypeURL(msg)
 			if isAuthzInnerMsg && ald.isDisabledMsg(url) {
 				return fmt.Errorf("found disabled msg type: %s", url)
 			}
