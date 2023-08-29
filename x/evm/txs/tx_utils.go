@@ -14,7 +14,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -53,7 +53,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&ExtensionOptionsEthereumTx{},
 	)
 	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
+		(*cosmos.Msg)(nil),
 		&MsgEthereumTx{},
 		&MsgUpdateParams{},
 	)
@@ -107,14 +107,14 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // DefaultPriorityReduction is the default amount of price values required for 1 unit of priority.
 // Because priority is `int64` while price is `big.Int`, it's necessary to scale down the range to keep it more practical.
-// The default value is the same as the `sdk.DefaultPowerReduction`.
-var DefaultPriorityReduction = sdk.DefaultPowerReduction
+// The default value is the same as the `cosmos.DefaultPowerReduction`.
+var DefaultPriorityReduction = cosmos.DefaultPowerReduction
 
 var EmptyCodeHash = crypto.Keccak256(nil)
 
 // DecodeTxResponse decodes an protobuf-encoded byte slice into TxResponse
 func DecodeTxResponse(in []byte) (*MsgEthereumTxResponse, error) {
-	var txMsgData sdk.TxMsgData
+	var txMsgData cosmos.TxMsgData
 	if err := proto.Unmarshal(in, &txMsgData); err != nil {
 		return nil, err
 	}
@@ -146,8 +146,8 @@ func DecodeTransactionLogs(data []byte) (support.TransactionLogs, error) {
 	return logs, nil
 }
 
-// UnwrapEthereumMsg extract MsgEthereumTx from wrapping sdk.Tx
-func UnwrapEthereumMsg(tx *sdk.Tx, ethHash common.Hash) (*MsgEthereumTx, error) {
+// UnwrapEthereumMsg extract MsgEthereumTx from wrapping cosmos.Tx
+func UnwrapEthereumMsg(tx *cosmos.Tx, ethHash common.Hash) (*MsgEthereumTx, error) {
 	if tx == nil {
 		return nil, fmt.Errorf("invalid txs: nil")
 	}

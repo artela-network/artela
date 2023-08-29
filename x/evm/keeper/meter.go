@@ -11,7 +11,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 
@@ -45,8 +45,8 @@ func CheckSenderBalance(
 // DeductTxCostsFromUserBalance deducts the fees from the user balance. Returns an
 // error if the specified sender address does not exist or the account balance is not sufficient.
 func (k *Keeper) DeductTxCostsFromUserBalance(
-	ctx sdk.Context,
-	fees sdk.Coins,
+	ctx cosmos.Context,
+	fees cosmos.Coins,
 	from common.Address,
 ) error {
 	// fetch sender account
@@ -63,7 +63,7 @@ func (k *Keeper) DeductTxCostsFromUserBalance(
 	return nil
 }
 
-// VerifyFee is used to return the fee for the given transaction data in sdk.Coins. It checks that the
+// VerifyFee is used to return the fee for the given transaction data in cosmos.Coins. It checks that the
 // gas limit is not reached, the gas limit is higher than the intrinsic gas and that the
 // base fee is higher than the gas fee cap.
 func VerifyFee(
@@ -71,7 +71,7 @@ func VerifyFee(
 	denom string,
 	baseFee *big.Int,
 	homestead, istanbul, isCheckTx bool,
-) (sdk.Coins, error) {
+) (cosmos.Coins, error) {
 
 	isContractCreation := txData.GetTo() == nil
 
@@ -109,10 +109,10 @@ func VerifyFee(
 	feeAmt := txData.EffectiveFee(baseFee)
 	if feeAmt.Sign() == 0 {
 		// zero fee, no need to deduct
-		return sdk.Coins{}, nil
+		return cosmos.Coins{}, nil
 	}
 
-	return sdk.Coins{{Denom: denom, Amount: sdkmath.NewIntFromBigInt(feeAmt)}}, nil
+	return cosmos.Coins{{Denom: denom, Amount: sdkmath.NewIntFromBigInt(feeAmt)}}, nil
 }
 
 // ----------------------------------------------------------------------------
@@ -120,7 +120,7 @@ func VerifyFee(
 // ----------------------------------------------------------------------------
 
 // GetEthIntrinsicGas returns the intrinsic gas cost for the transaction
-func (k *Keeper) GetEthIntrinsicGas(ctx sdk.Context, msg core.Message, cfg *params.ChainConfig, isContractCreation bool) (uint64, error) {
+func (k *Keeper) GetEthIntrinsicGas(ctx cosmos.Context, msg core.Message, cfg *params.ChainConfig, isContractCreation bool) (uint64, error) {
 	height := big.NewInt(ctx.BlockHeight())
 	homestead := cfg.IsHomestead(height)
 	istanbul := cfg.IsIstanbul(height)
@@ -132,7 +132,7 @@ func (k *Keeper) GetEthIntrinsicGas(ctx sdk.Context, msg core.Message, cfg *para
 // consumed in the transaction. Additionally, the function sets the total gas consumed to the value
 // returned by the EVM execution, thus ignoring the previous intrinsic gas consumed during in the
 // AnteHandler.
-func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64, denom string) error {
+func (k *Keeper) RefundGas(ctx cosmos.Context, msg core.Message, leftoverGas uint64, denom string) error {
 	// Return EVM tokens for remaining gas, exchanged at the original rate.
 	remaining := new(big.Int).Mul(new(big.Int).SetUint64(leftoverGas), msg.GasPrice)
 
@@ -142,7 +142,7 @@ func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64
 		return errorsmod.Wrapf(types.ErrInvalidRefund, "refunded amount value cannot be negative %d", remaining.Int64())
 	case 1:
 		// positive amount refund
-		refundedCoins := sdk.Coins{sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(remaining))}
+		refundedCoins := cosmos.Coins{cosmos.NewCoin(denom, sdkmath.NewIntFromBigInt(remaining))}
 
 		// refund to sender from the fee collector module account, which is the escrow account in charge of collecting tx fees
 
@@ -160,7 +160,7 @@ func (k *Keeper) RefundGas(ctx sdk.Context, msg core.Message, leftoverGas uint64
 
 // ResetGasMeterAndConsumeGas reset first the gas meter consumed value to zero and set it back to the new value
 // 'gasUsed'
-func (k *Keeper) ResetGasMeterAndConsumeGas(ctx sdk.Context, gasUsed uint64) {
+func (k *Keeper) ResetGasMeterAndConsumeGas(ctx cosmos.Context, gasUsed uint64) {
 	// reset the gas count
 	ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "reset the gas count")
 	ctx.GasMeter().ConsumeGas(gasUsed, "apply evm transaction")

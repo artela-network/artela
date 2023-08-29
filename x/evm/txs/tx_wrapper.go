@@ -12,8 +12,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	codec "github.com/cosmos/cosmos-sdk/codec/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -25,12 +25,12 @@ import (
 )
 
 var (
-	_ sdk.Msg    = &MsgEthereumTx{}
-	_ sdk.Tx     = &MsgEthereumTx{}
+	_ cosmos.Msg = &MsgEthereumTx{}
+	_ cosmos.Tx  = &MsgEthereumTx{}
 	_ ante.GasTx = &MsgEthereumTx{}
-	_ sdk.Msg    = &MsgUpdateParams{}
+	_ cosmos.Msg = &MsgUpdateParams{}
 
-	_ codectypes.UnpackInterfacesMessage = MsgEthereumTx{}
+	_ codec.UnpackInterfacesMessage = MsgEthereumTx{}
 )
 
 // ===============================================================
@@ -38,15 +38,15 @@ var (
 // ===============================================================
 
 // GetSigners returns the expected signers for a MsgUpdateParams message.
-func (m MsgUpdateParams) GetSigners() []sdk.AccAddress {
+func (m MsgUpdateParams) GetSigners() []cosmos.AccAddress {
 	//#nosec G703 -- gosec raises a warning about a non-handled error which we deliberately ignore here
-	addr, _ := sdk.AccAddressFromBech32(m.Authority)
-	return []sdk.AccAddress{addr}
+	addr, _ := cosmos.AccAddressFromBech32(m.Authority)
+	return []cosmos.AccAddress{addr}
 }
 
 // ValidateBasic does a sanity check of the provided data
 func (m *MsgUpdateParams) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(m.Authority); err != nil {
+	if _, err := cosmos.AccAddressFromBech32(m.Authority); err != nil {
 		return errorsmod.Wrap(err, "invalid authority address")
 	}
 
@@ -55,7 +55,7 @@ func (m *MsgUpdateParams) ValidateBasic() error {
 
 // GetSignBytes implements the LegacyMsg interface.
 func (m MsgUpdateParams) GetSignBytes() []byte {
-	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(&m))
+	return cosmos.MustSortJSON(AminoCdc.MustMarshalJSON(&m))
 }
 
 // ===============================================================
@@ -78,7 +78,7 @@ func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*c
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnPackInterfaces
-func (msg MsgEthereumTx) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (msg MsgEthereumTx) UnpackInterfaces(unpacker codec.AnyUnpacker) error {
 	return unpacker.UnpackAny(msg.Data, new(TxData))
 }
 
@@ -98,7 +98,7 @@ func (msg *MsgEthereumTx) BuildTx(b client.TxBuilder, evmDenom string) (signing.
 		return nil, errors.New("unsupported builder")
 	}
 
-	option, err := codectypes.NewAnyWithValue(&ExtensionOptionsEthereumTx{})
+	option, err := codec.NewAnyWithValue(&ExtensionOptionsEthereumTx{})
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +107,10 @@ func (msg *MsgEthereumTx) BuildTx(b client.TxBuilder, evmDenom string) (signing.
 	if err != nil {
 		return nil, err
 	}
-	fees := make(sdk.Coins, 0)
+	fees := make(cosmos.Coins, 0)
 	feeAmt := sdkmath.NewIntFromBigInt(txData.Fee())
 	if feeAmt.Sign() > 0 {
-		fees = append(fees, sdk.NewCoin(evmDenom, feeAmt))
+		fees = append(fees, cosmos.NewCoin(evmDenom, feeAmt))
 	}
 
 	builder.SetExtensionOptions(option)
@@ -134,7 +134,7 @@ func (msg MsgEthereumTx) Route() string { return types.RouterKey }
 // Type returns the type value of an MsgEthereumTx.
 func (msg MsgEthereumTx) Type() string { return types.TypeMsgEthereumTx }
 
-// ValidateBasic implements the sdk.Msg interface. It performs basic validation
+// ValidateBasic implements the cosmos.Msg interface. It performs basic validation
 // checks of a Transaction. If returns an error if validation fails.
 func (msg MsgEthereumTx) ValidateBasic() error {
 	if msg.From != "" {
@@ -211,16 +211,16 @@ func (msg *MsgEthereumTx) SignEthereumTx(ethSigner ethereum.Signer, keyringSigne
 	return tx.WithSignature(ethSigner, sig)
 }
 
-// GetMsgs returns a single MsgEthereumTx as an sdk.Msg.
-func (msg *MsgEthereumTx) GetMsgs() []sdk.Msg {
-	return []sdk.Msg{msg}
+// GetMsgs returns a single MsgEthereumTx as an cosmos.Msg.
+func (msg *MsgEthereumTx) GetMsgs() []cosmos.Msg {
+	return []cosmos.Msg{msg}
 }
 
 // GetSigners returns the expected signers for an Ethereum txs message.
 // For such a message, there should exist only a single 'signer'.
 //
 // NOTE: This method panics if 'Sign' hasn't been called first.
-func (msg *MsgEthereumTx) GetSigners() []sdk.AccAddress {
+func (msg *MsgEthereumTx) GetSigners() []cosmos.AccAddress {
 	data, err := UnpackTxData(msg.Data)
 	if err != nil {
 		panic(err)
@@ -231,8 +231,8 @@ func (msg *MsgEthereumTx) GetSigners() []sdk.AccAddress {
 		panic(err)
 	}
 
-	signer := sdk.AccAddress(sender.Bytes())
-	return []sdk.AccAddress{signer}
+	signer := cosmos.AccAddress(sender.Bytes())
+	return []cosmos.AccAddress{signer}
 }
 
 // GetSignBytes returns the Amino bytes of an Ethereum txs message used
@@ -272,8 +272,8 @@ func (msg MsgEthereumTx) GetEffectiveFee(baseFee *big.Int) *big.Int {
 }
 
 // GetFrom loads the ethereum sender address from the sigcache and returns an
-// sdk.AccAddress from its bytes
-func (msg *MsgEthereumTx) GetFrom() sdk.AccAddress {
+// cosmos.AccAddress from its bytes
+func (msg *MsgEthereumTx) GetFrom() cosmos.AccAddress {
 	if msg.From == "" {
 		return nil
 	}

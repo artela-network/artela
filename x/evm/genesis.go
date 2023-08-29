@@ -8,7 +8,7 @@ import (
 
 	"github.com/artela-network/artela/x/evm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -18,7 +18,7 @@ import (
 
 // InitGenesis initializes genesis states based on exported genesis
 func InitGenesis(
-	ctx sdk.Context,
+	ctx cosmos.Context,
 	k *keeper.Keeper,
 	accountKeeper types.AccountKeeper,
 	genState support.GenesisState,
@@ -36,7 +36,7 @@ func InitGenesis(
 
 	for _, account := range genState.Accounts {
 		address := common.HexToAddress(account.Address)
-		accAddress := sdk.AccAddress(address.Bytes())
+		accAddress := cosmos.AccAddress(address.Bytes())
 
 		// check that the EVM balance the matches the account balance
 		acc := accountKeeper.GetAccount(ctx, accAddress)
@@ -73,7 +73,7 @@ func InitGenesis(
 }
 
 // ExportGenesis exports genesis states of the EVM module
-func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *support.GenesisState {
+func ExportGenesis(ctx cosmos.Context, k *keeper.Keeper, ak types.AccountKeeper) *support.GenesisState {
 	var ethGenAccounts []support.GenesisAccount
 	ak.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
 		ethAccount, ok := account.(artela.EthAccountI)
