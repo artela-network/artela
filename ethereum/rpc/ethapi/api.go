@@ -238,24 +238,23 @@ func (s *TxPoolAPI) Inspect() map[string]map[string]map[string]string {
 // EthereumAccountAPI provides an API to access accounts managed by this node.
 // It offers only methods that can retrieve accounts.
 type EthereumAccountAPI struct {
-	ab AccountBackend
+	b Backend
 }
 
 // NewEthereumAccountAPI creates a new EthereumAccountAPI.
-func NewEthereumAccountAPI(ab AccountBackend) *EthereumAccountAPI {
-	return &EthereumAccountAPI{ab}
+func NewEthereumAccountAPI(b Backend) *EthereumAccountAPI {
+	return &EthereumAccountAPI{b}
 }
 
 // Accounts returns the collection of accounts this node manages.
 func (s *EthereumAccountAPI) Accounts() []common.Address {
-	return s.ab.Accounts()
+	return s.b.Accounts()
 }
 
 // PersonalAccountAPI provides an API to access accounts managed by this node.
 // It offers methods to create, (un)lock en list accounts. Some methods accept
 // passwords and are therefore considered private by default.
 type PersonalAccountAPI struct {
-	ab        AccountBackend
 	nonceLock *AddrLocker
 	b         Backend
 }
@@ -263,7 +262,6 @@ type PersonalAccountAPI struct {
 // NewPersonalAccountAPI create a new PersonalAccountAPI.
 func NewPersonalAccountAPI(b Backend, nonceLock *AddrLocker) *PersonalAccountAPI {
 	return &PersonalAccountAPI{
-		ab:        b.AccountManager(),
 		nonceLock: nonceLock,
 		b:         b,
 	}
@@ -271,7 +269,7 @@ func NewPersonalAccountAPI(b Backend, nonceLock *AddrLocker) *PersonalAccountAPI
 
 // ListAccounts will return a list of addresses for accounts this node manages.
 func (s *PersonalAccountAPI) ListAccounts() []common.Address {
-	return s.ab.Accounts()
+	return s.b.Accounts()
 }
 
 // rawWallet is a JSON representation of an accounts.Wallet interface, with its
@@ -341,7 +339,7 @@ func (s *PersonalAccountAPI) DeriveAccount(url string, path string, pin *bool) (
 
 // NewAccount will create a new account and returns the address for the new account.
 func (s *PersonalAccountAPI) NewAccount(password string) (common.AddressEIP55, error) {
-	return s.ab.NewAccount(password)
+	return s.b.NewAccount(password)
 }
 
 // fetchKeystore retrieves the encrypted keystore from the account manager.
@@ -355,7 +353,7 @@ func fetchKeystore(am *accounts.Manager) (*keystore.KeyStore, error) {
 // ImportRawKey stores the given hex encoded ECDSA key into the key directory,
 // encrypting it with the passphrase.
 func (s *PersonalAccountAPI) ImportRawKey(privkey string, password string) (common.Address, error) {
-	return s.ab.ImportRawKey(privkey, password)
+	return s.b.ImportRawKey(privkey, password)
 }
 
 // UnlockAccount will unlock the account associated with the given address with
@@ -376,7 +374,7 @@ func (s *PersonalAccountAPI) LockAccount(addr common.Address) bool {
 // NOTE: the caller needs to ensure that the nonceLock is held, if applicable,
 // and release it after the transaction has been submitted to the tx pool
 func (s *PersonalAccountAPI) signTransaction(ctx context.Context, args *TransactionArgs, passwd string) (*types.Transaction, error) {
-	// return s.ab.SignTransaction(args, passwd)
+	// return s.b.SignTransaction(args, passwd)
 	return nil, nil
 }
 
@@ -1569,60 +1567,7 @@ func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash commo
 
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
 func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
-	tx, blockHash, blockNumber, index, err := s.b.GetTransaction(ctx, hash)
-	if err != nil {
-		// When the transaction doesn't exist, the RPC method should return JSON null
-		// as per specification.
-		return nil, nil
-	}
-	header, err := s.b.HeaderByHash(ctx, blockHash)
-	if err != nil {
-		return nil, err
-	}
-	receipts, err := s.b.GetReceipts(ctx, blockHash)
-	if err != nil {
-		return nil, err
-	}
-	if uint64(len(receipts)) <= index {
-		return nil, nil
-	}
-	receipt := receipts[index]
-
-	// Derive the sender.
-	signer := types.MakeSigner(s.b.ChainConfig(), header.Number, header.Time)
-	from, _ := types.Sender(signer, tx)
-
-	fields := map[string]interface{}{
-		"blockHash":         blockHash,
-		"blockNumber":       hexutil.Uint64(blockNumber),
-		"transactionHash":   hash,
-		"transactionIndex":  hexutil.Uint64(index),
-		"from":              from,
-		"to":                tx.To(),
-		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
-		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
-		"contractAddress":   nil,
-		"logs":              receipt.Logs,
-		"logsBloom":         receipt.Bloom,
-		"type":              hexutil.Uint(tx.Type()),
-		"effectiveGasPrice": (*hexutil.Big)(receipt.EffectiveGasPrice),
-	}
-
-	// Assign receipt status or post states.
-	if len(receipt.PostState) > 0 {
-		fields["root"] = hexutil.Bytes(receipt.PostState)
-	} else {
-		fields["status"] = hexutil.Uint(receipt.Status)
-	}
-	if receipt.Logs == nil {
-		fields["logs"] = []*types.Log{}
-	}
-
-	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
-	if receipt.ContractAddress != (common.Address{}) {
-		fields["contractAddress"] = receipt.ContractAddress
-	}
-	return fields, nil
+	return s.b.GetTransactionReceipt(ctx, hash)
 }
 
 // sign is a helper function that signs a transaction with the private key of the given address.
@@ -1666,7 +1611,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
 func (s *TransactionAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
-	signed, err := s.b.AccountManager().SignTransaction(&args)
+	signed, err := s.b.SignTransaction(&args)
 	if err != nil {
 		log.Warn("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
 		return common.Hash{}, err
@@ -1738,7 +1683,7 @@ type SignTransactionResult struct {
 // the given from address and it needs to be unlocked.
 func (s *TransactionAPI) SignTransaction(ctx context.Context, args TransactionArgs) (*SignTransactionResult, error) {
 	// gas, gas limit, nonce checking are made in SignTransaction
-	signed, err := s.b.AccountManager().SignTransaction(&args)
+	signed, err := s.b.SignTransaction(&args)
 	if err != nil {
 		return nil, err
 	}

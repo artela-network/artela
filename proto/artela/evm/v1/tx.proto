@@ -161,6 +161,8 @@ message MsgEthereumTxResponse {
   string vm_error = 4;
   // gas_used specifies how much gas was consumed by the transaction
   uint64 gas_used = 5;
+  // cumulative gas used
+  uint64 cumulative_gas_used = 6;
 }
 
 // MsgUpdateParams defines a Msg for updating the x/evm module parameters.

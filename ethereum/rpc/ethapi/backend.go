@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/bloombits"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
@@ -28,12 +29,17 @@ type Backend interface {
 	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 	FeeHistory(ctx context.Context, blockCount uint64, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*big.Int, [][]*big.Int, []*big.Int, []float64, error)
 	ChainDb() ethdb.Database
-	AccountManager() AccountBackend
+	// AccountManager() *accounts.Manager
 	ExtRPCEnabled() bool
 	RPCGasCap() uint64            // global gas cap for eth_call over rpc: DoS protection
 	RPCEVMTimeout() time.Duration // global timeout for eth_call over rpc: DoS protection
 	RPCTxFeeCap() float64         // global tx fee cap for all transaction related APIs
 	UnprotectedAllowed() bool     // allows only for EIP155 transactions.
+
+	// Account releated
+	Accounts() []common.Address
+	NewAccount(password string) (common.AddressEIP55, error)
+	ImportRawKey(privkey, password string) (common.Address, error)
 
 	// Blockchain API
 	SetHead(number uint64)
@@ -54,6 +60,9 @@ type Backend interface {
 	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
 	SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription
 	SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription
+
+	SignTransaction(args *TransactionArgs) (*ethtypes.Transaction, error)
+	GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error)
 
 	// Transaction pool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
@@ -101,7 +110,7 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewDebugAPI(apiBackend),
 		}, {
 			Namespace: "eth",
-			Service:   NewEthereumAccountAPI(apiBackend.AccountManager()),
+			Service:   NewEthereumAccountAPI(apiBackend),
 		}, {
 			Namespace: "personal",
 			Service:   NewPersonalAccountAPI(apiBackend, nonceLock),

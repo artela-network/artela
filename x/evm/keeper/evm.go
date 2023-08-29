@@ -1,25 +1,24 @@
 package keeper
 
 import (
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
 
 	cometbft "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/artela-network/artela/x/evm/states"
-	"github.com/artela-network/artela/x/evm/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
+	"github.com/artela-network/artela/x/evm/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
@@ -177,6 +176,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 			cumulativeGasUsed = limit
 		}
 	}
+	res.CumulativeGasUsed = cumulativeGasUsed
 
 	var contractAddr common.Address
 	if msg.To == nil {
