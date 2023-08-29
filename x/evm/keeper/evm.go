@@ -26,9 +26,6 @@ import (
 // (ChainConfig and module Params). It additionally sets the validator operator address as the
 // coinbase address to make it available for the COINBASE opcode, even though there is no
 // beneficiary of the coinbase txs (since we're not mining).
-//
-// NOTE: the RANDOM opcode is currently not supported
-
 func (k *Keeper) NewEVM(
 	ctx cosmos.Context,
 	msg core.Message,
@@ -36,6 +33,7 @@ func (k *Keeper) NewEVM(
 	tracer vm.EVMLogger,
 	stateDB vm.StateDB,
 ) *vm.EVM {
+
 	blockCtx := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
 		Transfer:    core.Transfer,
@@ -57,7 +55,8 @@ func (k *Keeper) NewEVM(
 	return vm.NewEVM(blockCtx, txCtx, stateDB, cfg.ChainConfig, vmConfig)
 }
 
-// GetHashFn implements vm.GetHashFunc for Artela. It handles 3 cases:
+// GetHashFn implements vm.GetHashFunc for Artela.
+// It handles 3 cases:
 //  1. The requested height matches the current height from context (and thus same epoch number)
 //  2. The requested height is from a previous height from the same chain epoch
 //  3. The requested height is from a height greater than the latest one
@@ -381,7 +380,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	// calculate a minimum amount of gas to be charged to sender if GasLimit
 	// is considerably higher than GasUsed to stay more aligned with Tendermint gas mechanics
 
-	// for more info https://github.com/evmos/ethermint/issues/1085
 	gasLimit := cosmos.NewDec(int64(msg.GasLimit))
 	minGasMultiplier := k.GetMinGasMultiplier(ctx)
 	minimumGasUsed := gasLimit.Mul(minGasMultiplier)
