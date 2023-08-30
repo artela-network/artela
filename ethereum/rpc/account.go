@@ -2,30 +2,29 @@ package rpc
 
 import (
 	"fmt"
-	"math"
 	"math/big"
-	"strconv"
 	"time"
 
-	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
-	types2 "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	sdkcrypto "github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
+	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
+	"github.com/artela-network/artela/ethereum/rpc/types"
+	types2 "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 func (b *backend) Accounts() []common.Address {
@@ -158,39 +157,88 @@ func (b *backend) Sign(address common.Address, data hexutil.Bytes) (hexutil.Byte
 	return signature, nil
 }
 
-func (b *backend) BlockNumber() (hexutil.Uint64, error) {
-	// do any grpc query, ignore the response and use the returned block height
-	var header metadata.MD
-	_, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{}, grpc.Header(&header))
+func (b *backend) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
+	n := hexutil.Uint64(0)
+	height, err := b.blockNumberFromCosmos(blockNrOrHash)
+	currentHeight := b.CurrentHeader().Number
+	if height.Int64() > currentHeight.Int64() {
+		return &n, fmt.Errorf(
+			"cannot query with height in the future (current: %d, queried: %d); please provide a valid height",
+			currentHeight, height)
+	}
+	// Get nonce (sequence) from account
+	from := sdktypes.AccAddress(address.Bytes())
+	accRet := b.clientCtx.AccountRetriever
+
+	err = accRet.EnsureExists(b.clientCtx, from)
 	if err != nil {
-		return hexutil.Uint64(0), err
+		// account doesn't exist yet, return 0
+		return &n, nil
 	}
 
-	blockHeightHeader := header.Get(grpctypes.GRPCBlockHeightHeader)
-	if headerLen := len(blockHeightHeader); headerLen != 1 {
-		return 0, fmt.Errorf("unexpected '%s' gRPC header length; got %d, expected: %d", grpctypes.GRPCBlockHeightHeader, headerLen, 1)
+	includePending := height == rpc.PendingBlockNumber
+	if height == rpc.LatestBlockNumber {
+		height = rpc.BlockNumber(currentHeight.Int64())
 	}
-
-	height, err := strconv.ParseUint(blockHeightHeader[0], 10, 64)
+	nonce, err := b.getAccountNonce(address, includePending, height.Int64())
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse block height: %w", err)
+		return nil, err
 	}
 
-	if height > math.MaxInt64 {
-		return 0, fmt.Errorf("block height %d is greater than max uint64", height)
-	}
-
-	return hexutil.Uint64(height), nil
+	n = hexutil.Uint64(nonce)
+	return &n, nil
 }
 
-func (b *backend) BlockTimeByNumber(blockNum int64) (uint64, error) {
-	resBlock, err := b.clientCtx.Client.Block(b.ctx, &blockNum)
+func (b *backend) getAccountNonce(accAddr common.Address, pending bool, height int64) (uint64, error) {
+	queryClient := authtypes.NewQueryClient(b.clientCtx)
+	adr := sdktypes.AccAddress(accAddr.Bytes()).String()
+	ctx := types.ContextWithHeight(height)
+	res, err := queryClient.Account(ctx, &authtypes.QueryAccountRequest{Address: adr})
 	if err != nil {
+		st, ok := status.FromError(err)
+		// treat as account doesn't exist yet
+		if ok && st.Code() == codes.NotFound {
+			return 0, nil
+		}
 		return 0, err
 	}
-	return uint64(resBlock.Block.Time.Unix()), nil
-}
+	var acc authtypes.AccountI
+	if err := b.clientCtx.InterfaceRegistry.UnpackAny(res.Account, &acc); err != nil {
+		return 0, err
+	}
 
-func (b *backend) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
-	return nil, nil
+	nonce := acc.GetSequence()
+
+	if !pending {
+		return nonce, nil
+	}
+
+	// the account retriever doesn't include the uncommitted transactions on the nonce so we need to
+	// to manually add them.
+	pendingTxs, err := b.PendingTransactions()
+	if err != nil {
+		return nonce, nil
+	}
+
+	// add the uncommitted txs to the nonce counter
+	// only supports `MsgEthereumTx` style tx
+	for _, tx := range pendingTxs {
+		for _, msg := range (*tx).GetMsgs() {
+			ethMsg, ok := msg.(*txs.MsgEthereumTx)
+			if !ok {
+				// not ethereum tx
+				break
+			}
+
+			sender, err := ethMsg.GetSender(b.chainID)
+			if err != nil {
+				continue
+			}
+			if sender == accAddr {
+				nonce++
+			}
+		}
+	}
+
+	return nonce, nil
 }

@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"strconv"
 
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
@@ -138,7 +137,7 @@ func (b *backend) GetTransactionReceipt(ctx context.Context, hash common.Hash) (
 	if err != nil {
 		return nil, nil
 	}
-	resBlock, err := b.CosmosBlockByNumber(rpctypes.BlockNumber(res.Height))
+	resBlock, err := b.CosmosBlockByNumber(rpc.BlockNumber(res.Height))
 	if err != nil {
 		return nil, nil
 	}
@@ -267,7 +266,20 @@ func (b *backend) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.S
 	return b.scope.Track(b.chainSideFeed.Subscribe(ch))
 }
 
-func (b *backend) CosmosBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpctypes.ResultBlock, error) {
+func (b *backend) CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error) {
+	resBlock, err := b.clientCtx.Client.BlockByHash(b.ctx, blockHash.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	if resBlock.Block == nil {
+		return nil, nil
+	}
+
+	return resBlock, nil
+}
+
+func (b *backend) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.ResultBlock, error) {
 	height := blockNum.Int64()
 	if height <= 0 {
 		// fetch the latest block number from the app state, more accurate than the tendermint block store state.
@@ -279,14 +291,63 @@ func (b *backend) CosmosBlockByNumber(blockNum rpctypes.BlockNumber) (*tmrpctype
 	}
 	resBlock, err := b.clientCtx.Client.Block(b.ctx, &height)
 	if err != nil {
-		b.logger.Debug("tendermint client failed to get block", "height", height, "error", err.Error())
 		return nil, err
 	}
 
 	if resBlock.Block == nil {
-		b.logger.Debug("TendermintBlockByNumber block not found", "height", height)
 		return nil, nil
 	}
 
 	return resBlock, nil
+}
+
+// BlockNumberFromTendermint returns the BlockNumber from BlockNumberOrHash
+func (b *backend) blockNumberFromCosmos(blockNrOrHash rpc.BlockNumberOrHash) (rpc.BlockNumber, error) {
+	switch {
+	case blockNrOrHash.BlockHash == nil && blockNrOrHash.BlockNumber == nil:
+		return rpc.EarliestBlockNumber, fmt.Errorf("types BlockHash and BlockNumber cannot be both nil")
+	case blockNrOrHash.BlockHash != nil:
+		resBlock, err := b.CosmosBlockByHash(*blockNrOrHash.BlockHash)
+		if err != nil || resBlock.Block == nil {
+			return rpc.EarliestBlockNumber, err
+		}
+		return rpc.BlockNumber(resBlock.Block.Height), nil
+	case blockNrOrHash.BlockNumber != nil:
+		return *blockNrOrHash.BlockNumber, nil
+	default:
+		return rpc.EarliestBlockNumber, nil
+	}
+}
+
+func (b *backend) BlockNumber() (hexutil.Uint64, error) {
+	// do any grpc query, ignore the response and use the returned block height
+	var header metadata.MD
+	_, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{}, grpc.Header(&header))
+	if err != nil {
+		return hexutil.Uint64(0), err
+	}
+
+	blockHeightHeader := header.Get(grpctypes.GRPCBlockHeightHeader)
+	if headerLen := len(blockHeightHeader); headerLen != 1 {
+		return 0, fmt.Errorf("unexpected '%s' gRPC header length; got %d, expected: %d", grpctypes.GRPCBlockHeightHeader, headerLen, 1)
+	}
+
+	height, err := strconv.ParseUint(blockHeightHeader[0], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse block height: %w", err)
+	}
+
+	if height > math.MaxInt64 {
+		return 0, fmt.Errorf("block height %d is greater than max uint64", height)
+	}
+
+	return hexutil.Uint64(height), nil
+}
+
+func (b *backend) BlockTimeByNumber(blockNum int64) (uint64, error) {
+	resBlock, err := b.clientCtx.Client.Block(b.ctx, &blockNum)
+	if err != nil {
+		return 0, err
+	}
+	return uint64(resBlock.Block.Time.Unix()), nil
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -203,4 +204,8 @@ func (b *backend) BaseFee(height int64) (*big.Int, error) {
 	}
 
 	return res.BaseFee.BigInt(), nil
+}
+
+func (b *backend) PendingTransactions() ([]*sdktypes.Tx, error) {
+	return nil, nil
 }

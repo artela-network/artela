@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/bloombits"
@@ -40,6 +41,7 @@ type Backend interface {
 	Accounts() []common.Address
 	NewAccount(password string) (common.AddressEIP55, error)
 	ImportRawKey(privkey, password string) (common.Address, error)
+	GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error)
 
 	// Blockchain API
 	SetHead(number uint64)
