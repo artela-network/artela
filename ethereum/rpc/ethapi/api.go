@@ -949,15 +949,7 @@ func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash commo
 
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
 func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
-	// return s.b.GetTransactionReceipt(ctx, hash)
-	res, err := s.b.GetTransactionReceipt(ctx, hash)
-	fmt.Println("---------------------------------------------GetTransactionReceipt-----------------------------------")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(res)
-	}
-	return res, err
+	return s.b.GetTransactionReceipt(ctx, hash)
 }
 
 // sign is a helper function that signs a transaction with the private key of the given address.
