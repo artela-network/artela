@@ -177,9 +177,6 @@ func (b *backend) GetTransactionCount(address common.Address, blockNrOrHash rpc.
 	}
 
 	includePending := height == rpc.PendingBlockNumber
-	if height == rpc.LatestBlockNumber {
-		height = rpc.BlockNumber(currentHeight.Int64())
-	}
 	nonce, err := b.getAccountNonce(address, includePending, height.Int64())
 	if err != nil {
 		return nil, err

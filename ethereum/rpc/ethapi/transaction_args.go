@@ -5,8 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/txs"
 	"math/big"
+
+	"github.com/artela-network/artela/x/evm/txs"
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/ethereum/go-ethereum/common"
@@ -69,11 +70,12 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		args.Value = new(hexutil.Big)
 	}
 	if args.Nonce == nil {
-		nonce, err := b.GetPoolNonce(ctx, args.from())
-		if err != nil {
-			return err
-		}
-		args.Nonce = (*hexutil.Uint64)(&nonce)
+		// nonce, err := b.GetPoolNonce(ctx, args.from())
+		// if err != nil {
+		// 	return err
+		// }
+		// args.Nonce = (*hexutil.Uint64)(&nonce)
+		// TODO set nonce
 	}
 	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
@@ -97,11 +99,15 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 			AccessList:           args.AccessList,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
+		// estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		// if err != nil {
+		// 	return err
+		// }
+		// args.Gas = &estimated
+		// TODO set gas
+		_ = callArgs
+		_ = pendingBlockNr
+
 		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
 	}
 	// If chain id is provided, ensure it matches the local chain id. Otherwise, set the local

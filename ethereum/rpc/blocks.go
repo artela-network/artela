@@ -8,10 +8,10 @@ import (
 	"math/big"
 	"strconv"
 
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -19,7 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
 	"google.golang.org/grpc"
@@ -131,115 +130,6 @@ func (b *backend) GetReceipts(_ context.Context, hash common.Hash) (types.Receip
 	return nil, nil
 }
 
-// GetTransactionReceipt get receipt by transaction hash
-func (b *backend) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
-	res, err := b.GetTxByEthHash(hash)
-	if err != nil {
-		return nil, nil
-	}
-	resBlock, err := b.CosmosBlockByNumber(rpc.BlockNumber(res.Height))
-	if err != nil {
-		return nil, nil
-	}
-	tx, err := b.clientCtx.TxConfig.TxDecoder()(resBlock.Block.Txs[res.TxIndex])
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode tx: %w", err)
-	}
-	ethMsg := tx.GetMsgs()[res.MsgIndex].(*txs.MsgEthereumTx)
-
-	txData, err := txs.UnpackTxData(ethMsg.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	cumulativeGasUsed := uint64(0)
-	txRes, err := b.txResult(ctx, hash, false)
-	if err != nil {
-		return nil, nil
-	}
-
-	// unpack tx data and get the cumulativeGasUsed
-	msgTx := &txs.MsgEthereumTxResponse{}
-	if err := proto.Unmarshal(txRes.TxResult.Data, msgTx); err != nil {
-		return nil, fmt.Errorf("unmarshal TxResult Data failed, %w", err)
-	}
-	cumulativeGasUsed = msgTx.CumulativeGasUsed
-
-	var status hexutil.Uint
-	if res.Failed {
-		status = hexutil.Uint(ethtypes.ReceiptStatusFailed)
-	} else {
-		status = hexutil.Uint(ethtypes.ReceiptStatusSuccessful)
-	}
-
-	from, err := ethMsg.GetSender(b.chainID)
-	if err != nil {
-		return nil, err
-	}
-
-	// parse tx logs from events
-	msgIndex := int(res.MsgIndex) // #nosec G701 -- checked for int overflow already
-	logs, _ := TxLogsFromEvents(txRes.TxResult.Events, msgIndex)
-
-	if res.EthTxIndex == -1 {
-		// Fallback to find tx index by iterating all valid eth transactions
-		// msgs := b.EthMsgsFromTendermintBlock(resBlock, blockRes)
-		// for i := range msgs {
-		// 	if msgs[i].Hash == hexTx {
-		// 		res.EthTxIndex = int32(i) // #nosec G701
-		// 		break
-		// 	}
-		// }
-	}
-	// return error if still unable to find the eth tx index
-	if res.EthTxIndex == -1 {
-		return nil, errors.New("can't find index of ethereum tx")
-	}
-
-	receipt := map[string]interface{}{
-		// Consensus fields: These fields are defined by the Yellow Paper
-		"status":            status,
-		"cumulativeGasUsed": hexutil.Uint64(cumulativeGasUsed),
-		"logsBloom":         ethtypes.BytesToBloom(ethtypes.LogsBloom(logs)),
-		"logs":              logs,
-
-		// Implementation fields: These fields are added by geth when processing a transaction.
-		// They are stored in the chain database.
-		"transactionHash": hash,
-		"contractAddress": nil,
-		"gasUsed":         hexutil.Uint64(txRes.TxResult.GasUsed),
-
-		// Inclusion information: These fields provide information about the inclusion of the
-		// transaction corresponding to this receipt.
-		"blockHash":        common.BytesToHash(resBlock.Block.Header.Hash()).Hex(),
-		"blockNumber":      hexutil.Uint64(res.Height),
-		"transactionIndex": hexutil.Uint64(res.EthTxIndex),
-
-		// sender and receiver (contract or EOA) addreses
-		"from": from,
-		"to":   txData.GetTo(),
-		"type": hexutil.Uint(ethMsg.AsTransaction().Type()),
-	}
-
-	if logs == nil {
-		receipt["logs"] = [][]*ethtypes.Log{}
-	}
-
-	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
-	if txData.GetTo() == nil {
-		receipt["contractAddress"] = crypto.CreateAddress(from, txData.GetNonce())
-	}
-
-	if dynamicTx, ok := txData.(*txs.DynamicFeeTx); ok {
-		baseFee, err := b.BaseFee(txRes.Height)
-		if err == nil {
-			receipt["effectiveGasPrice"] = hexutil.Big(*dynamicTx.EffectiveGasPrice(baseFee))
-		}
-	}
-
-	return receipt, nil
-}
-
 func (b *backend) GetTd(_ context.Context, hash common.Hash) *big.Int {
 	return nil
 }
@@ -313,6 +203,10 @@ func (b *backend) blockNumberFromCosmos(blockNrOrHash rpc.BlockNumberOrHash) (rp
 		}
 		return rpc.BlockNumber(resBlock.Block.Height), nil
 	case blockNrOrHash.BlockNumber != nil:
+		if *blockNrOrHash.BlockNumber == rpc.LatestBlockNumber {
+			currentHeight := b.CurrentHeader().Number
+			return rpc.BlockNumber(currentHeight.Int64()), nil
+		}
 		return *blockNrOrHash.BlockNumber, nil
 	default:
 		return rpc.EarliestBlockNumber, nil
@@ -350,4 +244,26 @@ func (b *backend) BlockTimeByNumber(blockNum int64) (uint64, error) {
 		return 0, err
 	}
 	return uint64(resBlock.Block.Time.Unix()), nil
+}
+
+func (b *backend) CosmosBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
+	return b.clientCtx.Client.BlockResults(b.ctx, height)
+}
+
+func (b *backend) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &txs.QueryCodeRequest{
+		Address: address.String(),
+	}
+
+	res, err := b.queryClient.Code(rpctypes.ContextWithHeight(blockNum.Int64()), req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Code, nil
 }

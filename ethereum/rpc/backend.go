@@ -3,8 +3,10 @@ package rpc
 import (
 	"context"
 	"math/big"
+	"strconv"
 	"time"
 
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum"
@@ -24,6 +26,7 @@ import (
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	ethereumtypes "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
+	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 
 // Backend represents the backend object for a artela. It extends the standard
@@ -196,11 +199,28 @@ func (b *backend) ClientVersion() string {
 // 	return nil
 // }
 
-func (b *backend) BaseFee(height int64) (*big.Int, error) {
+func (b *backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, error) {
 	// return BaseFee if London hard fork is activated and feemarket is enabled
-	res, err := b.queryClient.BaseFee(rpctypes.ContextWithHeight(height), &txs.QueryBaseFeeRequest{})
+	res, err := b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &txs.QueryBaseFeeRequest{})
 	if err != nil || res.BaseFee == nil {
+		// we can't tell if it's london HF not enabled or the state is pruned,
+		// in either case, we'll fallback to parsing from begin blocker event,
+		// faster to iterate reversely
+		for i := len(blockRes.BeginBlockEvents) - 1; i >= 0; i-- {
+			evt := blockRes.BeginBlockEvents[i]
+			if evt.Type == feetypes.EventTypeFee && len(evt.Attributes) > 0 {
+				baseFee, err := strconv.ParseInt(string(evt.Attributes[0].Value), 10, 64)
+				if err == nil {
+					return big.NewInt(baseFee), nil
+				}
+				break
+			}
+		}
 		return nil, err
+	}
+
+	if res.BaseFee == nil {
+		return nil, nil
 	}
 
 	return res.BaseFee.BigInt(), nil
