@@ -1,11 +1,15 @@
 package server
 
 import (
-	rpc2 "github.com/artela-network/artela/ethereum/rpc"
-	"github.com/artela-network/artela/ethereum/server/config"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+
+	rpc2 "github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
 
 	dbm "github.com/cometbft/cometbft-db"
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -61,9 +65,18 @@ func CreateJSONRPC(ctx *server.Context,
 	cfg.RPCTxFeeCap = config.JSONRPC.TxFeeCap
 
 	nodeCfg := rpc2.DefaultGethNodeConfig()
-	// TODO, config end point
-	// nodeCfg.HTTPHost = tmRPCAddr
-	// nodeCfg. =
+	address := strings.Split(config.JSONRPC.Address, ":")
+	if len(address) > 0 {
+		nodeCfg.HTTPHost = address[0]
+	}
+	if len(address) > 1 {
+		port, err := strconv.Atoi(address[1])
+		if err != nil {
+			return nil, fmt.Errorf("address of JSON RPC Configuration is not valid, %w", err)
+		}
+		nodeCfg.HTTPPort = port
+	}
+
 	stack, err := rpc2.NewNode(nodeCfg)
 	if err != nil {
 		return nil, err
