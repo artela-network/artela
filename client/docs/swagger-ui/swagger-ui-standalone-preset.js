@@ -508,11 +508,11 @@
         }, i.title = "browser", i.browser = !0, i.env = {}, i.argv = [], i.version = "", i.versions = {}, i.on = v, i.addListener = v, i.once = v, i.off = v, i.removeListener = v, i.removeAllListeners = v, i.emit = v, i.prependListener = v, i.prependOnceListener = v, i.listeners = function(t) {
             return []
         }, i.binding = function(t) {
-            throw new Error("process.binding is not supported")
+            throw new Error("txs.binding is not supported")
         }, i.cwd = function() {
             return "/"
         }, i.chdir = function(t) {
-            throw new Error("process.chdir is not supported")
+            throw new Error("txs.chdir is not supported")
         }, i.umask = function() {
             return 0
         }
@@ -3223,7 +3223,7 @@
                     n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : {};
                 if (/xml/.test(e)) {
                     if (!t.xml || !t.xml.name) {
-                        if (t.xml = t.xml || {}, !t.$$ref) return t.type || t.items || t.properties || t.additionalProperties ? '<?xml version="1.0" encoding="UTF-8"?>\n\x3c!-- XML example cannot be generated --\x3e' : null;
+                        if (t.xml = t.xml || {}, !t.$$ref) return t.type || t.items || t.properties || t.additionalProperties ? '<?xml version="1.0" encoding="UTF-8"?>\n\x3c!-- XML example cannot be support --\x3e' : null;
                         var i = t.$$ref.match(/\S*\/(\S+)$/);
                         t.xml.name = i[1]
                     }
@@ -10834,7 +10834,7 @@
                         f = !1,
                         l = t.document,
                         p = Object.getPrototypeOf && Object.getPrototypeOf(t);
-                    p = p && p.setTimeout ? p : t, "[object process]" === {}.toString.call(t.process) ? r = function(t) {
+                    p = p && p.setTimeout ? p : t, "[object txs]" === {}.toString.call(t.process) ? r = function(t) {
                         e.nextTick(function() {
                             d(t)
                         })

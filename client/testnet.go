@@ -8,6 +8,11 @@ import (
 	"fmt"
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
+	"github.com/artela-network/artela/ethereum/server/config"
+	srvflags "github.com/artela-network/artela/ethereum/server/flags"
+	types2 "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"net"
 	"os"
 	"path/filepath"
@@ -22,7 +27,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
@@ -40,9 +44,6 @@ import (
 	mintypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/artela-network/artela/server/config"
-	srvflags "github.com/artela-network/artela/server/flags"
-	artelatypes "github.com/artela-network/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 
 	"github.com/artela-network/artela/testutil/network"
@@ -92,13 +93,13 @@ func addTestnetFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
 	cmd.Flags().String(sdkserver.FlagMinGasPrices,
 		fmt.Sprintf("0.000006%s",
-			artelatypes.AttoArtela),
-		"Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.01photino,0.001stake)")
+			types2.AttoArtela),
+		"Minimum gas prices to accept for transactions; All fees in a txs must meet this minimum (e.g. 0.01photino,0.001stake)")
 	cmd.Flags().String(ethsecp256k1.FlagKeyAlgorithm, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
 }
 
-// NewTestnetCmd creates a root testnet command with subcommands to run an in-process testnet or initialize
-// validator configuration files for running a multi-validator testnet in a separate process
+// NewTestnetCmd creates a root testnet command with subcommands to run an in-txs testnet or initialize
+// validator configuration files for running a multi-validator testnet in a separate txs
 func NewTestnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBalancesIterator) *cobra.Command {
 	testnetCmd := &cobra.Command{
 		Use:                        "testnet",
@@ -164,12 +165,12 @@ Example:
 	return cmd
 }
 
-// get cmd to start multi validator in-process testnet
+// get cmd to start multi validator in-txs testnet
 func testnetStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
-		Short: "Launch an in-process multi-validator testnet",
-		Long: `testnet will launch an in-process multi-validator testnet,
+		Short: "Launch an in-txs multi-validator testnet",
+		Long: `testnet will launch an in-txs multi-validator testnet,
 and generate "v" directories, populated with necessary validator configuration files
 (private validator, genesis, config, etc.).
 
@@ -206,7 +207,7 @@ Example:
 
 const nodeDirPerm = 0o755
 
-// initTestnetFiles initializes testnet files for a testnet to be run in a separate process
+// initTestnetFiles initializes testnet files for a testnet to be run in a separate txs
 func initTestnetFiles(
 	clientCtx client.Context,
 	cmd *cobra.Command,
@@ -297,22 +298,22 @@ func initTestnetFiles(
 			return err
 		}
 
-		accStakingTokens := sdk.TokensFromConsensusPower(5000, artelatypes.PowerReduction)
+		accStakingTokens := sdk.TokensFromConsensusPower(5000, types2.PowerReduction)
 		coins := sdk.Coins{
-			sdk.NewCoin(artelatypes.AttoArtela, accStakingTokens),
+			sdk.NewCoin(types2.AttoArtela, accStakingTokens),
 		}
 
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
-		genAccounts = append(genAccounts, &artelatypes.EthAccount{
+		genAccounts = append(genAccounts, &types2.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(addr, nil, 0, 0),
-			CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
+			CodeHash:    common.BytesToHash(txs.EmptyCodeHash).Hex(),
 		})
 
-		valTokens := sdk.TokensFromConsensusPower(100, artelatypes.PowerReduction)
+		valTokens := sdk.TokensFromConsensusPower(100, types2.PowerReduction)
 		createValMsg, err := stakingtypes.NewMsgCreateValidator(
 			sdk.ValAddress(addr),
 			valPubKeys[i],
-			sdk.NewCoin(artelatypes.AttoArtela, valTokens),
+			sdk.NewCoin(types2.AttoArtela, valTokens),
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
 			stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.OneDec()),
 			sdk.OneInt(),
@@ -328,14 +329,14 @@ func initTestnetFiles(
 
 		txBuilder.SetMemo(memo)
 
-		txFactory := tx.Factory{}
+		txFactory := txs.Factory{}
 		txFactory = txFactory.
 			WithChainID(args.chainID).
 			WithMemo(memo).
 			WithKeybase(kb).
 			WithTxConfig(clientCtx.TxConfig)
 
-		if err := tx.Sign(txFactory, nodeDirName, txBuilder, true); err != nil {
+		if err := txs.Sign(txFactory, nodeDirName, txBuilder, true); err != nil {
 			return err
 		}
 
@@ -348,7 +349,7 @@ func initTestnetFiles(
 			return err
 		}
 
-		customAppTemplate, customAppConfig := config.AppConfig(artelatypes.AttoArtela)
+		customAppTemplate, customAppConfig := config.AppConfig(types2.AttoArtela)
 		srvconfig.SetConfigTemplate(customAppTemplate)
 		if err := sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, tmconfig.DefaultConfig()); err != nil {
 			return err
@@ -357,7 +358,7 @@ func initTestnetFiles(
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
 
-	if err := initGenFiles(clientCtx, mbm, args.chainID, artelatypes.AttoArtela, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
+	if err := initGenFiles(clientCtx, mbm, args.chainID, types2.AttoArtela, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
 		return err
 	}
 
@@ -384,7 +385,7 @@ func initGenFiles(
 	numValidators int,
 ) error {
 	appGenState := mbm.DefaultGenesis(clientCtx.Codec)
-	// set the accounts in the genesis state
+	// set the accounts in the genesis states
 	var authGenState authtypes.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[authtypes.ModuleName], &authGenState)
 
@@ -396,7 +397,7 @@ func initGenFiles(
 	authGenState.Accounts = accounts
 	appGenState[authtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&authGenState)
 
-	// set the balances in the genesis state
+	// set the balances in the genesis states
 	var bankGenState banktypes.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
 
@@ -427,7 +428,7 @@ func initGenFiles(
 	crisisGenState.ConstantFee.Denom = coinDenom
 	appGenState[crisistypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&crisisGenState)
 
-	var evmGenState evmtypes.GenesisState
+	var evmGenState support.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[evmtypes.ModuleName], &evmGenState)
 
 	evmGenState.Params.EvmDenom = coinDenom
@@ -483,7 +484,7 @@ func collectGenFiles(
 		}
 
 		if appState == nil {
-			// set the canonical application state (they should not differ)
+			// set the canonical application states (they should not differ)
 			appState = nodeAppState
 		}
 
@@ -522,7 +523,7 @@ func calculateIP(ip string, i int) (string, error) {
 	return ipv4.String(), nil
 }
 
-// startTestnet starts an in-process testnet
+// startTestnet starts an in-txs testnet
 func startTestnet(cmd *cobra.Command, args startArgs) error {
 	networkConfig := network.DefaultConfig()
 

@@ -2,27 +2,27 @@ package keeper
 
 import (
 	"fmt"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
 
 	errorsmod "cosmossdk.io/errors"
-	artelatypes "github.com/artela-network/artela/types"
-	"github.com/artela-network/artela/x/evm/statedb"
+	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var _ statedb.Keeper = &Keeper{}
+var _ states.Keeper = &Keeper{}
 
 // ----------------------------------------------------------------------------
-// StateDB Keeper implementation
+// 								   Getter
 // ----------------------------------------------------------------------------
 
 // GetAccount returns nil if account is not exist, returns error if it's not `EthAccountI`
-func (k *Keeper) GetAccount(ctx sdk.Context, addr common.Address) *statedb.Account {
+func (k *Keeper) GetAccount(ctx cosmos.Context, addr common.Address) *states.StateAccount {
 	acct := k.GetAccountWithoutBalance(ctx, addr)
 	if acct == nil {
 		return nil
@@ -32,8 +32,8 @@ func (k *Keeper) GetAccount(ctx sdk.Context, addr common.Address) *statedb.Accou
 	return acct
 }
 
-// GetState loads contract state from database, implements `statedb.Keeper` interface.
-func (k *Keeper) GetState(ctx sdk.Context, addr common.Address, key common.Hash) common.Hash {
+// GetState loads contract states from database, implements `states.Keeper` interface.
+func (k *Keeper) GetState(ctx cosmos.Context, addr common.Address, key common.Hash) common.Hash {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
 
 	value := store.Get(key.Bytes())
@@ -44,34 +44,19 @@ func (k *Keeper) GetState(ctx sdk.Context, addr common.Address, key common.Hash)
 	return common.BytesToHash(value)
 }
 
-// GetCode loads contract code from database, implements `statedb.Keeper` interface.
-func (k *Keeper) GetCode(ctx sdk.Context, codeHash common.Hash) []byte {
+// GetCode loads contract code from database, implements `states.Keeper` interface.
+func (k *Keeper) GetCode(ctx cosmos.Context, codeHash common.Hash) []byte {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixCode)
 	return store.Get(codeHash.Bytes())
 }
 
-// ForEachStorage iterate contract storage, callback return false to break early
-func (k *Keeper) ForEachStorage(ctx sdk.Context, addr common.Address, cb func(key, value common.Hash) bool) {
-	store := ctx.KVStore(k.storeKey)
-	prefix := types.AddressStoragePrefix(addr)
-
-	iterator := sdk.KVStorePrefixIterator(store, prefix)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		key := common.BytesToHash(iterator.Key())
-		value := common.BytesToHash(iterator.Value())
-
-		// check if iteration stops
-		if !cb(key, value) {
-			return
-		}
-	}
-}
+// ----------------------------------------------------------------------------
+// 								   Setter
+// ----------------------------------------------------------------------------
 
 // SetBalance update account's balance, compare with current balance first, then decide to mint or burn.
-func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.Int) error {
-	cosmosAddr := sdk.AccAddress(addr.Bytes())
+func (k *Keeper) SetBalance(ctx cosmos.Context, addr common.Address, amount *big.Int) error {
+	cosmosAddr := cosmos.AccAddress(addr.Bytes())
 
 	params := k.GetParams(ctx)
 	coin := k.bankKeeper.GetBalance(ctx, cosmosAddr, params.EvmDenom)
@@ -80,7 +65,7 @@ func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.In
 	switch delta.Sign() {
 	case 1:
 		// mint
-		coins := sdk.NewCoins(sdk.NewCoin(params.EvmDenom, sdkmath.NewIntFromBigInt(delta)))
+		coins := cosmos.NewCoins(cosmos.NewCoin(params.EvmDenom, sdkmath.NewIntFromBigInt(delta)))
 		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, coins); err != nil {
 			return err
 		}
@@ -89,7 +74,7 @@ func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.In
 		}
 	case -1:
 		// burn
-		coins := sdk.NewCoins(sdk.NewCoin(params.EvmDenom, sdkmath.NewIntFromBigInt(new(big.Int).Neg(delta))))
+		coins := cosmos.NewCoins(cosmos.NewCoin(params.EvmDenom, sdkmath.NewIntFromBigInt(new(big.Int).Neg(delta))))
 		if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, cosmosAddr, types.ModuleName, coins); err != nil {
 			return err
 		}
@@ -103,9 +88,9 @@ func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.In
 }
 
 // SetAccount updates nonce/balance/codeHash together.
-func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account statedb.Account) error {
+func (k *Keeper) SetAccount(ctx cosmos.Context, addr common.Address, account states.StateAccount) error {
 	// update account
-	cosmosAddr := sdk.AccAddress(addr.Bytes())
+	cosmosAddr := cosmos.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
 		acct = k.accountKeeper.NewAccountWithAddress(ctx, cosmosAddr)
@@ -117,7 +102,7 @@ func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account stated
 
 	codeHash := common.BytesToHash(account.CodeHash)
 
-	if ethAcct, ok := acct.(artelatypes.EthAccountI); ok {
+	if ethAcct, ok := acct.(artela.EthAccountI); ok {
 		if err := ethAcct.SetCodeHash(codeHash); err != nil {
 			return err
 		}
@@ -140,7 +125,7 @@ func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account stated
 }
 
 // SetState update contract storage, delete if value is empty.
-func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash, value []byte) {
+func (k *Keeper) SetState(ctx cosmos.Context, addr common.Address, key common.Hash, value []byte) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
 	action := "updated"
 	if len(value) == 0 {
@@ -150,14 +135,14 @@ func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash,
 		store.Set(key.Bytes(), value)
 	}
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("state %s", action),
+		fmt.Sprintf("states %s", action),
 		"ethereum-address", addr.Hex(),
 		"key", key.Hex(),
 	)
 }
 
 // SetCode set contract code, delete if code is empty.
-func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
+func (k *Keeper) SetCode(ctx cosmos.Context, codeHash, code []byte) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixCode)
 
 	// store or delete code
@@ -174,20 +159,39 @@ func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
 	)
 }
 
+// ForEachStorage iterate contract storage, callback return false to break early
+func (k *Keeper) ForEachStorage(ctx cosmos.Context, addr common.Address, cb func(key, value common.Hash) bool) {
+	store := ctx.KVStore(k.storeKey)
+	prefix := types.AddressStoragePrefix(addr)
+
+	iterator := cosmos.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := common.BytesToHash(iterator.Key())
+		value := common.BytesToHash(iterator.Value())
+
+		// check if iteration stops
+		if !cb(key, value) {
+			return
+		}
+	}
+}
+
 // DeleteAccount handles contract's suicide call:
 // - clear balance
 // - remove code
 // - remove states
 // - remove auth account
-func (k *Keeper) DeleteAccount(ctx sdk.Context, addr common.Address) error {
-	cosmosAddr := sdk.AccAddress(addr.Bytes())
+func (k *Keeper) DeleteAccount(ctx cosmos.Context, addr common.Address) error {
+	cosmosAddr := cosmos.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
 		return nil
 	}
 
 	// NOTE: only Ethereum accounts (contracts) can be selfdestructed
-	_, ok := acct.(artelatypes.EthAccountI)
+	_, ok := acct.(artela.EthAccountI)
 	if !ok {
 		return errorsmod.Wrapf(types.ErrInvalidAccount, "type %T, address %s", acct, addr)
 	}

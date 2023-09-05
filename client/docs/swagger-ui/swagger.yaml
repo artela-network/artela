@@ -1,7 +1,7 @@
 swagger: '2.0'
 info:
   title: artela Chain - gRPC Gateway docs
-  description: A REST interface for state queries and transactions
+  description: A REST interface for states queries and transactions
   version: 1.0.0
 paths:
   /artela/claims/v1/claims_records:
@@ -3405,7 +3405,7 @@ paths:
                   properties:
                     address:
                       type: string
-                      title: address of the contract that generated the event
+                      title: address of the contract that support the event
                     topics:
                       type: array
                       items:
@@ -3425,11 +3425,11 @@ paths:
                         included
                     tx_hash:
                       type: string
-                      title: tx_hash is the transaction hash
+                      title: tx_hash is the txs hash
                     tx_index:
                       type: string
                       format: uint64
-                      title: tx_index of the transaction in the block
+                      title: tx_index of the txs in the block
                     block_hash:
                       type: string
                       title: >-
@@ -4268,12 +4268,12 @@ paths:
                         }
       parameters:
         - name: address
-          description: address is the ethereum hex address to query the storage state for.
+          description: address is the ethereum hex address to query the storage states for.
           in: path
           required: true
           type: string
         - name: key
-          description: key defines the key of the storage state
+          description: key defines the key of the storage states
           in: path
           required: true
           type: string
@@ -4976,13 +4976,13 @@ paths:
           type: string
           format: byte
         - name: msg.size
-          description: size is the encoded storage size of the transaction (DEPRECATED).
+          description: size is the encoded storage size of the txs (DEPRECATED).
           in: query
           required: false
           type: number
           format: double
         - name: msg.hash
-          description: hash of the transaction in hex format.
+          description: hash of the txs in hex format.
           in: query
           required: false
           type: string
@@ -5185,18 +5185,18 @@ paths:
           required: false
           type: string
         - name: block_number
-          description: block_number of requested transaction.
+          description: block_number of requested txs.
           in: query
           required: false
           type: string
           format: int64
         - name: block_hash
-          description: block_hash of requested transaction.
+          description: block_hash of requested txs.
           in: query
           required: false
           type: string
         - name: block_time
-          description: block_time of requested transaction.
+          description: block_time of requested txs.
           in: query
           required: false
           type: string
@@ -5983,7 +5983,7 @@ paths:
                       type: string
                       title: client identifier
                     client_state:
-                      title: client state
+                      title: client states
                       type: object
                       properties:
                         type_url:
@@ -6635,7 +6635,7 @@ paths:
                         "@type": "type.googleapis.com/google.protobuf.Duration",
                         "value": "1.212s"
                       }
-                title: client state associated with the request identifier
+                title: client states associated with the request identifier
               proof:
                 type: string
                 format: byte
@@ -6870,7 +6870,7 @@ paths:
                         }
       parameters:
         - name: client_id
-          description: client state unique identifier
+          description: client states unique identifier
           in: path
           required: true
           type: string
@@ -7110,7 +7110,7 @@ paths:
                   type: object
                   properties:
                     height:
-                      title: consensus state height
+                      title: consensus states height
                       type: object
                       properties:
                         revision_number:
@@ -7317,7 +7317,7 @@ paths:
                               "@type": "type.googleapis.com/google.protobuf.Duration",
                               "value": "1.212s"
                             }
-                      title: consensus state
+                      title: consensus states
                   description: >-
                     ConsensusStateWithHeight defines a consensus state with an
                     additional height
@@ -7660,7 +7660,7 @@ paths:
                     of updating and
 
                     freezing clients
-                title: consensus state heights
+                title: consensus states heights
               pagination:
                 title: pagination response
                 type: object
@@ -8380,13 +8380,13 @@ paths:
           required: true
           type: string
         - name: revision_number
-          description: consensus state revision number
+          description: consensus states revision number
           in: path
           required: true
           type: string
           format: uint64
         - name: revision_height
-          description: consensus state revision height
+          description: consensus states revision height
           in: path
           required: true
           type: string
@@ -8804,7 +8804,7 @@ paths:
                         "@type": "type.googleapis.com/google.protobuf.Duration",
                         "value": "1.212s"
                       }
-                title: client state associated with the request identifier
+                title: client states associated with the request identifier
             description: |-
               QueryUpgradedClientStateResponse is the response type for the
               Query/UpgradedClientState RPC method.
@@ -9003,7 +9003,7 @@ paths:
         - Query
   /ibc/core/client/v1/upgraded_consensus_states:
     get:
-      summary: UpgradedConsensusState queries an Upgraded IBC consensus state.
+      summary: UpgradedConsensusState queries an Upgraded IBC consensus states.
       operationId: UpgradedConsensusState
       responses:
         '200':
@@ -9184,7 +9184,7 @@ paths:
                         "@type": "type.googleapis.com/google.protobuf.Duration",
                         "value": "1.212s"
                       }
-                title: Consensus state associated with the request identifier
+                title: Consensus states associated with the request identifier
             description: |-
               QueryUpgradedConsensusStateResponse is the response type for the
               Query/UpgradedConsensusState RPC method.
@@ -9403,7 +9403,7 @@ paths:
                 format: byte
                 title: merkle proof of existence
               proof_height:
-                title: height at which the proof was generated
+                title: height at which the proof was support
                 type: object
                 properties:
                   revision_number:
@@ -9680,7 +9680,7 @@ paths:
 
                         channels or packets utilising this connection
                     state:
-                      description: current state of the connection end.
+                      description: current states of the connection end.
                       type: string
                       enum:
                         - STATE_UNINITIALIZED_UNSPECIFIED
@@ -10086,7 +10086,7 @@ paths:
 
                       channels or packets utilising this connection.
                   state:
-                    description: current state of the connection end.
+                    description: current states of the connection end.
                     type: string
                     enum:
                       - STATE_UNINITIALIZED_UNSPECIFIED
@@ -10399,7 +10399,7 @@ paths:
             type: object
             properties:
               identified_client_state:
-                title: client state associated with the channel
+                title: client states associated with the channel
                 type: object
                 properties:
                   client_id:
@@ -10582,7 +10582,7 @@ paths:
                             "@type": "type.googleapis.com/google.protobuf.Duration",
                             "value": "1.212s"
                           }
-                    title: client state
+                    title: client states
                 description: >-
                   IdentifiedClientState defines a client state with an
                   additional client
@@ -11008,10 +11008,10 @@ paths:
                         "@type": "type.googleapis.com/google.protobuf.Duration",
                         "value": "1.212s"
                       }
-                title: consensus state associated with the channel
+                title: consensus states associated with the channel
               client_id:
                 type: string
-                title: client ID associated with the consensus state
+                title: client ID associated with the consensus states
               proof:
                 type: string
                 format: byte
@@ -11495,7 +11495,7 @@ paths:
                   type: object
                   properties:
                     state:
-                      title: current state of the channel end
+                      title: current states of the channel end
                       type: string
                       enum:
                         - STATE_UNINITIALIZED_UNSPECIFIED
@@ -11895,7 +11895,7 @@ paths:
                 type: object
                 properties:
                   state:
-                    title: current state of the channel end
+                    title: current states of the channel end
                     type: string
                     enum:
                       - STATE_UNINITIALIZED_UNSPECIFIED
@@ -12224,7 +12224,7 @@ paths:
             type: object
             properties:
               identified_client_state:
-                title: client state associated with the channel
+                title: client states associated with the channel
                 type: object
                 properties:
                   client_id:
@@ -12407,7 +12407,7 @@ paths:
                             "@type": "type.googleapis.com/google.protobuf.Duration",
                             "value": "1.212s"
                           }
-                    title: client state
+                    title: client states
                 description: >-
                   IdentifiedClientState defines a client state with an
                   additional client
@@ -12838,10 +12838,10 @@ paths:
                         "@type": "type.googleapis.com/google.protobuf.Duration",
                         "value": "1.212s"
                       }
-                title: consensus state associated with the channel
+                title: consensus states associated with the channel
               client_id:
                 type: string
-                title: client ID associated with the consensus state
+                title: client ID associated with the consensus states
               proof:
                 type: string
                 format: byte
@@ -13081,13 +13081,13 @@ paths:
           required: true
           type: string
         - name: revision_number
-          description: revision number of the consensus state
+          description: revision number of the consensus states
           in: path
           required: true
           type: string
           format: uint64
         - name: revision_height
-          description: revision height of the consensus state
+          description: revision height of the consensus states
           in: path
           required: true
           type: string
@@ -13382,7 +13382,7 @@ paths:
                     data:
                       type: string
                       format: byte
-                      description: embedded data that represents packet state.
+                      description: embedded data that represents packet states.
                   description: >-
                     PacketState defines the generic type necessary to retrieve
                     and store
@@ -14017,7 +14017,7 @@ paths:
                     data:
                       type: string
                       format: byte
-                      description: embedded data that represents packet state.
+                      description: embedded data that represents packet states.
                   description: >-
                     PacketState defines the generic type necessary to retrieve
                     and store
@@ -15432,7 +15432,7 @@ paths:
                   type: object
                   properties:
                     state:
-                      title: current state of the channel end
+                      title: current states of the channel end
                       type: string
                       enum:
                         - STATE_UNINITIALIZED_UNSPECIFIED
@@ -36289,7 +36289,7 @@ paths:
         - Query
   /cosmos/tx/v1beta1/decode:
     post:
-      summary: TxDecode decodes the transaction.
+      summary: TxDecode decodes the txs.
       description: 'Since: cosmos-sdk 0.47'
       operationId: TxDecode
       responses:
@@ -36498,7 +36498,7 @@ paths:
               tx_bytes:
                 type: string
                 format: byte
-                description: tx_bytes is the raw transaction.
+                description: tx_bytes is the raw txs.
             description: |-
               TxDecodeRequest is the request type for the Service.TxDecode
               RPC method.
@@ -36508,7 +36508,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/decode/amino:
     post:
-      summary: TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON.
+      summary: TxDecodeAmino decodes an Amino txs from encoded bytes to JSON.
       description: 'Since: cosmos-sdk 0.47'
       operationId: TxDecodeAmino
       responses:
@@ -36740,7 +36740,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/encode:
     post:
-      summary: TxEncode encodes the transaction.
+      summary: TxEncode encodes the txs.
       description: 'Since: cosmos-sdk 0.47'
       operationId: TxEncode
       responses:
@@ -36752,7 +36752,7 @@ paths:
               tx_bytes:
                 type: string
                 format: byte
-                description: tx_bytes is the encoded transaction bytes.
+                description: tx_bytes is the encoded txs bytes.
             description: |-
               TxEncodeResponse is the response type for the
               Service.TxEncode method.
@@ -36959,7 +36959,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/encode/amino:
     post:
-      summary: TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes.
+      summary: TxEncodeAmino encodes an Amino txs from JSON to encoded bytes.
       description: 'Since: cosmos-sdk 0.47'
       operationId: TxEncodeAmino
       responses:
@@ -37191,7 +37191,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/simulate:
     post:
-      summary: Simulate simulates executing a transaction for estimating gas usage.
+      summary: Simulate simulates executing a txs for estimating gas usage.
       operationId: Simulate
       responses:
         '200':
@@ -37861,7 +37861,7 @@ paths:
                         }
       parameters:
         - name: events
-          description: events is the list of transaction event type.
+          description: events is the list of txs event type.
           in: query
           required: false
           type: array
@@ -37958,7 +37958,7 @@ paths:
       tags:
         - Service
     post:
-      summary: BroadcastTx broadcast transaction.
+      summary: BroadcastTx broadcast txs.
       operationId: BroadcastTx
       responses:
         '200':
@@ -37975,7 +37975,7 @@ paths:
                     title: The block height
                   txhash:
                     type: string
-                    description: The transaction hash.
+                    description: The txs hash.
                   codespace:
                     type: string
                     title: Namespace for the Code
@@ -38047,11 +38047,11 @@ paths:
                   gas_wanted:
                     type: string
                     format: int64
-                    description: Amount of gas requested for transaction.
+                    description: Amount of gas requested for txs.
                   gas_used:
                     type: string
                     format: int64
-                    description: Amount of gas consumed by transaction.
+                    description: Amount of gas consumed by txs.
                   tx:
                     type: object
                     properties:
@@ -38492,7 +38492,7 @@ paths:
               tx_bytes:
                 type: string
                 format: byte
-                description: tx_bytes is the raw transaction.
+                description: tx_bytes is the raw txs.
               mode:
                 type: string
                 enum:
@@ -38788,7 +38788,7 @@ paths:
         - Service
   /cosmos/tx/v1beta1/txs/{hash}:
     get:
-      summary: GetTx fetches a tx by hash.
+      summary: GetTx fetches a txs by hash.
       operationId: GetTx
       responses:
         '200':
@@ -38988,7 +38988,7 @@ paths:
                         }
       parameters:
         - name: hash
-          description: hash is the tx hash to query, encoded as a hex string.
+          description: hash is the txs hash to query, encoded as a hex string.
           in: path
           required: true
           type: string
@@ -43524,7 +43524,7 @@ definitions:
     properties:
       enable_claims:
         type: boolean
-        title: enable_claims is the parameter to enable the claiming process
+        title: enable_claims is the parameter to enable the claiming txs
       airdrop_start_time:
         type: string
         format: date-time
@@ -43662,7 +43662,7 @@ definitions:
         properties:
           enable_claims:
             type: boolean
-            title: enable_claims is the parameter to enable the claiming process
+            title: enable_claims is the parameter to enable the claiming txs
           airdrop_start_time:
             type: string
             format: date-time
@@ -45150,7 +45150,7 @@ definitions:
     properties:
       address:
         type: string
-        title: address of the contract that generated the event
+        title: address of the contract that support the event
       topics:
         type: array
         items:
@@ -45163,17 +45163,17 @@ definitions:
       block_number:
         type: string
         format: uint64
-        title: block_number of the block in which the transaction was included
+        title: block_number of the block in which the txs was included
       tx_hash:
         type: string
-        title: tx_hash is the transaction hash
+        title: tx_hash is the txs hash
       tx_index:
         type: string
         format: uint64
-        title: tx_index of the transaction in the block
+        title: tx_index of the txs in the block
       block_hash:
         type: string
-        title: block_hash of the block in which the transaction was included
+        title: block_hash of the block in which the txs was included
       index:
         type: string
         format: uint64
@@ -45364,14 +45364,14 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: data is inner transaction data of the Ethereum transaction
+        title: data is inner txs data of the Ethereum txs
       size:
         type: number
         format: double
-        title: size is the encoded storage size of the transaction (DEPRECATED)
+        title: size is the encoded storage size of the txs (DEPRECATED)
       hash:
         type: string
-        title: hash of the transaction in hex format
+        title: hash of the txs in hex format
       from:
         type: string
         title: >-
@@ -45381,7 +45381,7 @@ definitions:
           against the address derived from the signature (V, R, S) using the
 
           secp256k1 elliptic curve
-    description: MsgEthereumTx encapsulates an Ethereum transaction as an SDK message.
+    description: MsgEthereumTx encapsulates an Ethereum txs as an SDK message.
   artela.evm.v1.MsgEthereumTxResponse:
     type: object
     properties:
@@ -45401,7 +45401,7 @@ definitions:
           properties:
             address:
               type: string
-              title: address of the contract that generated the event
+              title: address of the contract that support the event
             topics:
               type: array
               items:
@@ -45414,17 +45414,17 @@ definitions:
             block_number:
               type: string
               format: uint64
-              title: block_number of the block in which the transaction was included
+              title: block_number of the block in which the txs was included
             tx_hash:
               type: string
-              title: tx_hash is the transaction hash
+              title: tx_hash is the txs hash
             tx_index:
               type: string
               format: uint64
-              title: tx_index of the transaction in the block
+              title: tx_index of the txs in the block
             block_hash:
               type: string
-              title: block_hash of the block in which the transaction was included
+              title: block_hash of the block in which the txs was included
             index:
               type: string
               format: uint64
@@ -45470,7 +45470,7 @@ definitions:
       gas_used:
         type: string
         format: uint64
-        title: gas_used specifies how much gas was consumed by the transaction
+        title: gas_used specifies how much gas was consumed by the txs
     description: MsgEthereumTxResponse defines the Msg/EthereumTx response type.
   artela.evm.v1.Params:
     type: object
@@ -45487,7 +45487,7 @@ definitions:
           function
       enable_call:
         type: boolean
-        title: enable_call toggles state transitions that use the vm.Call function
+        title: enable_call toggles states transitions that use the vm.Call function
       extra_eips:
         title: extra_eips defines the additional EIPs for the vm.Config
         type: object
@@ -46256,7 +46256,7 @@ definitions:
     type: object
     properties:
       height:
-        title: consensus state height
+        title: consensus states height
         type: object
         properties:
           revision_number:
@@ -46444,7 +46444,7 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: consensus state
+        title: consensus states
     description: >-
       ConsensusStateWithHeight defines a consensus state with an additional
       height
@@ -46482,7 +46482,7 @@ definitions:
         type: string
         title: client identifier
       client_state:
-        title: client state
+        title: client states
         type: object
         properties:
           type_url:
@@ -46653,7 +46653,7 @@ definitions:
         type: array
         items:
           type: string
-        description: allowed_clients defines the list of allowed client state types.
+        description: allowed_clients defines the list of allowed client states types.
     description: Params defines the set of IBC light client parameters.
   ibc.core.client.v1.QueryClientParamsResponse:
     type: object
@@ -46666,7 +46666,7 @@ definitions:
             type: array
             items:
               type: string
-            description: allowed_clients defines the list of allowed client state types.
+            description: allowed_clients defines the list of allowed client states types.
     description: >-
       QueryClientParamsResponse is the response type for the Query/ClientParams
       RPC
@@ -46836,7 +46836,7 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: client state associated with the request identifier
+        title: client states associated with the request identifier
       proof:
         type: string
         format: byte
@@ -46888,7 +46888,7 @@ definitions:
               type: string
               title: client identifier
             client_state:
-              title: client state
+              title: client states
               type: object
               properties:
                 type_url:
@@ -47147,7 +47147,7 @@ definitions:
             updating and
 
             freezing clients
-        title: consensus state heights
+        title: consensus states heights
       pagination:
         title: pagination response
         type: object
@@ -47397,7 +47397,7 @@ definitions:
           type: object
           properties:
             height:
-              title: consensus state height
+              title: consensus states height
               type: object
               properties:
                 revision_number:
@@ -47596,7 +47596,7 @@ definitions:
                       "@type": "type.googleapis.com/google.protobuf.Duration",
                       "value": "1.212s"
                     }
-              title: consensus state
+              title: consensus states
           description: >-
             ConsensusStateWithHeight defines a consensus state with an
             additional height
@@ -47797,7 +47797,7 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: client state associated with the request identifier
+        title: client states associated with the request identifier
     description: |-
       QueryUpgradedClientStateResponse is the response type for the
       Query/UpgradedClientState RPC method.
@@ -47965,7 +47965,7 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: Consensus state associated with the request identifier
+        title: Consensus states associated with the request identifier
     description: |-
       QueryUpgradedConsensusStateResponse is the response type for the
       Query/UpgradedConsensusState RPC method.
@@ -48009,7 +48009,7 @@ definitions:
 
           channels or packets utilising this connection.
       state:
-        description: current state of the connection end.
+        description: current states of the connection end.
         type: string
         enum:
           - STATE_UNINITIALIZED_UNSPECIFIED
@@ -48131,7 +48131,7 @@ definitions:
 
           channels or packets utilising this connection
       state:
-        description: current state of the connection end.
+        description: current states of the connection end.
         type: string
         enum:
           - STATE_UNINITIALIZED_UNSPECIFIED
@@ -48206,7 +48206,7 @@ definitions:
         format: byte
         title: merkle proof of existence
       proof_height:
-        title: height at which the proof was generated
+        title: height at which the proof was support
         type: object
         properties:
           revision_number:
@@ -48240,7 +48240,7 @@ definitions:
     type: object
     properties:
       identified_client_state:
-        title: client state associated with the channel
+        title: client states associated with the channel
         type: object
         properties:
           client_id:
@@ -48413,7 +48413,7 @@ definitions:
                     "@type": "type.googleapis.com/google.protobuf.Duration",
                     "value": "1.212s"
                   }
-            title: client state
+            title: client states
         description: |-
           IdentifiedClientState defines a client state with an additional client
           identifier field.
@@ -48616,10 +48616,10 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: consensus state associated with the channel
+        title: consensus states associated with the channel
       client_id:
         type: string
-        title: client ID associated with the consensus state
+        title: client ID associated with the consensus states
       proof:
         type: string
         format: byte
@@ -48710,7 +48710,7 @@ definitions:
 
               channels or packets utilising this connection.
           state:
-            description: current state of the connection end.
+            description: current states of the connection end.
             type: string
             enum:
               - STATE_UNINITIALIZED_UNSPECIFIED
@@ -48847,7 +48847,7 @@ definitions:
 
                 channels or packets utilising this connection
             state:
-              description: current state of the connection end.
+              description: current states of the connection end.
               type: string
               enum:
                 - STATE_UNINITIALIZED_UNSPECIFIED
@@ -48990,7 +48990,7 @@ definitions:
     type: object
     properties:
       state:
-        title: current state of the channel end
+        title: current states of the channel end
         type: string
         enum:
           - STATE_UNINITIALIZED_UNSPECIFIED
@@ -49065,7 +49065,7 @@ definitions:
     type: object
     properties:
       state:
-        title: current state of the channel end
+        title: current states of the channel end
         type: string
         enum:
           - STATE_UNINITIALIZED_UNSPECIFIED
@@ -49158,7 +49158,7 @@ definitions:
       data:
         type: string
         format: byte
-        description: embedded data that represents packet state.
+        description: embedded data that represents packet states.
     description: |-
       PacketState defines the generic type necessary to retrieve and store
       packet commitments, acknowledgements, and receipts.
@@ -49168,7 +49168,7 @@ definitions:
     type: object
     properties:
       identified_client_state:
-        title: client state associated with the channel
+        title: client states associated with the channel
         type: object
         properties:
           client_id:
@@ -49341,7 +49341,7 @@ definitions:
                     "@type": "type.googleapis.com/google.protobuf.Duration",
                     "value": "1.212s"
                   }
-            title: client state
+            title: client states
         description: |-
           IdentifiedClientState defines a client state with an additional client
           identifier field.
@@ -49544,10 +49544,10 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: consensus state associated with the channel
+        title: consensus states associated with the channel
       client_id:
         type: string
-        title: client ID associated with the consensus state
+        title: client ID associated with the consensus states
       proof:
         type: string
         format: byte
@@ -49591,7 +49591,7 @@ definitions:
         type: object
         properties:
           state:
-            title: current state of the channel end
+            title: current states of the channel end
             type: string
             enum:
               - STATE_UNINITIALIZED_UNSPECIFIED
@@ -49703,7 +49703,7 @@ definitions:
           type: object
           properties:
             state:
-              title: current state of the channel end
+              title: current states of the channel end
               type: string
               enum:
                 - STATE_UNINITIALIZED_UNSPECIFIED
@@ -49839,7 +49839,7 @@ definitions:
           type: object
           properties:
             state:
-              title: current state of the channel end
+              title: current states of the channel end
               type: string
               enum:
                 - STATE_UNINITIALIZED_UNSPECIFIED
@@ -50072,7 +50072,7 @@ definitions:
             data:
               type: string
               format: byte
-              description: embedded data that represents packet state.
+              description: embedded data that represents packet states.
           description: >-
             PacketState defines the generic type necessary to retrieve and store
 
@@ -50207,7 +50207,7 @@ definitions:
             data:
               type: string
               format: byte
-              description: embedded data that represents packet state.
+              description: embedded data that represents packet states.
           description: >-
             PacketState defines the generic type necessary to retrieve and store
 
@@ -61134,12 +61134,12 @@ definitions:
       gas_wanted:
         type: string
         format: uint64
-        description: GasWanted is the maximum units of work we allow this tx to perform.
+        description: GasWanted is the maximum units of work we allow this txs to perform.
       gas_used:
         type: string
         format: uint64
         description: GasUsed is the amount of gas actually consumed.
-    description: GasInfo defines tx execution gas context.
+    description: GasInfo defines txs execution gas context.
   cosmos.base.abci.v1beta1.Result:
     type: object
     properties:
@@ -61394,7 +61394,7 @@ definitions:
         title: The block height
       txhash:
         type: string
-        description: The transaction hash.
+        description: The txs hash.
       codespace:
         type: string
         title: Namespace for the Code
@@ -61463,11 +61463,11 @@ definitions:
       gas_wanted:
         type: string
         format: int64
-        description: Amount of gas requested for transaction.
+        description: Amount of gas requested for txs.
       gas_used:
         type: string
         format: int64
-        description: Amount of gas consumed by transaction.
+        description: Amount of gas consumed by txs.
       tx:
         type: object
         properties:
@@ -61889,7 +61889,7 @@ definitions:
       tx_bytes:
         type: string
         format: byte
-        description: tx_bytes is the raw transaction.
+        description: tx_bytes is the raw txs.
       mode:
         type: string
         enum:
@@ -61924,7 +61924,7 @@ definitions:
             title: The block height
           txhash:
             type: string
-            description: The transaction hash.
+            description: The txs hash.
           codespace:
             type: string
             title: Namespace for the Code
@@ -61994,11 +61994,11 @@ definitions:
           gas_wanted:
             type: string
             format: int64
-            description: Amount of gas requested for transaction.
+            description: Amount of gas requested for txs.
           gas_used:
             type: string
             format: int64
-            description: Amount of gas consumed by transaction.
+            description: Amount of gas consumed by txs.
           tx:
             type: object
             properties:
@@ -62863,7 +62863,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the queried transaction.
+        description: txs is the queried txs.
       tx_response:
         type: object
         properties:
@@ -62873,7 +62873,7 @@ definitions:
             title: The block height
           txhash:
             type: string
-            description: The transaction hash.
+            description: The txs hash.
           codespace:
             type: string
             title: Namespace for the Code
@@ -62943,11 +62943,11 @@ definitions:
           gas_wanted:
             type: string
             format: int64
-            description: Amount of gas requested for transaction.
+            description: Amount of gas requested for txs.
           gas_used:
             type: string
             format: int64
-            description: Amount of gas consumed by transaction.
+            description: Amount of gas consumed by txs.
           tx:
             type: object
             properties:
@@ -63192,7 +63192,7 @@ definitions:
               title: The block height
             txhash:
               type: string
-              description: The transaction hash.
+              description: The txs hash.
             codespace:
               type: string
               title: Namespace for the Code
@@ -63262,11 +63262,11 @@ definitions:
             gas_wanted:
               type: string
               format: int64
-              description: Amount of gas requested for transaction.
+              description: Amount of gas requested for txs.
             gas_used:
               type: string
               format: int64
-              description: Amount of gas consumed by transaction.
+              description: Amount of gas consumed by txs.
             tx:
               type: object
               properties:
@@ -64218,7 +64218,7 @@ definitions:
     type: object
     properties:
       body:
-        title: body is the processable content of the transaction
+        title: body is the processable content of the txs
         type: object
         properties:
           messages:
@@ -64791,7 +64791,7 @@ definitions:
               present
 
               and can't be handled, they will be ignored
-        description: TxBody is the body of a transaction that all signers sign over.
+        description: TxBody is the body of a txs that all signers sign over.
       auth_info:
         $ref: '#/definitions/cosmos.tx.v1beta1.AuthInfo'
         title: |-
@@ -65358,7 +65358,7 @@ definitions:
           present
 
           and can't be handled, they will be ignored
-    description: TxBody is the body of a transaction that all signers sign over.
+    description: TxBody is the body of a txs that all signers sign over.
   cosmos.tx.v1beta1.TxDecodeAminoRequest:
     type: object
     properties:
@@ -65386,7 +65386,7 @@ definitions:
       tx_bytes:
         type: string
         format: byte
-        description: tx_bytes is the raw transaction.
+        description: tx_bytes is the raw txs.
     description: |-
       TxDecodeRequest is the request type for the Service.TxDecode
       RPC method.
@@ -65397,7 +65397,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the decoded transaction.
+        description: txs is the decoded txs.
     description: |-
       TxDecodeResponse is the response type for the
       Service.TxDecode method.
@@ -65429,7 +65429,7 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the transaction to encode.
+        description: txs is the txs to encode.
     description: |-
       TxEncodeRequest is the request type for the Service.TxEncode
       RPC method.
@@ -65441,7 +65441,7 @@ definitions:
       tx_bytes:
         type: string
         format: byte
-        description: tx_bytes is the encoded transaction bytes.
+        description: tx_bytes is the encoded txs bytes.
     description: |-
       TxEncodeResponse is the response type for the
       Service.TxEncode method.

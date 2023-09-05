@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -12,7 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
@@ -21,13 +23,17 @@ import (
 	"github.com/artela-network/artela/x/evm/types"
 )
 
-// ConsensusVersion defines the current x/evm module consensus version.
+// TODO mark ConsensusVersion defines the current x/evm module consensus version.
 const ConsensusVersion = 5
 
 var (
 	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
+
+// ===============================================================
+//          		      AppModuleBasic
+// ===============================================================
 
 // AppModuleBasic defines the basic application module used by the evm module.
 type AppModuleBasic struct{}
@@ -39,25 +45,25 @@ func (AppModuleBasic) Name() string {
 
 // RegisterLegacyAminoCodec registers the module's types with the given codec.
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	types.RegisterLegacyAminoCodec(cdc)
+	txs.RegisterLegacyAminoCodec(cdc)
 }
 
-// ConsensusVersion returns the consensus state-breaking version for the module.
+// ConsensusVersion returns the consensus states-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
 	return ConsensusVersion
 }
 
-// DefaultGenesis returns default genesis state as raw bytes for the evm
+// DefaultGenesis returns default genesis states as raw bytes for the evm
 // module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
+	return cdc.MustMarshalJSON(support.DefaultGenesisState())
 }
 
 // ValidateGenesis is the validation check of the Genesis
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
-	var data types.GenesisState
+	var data support.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+		return fmt.Errorf("failed to unmarshal %s genesis states: %w", types.ModuleName, err)
 	}
 
 	return data.Validate()
@@ -65,12 +71,12 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the evm module.
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *runtime.ServeMux) {
-	if err := types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(c)); err != nil {
+	if err := txs.RegisterQueryHandlerClient(context.Background(), serveMux, txs.NewQueryClient(c)); err != nil {
 		panic(err)
 	}
 }
 
-// GetTxCmd returns the root tx command for the evm module.
+// GetTxCmd returns the root txs command for the evm module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.GetTxCmd()
 }
@@ -82,8 +88,12 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 
 // RegisterInterfaces registers interfaces and implementations of the evm module.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	types.RegisterInterfaces(registry)
+	txs.RegisterInterfaces(registry)
 }
+
+// ===============================================================
+//          		        AppModule
+// ===============================================================
 
 // AppModule implements an application module for the evm module.
 type AppModule struct {
@@ -104,8 +114,8 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	txs.RegisterMsgServer(cfg.MsgServer(), am.keeper)
+	txs.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	// TODO mark
 	//m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
@@ -139,17 +149,17 @@ func (AppModule) QuerierRoute() string { return types.RouterKey }
 
 // InitGenesis performs genesis initialization for the evm module. It returns
 // no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
+func (am AppModule) InitGenesis(ctx cosmos.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+	var genesisState support.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	keeper.InitGenesis(ctx, am.keeper, am.ak, genesisState)
+	InitGenesis(ctx, am.keeper, am.ak, genesisState)
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the evm
+// ExportGenesis returns the exported genesis states as raw bytes for the evm
 // module.
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := keeper.ExportGenesis(ctx, am.keeper, am.ak)
+func (am AppModule) ExportGenesis(ctx cosmos.Context, cdc codec.JSONCodec) json.RawMessage {
+	gs := ExportGenesis(ctx, am.keeper, am.ak)
 	return cdc.MustMarshalJSON(gs)
 }
 
@@ -168,7 +178,7 @@ func (AppModule) ProposalMsgs(simState module.SimulationState) []simtypes.Weight
 }
 
 // RegisterStoreDecoder registers a decoder for evm module's types
-func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
+func (am AppModule) RegisterStoreDecoder(_ cosmos.StoreDecoderRegistry) {
 }
 
 // WeightedOperations returns the all the evm module operations with their respective weights.
@@ -177,12 +187,12 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 }
 
 // BeginBlock returns the begin block for the evm module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	am.keeper.BeginBlock(ctx, req)
+func (am AppModule) BeginBlock(ctx cosmos.Context, req abci.RequestBeginBlock) {
+	BeginBlock(ctx, am.keeper, req)
 }
 
 // EndBlock returns the end blocker for the evm module. It returns no validator
 // updates.
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return am.keeper.EndBlock(ctx, req)
+func (am AppModule) EndBlock(ctx cosmos.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	return EndBlock(ctx, am.keeper, req)
 }

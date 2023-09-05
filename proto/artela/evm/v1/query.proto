@@ -3,7 +3,7 @@ package artela.evm.v1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "artela/evm/v1/evm.proto";
-import "artela/evm/v1/tx.proto";
+import "artela/evm/v1/txs.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";

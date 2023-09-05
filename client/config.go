@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/ethereum/types"
 	"os"
 	"path"
 
@@ -11,8 +12,6 @@ import (
 	"github.com/cometbft/cometbft/libs/cli"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
-
-	"github.com/artela-network/artela/types"
 )
 
 // InitConfig adds the chain-id, encoding and output flags to the persistent flag set.

@@ -3,6 +3,7 @@ package tx
 import (
 	"errors"
 	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
+	types2 "github.com/artela-network/artela/ethereum/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/artela-network/artela/app"
 	"github.com/artela-network/artela/ethereum/eip712"
-	"github.com/artela-network/artela/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
@@ -45,9 +45,9 @@ type legacyWeb3ExtensionArgs struct {
 	signature []byte
 }
 
-// CreateEIP712CosmosTx creates a cosmos tx for typed data according to EIP712.
-// Also, signs the tx with the provided messages and private key.
-// It returns the signed transaction and an error
+// CreateEIP712CosmosTx creates a cosmos txs for typed data according to EIP712.
+// Also, signs the txs with the provided messages and private key.
+// It returns the signed txs and an error
 func CreateEIP712CosmosTx(
 	ctx sdk.Context,
 	appArtela *app.Artela,
@@ -61,9 +61,9 @@ func CreateEIP712CosmosTx(
 	return builder.GetTx(), err
 }
 
-// PrepareEIP712CosmosTx creates a cosmos tx for typed data according to EIP712.
-// Also, signs the tx with the provided messages and private key.
-// It returns the tx builder with the signed transaction and an error
+// PrepareEIP712CosmosTx creates a cosmos txs for typed data according to EIP712.
+// Also, signs the txs with the provided messages and private key.
+// It returns the txs builder with the signed txs and an error
 func PrepareEIP712CosmosTx(
 	ctx sdk.Context,
 	appArtela *app.Artela,
@@ -71,7 +71,7 @@ func PrepareEIP712CosmosTx(
 ) (client.TxBuilder, error) {
 	txArgs := args.CosmosTxArgs
 
-	pc, err := types.ParseChainID(txArgs.ChainID)
+	pc, err := types2.ParseChainID(txArgs.ChainID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func PrepareEIP712CosmosTx(
 	)
 }
 
-// signCosmosEIP712Tx signs the cosmos transaction on the txBuilder provided using
+// signCosmosEIP712Tx signs the cosmos txs on the txBuilder provided using
 // the provided private key and the typed data
 func signCosmosEIP712Tx(
 	ctx sdk.Context,
@@ -189,7 +189,7 @@ func signCosmosEIP712Tx(
 func createTypedData(args typedDataArgs, useLegacy bool) (apitypes.TypedData, error) {
 	if useLegacy {
 		registry := codectypes.NewInterfaceRegistry()
-		types.RegisterInterfaces(registry)
+		types2.RegisterInterfaces(registry)
 		cryptocodec.RegisterInterfaces(registry)
 		artelaCodec := codec.NewProtoCodec(registry)
 
@@ -212,7 +212,7 @@ func createTypedData(args typedDataArgs, useLegacy bool) (apitypes.TypedData, er
 // setBuilderLegacyWeb3Extension creates a legacy ExtensionOptionsWeb3Tx and
 // appends it to the builder options.
 func setBuilderLegacyWeb3Extension(builder authtx.ExtensionOptionsTxBuilder, args legacyWeb3ExtensionArgs) error {
-	option, err := codectypes.NewAnyWithValue(&types.ExtensionOptionsWeb3Tx{
+	option, err := codectypes.NewAnyWithValue(&types2.ExtensionOptionsWeb3Tx{
 		FeePayer:         args.feePayer,
 		TypedDataChainID: args.chainID,
 		FeePayerSig:      args.signature,

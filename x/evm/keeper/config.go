@@ -1,19 +1,23 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/txs/support"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela/x/evm/statedb"
-	"github.com/artela-network/artela/x/evm/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/artela-network/artela/x/evm/states"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/vm"
 )
 
-// EVMConfig creates the EVMConfig based on current state
-func (k *Keeper) EVMConfig(ctx sdk.Context, proposerAddress sdk.ConsAddress, chainID *big.Int) (*statedb.EVMConfig, error) {
+// ----------------------------------------------------------------------------
+// 								   EVM Config
+// ----------------------------------------------------------------------------
+
+// EVMConfig creates the EVMConfig based on current states
+func (k *Keeper) EVMConfig(ctx cosmos.Context, proposerAddress cosmos.ConsAddress, chainID *big.Int) (*states.EVMConfig, error) {
 	params := k.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(chainID)
 
@@ -24,7 +28,7 @@ func (k *Keeper) EVMConfig(ctx sdk.Context, proposerAddress sdk.ConsAddress, cha
 	}
 
 	baseFee := k.GetBaseFee(ctx, ethCfg)
-	return &statedb.EVMConfig{
+	return &states.EVMConfig{
 		Params:      params,
 		ChainConfig: ethCfg,
 		CoinBase:    coinbase,
@@ -32,21 +36,11 @@ func (k *Keeper) EVMConfig(ctx sdk.Context, proposerAddress sdk.ConsAddress, cha
 	}, nil
 }
 
-// TxConfig loads `TxConfig` from current transient storage
-func (k *Keeper) TxConfig(ctx sdk.Context, txHash common.Hash) statedb.TxConfig {
-	return statedb.NewTxConfig(
-		common.BytesToHash(ctx.HeaderHash()), // BlockHash
-		txHash,                               // TxHash
-		uint(k.GetTxIndexTransient(ctx)),     // TxIndex
-		uint(k.GetLogSizeTransient(ctx)),     // LogIndex
-	)
-}
-
 // VMConfig creates an EVM configuration from the debug setting and the extra EIPs enabled on the
-// module parameters. The config generated uses the default JumpTable from the EVM.
-func (k Keeper) VMConfig(ctx sdk.Context, _ core.Message, cfg *statedb.EVMConfig, tracer vm.EVMLogger) vm.Config {
+// module parameters. The config support uses the default JumpTable from the EVM.
+func (k Keeper) VMConfig(ctx cosmos.Context, _ core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger) vm.Config {
 	noBaseFee := true
-	if types.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
+	if support.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
 		noBaseFee = k.feeKeeper.GetParams(ctx).NoBaseFee
 	}
 
@@ -61,4 +55,18 @@ func (k Keeper) VMConfig(ctx sdk.Context, _ core.Message, cfg *statedb.EVMConfig
 		NoBaseFee: noBaseFee,
 		ExtraEips: cfg.Params.EIPs(),
 	}
+}
+
+// ----------------------------------------------------------------------------
+// 							Transaction Config
+// ----------------------------------------------------------------------------
+
+// TxConfig loads `TxConfig` from current transient storage
+func (k *Keeper) TxConfig(ctx cosmos.Context, txHash common.Hash) states.TxConfig {
+	return states.NewTxConfig(
+		common.BytesToHash(ctx.HeaderHash()), // BlockHash
+		txHash,                               // TxHash
+		uint(k.GetTxIndexTransient(ctx)),     // TxIndex
+		uint(k.GetLogSizeTransient(ctx)),     // LogIndex
+	)
 }

@@ -146,7 +146,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			genFile := config.GenesisFile()
 			appState, genDoc, err := genutiltypes.GenesisStateFromGenFile(genFile)
 			if err != nil {
-				return fmt.Errorf("failed to unmarshal genesis state: %w", err)
+				return fmt.Errorf("failed to unmarshal genesis states: %w", err)
 			}
 
 			authGenState := authtypes.GetGenesisStateFromAppState(cdc, appState)
@@ -173,7 +173,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			authGenStateBz, err := cdc.MarshalJSON(&authGenState)
 			if err != nil {
-				return fmt.Errorf("failed to marshal auth genesis state: %w", err)
+				return fmt.Errorf("failed to marshal auth genesis states: %w", err)
 			}
 
 			appState[authtypes.ModuleName] = authGenStateBz
@@ -184,14 +184,14 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			bankGenStateBz, err := cdc.MarshalJSON(bankGenState)
 			if err != nil {
-				return fmt.Errorf("failed to marshal bank genesis state: %w", err)
+				return fmt.Errorf("failed to marshal bank genesis states: %w", err)
 			}
 
 			appState[banktypes.ModuleName] = bankGenStateBz
 
 			appStateJSON, err := json.Marshal(appState)
 			if err != nil {
-				return fmt.Errorf("failed to marshal application genesis state: %w", err)
+				return fmt.Errorf("failed to marshal application genesis states: %w", err)
 			}
 
 			genDoc.AppState = appStateJSON

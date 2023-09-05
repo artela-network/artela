@@ -105,7 +105,7 @@ func (w *Wallet) Derive(path accounts.DerivationPath, pin bool) (accounts.Accoun
 		return account, nil
 	}
 
-	// Pinning needs to modify the state
+	// Pinning needs to modify the states
 	w.stateLock.Lock()
 	defer w.stateLock.Unlock()
 

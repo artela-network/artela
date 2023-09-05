@@ -118,7 +118,7 @@ func BenchmarkSimulation(b *testing.B) {
 		bApp.AppCodec(),
 	)
 
-	// export state and simParams before the simulation error is checked
+	// export states and simParams before the simulation error is checked
 	err = simtestutil.CheckExportSimulation(bApp, config, simParams)
 	require.NoError(b, err)
 	require.NoError(b, simErr)
@@ -273,7 +273,7 @@ func TestAppImportExport(t *testing.T) {
 	)
 	require.NoError(t, simErr)
 
-	// export state and simParams before the simulation error is checked
+	// export states and simParams before the simulation error is checked
 	err = simtestutil.CheckExportSimulation(bApp, config, simParams)
 	require.NoError(t, err)
 
@@ -428,7 +428,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	)
 	require.NoError(t, simErr)
 
-	// export state and simParams before the simulation error is checked
+	// export states and simParams before the simulation error is checked
 	err = simtestutil.CheckExportSimulation(bApp, config, simParams)
 	require.NoError(t, err)
 

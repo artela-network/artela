@@ -5,7 +5,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/artela-network/artela/x/fee/types"
 )
@@ -14,7 +14,7 @@ var _ types.QueryServer = Keeper{}
 
 // Params implements the Query/Params gRPC method
 func (k Keeper) Params(c context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 	params := k.GetParams(ctx)
 
 	return &types.QueryParamsResponse{
@@ -24,7 +24,7 @@ func (k Keeper) Params(c context.Context, _ *types.QueryParamsRequest) (*types.Q
 
 // BaseFee implements the Query/BaseFee gRPC method
 func (k Keeper) BaseFee(c context.Context, _ *types.QueryBaseFeeRequest) (*types.QueryBaseFeeResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 
 	res := &types.QueryBaseFeeResponse{}
 	baseFee := k.GetBaseFee(ctx)
@@ -39,11 +39,11 @@ func (k Keeper) BaseFee(c context.Context, _ *types.QueryBaseFeeRequest) (*types
 
 // BlockGas implements the Query/BlockGas gRPC method
 func (k Keeper) BlockGas(c context.Context, _ *types.QueryBlockGasRequest) (*types.QueryBlockGasResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := cosmos.UnwrapSDKContext(c)
 	gas := sdkmath.NewIntFromUint64(k.GetBlockGasWanted(ctx))
 
 	if !gas.IsInt64() {
-		return nil, errorsmod.Wrapf(sdk.ErrIntOverflowCoin, "block gas %s is higher than MaxInt64", gas)
+		return nil, errorsmod.Wrapf(cosmos.ErrIntOverflowCoin, "block gas %s is higher than MaxInt64", gas)
 	}
 
 	return &types.QueryBlockGasResponse{

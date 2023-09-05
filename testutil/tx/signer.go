@@ -55,7 +55,7 @@ func NewSigner(sk cryptotypes.PrivKey) keyring.Signer {
 func (s Signer) Sign(_ string, msg []byte) ([]byte, cryptotypes.PubKey, error) {
 	if s.privKey.Type() != ethsecp256k12.KeyType {
 		return nil, nil, fmt.Errorf(
-			"invalid private key type for signing ethereum tx; expected %s, got %s",
+			"invalid private key type for signing ethereum txs; expected %s, got %s",
 			ethsecp256k12.KeyType,
 			s.privKey.Type(),
 		)

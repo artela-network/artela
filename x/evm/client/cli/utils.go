@@ -8,13 +8,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 )
 
 func accountToHex(addr string) (string, error) {
-	if strings.HasPrefix(addr, sdk.GetConfig().GetBech32AccountAddrPrefix()) {
+	if strings.HasPrefix(addr, cosmos.GetConfig().GetBech32AccountAddrPrefix()) {
 		// Check to see if address is Cosmos bech32 formatted
-		toAddr, err := sdk.AccAddressFromBech32(addr)
+		toAddr, err := cosmos.AccAddressFromBech32(addr)
 		if err != nil {
 			return "", errors.Wrap(err, "must provide a valid Bech32 address")
 		}

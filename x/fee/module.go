@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
@@ -21,13 +21,17 @@ import (
 	"github.com/artela-network/artela/x/fee/types"
 )
 
-// ConsensusVersion defines the current x/fee module consensus version.
+// TODO mark ConsensusVersion defines the current x/fee module consensus version.
 const ConsensusVersion = 4
 
 var (
 	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
+
+// ===============================================================
+//          		      AppModuleBasic
+// ===============================================================
 
 // AppModuleBasic defines the basic application module used by the fee market module.
 type AppModuleBasic struct{}
@@ -42,12 +46,12 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
-// ConsensusVersion returns the consensus state-breaking version for the module.
+// ConsensusVersion returns the consensus states-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
 	return ConsensusVersion
 }
 
-// DefaultGenesis returns default genesis state as raw bytes for the fee market
+// DefaultGenesis returns default genesis states as raw bytes for the fee market
 // module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
@@ -57,7 +61,7 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var genesisState types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genesisState); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+		return fmt.Errorf("failed to unmarshal %s genesis states: %w", types.ModuleName, err)
 	}
 
 	return genesisState.Validate()
@@ -69,7 +73,7 @@ func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *ru
 	}
 }
 
-// GetTxCmd returns the root tx command for the fee market module.
+// GetTxCmd returns the root txs command for the fee market module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }
@@ -84,18 +88,22 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 	types.RegisterInterfaces(registry)
 }
 
+// ===============================================================
+//          		        AppModule
+// ===============================================================
+
 // AppModule implements an application module for the fee market module.
 type AppModule struct {
 	AppModuleBasic
 
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 
 	// legacySubspace is used solely for migration of x/params managed parameters
 	legacySubspace types.Subspace
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(k keeper.Keeper, ss types.Subspace) AppModule {
+func NewAppModule(k *keeper.Keeper, ss types.Subspace) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
@@ -110,13 +118,13 @@ func (AppModule) Name() string {
 
 // RegisterInvariants interface for registering invariants. Performs a no-op
 // as the fee market module doesn't expose invariants.
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
+func (am AppModule) RegisterInvariants(_ cosmos.InvariantRegistry) {}
 
 // RegisterServices registers the GRPC query service and migrator service to respond to the
 // module-specific GRPC queries and handle the upgrade store migration for the module.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
-	types.RegisterMsgServer(cfg.MsgServer(), &am.keeper)
+	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
 
 	// TODO mark
 	//m := keeper.NewMigrator(am.keeper, am.legacySubspace)
@@ -127,23 +135,23 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 // InitGenesis performs genesis initialization for the fee market module. It returns
 // no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+func (am AppModule) InitGenesis(ctx cosmos.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	keeper.InitGenesis(ctx, am.keeper, genesisState)
+	InitGenesis(ctx, am.keeper, genesisState)
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the fee market
+// ExportGenesis returns the exported genesis states as raw bytes for the fee market
 // module.
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := keeper.ExportGenesis(ctx, am.keeper)
+func (am AppModule) ExportGenesis(ctx cosmos.Context, cdc codec.JSONCodec) json.RawMessage {
+	gs := ExportGenesis(ctx, am.keeper)
 	return cdc.MustMarshalJSON(gs)
 }
 
 // RegisterStoreDecoder registers a decoder for fee market module's types
-func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
+func (am AppModule) RegisterStoreDecoder(_ cosmos.StoreDecoderRegistry) {}
 
 // ProposalContents doesn't return any content functions for governance proposals.
 func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
@@ -160,13 +168,13 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 }
 
 // BeginBlock returns the begin block for the fee market module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	am.keeper.BeginBlock(ctx, req)
+func (am AppModule) BeginBlock(ctx cosmos.Context, req abci.RequestBeginBlock) {
+	BeginBlock(ctx, am.keeper, req)
 }
 
 // EndBlock returns the end blocker for the fee market module. It returns no validator
 // updates.
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	am.keeper.EndBlock(ctx, req)
+func (am AppModule) EndBlock(ctx cosmos.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	EndBlock(ctx, am.keeper, req)
 	return []abci.ValidatorUpdate{}
 }

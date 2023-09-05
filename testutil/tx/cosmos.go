@@ -1,6 +1,7 @@
 package tx
 
 import (
+	"github.com/artela-network/artela/ethereum/utils"
 	"math"
 
 	sdkmath "cosmossdk.io/math"
@@ -12,7 +13,6 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 
 	"github.com/artela-network/artela/app"
-	"github.com/artela-network/artela/utils"
 )
 
 var (
@@ -20,28 +20,28 @@ var (
 	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(uint64(feeAmt))) // 0.01 Artela
 )
 
-// CosmosTxArgs contains the params to create a cosmos tx
+// CosmosTxArgs contains the params to create a cosmos txs
 type CosmosTxArgs struct {
-	// TxCfg is the client transaction config
+	// TxCfg is the client txs config
 	TxCfg client.TxConfig
-	// Priv is the private key that will be used to sign the tx
+	// Priv is the private key that will be used to sign the txs
 	Priv cryptotypes.PrivKey
 	// ChainID is the chain's id on cosmos format, e.g. 'artela_9000-1'
 	ChainID string
-	// Gas to be used on the tx
+	// Gas to be used on the txs
 	Gas uint64
-	// GasPrice to use on tx
+	// GasPrice to use on txs
 	GasPrice *sdkmath.Int
-	// Fees is the fee to be used on the tx (amount and denom)
+	// Fees is the fee to be used on the txs (amount and denom)
 	Fees sdk.Coins
 	// FeeGranter is the account address of the fee granter
 	FeeGranter sdk.AccAddress
-	// Msgs slice of messages to include on the tx
+	// Msgs slice of messages to include on the txs
 	Msgs []sdk.Msg
 }
 
-// PrepareCosmosTx creates a cosmos tx and signs it with the provided messages and private key.
-// It returns the signed transaction and an error
+// PrepareCosmosTx creates a cosmos txs and signs it with the provided messages and private key.
+// It returns the signed txs and an error
 func PrepareCosmosTx(
 	ctx sdk.Context,
 	appArtela *app.Artela,
@@ -73,7 +73,7 @@ func PrepareCosmosTx(
 	)
 }
 
-// signCosmosTx signs the cosmos transaction on the txBuilder provided using
+// signCosmosTx signs the cosmos txs on the txBuilder provided using
 // the provided private key
 func signCosmosTx(
 	ctx sdk.Context,
@@ -131,7 +131,7 @@ func signCosmosTx(
 var _ sdk.Tx = &InvalidTx{}
 
 // InvalidTx defines a type, which satisfies the sdk.Tx interface, but
-// holds no valid transaction information.
+// holds no valid txs information.
 //
 // NOTE: This is used for testing purposes, to serve the edge case of invalid data being passed to functions.
 type InvalidTx struct{}

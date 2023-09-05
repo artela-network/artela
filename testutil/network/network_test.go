@@ -5,12 +5,12 @@ package network_test
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/ethereum/server/config"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/artela-network/artela/server/config"
 	"github.com/artela-network/artela/testutil/network"
 	"github.com/ethereum/go-ethereum/ethclient"
 

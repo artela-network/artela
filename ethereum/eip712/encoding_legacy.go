@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	artela "github.com/artela-network/artela/ethereum/types"
 
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txTypes "github.com/cosmos/cosmos-sdk/types/tx"
 
-	artela "github.com/artela-network/artela/types"
 	apitypes "github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
@@ -206,11 +206,11 @@ func legacyDecodeProtobufSignDoc(signDocBytes []byte) (apitypes.TypedData, error
 	return typedData, nil
 }
 
-// validatePayloadMessages ensures that the transaction messages can be represented in an EIP-712
+// validatePayloadMessages ensures that the txs messages can be represented in an EIP-712
 // encoding by checking that messages exist, are of the same type, and share a single signer.
 func legacyValidatePayloadMessages(msgs []sdk.Msg) error {
 	if len(msgs) == 0 {
-		return errors.New("unable to build EIP-712 payload: transaction does contain any messages")
+		return errors.New("unable to build EIP-712 payload: txs does contain any messages")
 	}
 
 	var msgType string
