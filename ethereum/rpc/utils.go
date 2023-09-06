@@ -2,12 +2,15 @@ package rpc
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	support "github.com/artela-network/artela/x/evm/txs/support"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/client"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -44,4 +47,28 @@ func ParseTxLogsFromEvent(event abci.Event) ([]*ethtypes.Log, error) {
 		logs = append(logs, &log)
 	}
 	return support.LogsToEthereum(logs), nil
+}
+
+func BlockMaxGasFromConsensusParams(ctx context.Context, clientCtx client.Context, blockHeight int64) (int64, error) {
+	resConsParams, err := clientCtx.Client.ConsensusParams(ctx, &blockHeight)
+	defaultGasLimit := int64(^uint32(0)) // #nosec G701
+	if err != nil {
+		return defaultGasLimit, err
+	}
+
+	gasLimit := resConsParams.ConsensusParams.Block.MaxGas
+	if gasLimit == -1 {
+		// Sets gas limit to max uint32 to not error with javascript dev tooling
+		// This -1 value indicating no block gas limit is set to max uint64 with geth hexutils
+		// which errors certain javascript dev tooling which only supports up to 53 bits
+		gasLimit = defaultGasLimit
+	}
+
+	return gasLimit, nil
+}
+
+// ShouldIgnoreGasUsed returns true if the gasUsed in result should be ignored
+// workaround for issue: https://github.com/cosmos/cosmos-sdk/issues/10832
+func ShouldIgnoreGasUsed(res *abci.ResponseDeliverTx) bool {
+	return res.GetCode() == 11 && strings.Contains(res.GetLog(), "no block gas left to run tx: out of gas")
 }

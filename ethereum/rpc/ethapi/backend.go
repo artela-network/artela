@@ -27,6 +27,7 @@ type Backend interface {
 	NewAccount(password string) (common.AddressEIP55, error)
 	ImportRawKey(privkey, password string) (common.Address, error)
 	GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error)
+	GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error)
 
 	// Blockchain API
 	HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)

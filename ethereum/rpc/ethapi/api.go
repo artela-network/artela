@@ -314,8 +314,7 @@ func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
 // given block number. The rpc.LatestBlockNumber and rpc.PendingBlockNumber meta
 // block numbers are also allowed.
 func (s *BlockChainAPI) GetBalance(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
-	// TODO
-	return nil, errors.New("not implemented")
+	return s.b.GetBalance(address, blockNrOrHash)
 }
 
 // Result structs for GetProof
