@@ -300,7 +300,7 @@ func (k *Keeper) GetBalance(ctx cosmos.Context, addr common.Address) *big.Int {
 
 // Tracer return a default vm.Tracer based on current keeper states
 func (k Keeper) Tracer(ctx cosmos.Context, msg core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
-	return types.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
+	return txs.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
 }
 
 // GetBaseFee returns current base fee, return values:
