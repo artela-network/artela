@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
@@ -75,11 +76,65 @@ func (b *backend) SendTx(ctx context.Context, signedTx *ethtypes.Transaction) er
 	return nil
 }
 
-func (b *backend) GetTransaction(
-	_ context.Context, txHash common.Hash,
-) (*ethtypes.Transaction, common.Hash, uint64, uint64, error) {
-	b.logger.Debug("called eth.rpc.backend.GetTransaction", "tx_hash", txHash)
-	return nil, common.Hash{}, 0, 0, nil
+func (b *backend) GetTransaction(ctx context.Context, txHash common.Hash) (*ethapi.RPCTransaction, error) {
+	res, err := b.GetTxByEthHash(txHash)
+	hexTx := txHash.Hex()
+
+	if err != nil {
+		return b.getTransactionByHashPending(txHash)
+	}
+
+	block, err := b.CosmosBlockByNumber(rpc.BlockNumber(res.Height))
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := b.clientCtx.TxConfig.TxDecoder()(block.Block.Txs[res.TxIndex])
+	if err != nil {
+		return nil, err
+	}
+
+	// the `res.MsgIndex` is inferred from tx index, should be within the bound.
+	msg, ok := tx.GetMsgs()[res.MsgIndex].(*txs.MsgEthereumTx)
+	if !ok {
+		return nil, errors.New("invalid ethereum tx")
+	}
+
+	blockRes, err := b.CosmosBlockResultByNumber(&block.Block.Height)
+	if err != nil {
+		b.logger.Debug("block result not found", "height", block.Block.Height, "error", err.Error())
+		return nil, nil
+	}
+
+	if res.EthTxIndex == -1 {
+		// Fallback to find tx index by iterating all valid eth transactions
+		msgs := b.EthMsgsFromCosmosBlock(block, blockRes)
+		for i := range msgs {
+			if msgs[i].Hash == hexTx {
+				res.EthTxIndex = int32(i)
+				break
+			}
+		}
+	}
+	// if we still unable to find the eth tx index, return error, shouldn't happen.
+	if res.EthTxIndex == -1 {
+		return nil, errors.New("can't find index of ethereum tx")
+	}
+
+	baseFee, err := b.BaseFee(blockRes)
+	if err != nil {
+		// handle the error for pruned node.
+		b.logger.Error("failed to fetch Base Fee from prunned block. Check node prunning configuration", "height", blockRes.Height, "error", err)
+	}
+
+	return ethapi.NewTransactionFromMsg(
+		msg,
+		common.BytesToHash(block.BlockID.Hash.Bytes()),
+		uint64(res.Height),
+		uint64(res.EthTxIndex),
+		baseFee,
+		b.ChainConfig(),
+	), nil
 }
 
 func (b *backend) GetPoolTransactions() (ctypes.Transactions, error) {
@@ -194,13 +249,13 @@ func (b *backend) GetTransactionReceipt(ctx context.Context, hash common.Hash) (
 
 	if res.EthTxIndex == -1 {
 		// Fallback to find tx index by iterating all valid eth transactions
-		// msgs := b.EthMsgsFromTendermintBlock(resBlock, blockRes)
-		// for i := range msgs {
-		// 	if msgs[i].Hash == hexTx {
-		// 		res.EthTxIndex = int32(i) // #nosec G701
-		// 		break
-		// 	}
-		// }
+		msgs := b.EthMsgsFromCosmosBlock(resBlock, blockRes)
+		for i := range msgs {
+			if msgs[i].Hash == hash.Hex() {
+				res.EthTxIndex = int32(i) // #nosec G701
+				break
+			}
+		}
 	}
 	// return error if still unable to find the eth tx index
 	if res.EthTxIndex == -1 {
@@ -278,4 +333,39 @@ func (b *backend) queryCosmosTxIndexer(query string, txGetter func(*rpctypes.Par
 
 func (b *backend) txResult(ctx context.Context, hash common.Hash, prove bool) (*tmrpctypes.ResultTx, error) {
 	return b.clientCtx.Client.Tx(ctx, hash.Bytes(), prove)
+}
+
+// getTransactionByHashPending find pending tx from mempool
+func (b *backend) getTransactionByHashPending(txHash common.Hash) (*ethapi.RPCTransaction, error) {
+	hexTx := txHash.Hex()
+	// try to find tx in mempool
+	ptxs, err := b.PendingTransactions()
+	if err != nil {
+		b.logger.Debug("tx not found", "hash", hexTx, "error", err.Error())
+		return nil, nil
+	}
+
+	for _, tx := range ptxs {
+		msg, err := txs.UnwrapEthereumMsg(tx, txHash)
+		if err != nil {
+			// not ethereum tx
+			continue
+		}
+
+		if msg.Hash == hexTx {
+			// use zero block values since it's not included in a block yet
+			rpctx := ethapi.NewTransactionFromMsg(
+				msg,
+				common.Hash{},
+				uint64(0),
+				uint64(0),
+				nil,
+				b.ChainConfig(),
+			)
+			return rpctx, nil
+		}
+	}
+
+	b.logger.Debug("tx not found", "hash", hexTx)
+	return nil, nil
 }

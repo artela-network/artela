@@ -152,7 +152,7 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 			return errors.New("maxFeePerGas and maxPriorityFeePerGas are not valid before London is active")
 		}
 		// London not active, set gas price.
-		price, err := b.SuggestGasTipCap(ctx)
+		price, err := b.SuggestGasTipCap(head.BaseFee)
 		if err != nil {
 			return err
 		}
@@ -165,7 +165,7 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
 	// Set maxPriorityFeePerGas if it is missing.
 	if args.MaxPriorityFeePerGas == nil {
-		tip, err := b.SuggestGasTipCap(ctx)
+		tip, err := b.SuggestGasTipCap(head.BaseFee)
 		if err != nil {
 			return err
 		}

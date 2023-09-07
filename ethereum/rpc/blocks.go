@@ -75,55 +75,19 @@ func (b *backend) HeaderByNumberOrHash(ctx context.Context,
 }
 
 func (b *backend) CurrentHeader() *ethtypes.Header {
-	return b.CurrentBlock()
+	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
+	if err != nil || block == nil {
+		return nil
+	}
+	return block.Header()
 }
 
-func (b *backend) CurrentBlock() *ethtypes.Header {
-	var header metadata.MD
-	_, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{}, grpc.Header(&header))
+func (b *backend) CurrentBlock() *ethtypes.Block {
+	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil {
 		return nil
 	}
-
-	blockHeightHeader := header.Get(grpctypes.GRPCBlockHeightHeader)
-	if headerLen := len(blockHeightHeader); headerLen != 1 {
-		return nil
-	}
-
-	height, err := strconv.ParseInt(blockHeightHeader[0], 10, 64)
-	if err != nil {
-		return nil
-	}
-
-	if height > math.MaxInt64 {
-		return nil
-	}
-
-	res, err := b.clientCtx.Client.Block(b.ctx, &height)
-	if err != nil {
-		return nil
-	}
-	return &types.Header{
-		// TODO fill more header fileds
-		ParentHash:      common.BytesToHash(res.Block.LastCommitHash),
-		UncleHash:       [32]byte{},
-		Coinbase:        common.BytesToAddress(res.Block.ProposerAddress),
-		Root:            [32]byte{},
-		TxHash:          [32]byte{},
-		ReceiptHash:     [32]byte{},
-		Bloom:           [256]byte{},
-		Difficulty:      &big.Int{},
-		Number:          big.NewInt(res.Block.Height),
-		GasLimit:        0,
-		GasUsed:         0,
-		Time:            uint64(res.Block.Time.Unix()),
-		Extra:           []byte{},
-		MixDigest:       [32]byte{},
-		Nonce:           [8]byte{},
-		BaseFee:         &big.Int{},
-		WithdrawalsHash: nil,
-		ExcessDataGas:   &big.Int{},
-	}
+	return block
 }
 
 func (b *backend) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
