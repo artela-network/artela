@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -368,4 +369,38 @@ func (b *backend) getTransactionByHashPending(txHash common.Hash) (*ethapi.RPCTr
 
 	b.logger.Debug("tx not found", "hash", hexTx)
 	return nil, nil
+}
+
+func (b *backend) EstimateGas(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
+	blockNum := rpc.LatestBlockNumber
+	if blockNrOrHash != nil {
+		blockNum, _ = b.blockNumberFromCosmos(*blockNrOrHash)
+	}
+
+	bz, err := json.Marshal(&args)
+	if err != nil {
+		return 0, err
+	}
+
+	header, err := b.CosmosBlockByNumber(blockNum)
+	if err != nil {
+		// the error message imitates geth behavior
+		return 0, errors.New("header not found")
+	}
+
+	req := txs.EthCallRequest{
+		Args:            bz,
+		GasCap:          b.RPCGasCap(),
+		ProposerAddress: sdktypes.ConsAddress(header.Block.ProposerAddress),
+		ChainId:         b.chainID.Int64(),
+	}
+
+	// From ContextWithHeight: if the provided height is 0,
+	// it will return an empty context and the gRPC query will use
+	// the latest block height for querying.
+	res, err := b.queryClient.EstimateGas(rpctypes.ContextWithHeight(blockNum.Int64()), &req)
+	if err != nil {
+		return 0, err
+	}
+	return hexutil.Uint64(res.Gas), nil
 }

@@ -51,6 +51,7 @@ type Backend interface {
 	GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error)
 	RPCTxFeeCap() float64
 	UnprotectedAllowed() bool
+	EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error)
 
 	ChainConfig() *params.ChainConfig
 	Engine() consensus.Engine

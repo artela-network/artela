@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/ethereum/types"
 	"math"
 	"math/big"
 	"strings"
+
+	"github.com/artela-network/artela/ethereum/types"
 
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/metadata"
@@ -50,7 +51,7 @@ func NewBlockNumber(n *big.Int) BlockNumber {
 // 0, it will return an empty context and the gRPC query will use the latest block height for querying.
 // Note that all metadata are processed and removed by tendermint layer, so it wont be accessible at gRPC server level.
 func ContextWithHeight(height int64) context.Context {
-	if height == 0 {
+	if height <= 0 {
 		return context.Background()
 	}
 

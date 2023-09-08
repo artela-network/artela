@@ -654,8 +654,7 @@ func (s *BlockChainAPI) Call(ctx context.Context, args TransactionArgs, blockNrO
 // EstimateGas returns an estimate of the amount of gas needed to execute the
 // given transaction against the current pending block.
 func (s *BlockChainAPI) EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
-	// TODO
-	return 0, errors.New("EstimateGas is not implemented")
+	return s.b.EstimateGas(ctx, args, blockNrOrHash)
 }
 
 // RPCMarshalHeader converts the given header to the RPC output .
