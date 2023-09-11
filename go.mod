@@ -17,7 +17,6 @@ require (
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
-	github.com/graph-gophers/graphql-go v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cast v1.5.0
@@ -51,7 +50,6 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/pointerstructure v1.2.0 // indirect
-	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa // indirect
@@ -199,7 +197,7 @@ require (
 	github.com/zondax/ledger-go v0.14.1 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.11.0
+	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect

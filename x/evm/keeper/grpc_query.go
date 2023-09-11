@@ -406,7 +406,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		}
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
-		rsp, err := k.ApplyMessageWithConfig(ctx, *msg, types.NewNoOpTracer(), true, cfg, txConfig)
+		rsp, err := k.ApplyMessageWithConfig(ctx, *msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
 		}
@@ -475,11 +475,11 @@ func (k Keeper) TraceBlock(c context.Context, req *txs.QueryTraceBlockRequest) (
 	}
 	signer := ethereum.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 	txsLength := len(req.Txs)
-	results := make([]*types.TxTraceResult, 0, txsLength)
+	results := make([]*txs.TxTraceResult, 0, txsLength)
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 	for i, tx := range req.Txs {
-		result := types.TxTraceResult{}
+		result := txs.TxTraceResult{}
 		ethTx := tx.AsTransaction()
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
