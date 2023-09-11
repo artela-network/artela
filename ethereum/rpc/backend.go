@@ -8,6 +8,7 @@ import (
 
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/server"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,6 +25,8 @@ import (
 
 	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	"github.com/artela-network/artela/ethereum/server/config"
+	"github.com/artela-network/artela/ethereum/types"
 	ethereumtypes "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	feetypes "github.com/artela-network/artela/x/fee/types"
@@ -40,6 +43,7 @@ type backend struct {
 	extRPCEnabled bool
 	artela        *ArtelaService
 	cfg           *Config
+	appConf       config.Config
 	chainID       *big.Int
 	gpo           *gasprice.Oracle
 	logger        log.Logger
@@ -60,6 +64,7 @@ type backend struct {
 
 // NewBackend create the backend instance
 func NewBackend(
+	ctx *server.Context,
 	clientCtx client.Context,
 	artela *ArtelaService,
 	extRPCEnabled bool,
@@ -78,6 +83,11 @@ func NewBackend(
 	}
 
 	var err error
+	b.appConf, err = config.GetConfig(ctx.Viper)
+	if err != nil {
+		panic(err)
+	}
+
 	b.chainID, err = ethereumtypes.ParseChainID(clientCtx.ChainID)
 	if err != nil {
 		panic(err)
@@ -99,8 +109,32 @@ func (b *backend) SyncProgress() ethereum.SyncProgress {
 	}
 }
 
-func (b *backend) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
-	return b.gpo.SuggestTipCap(ctx)
+func (b *backend) SuggestGasTipCap(baseFee *big.Int) (*big.Int, error) {
+	if baseFee == nil {
+		// london hardfork not enabled or feemarket not enabled
+		return big.NewInt(0), nil
+	}
+
+	params, err := b.queryClient.FeeMarket.Params(b.ctx, &feetypes.QueryParamsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	// calculate the maximum base fee delta in current block, assuming all block gas limit is consumed
+	// ```
+	// GasTarget = GasLimit / ElasticityMultiplier
+	// Delta = BaseFee * (GasUsed - GasTarget) / GasTarget / Denominator
+	// ```
+	// The delta is at maximum when `GasUsed` is equal to `GasLimit`, which is:
+	// ```
+	// MaxDelta = BaseFee * (GasLimit - GasLimit / ElasticityMultiplier) / (GasLimit / ElasticityMultiplier) / Denominator
+	//          = BaseFee * (ElasticityMultiplier - 1) / Denominator
+	// ```t
+	maxDelta := baseFee.Int64() * (int64(params.Params.ElasticityMultiplier) - 1) / int64(params.Params.BaseFeeChangeDenominator) // #nosec G701
+	if maxDelta < 0 {
+		// impossible if the parameter validation passed.
+		maxDelta = 0
+	}
+	return big.NewInt(maxDelta), nil
 }
 
 func (b *backend) ChainConfig() *params.ChainConfig {
@@ -228,4 +262,56 @@ func (b *backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, er
 
 func (b *backend) PendingTransactions() ([]*sdktypes.Tx, error) {
 	return nil, nil
+}
+
+func (b *backend) GasPrice(ctx context.Context) (*hexutil.Big, error) {
+	var (
+		result *big.Int
+		err    error
+	)
+	if head := b.CurrentHeader(); head.BaseFee != nil {
+		result, err = b.SuggestGasTipCap(head.BaseFee)
+		if err != nil {
+			return nil, err
+		}
+		result = result.Add(result, head.BaseFee)
+	} else {
+		result = big.NewInt(b.RPCMinGasPrice())
+	}
+
+	// return at least GlobalMinGasPrice from FeeMarket module
+	minGasPrice, err := b.GlobalMinGasPrice()
+	if err != nil {
+		return nil, err
+	}
+	minGasPriceInt := minGasPrice.TruncateInt().BigInt()
+	if result.Cmp(minGasPriceInt) < 0 {
+		result = minGasPriceInt
+	}
+
+	return (*hexutil.Big)(result), nil
+}
+
+func (b *backend) RPCMinGasPrice() int64 {
+	evmParams, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{})
+	if err != nil {
+		return types.DefaultGasPrice
+	}
+
+	minGasPrice := b.appConf.GetMinGasPrices()
+	amt := minGasPrice.AmountOf(evmParams.Params.EvmDenom).TruncateInt64()
+	if amt == 0 {
+		return types.DefaultGasPrice
+	}
+
+	return amt
+}
+
+// GlobalMinGasPrice returns MinGasPrice param from FeeMarket
+func (b *backend) GlobalMinGasPrice() (sdktypes.Dec, error) {
+	res, err := b.queryClient.FeeMarket.Params(b.ctx, &feetypes.QueryParamsRequest{})
+	if err != nil {
+		return sdktypes.ZeroDec(), err
+	}
+	return res.Params.MinGasPrice, nil
 }

@@ -39,7 +39,7 @@ func NewArtelaService(
 		clientCtx: clientCtx,
 	}
 
-	art.backend = NewBackend(clientCtx, art, stack.ExtRPCEnabled(), cfg)
+	art.backend = NewBackend(ctx, clientCtx, art, stack.ExtRPCEnabled(), cfg)
 	return art
 }
 

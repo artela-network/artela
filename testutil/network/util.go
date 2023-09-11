@@ -2,11 +2,12 @@ package network
 
 import (
 	"encoding/json"
-	rpc2 "github.com/artela-network/artela/ethereum/rpc"
-	"github.com/artela-network/artela/x/evm/txs/support"
 	"path/filepath"
 	"strings"
 	"time"
+
+	rpc2 "github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/x/evm/txs/support"
 
 	tmos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/node"
@@ -159,7 +160,7 @@ func startInProcess(cfg Config, val *Validator) error {
 			panic(err)
 		}
 
-		val.artelaService = rpc2.NewArtelaService(val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}))
+		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}))
 		val.artelaService.Start()
 	}
 

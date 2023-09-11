@@ -2,11 +2,11 @@ package tx
 
 import (
 	"encoding/json"
+	"math/big"
+
 	"github.com/artela-network/artela/ethereum/server/config"
 	"github.com/artela-network/artela/ethereum/utils"
 	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
-	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
@@ -114,7 +114,7 @@ func CreateEthTx(
 		GasTipCap: big.NewInt(1),
 		Accesses:  &ethtypes.AccessList{},
 	}
-	msgEthereumTx := support.NewTx(evmTxParams)
+	msgEthereumTx := txs.NewTx(evmTxParams)
 	msgEthereumTx.From = fromAddr.String()
 
 	// If we are creating multiple eth Tx's with different senders, we need to sign here rather than later.

@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	sdkmath "cosmossdk.io/math"
 	sdkcrypto "github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
@@ -23,6 +25,7 @@ import (
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
 	"github.com/artela-network/artela/ethereum/rpc/types"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 )
@@ -238,4 +241,36 @@ func (b *backend) getAccountNonce(accAddr common.Address, pending bool, height i
 	}
 
 	return nonce, nil
+}
+
+func (b *backend) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &txs.QueryBalanceRequest{
+		Address: address.String(),
+	}
+
+	_, err = b.CosmosBlockByNumber(blockNum)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := b.queryClient.Balance(rpctypes.ContextWithHeight(blockNum.Int64()), req)
+	if err != nil {
+		return nil, err
+	}
+
+	val, ok := sdkmath.NewIntFromString(res.Balance)
+	if !ok {
+		return nil, errors.New("invalid balance")
+	}
+
+	if val.IsNegative() {
+		return nil, errors.New("couldn't fetch balance. Node state is pruned")
+	}
+
+	return (*hexutil.Big)(val.BigInt()), nil
 }
