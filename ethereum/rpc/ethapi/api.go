@@ -42,12 +42,6 @@ func NewEthereumAPI(b Backend) *EthereumAPI {
 
 // GasPrice returns a suggestion for a gas price for legacy transactions.
 func (s *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
-	fmt.Println("-----\n-----\n------\nGasPrice\n-----\n-----\n-----")
-	gp, err := s.b.GasPrice(ctx)
-	fmt.Printf("gp: %v, err: %v\n", gp, err)
-	if gp != nil {
-		fmt.Println("gp int: ", gp.ToInt())
-	}
 	return s.b.GasPrice(ctx)
 }
 
@@ -966,11 +960,7 @@ func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash commo
 
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
 func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
-	fmt.Println("---\n---\n---\nGetTransactionReceipt, hash: ", hash.Hex())
-	res, err := s.b.GetTransactionReceipt(ctx, hash)
-	fmt.Printf("receipts: %v, err: %v", res, err)
-	fmt.Println("\n---\n---\n---")
-	return res, err
+	return s.b.GetTransactionReceipt(ctx, hash)
 }
 
 // sign is a helper function that signs a transaction with the private key of the given address.
