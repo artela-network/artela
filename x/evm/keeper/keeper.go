@@ -1,11 +1,12 @@
 package keeper
 
 import (
+	"math/big"
+
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
-	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/libs/log"
@@ -120,8 +121,8 @@ func (k *Keeper) WithChainID(ctx cosmos.Context) {
 		panic("chain id already set")
 	}
 
-	if !(chainID.Cmp(big.NewInt(9001)) == 0 || chainID.Cmp(big.NewInt(9000)) == 0) {
-		panic("EVM only supports Artela chain identifiers (9000 or 9001)")
+	if !(chainID.Cmp(big.NewInt(11820)) == 0 || chainID.Cmp(big.NewInt(11821)) == 0) {
+		panic("EVM only supports Artela chain identifiers (11820 or 11821)")
 	}
 
 	k.eip155ChainID = chainID
