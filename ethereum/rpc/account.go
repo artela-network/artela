@@ -115,12 +115,6 @@ func (b *backend) SignTransaction(args *ethapi2.TransactionArgs) (*ethtypes.Tran
 		return nil, fmt.Errorf("chainId does not match node's (have=%v, want=%v)", args.ChainID, (*hexutil.Big)(b.chainID))
 	}
 
-	// TODO, set defaults
-	// args, err = b.SetTxDefaults(args)
-	// if err != nil {
-	// 	return common.Hash{}, err
-	// }
-
 	bn, err := b.BlockNumber()
 	if err != nil {
 		return nil, err

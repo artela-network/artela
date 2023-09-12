@@ -1,9 +1,10 @@
 package txs
 
 import (
+	"math/big"
+
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
-	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
@@ -142,10 +143,10 @@ func (tx DynamicFeeTx) Validate() error {
 		)
 	}
 
-	if !(chainID.Cmp(big.NewInt(9001)) == 0 || chainID.Cmp(big.NewInt(9000)) == 0) {
+	if !(chainID.Cmp(big.NewInt(11820)) == 0 || chainID.Cmp(big.NewInt(11821)) == 0) {
 		return errorsmod.Wrapf(
 			errortypes.ErrInvalidChainID,
-			"chain ID must be 9000 or 9001 on Artela, got %s", chainID,
+			"chain ID must be 11820 or 11821 on Artela, got %s", chainID,
 		)
 	}
 
