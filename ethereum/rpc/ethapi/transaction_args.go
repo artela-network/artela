@@ -70,11 +70,11 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		args.Value = new(hexutil.Big)
 	}
 	if args.Nonce == nil {
-		// nonce, err := b.GetPoolNonce(ctx, args.from())
-		// if err != nil {
-		// 	return err
-		// }
-		// args.Nonce = (*hexutil.Uint64)(&nonce)
+		nonce, err := b.GetTransactionCount(args.from(), rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(nonce)
 		// TODO set nonce
 	}
 	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
