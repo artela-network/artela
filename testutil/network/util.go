@@ -18,6 +18,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/cosmos/cosmos-sdk/server/api"
 	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
@@ -160,7 +161,7 @@ func startInProcess(cfg Config, val *Validator) error {
 			panic(err)
 		}
 
-		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}))
+		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}), log.Root())
 		val.artelaService.Start()
 	}
 

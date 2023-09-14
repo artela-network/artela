@@ -31,7 +31,7 @@ import (
 // Blockchain API
 
 func (b *backend) SetHead(_ uint64) {
-	panic("not implemented")
+	b.logger.Error("SetHead is not implemented")
 }
 
 func (b *backend) HeaderByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Header, error) {
@@ -71,12 +71,13 @@ func (b *backend) HeaderByHash(_ context.Context, hash common.Hash) (*ethtypes.H
 func (b *backend) HeaderByNumberOrHash(ctx context.Context,
 	blockNrOrHash rpc.BlockNumberOrHash,
 ) (*ethtypes.Header, error) {
-	return nil, nil
+	return nil, errors.New("HeaderByNumberOrHash is not implemented")
 }
 
 func (b *backend) CurrentHeader() *ethtypes.Header {
 	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil || block == nil {
+		b.logger.Error("geet CurrentHeader failed, error or block is nil", "error", err)
 		return nil
 	}
 	return block.Header()
@@ -85,6 +86,7 @@ func (b *backend) CurrentHeader() *ethtypes.Header {
 func (b *backend) CurrentBlock() *ethtypes.Block {
 	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil {
+		b.logger.Error("get CurrentBlock failed", "error", err)
 		return nil
 	}
 	return block
@@ -119,13 +121,13 @@ func (b *backend) BlockByHash(_ context.Context, hash common.Hash) (*ethtypes.Bl
 }
 
 func (b *backend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*ethtypes.Block, error) {
-	return nil, nil
+	return nil, errors.New("BlockByNumberOrHash is not implemented")
 }
 
 func (b *backend) StateAndHeaderByNumber(
 	ctx context.Context, number rpc.BlockNumber,
 ) (*state.StateDB, *ethtypes.Header, error) {
-	return nil, nil, nil
+	return nil, nil, errors.New("StateAndHeaderByNumber is not implemented")
 }
 
 func (b *backend) StateAndHeaderByNumberOrHash(
@@ -135,15 +137,17 @@ func (b *backend) StateAndHeaderByNumberOrHash(
 }
 
 func (b *backend) PendingBlockAndReceipts() (*ethtypes.Block, types.Receipts) {
+	b.logger.Error("PendingBlockAndReceipts is not implemented")
 	return nil, nil
 }
 
 // GetReceipts get receipts by block hash
 func (b *backend) GetReceipts(_ context.Context, hash common.Hash) (types.Receipts, error) {
-	return nil, nil
+	return nil, errors.New("GetReceipts is not implemented")
 }
 
 func (b *backend) GetTd(_ context.Context, hash common.Hash) *big.Int {
+	b.logger.Error("GetTd is not implemented")
 	return nil
 }
 
@@ -151,7 +155,7 @@ func (b *backend) GetEVM(ctx context.Context, msg *core.Message, state *state.St
 	header *ethtypes.Header, vmConfig *vm.Config, _ *vm.BlockContext,
 ) (*vm.EVM, func() error) {
 	return nil, func() error {
-		return nil
+		return errors.New("GetEVM is not impelemted")
 	}
 }
 
@@ -176,7 +180,7 @@ func (b *backend) CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBl
 	}
 
 	if resBlock.Block == nil {
-		return nil, nil
+		return nil, fmt.Errorf("failed to query block for hash: %s", blockHash.Hex())
 	}
 
 	return resBlock, nil
@@ -198,7 +202,7 @@ func (b *backend) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.Res
 	}
 
 	if resBlock.Block == nil {
-		return nil, nil
+		return nil, fmt.Errorf("failed to query block for blockNum: %d", blockNum.Int64())
 	}
 
 	return resBlock, nil

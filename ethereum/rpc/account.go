@@ -35,12 +35,14 @@ func (b *backend) Accounts() []common.Address {
 
 	infos, err := b.clientCtx.Keyring.List()
 	if err != nil {
+		b.logger.Error("keying list failed", "error", err)
 		return nil
 	}
 
 	for _, info := range infos {
 		pubKey, err := info.GetPubKey()
 		if err != nil {
+			b.logger.Info("getPubKey failed", "info", info, "error", err)
 			return nil
 		}
 		addressBytes := pubKey.Address().Bytes()
@@ -58,18 +60,21 @@ func (b *backend) NewAccount(password string) (common.AddressEIP55, error) {
 
 	hdPathIter, err := types2.NewHDPathIterator(basePath, true)
 	if err != nil {
-		panic(err)
+		b.logger.Error("NewHDPathIterator failed", "error", err)
+		return common.AddressEIP55{}, err
 	}
 	// create the mnemonic and save the account
 	hdPath := hdPathIter()
 
 	info, _, err := b.clientCtx.Keyring.NewMnemonic(name, keyring.English, hdPath.String(), password, hd.EthSecp256k1)
 	if err != nil {
+		b.logger.Error("NewMnemonic failed", "error", err)
 		return common.AddressEIP55{}, err
 	}
 
 	pubKey, err := info.GetPubKey()
 	if err != nil {
+		b.logger.Error("GetPubKey failed", "error", err)
 		return common.AddressEIP55{}, err
 	}
 	addr := common.BytesToAddress(pubKey.Address().Bytes())
@@ -170,6 +175,7 @@ func (b *backend) GetTransactionCount(address common.Address, blockNrOrHash rpc.
 	err = accRet.EnsureExists(b.clientCtx, from)
 	if err != nil {
 		// account doesn't exist yet, return 0
+		b.logger.Error("GetTransactionCount faild, return 0. Account doesn't exist yet", "account", address.Hex(), "error", err)
 		return &n, nil
 	}
 
@@ -192,6 +198,7 @@ func (b *backend) getAccountNonce(accAddr common.Address, pending bool, height i
 		st, ok := status.FromError(err)
 		// treat as account doesn't exist yet
 		if ok && st.Code() == codes.NotFound {
+			b.logger.Error("getAccountNonce faild, account not found", "error", err)
 			return 0, nil
 		}
 		return 0, err

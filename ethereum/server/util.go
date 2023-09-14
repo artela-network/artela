@@ -98,7 +98,7 @@ func CreateJSONRPC(ctx *server.Context,
 	}
 
 	am := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false})
-	serv := rpc2.NewArtelaService(ctx, clientCtx, cfg, stack, am)
+	serv := rpc2.NewArtelaService(ctx, clientCtx, cfg, stack, am, nodeCfg.Logger)
 
 	return serv, nil
 }

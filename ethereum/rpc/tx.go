@@ -82,6 +82,7 @@ func (b *backend) GetTransaction(ctx context.Context, txHash common.Hash) (*etha
 	hexTx := txHash.Hex()
 
 	if err != nil {
+		b.logger.Debug("GetTxByEthHash failed, try to getTransactionByHashPending", "error", err)
 		return b.getTransactionByHashPending(txHash)
 	}
 
@@ -140,24 +141,27 @@ func (b *backend) GetTransaction(ctx context.Context, txHash common.Hash) (*etha
 
 func (b *backend) GetPoolTransactions() (ctypes.Transactions, error) {
 	b.logger.Debug("called eth.rpc.backend.GetPoolTransactions")
-	return nil, nil
+	return nil, errors.New("GetPoolTransactions is not implemented")
 }
 
 func (b *backend) GetPoolTransaction(txHash common.Hash) *ethtypes.Transaction {
+	b.logger.Error("GetPoolTransaction is not implemented")
 	return nil
 }
 
 func (b *backend) GetPoolNonce(_ context.Context, addr common.Address) (uint64, error) {
-	return 0, nil
+	return 0, errors.New("GetPoolNonce is not implemented")
 }
 
 func (b *backend) Stats() (int, int) {
+	b.logger.Error("Stats is not implemented")
 	return 0, 0
 }
 
 func (b *backend) TxPoolContent() (
 	map[common.Address]ctypes.Transactions, map[common.Address]ctypes.Transactions,
 ) {
+	b.logger.Error("TxPoolContent is not implemented")
 	return nil, nil
 }
 
@@ -182,6 +186,7 @@ func (b *backend) Version() string {
 }
 
 func (b *backend) Engine() consensus.Engine {
+	b.logger.Error("Engine is not implemented")
 	return nil
 }
 
@@ -205,10 +210,12 @@ func (b *backend) GetTxByEthHash(hash common.Hash) (*types.TxResult, error) {
 func (b *backend) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
 	res, err := b.GetTxByEthHash(hash)
 	if err != nil {
+		b.logger.Debug("GetTransactionReceipt failed", "error", err)
 		return nil, nil
 	}
 	resBlock, err := b.CosmosBlockByNumber(rpc.BlockNumber(res.Height))
 	if err != nil {
+		b.logger.Debug("GetTransactionReceipt failed", "error", err)
 		return nil, nil
 	}
 	tx, err := b.clientCtx.TxConfig.TxDecoder()(resBlock.Block.Txs[res.TxIndex])
@@ -225,6 +232,7 @@ func (b *backend) GetTransactionReceipt(ctx context.Context, hash common.Hash) (
 	cumulativeGasUsed := uint64(0)
 	blockRes, err := b.CosmosBlockResultByNumber(&res.Height)
 	if err != nil {
+		b.logger.Debug("GetTransactionReceipt failed", "error", err)
 		return nil, nil
 	}
 	for _, txResult := range blockRes.TxsResults[0:res.TxIndex] {
