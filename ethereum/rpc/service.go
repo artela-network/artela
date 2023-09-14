@@ -67,7 +67,7 @@ func (art *ArtelaService) APIs() []rpc.API {
 	return ethapi.GetAPIs(art.backend)
 }
 
-// Start start the ethereum services
+// Start start the ethereum JsonRPC service
 func (art *ArtelaService) Start() error {
 	if err := art.registerAPIs(); err != nil {
 		return err
