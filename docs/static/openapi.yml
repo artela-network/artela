@@ -4951,7 +4951,7 @@ paths:
                             type: string
                             description: >-
                               denom represents the string name of the given
-                              denom unit (e.g uatom).
+                              denom unit (e.g uart).
                           exponent:
                             type: integer
                             format: int64
@@ -4964,10 +4964,10 @@ paths:
 
                               1 denom = 10^exponent base_denom
 
-                              (e.g. with a base_denom of uatom, one can create a
-                              DenomUnit of 'atom' with
+                              (e.g. with a base_denom of uart, one can create a
+                              DenomUnit of 'art' with
 
-                              exponent = 6, thus: 1 atom = 10^6 uatom).
+                              exponent = 6, thus: 1 art = 10^6 uart).
                           aliases:
                             type: array
                             items:
@@ -4994,12 +4994,12 @@ paths:
                     name:
                       type: string
                       description: 'Since: cosmos-sdk 0.43'
-                      title: 'name defines the name of the token (eg: Cosmos Atom)'
+                      title: 'name defines the name of the token (eg: Cosmos Art)'
                     symbol:
                       type: string
                       description: >-
                         symbol is the token symbol usually shown on exchanges
-                        (eg: ATOM). This can
+                        (eg: ART). This can
 
                         be the same as the display.
 
@@ -5157,7 +5157,7 @@ paths:
                           type: string
                           description: >-
                             denom represents the string name of the given denom
-                            unit (e.g uatom).
+                            unit (e.g uart).
                         exponent:
                           type: integer
                           format: int64
@@ -5170,10 +5170,10 @@ paths:
 
                             1 denom = 10^exponent base_denom
 
-                            (e.g. with a base_denom of uatom, one can create a
-                            DenomUnit of 'atom' with
+                            (e.g. with a base_denom of uart, one can create a
+                            DenomUnit of 'art' with
 
-                            exponent = 6, thus: 1 atom = 10^6 uatom).
+                            exponent = 6, thus: 1 art = 10^6 uart).
                         aliases:
                           type: array
                           items:
@@ -5200,12 +5200,12 @@ paths:
                   name:
                     type: string
                     description: 'Since: cosmos-sdk 0.43'
-                    title: 'name defines the name of the token (eg: Cosmos Atom)'
+                    title: 'name defines the name of the token (eg: Cosmos Art)'
                   symbol:
                     type: string
                     description: >-
                       symbol is the token symbol usually shown on exchanges (eg:
-                      ATOM). This can
+                      ART). This can
 
                       be the same as the display.
 
@@ -12981,7 +12981,7 @@ paths:
                   max_deposit_period:
                     type: string
                     description: >-
-                      Maximum period for Atom holders to deposit on a proposal.
+                      Maximum period for Art holders to deposit on a proposal.
                       Initial value: 2
 
                       months.
@@ -13038,7 +13038,7 @@ paths:
                   max_deposit_period:
                     type: string
                     description: >-
-                      Maximum period for Atom holders to deposit on a proposal.
+                      Maximum period for Art holders to deposit on a proposal.
                       Initial value: 2
 
                       months.
@@ -15781,7 +15781,7 @@ paths:
                   max_deposit_period:
                     type: string
                     description: >-
-                      Maximum period for Atom holders to deposit on a proposal.
+                      Maximum period for Art holders to deposit on a proposal.
                       Initial value: 2
 
                       months.
@@ -49083,7 +49083,7 @@ definitions:
     properties:
       denom:
         type: string
-        description: denom represents the string name of the given denom unit (e.g uatom).
+        description: denom represents the string name of the given denom unit (e.g uart).
       exponent:
         type: integer
         format: int64
@@ -49094,10 +49094,10 @@ definitions:
 
           1 denom = 10^exponent base_denom
 
-          (e.g. with a base_denom of uatom, one can create a DenomUnit of 'atom'
+          (e.g. with a base_denom of uart, one can create a DenomUnit of 'art'
           with
 
-          exponent = 6, thus: 1 atom = 10^6 uatom).
+          exponent = 6, thus: 1 art = 10^6 uart).
       aliases:
         type: array
         items:
@@ -49140,7 +49140,7 @@ definitions:
               type: string
               description: >-
                 denom represents the string name of the given denom unit (e.g
-                uatom).
+                uart).
             exponent:
               type: integer
               format: int64
@@ -49152,10 +49152,10 @@ definitions:
 
                 1 denom = 10^exponent base_denom
 
-                (e.g. with a base_denom of uatom, one can create a DenomUnit of
-                'atom' with
+                (e.g. with a base_denom of uart, one can create a DenomUnit of
+                'art' with
 
-                exponent = 6, thus: 1 atom = 10^6 uatom).
+                exponent = 6, thus: 1 art = 10^6 uart).
             aliases:
               type: array
               items:
@@ -49178,11 +49178,11 @@ definitions:
       name:
         type: string
         description: 'Since: cosmos-sdk 0.43'
-        title: 'name defines the name of the token (eg: Cosmos Atom)'
+        title: 'name defines the name of the token (eg: Cosmos Art)'
       symbol:
         type: string
         description: >-
-          symbol is the token symbol usually shown on exchanges (eg: ATOM). This
+          symbol is the token symbol usually shown on exchanges (eg: ART). This
           can
 
           be the same as the display.
@@ -49357,7 +49357,7 @@ definitions:
                   type: string
                   description: >-
                     denom represents the string name of the given denom unit
-                    (e.g uatom).
+                    (e.g uart).
                 exponent:
                   type: integer
                   format: int64
@@ -49369,10 +49369,10 @@ definitions:
 
                     1 denom = 10^exponent base_denom
 
-                    (e.g. with a base_denom of uatom, one can create a DenomUnit
-                    of 'atom' with
+                    (e.g. with a base_denom of uart, one can create a DenomUnit
+                    of 'art' with
 
-                    exponent = 6, thus: 1 atom = 10^6 uatom).
+                    exponent = 6, thus: 1 art = 10^6 uart).
                 aliases:
                   type: array
                   items:
@@ -49395,11 +49395,11 @@ definitions:
           name:
             type: string
             description: 'Since: cosmos-sdk 0.43'
-            title: 'name defines the name of the token (eg: Cosmos Atom)'
+            title: 'name defines the name of the token (eg: Cosmos Art)'
           symbol:
             type: string
             description: >-
-              symbol is the token symbol usually shown on exchanges (eg: ATOM).
+              symbol is the token symbol usually shown on exchanges (eg: ART).
               This can
 
               be the same as the display.
@@ -49503,7 +49503,7 @@ definitions:
                     type: string
                     description: >-
                       denom represents the string name of the given denom unit
-                      (e.g uatom).
+                      (e.g uart).
                   exponent:
                     type: integer
                     format: int64
@@ -49515,10 +49515,10 @@ definitions:
 
                       1 denom = 10^exponent base_denom
 
-                      (e.g. with a base_denom of uatom, one can create a
-                      DenomUnit of 'atom' with
+                      (e.g. with a base_denom of uart, one can create a
+                      DenomUnit of 'art' with
 
-                      exponent = 6, thus: 1 atom = 10^6 uatom).
+                      exponent = 6, thus: 1 art = 10^6 uart).
                   aliases:
                     type: array
                     items:
@@ -49541,12 +49541,12 @@ definitions:
             name:
               type: string
               description: 'Since: cosmos-sdk 0.43'
-              title: 'name defines the name of the token (eg: Cosmos Atom)'
+              title: 'name defines the name of the token (eg: Cosmos Art)'
             symbol:
               type: string
               description: >-
                 symbol is the token symbol usually shown on exchanges (eg:
-                ATOM). This can
+                ART). This can
 
                 be the same as the display.
 
@@ -57454,7 +57454,7 @@ definitions:
       max_deposit_period:
         type: string
         description: >-
-          Maximum period for Atom holders to deposit on a proposal. Initial
+          Maximum period for Art holders to deposit on a proposal. Initial
           value: 2
 
           months.
@@ -57509,7 +57509,7 @@ definitions:
       max_deposit_period:
         type: string
         description: >-
-          Maximum period for Atom holders to deposit on a proposal. Initial
+          Maximum period for Art holders to deposit on a proposal. Initial
           value: 2
 
           months.
@@ -57959,7 +57959,7 @@ definitions:
           max_deposit_period:
             type: string
             description: >-
-              Maximum period for Atom holders to deposit on a proposal. Initial
+              Maximum period for Art holders to deposit on a proposal. Initial
               value: 2
 
               months.
@@ -58016,7 +58016,7 @@ definitions:
           max_deposit_period:
             type: string
             description: >-
-              Maximum period for Atom holders to deposit on a proposal. Initial
+              Maximum period for Art holders to deposit on a proposal. Initial
               value: 2
 
               months.
@@ -58914,7 +58914,7 @@ definitions:
       max_deposit_period:
         type: string
         description: >-
-          Maximum period for Atom holders to deposit on a proposal. Initial
+          Maximum period for Art holders to deposit on a proposal. Initial
           value: 2
 
           months.
@@ -59220,7 +59220,7 @@ definitions:
           max_deposit_period:
             type: string
             description: >-
-              Maximum period for Atom holders to deposit on a proposal. Initial
+              Maximum period for Art holders to deposit on a proposal. Initial
               value: 2
 
               months.

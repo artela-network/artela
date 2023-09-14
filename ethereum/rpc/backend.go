@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"strconv"
 	"time"
@@ -69,13 +70,14 @@ func NewBackend(
 	artela *ArtelaService,
 	extRPCEnabled bool,
 	cfg *Config,
+	logger log.Logger,
 ) Backend {
 	b := &backend{
 		ctx:           context.Background(),
 		extRPCEnabled: extRPCEnabled,
 		artela:        artela,
 		cfg:           cfg,
-		logger:        log.Root(),
+		logger:        logger,
 		clientCtx:     clientCtx,
 		queryClient:   rpctypes.NewQueryClient(clientCtx),
 
@@ -140,6 +142,7 @@ func (b *backend) SuggestGasTipCap(baseFee *big.Int) (*big.Int, error) {
 func (b *backend) ChainConfig() *params.ChainConfig {
 	params, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{})
 	if err != nil {
+		b.logger.Info("queryClient.Params failed", err)
 		return nil
 	}
 
@@ -254,6 +257,7 @@ func (b *backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, er
 	}
 
 	if res.BaseFee == nil {
+		b.logger.Debug("res.BaseFee is nil")
 		return nil, nil
 	}
 
@@ -261,7 +265,7 @@ func (b *backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, er
 }
 
 func (b *backend) PendingTransactions() ([]*sdktypes.Tx, error) {
-	return nil, nil
+	return nil, errors.New("PendingTransactions is not implemented")
 }
 
 func (b *backend) GasPrice(ctx context.Context) (*hexutil.Big, error) {
@@ -301,6 +305,7 @@ func (b *backend) RPCMinGasPrice() int64 {
 	minGasPrice := b.appConf.GetMinGasPrices()
 	amt := minGasPrice.AmountOf(evmParams.Params.EvmDenom).TruncateInt64()
 	if amt == 0 {
+		b.logger.Debug("amt is 0, return DefaultGasPrice")
 		return types.DefaultGasPrice
 	}
 

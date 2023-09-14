@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/eth/filters"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
@@ -32,6 +33,7 @@ func NewArtelaService(
 	cfg *Config,
 	stack types.NetworkingStack,
 	am *accounts.Manager,
+	logger log.Logger,
 ) *ArtelaService {
 	art := &ArtelaService{
 		cfg:       cfg,
@@ -39,7 +41,7 @@ func NewArtelaService(
 		clientCtx: clientCtx,
 	}
 
-	art.backend = NewBackend(ctx, clientCtx, art, stack.ExtRPCEnabled(), cfg)
+	art.backend = NewBackend(ctx, clientCtx, art, stack.ExtRPCEnabled(), cfg, logger)
 	return art
 }
 
@@ -67,7 +69,7 @@ func (art *ArtelaService) APIs() []rpc.API {
 	return ethapi.GetAPIs(art.backend)
 }
 
-// Start start the ethereum services
+// Start start the ethereum JsonRPC service
 func (art *ArtelaService) Start() error {
 	if err := art.registerAPIs(); err != nil {
 		return err

@@ -21,7 +21,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela/app"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 // PrepareEthTx creates an ethereum txs and signs it with the provided messages and private key.
@@ -132,7 +131,7 @@ func CreateEthTx(
 // GasLimit estimates the gas limit for the provided parameters. To achieve
 // this, need to provide the corresponding QueryClient to call the
 // `eth_estimateGas` rpc method. If not provided, returns a default value
-func GasLimit(ctx sdk.Context, from common.Address, data evmtypes.HexString, queryClientEvm txs.QueryClient) (uint64, error) {
+func GasLimit(ctx sdk.Context, from common.Address, data []byte, queryClientEvm txs.QueryClient) (uint64, error) {
 	// default gas limit (used if no queryClientEvm is provided)
 	gas := uint64(100000000000)
 

@@ -10,6 +10,7 @@ import (
 
 	rpc2 "github.com/artela-network/artela/ethereum/rpc"
 	"github.com/artela-network/artela/ethereum/server/config"
+	ethlog "github.com/ethereum/go-ethereum/log"
 
 	dbm "github.com/cometbft/cometbft-db"
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -52,7 +53,7 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 	)
 }
 
-// StartJSONRPC starts the JSON-RPC server
+// CreateJSONRPC starts the JSON-RPC server
 func CreateJSONRPC(ctx *server.Context,
 	clientCtx client.Context,
 	tmRPCAddr,
@@ -77,13 +78,27 @@ func CreateJSONRPC(ctx *server.Context,
 		nodeCfg.HTTPPort = port
 	}
 
+	logger := ctx.Logger.With("module", "geth")
+	nodeCfg.Logger = ethlog.New()
+	nodeCfg.Logger.SetHandler(ethlog.FuncHandler(func(r *ethlog.Record) error {
+		switch r.Lvl {
+		case ethlog.LvlTrace, ethlog.LvlDebug:
+			logger.Debug(r.Msg, r.Ctx...)
+		case ethlog.LvlInfo, ethlog.LvlWarn:
+			logger.Info(r.Msg, r.Ctx...)
+		case ethlog.LvlError, ethlog.LvlCrit:
+			logger.Error(r.Msg, r.Ctx...)
+		}
+		return nil
+	}))
+
 	stack, err := rpc2.NewNode(nodeCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	am := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false})
-	serv := rpc2.NewArtelaService(ctx, clientCtx, cfg, stack, am)
+	serv := rpc2.NewArtelaService(ctx, clientCtx, cfg, stack, am, nodeCfg.Logger)
 
 	return serv, nil
 }
