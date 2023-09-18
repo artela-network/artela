@@ -79,6 +79,10 @@ else
     sed -i 's/enabled = false/enabled = true/g' $HOME/.artelad/config/app.toml
 fi
 
+# start serve listen on the ports of all ips
+sed -i 's/127.0.0.1/0.0.0.0/g' $HOME/.artelad/config/config.toml
+sed -i 's/127.0.0.1/0.0.0.0/g' $HOME/.artelad/config/app.toml
+
 if [[ $1 == "pending" ]]; then
     echo "pending mode is on, please wait for the first block committed."
     if [[ $OSTYPE == "darwin"* ]]; then
