@@ -127,7 +127,7 @@ or a similar setup where each node has a manually configurable IP address.
 Note, strict routability for addresses is turned off in the config file.
 
 Example:
-	artelad testnet init-files --v 4 --output-dir ./.testnets --starting-ip-address 192.168.10.2
+	artelad testnet init-files --chain-id evmos_11820-1 --v 4 --output-dir ./testnets --starting-ip-address 172.17.0.2
 	`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
