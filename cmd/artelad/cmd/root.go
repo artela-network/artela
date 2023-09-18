@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"errors"
-	server2 "github.com/artela-network/artela/ethereum/server"
-	config2 "github.com/artela-network/artela/ethereum/server/config"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	server2 "github.com/artela-network/artela/ethereum/server"
+	config2 "github.com/artela-network/artela/ethereum/server/config"
 
 	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"github.com/artela-network/artela/ethereum/eip712"
@@ -127,6 +128,7 @@ func initRootCmd(
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
 		AddGenesisAccountCmd(app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
+		NewTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		config.Cmd(),
 		// this line is used by starport scaffolding # root/commands
