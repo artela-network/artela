@@ -28,13 +28,12 @@ build-testnet:
 	docker build --no-cache --tag artela-network/artela ../. -f ./Dockerfile
 
 start-testnet: remove-testnet build-testnet
-	@if ! [ -f testnet/node0/artelad/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build/artela:/artela:Z artela-network/artela "./artela testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.17.0.2"; fi
+	@if ! [ -f testnet/node0/artelad/config/genesis.json ]; then docker run --rm -v $(CURDIR)/testnet:/artela:Z artela-network/artela "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
 	docker-compose up -d
 
 remove-testnet:
 	docker-compose down
-	# docker rm $(docker ps -q --filter ancestor=artela-network/artela:latest)
-	# docker rmi artela-network/artela:latest
+	# if ! [[ "$(docker images -q artela-network/artela:latest 2> /dev/null)" == "" ]]; then docker rmi artela-network/artela:latest; fi
 	rm -rf ./testnet
 
 clean:
