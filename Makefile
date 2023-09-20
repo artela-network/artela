@@ -16,7 +16,25 @@ ldflags = -X $(REPO)/version.AppVersion=$(VERSION) \
 build:
 	go build -o build/artelad -ldflags="$(ldflags)" ./cmd/artelad/main.go
 
+build-linux:
+	GOOS=linux GOARCH=amd64 LEDGER_ENABLED=false $(MAKE) build
+
+install:
+	go install -ldflags="$(ldflags)" ./cmd/artelad/main.go
+
 all: build
+
+build-testnet:
+	docker build --no-cache --tag artela-network/artela ../. -f ./Dockerfile
+
+start-testnet: remove-testnet build-testnet
+	@if ! [ -f testnet/node0/artelad/config/genesis.json ]; then docker run --rm -v $(CURDIR)/testnet:/artela:Z artela-network/artela "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
+	docker-compose up -d
+
+remove-testnet:
+	docker-compose down
+	# if ! [[ "$(docker images -q artela-network/artela:latest 2> /dev/null)" == "" ]]; then docker rmi artela-network/artela:latest; fi
+	rm -rf ./testnet
 
 clean:
 	rm -rf ./build

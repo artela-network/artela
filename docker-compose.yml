@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  node0:
+    container_name: artela0
+    image: "artela-network/artela:latest"
+    ports:
+      - "26656-26657:26656-26657"
+    volumes:
+      - ./testnet/node0/artelad:/root/.artelad:Z
+    command:
+      - /artelad start
+    networks:
+      localnet:
+        ipv4_address: 172.16.10.2
+
+  node1:
+    container_name: artela1
+    image: "artela-network/artela:latest"
+    ports:
+      - "26659-26660:26656-26657"
+    volumes:
+      - ./testnet/node1/artelad:/root/.artelad:Z
+    command:
+      - /artelad start
+    networks:
+      localnet:
+        ipv4_address: 172.16.10.3
+
+  node2:
+    container_name: artela2
+    image: "artela-network/artela:latest"
+    ports:
+      - "26661-26662:26656-26657"
+    volumes:
+      - ./testnet/node2/artelad:/root/.artelad:Z
+    command:
+      - /artelad start
+    networks:
+      localnet:
+        ipv4_address: 172.16.10.4
+
+  node3:
+    container_name: artela3
+    image: "artela-network/artela:latest"
+    ports:
+      - "26663-26664:26656-26657"
+    volumes:
+      - ./testnet/node3/artelad:/root/.artelad:Z
+    command:
+      - /artelad start
+    networks:
+      localnet:
+        ipv4_address: 172.16.10.5
+
+networks:
+  localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        -
+          subnet: 172.16.10.0/16

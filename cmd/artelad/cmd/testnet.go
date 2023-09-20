@@ -1,4 +1,4 @@
-package client
+package cmd
 
 // DONTCOVER
 
@@ -10,20 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
-	"github.com/artela-network/artela/ethereum/crypto/hd"
-	"github.com/artela-network/artela/ethereum/server/config"
-	srvflags "github.com/artela-network/artela/ethereum/server/flags"
-	types2 "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
-
-	"github.com/ethereum/go-ethereum/common"
-
 	tmconfig "github.com/cometbft/cometbft/config"
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -43,11 +34,20 @@ import (
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	mintypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/artela-network/artela/testutil/network"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
+	"github.com/artela-network/artela/ethereum/server/config"
+	srvflags "github.com/artela-network/artela/ethereum/server/flags"
+
+	artelatypes "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
+
+	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/artela/testutil/network"
 )
 
 var (
@@ -92,15 +92,12 @@ func addTestnetFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().Int(flagNumValidators, 4, "Number of validators to initialize the testnet with")
 	cmd.Flags().StringP(flagOutputDir, "o", "./.testnets", "Directory to store initialization data for the testnet")
 	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
-	cmd.Flags().String(sdkserver.FlagMinGasPrices,
-		fmt.Sprintf("0.000006%s",
-			types2.AttoArtela),
-		"Minimum gas prices to accept for transactions; All fees in a txs must meet this minimum (e.g. 0.01photino,0.001stake)")
-	cmd.Flags().String(ethsecp256k1.FlagKeyAlgorithm, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
+	cmd.Flags().String(sdkserver.FlagMinGasPrices, fmt.Sprintf("0.000006%s", utils.BaseDenom), "Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.01photino,0.001stake)")
+	cmd.Flags().String(flags.FlagKeyType, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
 }
 
-// NewTestnetCmd creates a root testnet command with subcommands to run an in-txs testnet or initialize
-// validator configuration files for running a multi-validator testnet in a separate txs
+// NewTestnetCmd creates a root testnet command with subcommands to run an in-process testnet or initialize
+// validator configuration files for running a multi-validator testnet in a separate process
 func NewTestnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBalancesIterator) *cobra.Command {
 	testnetCmd := &cobra.Command{
 		Use:                        "testnet",
@@ -120,7 +117,7 @@ func NewTestnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBala
 func testnetInitFilesCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBalancesIterator) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init-files",
-		Short: "Initialize config directories & files for a multi-validator testnet running locally via separate processes (e.g. Docker Compose or similar)", //nolint:lll
+		Short: "Initialize config directories & files for a multi-validator testnet running locally via separate processes (e.g. Docker Compose or similar)",
 		Long: `init-files will setup "v" number of directories and populate each with
 necessary files (private validator, genesis, config, etc.) for running "v" validator nodes.
 
@@ -130,7 +127,7 @@ or a similar setup where each node has a manually configurable IP address.
 Note, strict routability for addresses is turned off in the config file.
 
 Example:
-	artelad testnet init-files --v 4 --output-dir ./.testnets --starting-ip-address 192.168.10.2
+	artelad testnet init-files --chain-id artela_11820-1 --v 4 --output-dir ./testnet --starting-ip-address 172.16.10.2
 	`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -149,7 +146,7 @@ Example:
 			args.nodeDaemonHome, _ = cmd.Flags().GetString(flagNodeDaemonHome)
 			args.startingIPAddress, _ = cmd.Flags().GetString(flagStartingIPAddress)
 			args.numValidators, _ = cmd.Flags().GetInt(flagNumValidators)
-			args.algo, _ = cmd.Flags().GetString(ethsecp256k1.FlagKeyAlgorithm)
+			args.algo, _ = cmd.Flags().GetString(flags.FlagKeyType)
 
 			return initTestnetFiles(clientCtx, cmd, serverCtx.Config, mbm, genBalIterator, args)
 		},
@@ -158,20 +155,18 @@ Example:
 	addTestnetFlagsToCmd(cmd)
 	cmd.Flags().String(flagNodeDirPrefix, "node", "Prefix the directory name for each node with (node results in node0, node1, ...)")
 	cmd.Flags().String(flagNodeDaemonHome, "artelad", "Home directory of the node's daemon configuration")
-	cmd.Flags().String(flagStartingIPAddress,
-		"192.168.0.1",
-		"Starting IP address (192.168.0.1 results in persistent peers list ID0@192.168.0.1:46656, ID1@192.168.0.2:46656, ...)")
+	cmd.Flags().String(flagStartingIPAddress, "192.168.0.1", "Starting IP address (192.168.0.1 results in persistent peers list ID0@192.168.0.1:46656, ID1@192.168.0.2:46656, ...)")
 	cmd.Flags().String(flags.FlagKeyringBackend, flags.DefaultKeyringBackend, "Select keyring's backend (os|file|test)")
 
 	return cmd
 }
 
-// get cmd to start multi validator in-txs testnet
+// get cmd to start multi validator in-process testnet
 func testnetStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
-		Short: "Launch an in-txs multi-validator testnet",
-		Long: `testnet will launch an in-txs multi-validator testnet,
+		Short: "Launch an in-process multi-validator testnet",
+		Long: `testnet will launch an in-process multi-validator testnet,
 and generate "v" directories, populated with necessary validator configuration files
 (private validator, genesis, config, etc.).
 
@@ -184,7 +179,7 @@ Example:
 			args.chainID, _ = cmd.Flags().GetString(flags.FlagChainID)
 			args.minGasPrices, _ = cmd.Flags().GetString(sdkserver.FlagMinGasPrices)
 			args.numValidators, _ = cmd.Flags().GetInt(flagNumValidators)
-			args.algo, _ = cmd.Flags().GetString(ethsecp256k1.FlagKeyAlgorithm)
+			args.algo, _ = cmd.Flags().GetString(flags.FlagKeyType)
 			args.enableLogging, _ = cmd.Flags().GetBool(flagEnableLogging)
 			args.rpcAddress, _ = cmd.Flags().GetString(flagRPCAddress)
 			args.apiAddress, _ = cmd.Flags().GetString(flagAPIAddress)
@@ -208,7 +203,7 @@ Example:
 
 const nodeDirPerm = 0o755
 
-// initTestnetFiles initializes testnet files for a testnet to be run in a separate txs
+// initTestnetFiles initializes testnet files for a testnet to be run in a separate process
 func initTestnetFiles(
 	clientCtx client.Context,
 	cmd *cobra.Command,
@@ -218,7 +213,7 @@ func initTestnetFiles(
 	args initArgs,
 ) error {
 	if args.chainID == "" {
-		args.chainID = fmt.Sprintf("artela_%d-1", tmrand.Int63n(9999999999999)+1)
+		args.chainID = fmt.Sprintf("artelad_%d-1", tmrand.Int63n(9999999999999)+1)
 	}
 
 	nodeIDs := make([]string, args.numValidators)
@@ -270,7 +265,7 @@ func initTestnetFiles(
 		memo := fmt.Sprintf("%s@%s:26656", nodeIDs[i], ip)
 		genFiles = append(genFiles, nodeConfig.GenesisFile())
 
-		kb, err := keyring.New(sdk.KeyringServiceName(), args.keyringBackend, nodeDir, inBuf, clientCtx.Codec, hd.EthSecp256k1Option())
+		kb, err := keyring.New(sdk.KeyringServiceName(), args.keyringBackend, nodeDir, inBuf, clientCtx.Codec, artelakeyring.Option())
 		if err != nil {
 			return err
 		}
@@ -299,22 +294,22 @@ func initTestnetFiles(
 			return err
 		}
 
-		accStakingTokens := sdk.TokensFromConsensusPower(5000, types2.PowerReduction)
+		accStakingTokens := sdk.TokensFromConsensusPower(5000, artelatypes.PowerReduction)
 		coins := sdk.Coins{
-			sdk.NewCoin(types2.AttoArtela, accStakingTokens),
+			sdk.NewCoin(utils.BaseDenom, accStakingTokens),
 		}
 
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
-		genAccounts = append(genAccounts, &types2.EthAccount{
+		genAccounts = append(genAccounts, &artelatypes.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(addr, nil, 0, 0),
 			CodeHash:    common.BytesToHash(txs.EmptyCodeHash).Hex(),
 		})
 
-		valTokens := sdk.TokensFromConsensusPower(100, types2.PowerReduction)
+		valTokens := sdk.TokensFromConsensusPower(100, artelatypes.PowerReduction)
 		createValMsg, err := stakingtypes.NewMsgCreateValidator(
 			sdk.ValAddress(addr),
 			valPubKeys[i],
-			sdk.NewCoin(types2.AttoArtela, valTokens),
+			sdk.NewCoin(utils.BaseDenom, valTokens),
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
 			stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.OneDec()),
 			sdk.OneInt(),
@@ -350,16 +345,18 @@ func initTestnetFiles(
 			return err
 		}
 
-		customAppTemplate, customAppConfig := config.AppConfig(types2.AttoArtela)
+		customAppTemplate, customAppConfig := config.AppConfig(utils.BaseDenom)
 		srvconfig.SetConfigTemplate(customAppTemplate)
-		if err := sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, tmconfig.DefaultConfig()); err != nil {
+		customTMConfig := initTendermintConfig()
+
+		if err := sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig); err != nil {
 			return err
 		}
 
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
 
-	if err := initGenFiles(clientCtx, mbm, args.chainID, types2.AttoArtela, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
+	if err := initGenFiles(clientCtx, mbm, args.chainID, utils.BaseDenom, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
 		return err
 	}
 
@@ -386,7 +383,7 @@ func initGenFiles(
 	numValidators int,
 ) error {
 	appGenState := mbm.DefaultGenesis(clientCtx.Codec)
-	// set the accounts in the genesis states
+	// set the accounts in the genesis state
 	var authGenState authtypes.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[authtypes.ModuleName], &authGenState)
 
@@ -398,7 +395,7 @@ func initGenFiles(
 	authGenState.Accounts = accounts
 	appGenState[authtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&authGenState)
 
-	// set the balances in the genesis states
+	// set the balances in the genesis state
 	var bankGenState banktypes.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
 
@@ -414,14 +411,8 @@ func initGenFiles(
 	var govGenState govv1.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
 
-	govGenState.DepositParams.MinDeposit[0].Denom = coinDenom
+	govGenState.Params.MinDeposit[0].Denom = coinDenom
 	appGenState[govtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&govGenState)
-
-	var mintGenState mintypes.GenesisState
-	clientCtx.Codec.MustUnmarshalJSON(appGenState[mintypes.ModuleName], &mintGenState)
-
-	mintGenState.Params.MintDenom = coinDenom
-	appGenState[mintypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&mintGenState)
 
 	var crisisGenState crisistypes.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[crisistypes.ModuleName], &crisisGenState)
@@ -479,13 +470,17 @@ func collectGenFiles(
 			return err
 		}
 
-		nodeAppState, err := genutil.GenAppStateFromConfig(clientCtx.Codec, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator, genutiltypes.DefaultMessageValidator)
+		nodeAppState, err := genutil.GenAppStateFromConfig(
+			clientCtx.Codec, clientCtx.TxConfig,
+			nodeConfig, initCfg, *genDoc, genBalIterator,
+			genutiltypes.DefaultMessageValidator,
+		)
 		if err != nil {
 			return err
 		}
 
 		if appState == nil {
-			// set the canonical application states (they should not differ)
+			// set the canonical application state (they should not differ)
 			appState = nodeAppState
 		}
 
@@ -524,7 +519,7 @@ func calculateIP(ip string, i int) (string, error) {
 	return ipv4.String(), nil
 }
 
-// startTestnet starts an in-txs testnet
+// startTestnet starts an in-process testnet
 func startTestnet(cmd *cobra.Command, args startArgs) error {
 	networkConfig := network.DefaultConfig()
 
