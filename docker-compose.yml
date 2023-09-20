@@ -7,9 +7,9 @@ services:
     ports:
       - "26656-26657:26656-26657"
     volumes:
-      - ./testnet/node0/artelad:/.artelad:Z
+      - ./testnet/node0/artelad:/root/.artelad:Z
     command:
-      - /artelad start --chain-id artela_11820-1
+      - /artelad start
     networks:
       localnet:
         ipv4_address: 172.16.10.2
@@ -20,9 +20,9 @@ services:
     ports:
       - "26659-26660:26656-26657"
     volumes:
-      - ./testnet/node1/artelad:/.artelad:Z
+      - ./testnet/node1/artelad:/root/.artelad:Z
     command:
-      - /artelad start --chain-id artela_11820-1
+      - /artelad start
     networks:
       localnet:
         ipv4_address: 172.16.10.3
@@ -33,9 +33,9 @@ services:
     ports:
       - "26661-26662:26656-26657"
     volumes:
-      - ./testnet/node2/artelad:/.artelad:Z
+      - ./testnet/node2/artelad:/root/.artelad:Z
     command:
-      - /artelad start --chain-id artela_11820-1
+      - /artelad start
     networks:
       localnet:
         ipv4_address: 172.16.10.4
@@ -46,9 +46,9 @@ services:
     ports:
       - "26663-26664:26656-26657"
     volumes:
-      - ./testnet/node3/artelad:/.artelad:Z
+      - ./testnet/node3/artelad:/root/.artelad:Z
     command:
-      - /artelad start --chain-id artela_11820-1
+      - /artelad start
     networks:
       localnet:
         ipv4_address: 172.16.10.5
