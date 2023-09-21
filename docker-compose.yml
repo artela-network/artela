@@ -9,7 +9,7 @@ services:
     volumes:
       - ./testnet/node0/artelad:/root/.artelad:Z
     command:
-      - /artelad start
+      - bash /start-artela.sh
     networks:
       localnet:
         ipv4_address: 172.16.10.2
@@ -22,7 +22,7 @@ services:
     volumes:
       - ./testnet/node1/artelad:/root/.artelad:Z
     command:
-      - /artelad start
+      - bash /start-artela.sh
     networks:
       localnet:
         ipv4_address: 172.16.10.3
@@ -35,7 +35,7 @@ services:
     volumes:
       - ./testnet/node2/artelad:/root/.artelad:Z
     command:
-      - /artelad start
+      - bash /start-artela.sh
     networks:
       localnet:
         ipv4_address: 172.16.10.4
@@ -48,7 +48,7 @@ services:
     volumes:
       - ./testnet/node3/artelad:/root/.artelad:Z
     command:
-      - /artelad start
+      - bash /start-artela.sh
     networks:
       localnet:
         ipv4_address: 172.16.10.5

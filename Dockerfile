@@ -28,7 +28,7 @@ RUN apt-get update
 
 # Copy over binaries from the build-env
 COPY --from=build-env /go/src/github.com/artela-network/artela/build/artelad /
-COPY --from=build-env /go/src/github.com/artela-network/artela/scripts/start-docker.sh /
+COPY --from=build-env /go/src/github.com/artela-network/artela/scripts/start-artela.sh /
 
 EXPOSE 26656 26657 1317 9090 8545 8546
 
