@@ -132,6 +132,7 @@ func initRootCmd(
 		debug.Cmd(),
 		config.Cmd(),
 		// this line is used by starport scaffolding # root/commands
+		KeyInfoCmd(),
 	)
 
 	a := appCreator{
