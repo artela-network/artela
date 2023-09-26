@@ -61,7 +61,7 @@ $ %s keyinfo --file '/root/.artelad/keyring/mykey.info' --passwd 'test'
 			privateKeyBytes := privateKey.D.Bytes()
 			privateKeyBytesPadded := make([]byte, 32)
 			copy(privateKeyBytesPadded[32-len(privateKeyBytes):], privateKeyBytes)
-			fmt.Println("private key: 0x", hex.EncodeToString(privateKeyBytesPadded))
+			fmt.Printf("private key: 0x%s\n", hex.EncodeToString(privateKeyBytesPadded))
 
 			publicKey := privateKey.Public()
 			publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -72,7 +72,7 @@ $ %s keyinfo --file '/root/.artelad/keyring/mykey.info' --passwd 'test'
 			// fmt.Println("public key: 0x", hex.EncodeToString(publicKeyBytes))
 
 			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-			fmt.Println("address: 0x", hex.EncodeToString(fromAddress[:]))
+			fmt.Printf("address: 0x%s\n", hex.EncodeToString(fromAddress[:]))
 			return nil
 		},
 	}
@@ -84,12 +84,11 @@ $ %s keyinfo --file '/root/.artelad/keyring/mykey.info' --passwd 'test'
 }
 
 func readKeyStore(file string, passwd string) ([]byte, error) {
-	fmt.Println("file: ", file)
 	if !filepath.IsAbs(file) {
 		home := os.Getenv("HOME")
 		file = path.Join(home, file)
 	}
-	fmt.Println("file: ", file)
+	fmt.Printf("file: %s\n", file)
 
 	bytes, err := os.ReadFile(file)
 	if os.IsNotExist(err) {
