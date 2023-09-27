@@ -22,19 +22,6 @@ import (
 )
 
 type Block struct {
-	// header       *ethtypes.Header
-	// uncles       []*ethtypes.Header
-	// transactions ethtypes.Transactions
-	// withdrawals  ethtypes.Withdrawals
-
-	// // caches
-	// hash atomic.Value
-	// size atomic.Value
-
-	// // These fields are used by package eth to track
-	// // inter-peer block relay.
-	// ReceivedAt   time.Time
-	// ReceivedFrom interface{}
 	ethBlock *ethtypes.Block
 	hash     common.Hash
 }

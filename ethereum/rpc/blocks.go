@@ -341,11 +341,11 @@ func (b *backend) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRe
 	}
 	ethHeader.GasUsed = gasUsed
 
-	// gasLimit, err := rpctypes.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
-	// if err != nil {
-	// 	b.logger.Error("failed to query consensus params", "error", err.Error())
-	// }
-	// ethHeader.GasLimit = gasLimit
+	gasLimit, err := rpctypes.BlockMaxGasFromConsensusParams(context.Background(), b.clientCtx, block.Height)
+	if err != nil {
+		b.logger.Error("failed to query consensus params", "error", err.Error())
+	}
+	ethHeader.GasLimit = uint64(gasLimit)
 
 	blockHash := common.BytesToHash(block.Hash().Bytes())
 	receipts, err := b.GetReceipts(context.Background(), blockHash)
