@@ -60,7 +60,7 @@ func (b *Block) Body() *ethtypes.Body {
 }
 
 func (b *Block) Size() uint64 {
-	return b.Size()
+	return b.ethBlock.Size()
 }
 
 func (b *Block) Withdrawals() ethtypes.Withdrawals {
@@ -75,16 +75,16 @@ func (b *Block) Transactions() ethtypes.Transactions {
 	return b.ethBlock.Transactions()
 }
 
-func EthBlockToBlock(block *ethtypes.Block) *Block {
-	return &Block{ethBlock: block}
-}
-
 func (b *Block) Uncles() []*ethtypes.Header {
 	return b.ethBlock.Uncles()
 }
 
 func (b *Block) Number() *big.Int {
 	return b.ethBlock.Number()
+}
+
+func EthBlockToBlock(block *ethtypes.Block) *Block {
+	return &Block{ethBlock: block}
 }
 
 // BlockNumber represents decoding hex string to block values

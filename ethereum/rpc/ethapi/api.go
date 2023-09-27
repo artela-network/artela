@@ -383,18 +383,18 @@ func (s *BlockChainAPI) GetHeaderByNumber(ctx context.Context, number rpc.BlockN
 // GetHeaderByHash returns the requested header by hash.
 func (s *BlockChainAPI) GetHeaderByHash(ctx context.Context, hash common.Hash) map[string]interface{} {
 	block, _ := s.b.BlockByHash(ctx, hash)
-	if block != nil && block.Header != nil {
+	if block != nil && block.Header() != nil {
 		return s.rpcMarshalHeader(ctx, block.Header(), block.Hash())
 	}
 	return nil
 }
 
-// GetArtBlockByNumber returns the requested canonical block.
+// GetBlockByNumber returns the requested canonical block.
 //   - When blockNr is -1 the chain head is returned.
 //   - When blockNr is -2 the pending chain head is returned.
 //   - When fullTx is true all transactions in the block are returned, otherwise
 //     only the transaction hash is returned.
-func (s *BlockChainAPI) GetArtBlockByNumber(ctx context.Context, number rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
+func (s *BlockChainAPI) GetBlockByNumber(ctx context.Context, number rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
 	block, err := s.b.ArtBlockByNumber(ctx, number)
 	if block != nil && err == nil {
 		response, err := s.rpcMarshalBlock(ctx, block, true, fullTx)
