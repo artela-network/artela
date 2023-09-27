@@ -83,8 +83,8 @@ func (b *backend) CurrentHeader() *ethtypes.Header {
 	return block.Header()
 }
 
-func (b *backend) CurrentBlock() *ethtypes.Block {
-	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
+func (b *backend) CurrentBlock() *rpctypes.Block {
+	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil {
 		b.logger.Error("get CurrentBlock failed", "error", err)
 		return nil
@@ -93,6 +93,14 @@ func (b *backend) CurrentBlock() *ethtypes.Block {
 }
 
 func (b *backend) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
+	block, err := b.ArtBlockByNumber(context.Background(), number)
+	if err != nil {
+		return nil, err
+	}
+	return block.EthBlock(), nil
+}
+
+func (b *backend) ArtBlockByNumber(_ context.Context, number rpc.BlockNumber) (*rpctypes.Block, error) {
 	resBlock, err := b.CosmosBlockByNumber(number)
 	if err != nil || resBlock == nil {
 		return nil, fmt.Errorf("query block failed, block number %d, %w", number, err)
@@ -106,7 +114,7 @@ func (b *backend) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*eth
 	return b.BlockFromCosmosBlock(resBlock, blockRes)
 }
 
-func (b *backend) BlockByHash(_ context.Context, hash common.Hash) (*ethtypes.Block, error) {
+func (b *backend) BlockByHash(_ context.Context, hash common.Hash) (*rpctypes.Block, error) {
 	resBlock, err := b.CosmosBlockByHash(hash)
 	if err != nil || resBlock == nil {
 		return nil, fmt.Errorf("failed to get block by hash %s, %w", hash.Hex(), err)
@@ -120,7 +128,7 @@ func (b *backend) BlockByHash(_ context.Context, hash common.Hash) (*ethtypes.Bl
 	return b.BlockFromCosmosBlock(resBlock, blockRes)
 }
 
-func (b *backend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*ethtypes.Block, error) {
+func (b *backend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
 	return nil, errors.New("BlockByNumberOrHash is not implemented")
 }
 
@@ -301,7 +309,7 @@ func (b *backend) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.
 	return ethtypes.Bloom{}, errors.New("block bloom event is not found")
 }
 
-func (b *backend) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) (*ethtypes.Block, error) {
+func (b *backend) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) (*rpctypes.Block, error) {
 	block := resBlock.Block
 	height := block.Height
 	bloom, err := b.blockBloom(blockRes)
@@ -322,13 +330,33 @@ func (b *backend) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRe
 		txs[i] = ethMsg.AsTransaction()
 	}
 
+	gasUsed := uint64(0)
+	for _, txsResult := range blockRes.TxsResults {
+		// workaround for cosmos-sdk bug. https://github.com/cosmos/cosmos-sdk/issues/10832
+		if ShouldIgnoreGasUsed(txsResult) {
+			// block gas limit has exceeded, other txs must have failed with same reason.
+			break
+		}
+		gasUsed += uint64(txsResult.GetGasUsed())
+	}
+	ethHeader.GasUsed = gasUsed
+
+	// gasLimit, err := rpctypes.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
+	// if err != nil {
+	// 	b.logger.Error("failed to query consensus params", "error", err.Error())
+	// }
+	// ethHeader.GasLimit = gasLimit
+
 	blockHash := common.BytesToHash(block.Hash().Bytes())
 	receipts, err := b.GetReceipts(context.Background(), blockHash)
 	if err != nil {
 		b.logger.Error("failed to fetch receipts for block number %d", height)
 	}
+
 	ethBlock := ethtypes.NewBlock(ethHeader, txs, nil, receipts, trie.NewStackTrie(nil))
-	return ethBlock, nil
+	res := rpctypes.EthBlockToBlock(ethBlock)
+	res.SetHash(blockHash)
+	return res, nil
 }
 
 func (b *backend) EthMsgsFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) []*txs.MsgEthereumTx {

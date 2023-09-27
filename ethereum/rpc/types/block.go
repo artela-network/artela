@@ -16,9 +16,76 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 )
+
+type Block struct {
+	// header       *ethtypes.Header
+	// uncles       []*ethtypes.Header
+	// transactions ethtypes.Transactions
+	// withdrawals  ethtypes.Withdrawals
+
+	// // caches
+	// hash atomic.Value
+	// size atomic.Value
+
+	// // These fields are used by package eth to track
+	// // inter-peer block relay.
+	// ReceivedAt   time.Time
+	// ReceivedFrom interface{}
+	ethBlock *ethtypes.Block
+	hash     common.Hash
+}
+
+func (b *Block) SetHash(hash common.Hash) {
+	b.hash = hash
+}
+
+func (b *Block) Hash() common.Hash {
+	return b.hash
+}
+
+func (b *Block) EthBlock() *ethtypes.Block {
+	return b.ethBlock
+}
+
+func (b *Block) Header() *ethtypes.Header {
+	return b.ethBlock.Header()
+}
+
+func (b *Block) Body() *ethtypes.Body {
+	return b.ethBlock.Body()
+}
+
+func (b *Block) Size() uint64 {
+	return b.Size()
+}
+
+func (b *Block) Withdrawals() ethtypes.Withdrawals {
+	return b.ethBlock.Withdrawals()
+}
+
+func (b *Block) Transaction(hash common.Hash) *ethtypes.Transaction {
+	return b.ethBlock.Transaction(hash)
+}
+
+func (b *Block) Transactions() ethtypes.Transactions {
+	return b.ethBlock.Transactions()
+}
+
+func EthBlockToBlock(block *ethtypes.Block) *Block {
+	return &Block{ethBlock: block}
+}
+
+func (b *Block) Uncles() []*ethtypes.Header {
+	return b.ethBlock.Uncles()
+}
+
+func (b *Block) Number() *big.Int {
+	return b.ethBlock.Number()
+}
 
 // BlockNumber represents decoding hex string to block values
 type BlockNumber int64

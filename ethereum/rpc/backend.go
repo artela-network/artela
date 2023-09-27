@@ -39,6 +39,11 @@ type Backend interface {
 	ethapi2.Backend
 }
 
+var (
+	_ gasprice.OracleBackend = (*backend)(nil)
+	_ Backend                = (*backend)(nil)
+)
+
 // backend represents the backend for the JSON-RPC service.
 type backend struct {
 	extRPCEnabled bool
