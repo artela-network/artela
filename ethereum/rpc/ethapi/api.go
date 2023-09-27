@@ -28,6 +28,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 )
 
 // EthereumAPI provides an API to access Ethereum related information.
@@ -364,9 +366,9 @@ func decodeHash(s string) (common.Hash, error) {
 // * When blockNr is -1 the chain head is returned.
 // * When blockNr is -2 the pending chain head is returned.
 func (s *BlockChainAPI) GetHeaderByNumber(ctx context.Context, number rpc.BlockNumber) (map[string]interface{}, error) {
-	header, err := s.b.HeaderByNumber(ctx, number)
-	if header != nil && err == nil {
-		response := s.rpcMarshalHeader(ctx, header)
+	block, err := s.b.ArtBlockByNumber(ctx, number)
+	if block != nil && block.Header() != nil && err == nil {
+		response := s.rpcMarshalHeader(ctx, block.Header(), block.Hash())
 		if number == rpc.PendingBlockNumber {
 			// Pending header need to nil out a few fields
 			for _, field := range []string{"hash", "nonce", "miner"} {
@@ -380,9 +382,9 @@ func (s *BlockChainAPI) GetHeaderByNumber(ctx context.Context, number rpc.BlockN
 
 // GetHeaderByHash returns the requested header by hash.
 func (s *BlockChainAPI) GetHeaderByHash(ctx context.Context, hash common.Hash) map[string]interface{} {
-	header, _ := s.b.HeaderByHash(ctx, hash)
-	if header != nil {
-		return s.rpcMarshalHeader(ctx, header)
+	block, _ := s.b.BlockByHash(ctx, hash)
+	if block != nil && block.Header() != nil {
+		return s.rpcMarshalHeader(ctx, block.Header(), block.Hash())
 	}
 	return nil
 }
@@ -393,7 +395,7 @@ func (s *BlockChainAPI) GetHeaderByHash(ctx context.Context, hash common.Hash) m
 //   - When fullTx is true all transactions in the block are returned, otherwise
 //     only the transaction hash is returned.
 func (s *BlockChainAPI) GetBlockByNumber(ctx context.Context, number rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
-	block, err := s.b.BlockByNumber(ctx, number)
+	block, err := s.b.ArtBlockByNumber(ctx, number)
 	if block != nil && err == nil {
 		response, err := s.rpcMarshalBlock(ctx, block, true, fullTx)
 		if err == nil && number == rpc.PendingBlockNumber {
@@ -419,14 +421,17 @@ func (s *BlockChainAPI) GetBlockByHash(ctx context.Context, hash common.Hash, fu
 
 // GetUncleByBlockNumberAndIndex returns the uncle block for the given block hash and index.
 func (s *BlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.b.BlockByNumber(ctx, blockNr)
+	block, err := s.b.ArtBlockByNumber(ctx, blockNr)
 	if block != nil {
 		uncles := block.Uncles()
 		if index >= hexutil.Uint(len(uncles)) {
 			log.Debug("Requested uncle not found", "number", blockNr, "hash", block.Hash(), "index", index)
 			return nil, nil
 		}
-		block = types.NewBlockWithHeader(uncles[index])
+		ethblock := types.NewBlockWithHeader(uncles[index])
+		hash := block.Hash()
+		block = rpctypes.EthBlockToBlock(ethblock)
+		block.SetHash(hash)
 		return s.rpcMarshalBlock(ctx, block, false, false)
 	}
 	return nil, err
@@ -441,7 +446,10 @@ func (s *BlockChainAPI) GetUncleByBlockHashAndIndex(ctx context.Context, blockHa
 			log.Debug("Requested uncle not found", "number", block.Number(), "hash", blockHash, "index", index)
 			return nil, nil
 		}
-		block = types.NewBlockWithHeader(uncles[index])
+		ethblock := types.NewBlockWithHeader(uncles[index])
+		hash := block.Hash()
+		block = rpctypes.EthBlockToBlock(ethblock)
+		block.SetHash(hash)
 		return s.rpcMarshalBlock(ctx, block, false, false)
 	}
 	return nil, err
@@ -449,7 +457,7 @@ func (s *BlockChainAPI) GetUncleByBlockHashAndIndex(ctx context.Context, blockHa
 
 // GetUncleCountByBlockNumber returns number of uncles in the block for the given block number
 func (s *BlockChainAPI) GetUncleCountByBlockNumber(ctx context.Context, blockNr rpc.BlockNumber) *hexutil.Uint {
-	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
+	if block, _ := s.b.ArtBlockByNumber(ctx, blockNr); block != nil {
 		n := hexutil.Uint(len(block.Uncles()))
 		return &n
 	}
@@ -652,10 +660,10 @@ func (s *BlockChainAPI) EstimateGas(ctx context.Context, args TransactionArgs, b
 }
 
 // RPCMarshalHeader converts the given header to the RPC output .
-func RPCMarshalHeader(head *types.Header) map[string]interface{} {
+func RPCMarshalHeader(head *types.Header, hash common.Hash) map[string]interface{} {
 	result := map[string]interface{}{
 		"number":           (*hexutil.Big)(head.Number),
-		"hash":             head.Hash(),
+		"hash":             hash,
 		"parentHash":       head.ParentHash,
 		"nonce":            head.Nonce,
 		"mixHash":          head.MixDigest,
@@ -687,8 +695,8 @@ func RPCMarshalHeader(head *types.Header) map[string]interface{} {
 // RPCMarshalBlock converts the given block to the RPC output which depends on fullTx. If inclTx is true transactions are
 // returned. When fullTx is true the returned block contains full transaction details, otherwise it will only contain
 // transaction hashes.
-func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool, config *params.ChainConfig) (map[string]interface{}, error) {
-	fields := RPCMarshalHeader(block.Header())
+func RPCMarshalBlock(block *rpctypes.Block, inclTx bool, fullTx bool, config *params.ChainConfig) (map[string]interface{}, error) {
+	fields := RPCMarshalHeader(block.Header(), block.Hash())
 	fields["size"] = hexutil.Uint64(block.Size())
 
 	if inclTx {
@@ -697,7 +705,7 @@ func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool, config *param
 		}
 		if fullTx {
 			formatTx = func(idx int, tx *types.Transaction) interface{} {
-				return newRPCTransactionFromBlockIndex(block, uint64(idx), config)
+				return newRPCTransactionFromBlockIndex(block.EthBlock(), uint64(idx), config)
 			}
 		}
 		txs := block.Transactions()
@@ -721,15 +729,15 @@ func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool, config *param
 
 // rpcMarshalHeader uses the generalized output filler, then adds the total difficulty field, which requires
 // a `BlockchainAPI`.
-func (s *BlockChainAPI) rpcMarshalHeader(ctx context.Context, header *types.Header) map[string]interface{} {
-	fields := RPCMarshalHeader(header)
+func (s *BlockChainAPI) rpcMarshalHeader(ctx context.Context, header *types.Header, hash common.Hash) map[string]interface{} {
+	fields := RPCMarshalHeader(header, hash)
 	// fields["totalDifficulty"] = (*hexutil.Big)(s.b.GetTd(ctx, header.Hash()))
 	return fields
 }
 
 // rpcMarshalBlock uses the generalized output filler, then adds the total difficulty field, which requires
 // a `BlockchainAPI`.
-func (s *BlockChainAPI) rpcMarshalBlock(ctx context.Context, b *types.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
+func (s *BlockChainAPI) rpcMarshalBlock(ctx context.Context, b *rpctypes.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
 	fields, err := RPCMarshalBlock(b, inclTx, fullTx, s.b.ChainConfig())
 	if err != nil {
 		return nil, err
@@ -894,7 +902,7 @@ func NewTransactionAPI(b Backend, nonceLock *AddrLocker) *TransactionAPI {
 
 // GetBlockTransactionCountByNumber returns the number of transactions in the block with the given block number.
 func (s *TransactionAPI) GetBlockTransactionCountByNumber(ctx context.Context, blockNr rpc.BlockNumber) *hexutil.Uint {
-	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
+	if block, _ := s.b.ArtBlockByNumber(ctx, blockNr); block != nil {
 		n := hexutil.Uint(len(block.Transactions()))
 		return &n
 	}
@@ -912,8 +920,8 @@ func (s *TransactionAPI) GetBlockTransactionCountByHash(ctx context.Context, blo
 
 // GetTransactionByBlockNumberAndIndex returns the transaction for the given block number and index.
 func (s *TransactionAPI) GetTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) *RPCTransaction {
-	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
-		return newRPCTransactionFromBlockIndex(block, uint64(index), s.b.ChainConfig())
+	if block, _ := s.b.ArtBlockByNumber(ctx, blockNr); block != nil {
+		return newRPCTransactionFromBlockIndex(block.EthBlock(), uint64(index), s.b.ChainConfig())
 	}
 	return nil
 }
@@ -921,15 +929,15 @@ func (s *TransactionAPI) GetTransactionByBlockNumberAndIndex(ctx context.Context
 // GetTransactionByBlockHashAndIndex returns the transaction for the given block hash and index.
 func (s *TransactionAPI) GetTransactionByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) *RPCTransaction {
 	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
-		return newRPCTransactionFromBlockIndex(block, uint64(index), s.b.ChainConfig())
+		return newRPCTransactionFromBlockIndex(block.EthBlock(), uint64(index), s.b.ChainConfig())
 	}
 	return nil
 }
 
 // GetRawTransactionByBlockNumberAndIndex returns the bytes of the transaction for the given block number and index.
 func (s *TransactionAPI) GetRawTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) hexutil.Bytes {
-	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
-		return newRPCRawTransactionFromBlockIndex(block, uint64(index))
+	if block, _ := s.b.ArtBlockByNumber(ctx, blockNr); block != nil {
+		return newRPCRawTransactionFromBlockIndex(block.EthBlock(), uint64(index))
 	}
 	return nil
 }
@@ -937,7 +945,7 @@ func (s *TransactionAPI) GetRawTransactionByBlockNumberAndIndex(ctx context.Cont
 // GetRawTransactionByBlockHashAndIndex returns the bytes of the transaction for the given block hash and index.
 func (s *TransactionAPI) GetRawTransactionByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) hexutil.Bytes {
 	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
-		return newRPCRawTransactionFromBlockIndex(block, uint64(index))
+		return newRPCRawTransactionFromBlockIndex(block.EthBlock(), uint64(index))
 	}
 	return nil
 }
@@ -1154,7 +1162,7 @@ func (s *DebugAPI) GetRawTransaction(ctx context.Context, hash common.Hash) (hex
 
 // PrintBlock retrieves a block and returns its pretty printed form.
 func (api *DebugAPI) PrintBlock(ctx context.Context, number uint64) (string, error) {
-	block, _ := api.b.BlockByNumber(ctx, rpc.BlockNumber(number))
+	block, _ := api.b.ArtBlockByNumber(ctx, rpc.BlockNumber(number))
 	if block == nil {
 		return "", fmt.Errorf("block #%d not found", number)
 	}
