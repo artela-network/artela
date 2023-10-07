@@ -1203,6 +1203,9 @@ func (s *NetAPI) Listening() bool {
 
 // PeerCount returns the number of connected peers
 func (s *NetAPI) PeerCount() hexutil.Uint {
+	if s.net == nil {
+		return 0
+	}
 	return hexutil.Uint(s.net.PeerCount())
 }
 

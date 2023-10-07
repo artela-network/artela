@@ -86,6 +86,9 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 		}, {
 			Namespace: "personal",
 			Service:   NewPersonalAccountAPI(apiBackend, nonceLock),
+		}, {
+			Namespace: "net",
+			Service:   NewNetAPI(nil, apiBackend.ChainConfig().ChainID.Uint64()),
 		},
 	}
 }
