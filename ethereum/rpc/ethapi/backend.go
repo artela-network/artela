@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -16,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	ethereumTypes "github.com/artela-network/artela/ethereum/types"
 )
 
 // Backend interface provides the common API services (that are provided by
@@ -62,7 +64,12 @@ type Backend interface {
 	// This is copied from filters.Backend
 }
 
-func GetAPIs(apiBackend Backend) []rpc.API {
+func GetAPIs(clientCtx client.Context, apiBackend Backend) []rpc.API {
+	chainID, err := ethereumTypes.ParseChainID(clientCtx.ChainID)
+	if err != nil {
+		panic(err)
+	}
+
 	nonceLock := new(AddrLocker)
 	return []rpc.API{
 		{
@@ -88,7 +95,7 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewPersonalAccountAPI(apiBackend, nonceLock),
 		}, {
 			Namespace: "net",
-			Service:   NewNetAPI(nil, apiBackend.ChainConfig().ChainID.Uint64()),
+			Service:   NewNetAPI(nil, chainID.Uint64()),
 		},
 	}
 }
