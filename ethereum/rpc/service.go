@@ -66,7 +66,7 @@ func Accounts(clientCtx client.Context) ([]common.Address, error) {
 }
 
 func (art *ArtelaService) APIs() []rpc.API {
-	return ethapi.GetAPIs(art.backend)
+	return ethapi.GetAPIs(art.clientCtx, art.backend)
 }
 
 // Start start the ethereum JsonRPC service
