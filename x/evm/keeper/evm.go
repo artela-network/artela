@@ -156,8 +156,10 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	// pass true to commit the StateDB
 	res, err := k.ApplyMessageWithConfig(tmpCtx, *msg, nil, true, evmConfig, txConfig)
 	if err != nil {
+		ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
 	}
+	ctx.Logger().Debug("ApplyMessageWithConfig", "txhash", tx.Hash().String(), "response", res)
 
 	logs := support.LogsToEthereum(res.Logs)
 
