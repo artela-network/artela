@@ -355,7 +355,7 @@ func NewArtela(
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec,
 		keys[authmodule.StoreKey],
-		authmodule.ProtoBaseAccount,
+		artela.ProtoAccount,
 		maccPerms,
 		cosmos.Bech32PrefixAccAddr,
 		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
