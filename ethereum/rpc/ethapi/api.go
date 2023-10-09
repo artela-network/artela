@@ -649,8 +649,12 @@ func (e *revertError) ErrorData() interface{} {
 // Note, this function doesn't make and changes in the states/blockchain and is
 // useful to execute and retrieve values.
 func (s *BlockChainAPI) Call(ctx context.Context, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, blockOverrides *BlockOverrides) (hexutil.Bytes, error) {
-	// TODO
-	return hexutil.Bytes{}, errors.New("Call is not implemented")
+	data, err := s.b.DoCall(args, blockNrOrHash)
+	if err != nil {
+		return hexutil.Bytes{}, err
+	}
+
+	return (hexutil.Bytes)(data.Ret), nil
 }
 
 // EstimateGas returns an estimate of the amount of gas needed to execute the
