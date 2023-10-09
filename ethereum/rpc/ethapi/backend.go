@@ -18,6 +18,7 @@ import (
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	ethereumTypes "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 // Backend interface provides the common API services (that are provided by
@@ -57,6 +58,7 @@ type Backend interface {
 	RPCTxFeeCap() float64
 	UnprotectedAllowed() bool
 	EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error)
+	DoCall(args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error)
 
 	ChainConfig() *params.ChainConfig
 	Engine() consensus.Engine
