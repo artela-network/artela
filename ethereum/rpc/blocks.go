@@ -355,7 +355,7 @@ func (b *backend) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRe
 	blockHash := common.BytesToHash(block.Hash().Bytes())
 	receipts, err := b.GetReceipts(context.Background(), blockHash)
 	if err != nil {
-		b.logger.Error("failed to fetch receipts for block number %d", height)
+		b.logger.Debug("failed to fetch receipts for block number %d", height)
 	}
 
 	ethBlock := ethtypes.NewBlock(ethHeader, txs, nil, receipts, trie.NewStackTrie(nil))
