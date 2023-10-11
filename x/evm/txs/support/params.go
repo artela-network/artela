@@ -6,7 +6,7 @@ import (
 	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/artela-network/evm/vm"
 	"github.com/ethereum/go-ethereum/params"
 
 	cosmos "github.com/cosmos/cosmos-sdk/types"

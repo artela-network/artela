@@ -4,11 +4,11 @@ import (
 	"github.com/artela-network/artela/x/evm/states"
 	"math/big"
 
+	"github.com/artela-network/evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
 	evmtypes "github.com/artela-network/artela/x/evm/txs/support"

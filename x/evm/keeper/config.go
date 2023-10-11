@@ -2,7 +2,7 @@ package keeper
 
 import (
 	"github.com/artela-network/artela/x/evm/txs/support"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/artela-network/evm/vm"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -44,13 +44,7 @@ func (k Keeper) VMConfig(ctx cosmos.Context, _ core.Message, cfg *states.EVMConf
 		noBaseFee = k.feeKeeper.GetParams(ctx).NoBaseFee
 	}
 
-	// var debug bool
-	// if _, ok := tracer.(types.NoOpTracer); !ok {
-	// 	debug = true
-	// }
-
 	return vm.Config{
-		// Debug:     debug,
 		Tracer:    tracer,
 		NoBaseFee: noBaseFee,
 		ExtraEips: cfg.Params.EIPs(),
