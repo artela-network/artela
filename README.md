@@ -1,52 +1,96 @@
-# artela
-**artela** is a blockchain built using Cosmos SDK and Tendermint and created with [Ignite CLI](https://ignite.com/cli).
+<h1 align="center"> Artela </h1>
 
-## Get started
+<div align="center">
+  <a href="https://t.me/artela_official" target="_blank">
+    <img alt="Telegram Chat" src="https://img.shields.io/endpoint?color=neon&logo=telegram&label=chat&url=https%3A%2F%2Ftg.sumanjay.workers.dev%2Fpolaris_devs">
+  </a>
+  <a href="https://twitter.com/Artela_Network" target="_blank">
+    <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/Artela_Network">
+  <a href="https://discord.gg/artela">
+   <img src="https://img.shields.io/badge/discord-join%20chat-blue.svg" alt="Discord">
+  </a>
+</div>
 
-```
-ignite chain serve
-```
+**artela** is a blockchain built using Cosmos SDK and Cometbft and created with [Ignite CLI](https://ignite.com/cli).
 
-`serve` command installs dependencies, builds, initializes, and starts your blockchain in development.
+## Build the source
 
-### Configure
+Set Up Your Go Development Environment<br />
+Make sure you have set up your Go programming language development environment.
 
-Your blockchain in development can be configured with `config.yml`. To learn more, see the [Ignite CLI docs](https://docs.ignite.com).
-
-### Web Frontend
-
-Ignite CLI has scaffolded a Vue.js-based web app in the `vue` directory. Run the following commands to install dependencies and start the app:
-
-```
-cd vue
-npm install
-npm run serve
-```
-
-The frontend app is built using the `@starport/vue` and `@starport/vuex` packages. For details, see the [monorepo for Ignite front-end development](https://github.com/ignite/web).
-
-## Release
-To release a new version of your blockchain, create and push a new tag with `v` prefix. A new draft release with the configured targets will be created.
+Download the Source Code<br />
+Obtain the project source code using the following method:
 
 ```
-git tag v0.1
-git push origin v0.1
+git clone https://github.com/artela-network/artela.git
 ```
 
-After a draft release is created, make your final changes from the release page and publish it.
-
-### Install
-To install the latest version of your blockchain node's binary, execute the following command on your machine:
+Compile the source code and generate the executable using the Go compiler:
 
 ```
-curl https://get.ignite.com/username/artela@latest! | sudo bash
+cd artela
+make clean && make
 ```
-`username/artela` should match the `username` and `repo_name` of the Github repository to which the source code was pushed. Learn more about [the install process](https://github.com/allinbits/starport-installer).
 
-## Learn more
+## Executables
 
-- [Ignite CLI](https://ignite.com/cli)
-- [Tutorials](https://docs.ignite.com/guide)
-- [Ignite CLI docs](https://docs.ignite.com)
-- [Cosmos SDK docs](https://docs.cosmos.network)
-- [Developer Chat](https://discord.gg/ignite)
+The artela project comes with executable found in the `build` directory.
+|  Command   | Description|
+| :--------: | ----------------------------------------------------------------------------------------------------------------|
+| **`artelad`** | artelad is the core node software of the Artela network, responsible for running and managing the Artela blockchain network. |
+|            |            |
+
+## Running Testnet
+
+### Setting Up a Single-Node Ethermint Testnet
+
+Initialize the testnet by running a simple script<br />
+
+```
+sh init.sh
+```
+
+Running the node by
+
+```
+artelad start
+```
+
+### Setting Up a 4-Validator Testnet
+
+Run the following command to initialize a 4-validator testnet:
+
+```
+make start-testnet
+```
+
+This command compiles the current repository code and generates Docker images. It launches Docker containers named artela0 to artela3, each running artelad as a node. Disk mapping is configured to map directories artea/testnet/node0 to node3 to Docker containers artela0 to artela3. <br />
+To view node logs, use 'tail -f testnet/node2/artelad/node.log'.
+
+### Hardware Requirements
+
+Minimum:
+
+* CPU with 2+ cores
+* 4GB RAM
+* 1TB free storage space to sync the Tetnet
+* 8 MBit/sec download Internet service
+
+Recommended:
+
+* Fast CPU with 4+ cores
+* 16GB+ RAM
+* High-performance SSD with at least 1TB of free space
+* 25+ MBit/sec download Internet service
+
+## Artela Testnet
+
+Presistent nodes of artela testnet:
+
+* `https://testnet-rpc1.artela.network`
+* `https://testnet-rpc2.artela.network`
+* `https://testnet-rpc3.artela.network`
+* `https://testnet-rpc4.artela.network`
+
+---
+Find more about Artela in <https://www.artela.network/>
