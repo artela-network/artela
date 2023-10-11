@@ -6,11 +6,12 @@ import (
 	cometbft "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
+	artcore "github.com/artela-network/evm/core"
+	"github.com/artela-network/evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -34,8 +35,8 @@ func (k *Keeper) NewEVM(
 ) *vm.EVM {
 
 	blockCtx := vm.BlockContext{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
+		CanTransfer: artcore.CanTransfer,
+		Transfer:    artcore.Transfer,
 		GetHash:     k.GetHashFn(ctx),
 		Coinbase:    cfg.CoinBase,
 		GasLimit:    artela.BlockGasLimit(ctx),
@@ -46,7 +47,7 @@ func (k *Keeper) NewEVM(
 		Random:      nil, // not supported
 	}
 
-	txCtx := core.NewEVMTxContext(&msg)
+	txCtx := artcore.NewEVMTxContext(&msg)
 	if tracer == nil {
 		tracer = k.Tracer(ctx, msg, cfg.ChainConfig)
 	}
@@ -135,7 +136,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	)
 
 	// build evm config and txs config
-	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
+	evmConfig, err := k.EVMConfig(ctx, ctx.BlockHeader().ProposerAddress, k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
