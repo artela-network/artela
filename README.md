@@ -64,9 +64,9 @@ Run the following command to initialize a 4-validator testnet:
 make start-testnet
 ```
 
-To view node logs, use `tail -f testnet/node2/artelad/node.log`.<br />
+To view node logs, use `tail -f _testnet/node2/artelad/node.log`.<br />
 
-This command compiles the current repository code and generates Docker images. It launches Docker containers named artela0 to artela3, each running artelad as a node. Disk mapping is configured to map directories artea/testnet/node0 to node3 to Docker containers artela0 to artela3. <br />
+This command compiles the current repository code and generates Docker images. It launches Docker containers named artela0 to artela3, each running artelad as a node. Disk mapping is configured to map directories artea/_testnet/node0 to node3 to Docker containers artela0 to artela3. <br />
 
 More options about the testnet:
 | Command           | Description                                                                                     |
