@@ -25,20 +25,20 @@ command -v jq >/dev/null 2>&1 || {
 # remove existing daemon and client
 rm -rf ~/.artelad*
 
-echo ./build/artelad config keyring-backend $KEYRING
-./build/artelad config keyring-backend $KEYRING
-echo ./build/artelad config chain-id $CHAINID
-./build/artelad config chain-id $CHAINID
+echo artelad config keyring-backend $KEYRING
+artelad config keyring-backend $KEYRING
+echo artelad config chain-id $CHAINID
+artelad config chain-id $CHAINID
 
 # if $KEY exists it should be deleted
-./build/artelad keys add $KEY --keyring-backend $KEYRING --algo $KEYALGO
-./build/artelad keys add $KEY2 --keyring-backend $KEYRING --algo $KEYALGO
-./build/artelad keys add $KEY3 --keyring-backend $KEYRING --algo $KEYALGO
-./build/artelad keys add $KEY4 --keyring-backend $KEYRING --algo $KEYALGO
+artelad keys add $KEY --keyring-backend $KEYRING --algo $KEYALGO
+artelad keys add $KEY2 --keyring-backend $KEYRING --algo $KEYALGO
+artelad keys add $KEY3 --keyring-backend $KEYRING --algo $KEYALGO
+artelad keys add $KEY4 --keyring-backend $KEYRING --algo $KEYALGO
 
 # Set moniker and chain-id for artela (Moniker can be anything, chain-id must be an integer)
-echo ./build/artelad init $MONIKER --chain-id $CHAINID
-./build/artelad init $MONIKER --chain-id $CHAINID
+echo artelad init $MONIKER --chain-id $CHAINID
+artelad init $MONIKER --chain-id $CHAINID
 
 # Change parameter token denominations to aartela
 cat $HOME/.artelad/config/genesis.json | jq '.app_state["staking"]["params"]["bond_denom"]="aartela"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
@@ -51,20 +51,20 @@ cat $HOME/.artelad/config/genesis.json | jq '.consensus_params["block"]["max_gas
 cat $HOME/.artelad/config/genesis.json | jq '.app_state["evm"]["params"]["extra_eips"]=[3855]' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
 
 # Allocate genesis accounts (cosmos formatted addresses)
-./build/artelad add-genesis-account $KEY 100000000000000000000000000aartela --keyring-backend $KEYRING
-./build/artelad add-genesis-account $KEY2 100000000000000000000000000aartela --keyring-backend $KEYRING
-./build/artelad add-genesis-account $KEY3 100000000000000000000000000aartela --keyring-backend $KEYRING
-./build/artelad add-genesis-account $KEY4 100000000000000000000000000aartela --keyring-backend $KEYRING
-echo ./build/artelad add-genesis-account $KEY 100000000000000000000000000aartela --keyring-backend $KEYRING
+artelad add-genesis-account $KEY 100000000000000000000000000aartela --keyring-backend $KEYRING
+artelad add-genesis-account $KEY2 100000000000000000000000000aartela --keyring-backend $KEYRING
+artelad add-genesis-account $KEY3 100000000000000000000000000aartela --keyring-backend $KEYRING
+artelad add-genesis-account $KEY4 100000000000000000000000000aartela --keyring-backend $KEYRING
+echo artelad add-genesis-account $KEY 100000000000000000000000000aartela --keyring-backend $KEYRING
 
 # Sign genesis transaction
-./build/artelad gentx $KEY 1000000000000000000000aartela --keyring-backend $KEYRING --chain-id $CHAINID
+artelad gentx $KEY 1000000000000000000000aartela --keyring-backend $KEYRING --chain-id $CHAINID
 
 # Collect genesis tx
-./build/artelad collect-gentxs
+artelad collect-gentxs
 
 # Run this to ensure everything worked and that the genesis file is setup correctly
-./build/artelad validate-genesis
+artelad validate-genesis
 
 # disable produce empty block and enable prometheus metrics
 if [[ "$OSTYPE" == "darwin"* ]]; then
