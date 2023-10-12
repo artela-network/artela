@@ -15,16 +15,17 @@
 
 ## Build the source
 
-Set Up Your Go Development Environment<br />
+1). Set Up Your Go Development Environment<br />
 Make sure you have set up your Go programming language development environment.
 
-Download the Source Code<br />
+2). Download the Source Code<br />
 Obtain the project source code using the following method:
 
 ```
 git clone https://github.com/artela-network/artela.git
 ```
 
+3). Compile<br />
 Compile the source code and generate the executable using the Go compiler:
 
 ```
@@ -38,7 +39,6 @@ The artela project comes with executable found in the `build` directory.
 |  Command   | Description|
 | :--------: | ----------------------------------------------------------------------------------------------------------------|
 | **`artelad`** | artelad is the core node software of the Artela network, responsible for running and managing the Artela blockchain network. |
-|            |            |
 
 ## Running Testnet
 
@@ -64,8 +64,18 @@ Run the following command to initialize a 4-validator testnet:
 make start-testnet
 ```
 
+To view node logs, use `tail -f testnet/node2/artelad/node.log`.<br />
+
 This command compiles the current repository code and generates Docker images. It launches Docker containers named artela0 to artela3, each running artelad as a node. Disk mapping is configured to map directories artea/testnet/node0 to node3 to Docker containers artela0 to artela3. <br />
-To view node logs, use 'tail -f testnet/node2/artelad/node.log'.
+
+More options about the testnet:
+| Command           | Description                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| `build-testnet`   | Build Docker images for the testnet and create a configuration for 4-validator nodes.           |
+| `create-testnet`  | Remove a previously built testnet, build it again using `build-testnet`, and start Docker containers. |
+| `stop-testnet`    | Stop the running Docker containers for the testnet.                                             |
+| `start-testnet`   | Start the previously stopped Docker containers for the testnet.                                 |
+| `remove-testnet`  | Stop the Docker containers and remove all components created by the `build-testnet` command.    |
 
 ### Hardware Requirements
 
