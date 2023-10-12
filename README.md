@@ -70,12 +70,12 @@ This command compiles the current repository code and generates Docker images. I
 
 More options about the testnet:
 | Command           | Description                                                                                     |
-| ----------------- | ----------------------------------------------------------------------------------------------- |
-| `build-testnet`   | Build Docker images for the testnet and create a configuration for 4-validator nodes.           |
-| `create-testnet`  | Remove a previously built testnet, build it again using `build-testnet`, and start Docker containers. |
-| `stop-testnet`    | Stop the running Docker containers for the testnet.                                             |
-| `start-testnet`   | Start the previously stopped Docker containers for the testnet.                                 |
-| `remove-testnet`  | Stop the Docker containers and remove all components created by the `build-testnet` command.    |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| <span style="white-space:nowrap">`build-testnet`</span> | Build Docker images for the testnet and create a configuration for 4-validator nodes.           |
+| <span style="white-space:nowrap">`create-testnet`</span> | Remove a previously built testnet, build it again using `build-testnet`, and start Docker containers. |
+| <span style="white-space:nowrap">`stop-testnet`</span> | Stop the running Docker containers for the testnet.                                             |
+| <span style="white-space:nowrap">`start-testnet`</span> | Start the previously stopped Docker containers for the testnet.                                 |
+| <span style="white-space:nowrap">`remove-testnet`</span> | Stop the Docker containers and remove all components created by the `build-testnet` command.    |
 
 ### Hardware Requirements
 
