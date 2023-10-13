@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	asptypes "github.com/artela-network/artelasdk/types"
 
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
@@ -28,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
+	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
 )
@@ -229,6 +232,13 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	if isAspectOpTx := asptypes.IsAspectContractAddr(args.To); isAspectOpTx {
+		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
+		transaction := args.ToTransaction()
+		return nativeContract.Query(ctx, transaction.AsTransaction())
+	}
+
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -244,13 +254,16 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	}
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
-
+	//set aspect tx context
+	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsTransaction())
+	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, *msg, nil, false, cfg, txConfig)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
+	//artela aspect ClearEvmObject set stateDb、monitor to nil
+	k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 	return res, nil
 }
 

@@ -1,6 +1,9 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	"github.com/artela-network/artelasdk/djpm"
+	asptypes "github.com/artela-network/artelasdk/types"
 	"math/big"
 
 	cometbft "github.com/cometbft/cometbft/types"
@@ -19,6 +22,8 @@ import (
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
+
+	artelatype "github.com/artela-network/artela/x/evm/artela/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
@@ -147,11 +152,19 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to return ethereum txs as core message")
 	}
+	// if transaction is Aspect operational, short the circuit and skip the processes
+	if isAspectOpTx := asptypes.IsAspectContractAddr(tx.To()); isAspectOpTx {
+		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
+		return nativeContract.ApplyTx(ctx, tx, msg)
+	}
 
 	// snapshot to contain the txs processing and post processing in same scope
 	var commit func()
 	tmpCtx := ctx
 	tmpCtx, commit = ctx.CacheContext()
+	//set aspect tx context
+	ethTxContext := artelatype.NewEthTxContext(tx)
+	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
 	// pass true to commit the StateDB
 	res, err := k.ApplyMessageWithConfig(tmpCtx, *msg, nil, true, evmConfig, txConfig)
@@ -228,6 +241,21 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 
 	// reset the gas meter for current cosmos txs
 	k.ResetGasMeterAndConsumeGas(ctx, totalGasUsed)
+
+	k.GetAspectRuntimeContext().EthTxContext().WithReceipt(receipt)
+	// commit
+	// aspect OnTxCommit start
+	pointRequest, err := k.aspectMint.TxToPointRequest(ctx, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
+	if err != nil {
+		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
+	} else {
+		txCommit := djpm.AspectInstance().PostTxCommit(pointRequest)
+		if hasErr, txCommitErr := txCommit.HasErr(); hasErr {
+			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
+		}
+	}
+	//artela aspect ClearEvmObject set stateDb、monitor to nil
+	k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 	return res, nil
 }
 
@@ -301,6 +329,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	stateDB := states.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
+	k.GetAspectRuntimeContext().EthTxContext().WithLastEvm(evm).WithEvmCfg(cfg).WithStateDB(stateDB).WithVmMonitor(evm.Tracer())
 
 	leftoverGas := msg.GasLimit
 
@@ -344,7 +373,23 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		ret, _, leftoverGas, vmErr = evm.Create(sender, msg.Data, leftoverGas, msg.Value)
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
-		ret, leftoverGas, vmErr = evm.Call(sender, *msg.To, msg.Data, leftoverGas, msg.Value)
+		pointRequest := k.aspectMint.CreateTxPointRequestInEvm(ctx, msg, txConfig, nil)
+		pointRequest.GasInfo.Gas = leftoverGas
+
+		execute := djpm.AspectInstance().PreTxExecute(pointRequest)
+		leftoverGas = execute.GasInfo.Gas
+		if hasErr, execErr := execute.HasErr(); hasErr {
+			vmErr = execErr
+		} else {
+			ret, leftoverGas, vmErr = evm.Call(sender, *msg.To, msg.Data, leftoverGas, msg.Value)
+			// artela aspect PostTxExecute start
+			pointRequest.GasInfo.Gas = leftoverGas
+			txExecute := djpm.AspectInstance().PostTxExecute(pointRequest)
+			if hasPostErr, postExecErr := txExecute.HasErr(); hasPostErr {
+				vmErr = postExecErr
+			}
+			leftoverGas = txExecute.GasInfo.Gas
+		}
 	}
 
 	refundQuotient := params.RefundQuotient
