@@ -13,7 +13,7 @@ echo "starting artela node $i in background ..."
 --api.enable \
 --json-rpc.api eth,txpool,personal,net,debug,web3,miner \
 --api.enable \
-&>$DATA_DIR/node.log & disown
+&>>$DATA_DIR/node.log & disown
 
 echo "started artela node"
 tail -f /dev/null
