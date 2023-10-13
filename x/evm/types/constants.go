@@ -89,3 +89,7 @@ func AddressStoragePrefix(address common.Address) []byte {
 func StateKey(address common.Address, key []byte) []byte {
 	return append(AddressStoragePrefix(address), key...)
 }
+
+func KeyPrefix(p string) []byte {
+	return []byte(p)
+}

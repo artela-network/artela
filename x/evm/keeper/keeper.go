@@ -1,6 +1,11 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/artela/api"
+	"github.com/artela-network/artela/x/evm/artela/provider"
+	"github.com/artela-network/artelasdk/chaincoreext/jit_inherent"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	"math/big"
 
 	artela "github.com/artela-network/artela/ethereum/types"
@@ -21,7 +26,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
+	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/types"
+	artelaType "github.com/artela-network/artelasdk/types"
+	cosmosAspect "github.com/cosmos/cosmos-sdk/aspect/cosmos"
 )
 
 // Keeper grants access to the EVM module states and implements the go-ethereum StateDB interface.
@@ -59,6 +67,15 @@ type Keeper struct {
 
 	// legacy subspace
 	ss paramsmodule.Subspace
+
+	getCtxByHeight func(height int64, prove bool) (cosmos.Context, error)
+
+	// keep the evm and matched stateDB instance just finished running
+	aspectRuntimeContext *artvmtype.AspectRuntimeContext
+
+	aspectMint *provider.AspectMintProvider
+
+	clientContext client.Context
 }
 
 // NewKeeper generates new evm module keeper
@@ -72,6 +89,8 @@ func NewKeeper(
 	feeKeeper types.FeeKeeper,
 	tracer string,
 	subSpace paramsmodule.Subspace,
+	app *baseapp.BaseApp,
+
 ) *Keeper {
 
 	// ensure evm module account is set
@@ -84,21 +103,69 @@ func NewKeeper(
 		panic(err)
 	}
 
+	// init aspect mint
+	newAspectMint := provider.NewAspectMint(storeKey, app.CreateQueryContext)
+	// new  Aspect Runtime Context
+	newAspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
+
+	// init host api instance
+	// new AspectStateHostApi instance
+
+	api.NewStateDbApi(newAspectRuntimeContext.StateDb)
+	artelaType.GetStateDbHook = api.GetStateApiInstance
+
+	api.NewAspectRuntime(storeKey, newAspectRuntimeContext.EthTxContext,
+		newAspectRuntimeContext.AspectContext,
+		newAspectRuntimeContext.ExtBlockContext,
+		app.CreateQueryContext, app)
+	artelaType.GetRuntimeHostHook = api.GetRuntimeInstance
+
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	k := &Keeper{
-		cdc:           cdc,
-		authority:     authority,
-		accountKeeper: accountKeeper,
-		bankKeeper:    bankKeeper,
-		stakingKeeper: stakingKeeper,
-		feeKeeper:     feeKeeper,
-		storeKey:      storeKey,
-		transientKey:  transientKey,
-		tracer:        tracer,
-		ss:            subSpace,
+		cdc:                  cdc,
+		authority:            authority,
+		accountKeeper:        accountKeeper,
+		bankKeeper:           bankKeeper,
+		stakingKeeper:        stakingKeeper,
+		feeKeeper:            feeKeeper,
+		storeKey:             storeKey,
+		transientKey:         transientKey,
+		tracer:               tracer,
+		ss:                   subSpace,
+		getCtxByHeight:       app.CreateQueryContext,
+		aspectRuntimeContext: newAspectRuntimeContext,
+		aspectMint:           newAspectMint,
 	}
+	// init jit inherent
+	newAspectProtocol := provider.NewAspectProtocolProvider(newAspectRuntimeContext.EthTxContext)
+	jit_inherent.Init(newAspectProtocol)
 
+	api.NewEvmHostInstance(app.CreateQueryContext, k.EthCall)
+	artelaType.GetEvmHostHook = api.GetEvmHostInstance
+
+	artelaType.GetAspectContext = newAspectRuntimeContext.AspectContext().Get
+	artelaType.SetAspectContext = newAspectRuntimeContext.AspectContext().Add
+
+	artelaType.GetAspectPaymaster = newAspectMint.GetAspectAccount
 	return k
+}
+
+// set rpc client
+func (k *Keeper) SetClientContext(ctx client.Context) {
+	k.clientContext = ctx
+	k.aspectRuntimeContext.ExtBlockContext().WithRpcClient(ctx)
+}
+
+func (k Keeper) GetClientContext() client.Context {
+	return k.clientContext
+}
+
+func (k Keeper) GetAspectCosmosProvider() cosmosAspect.AspectCosmosProvider {
+	return k.aspectMint
+}
+
+func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {
+	return k.aspectRuntimeContext
 }
 
 // ----------------------------------------------------------------------------

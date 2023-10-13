@@ -62,11 +62,12 @@ func (k Keeper) VMConfig(ctx cosmos.Context, _ core.Message, cfg *states.EVMConf
 // ----------------------------------------------------------------------------
 
 // TxConfig loads `TxConfig` from current transient storage
-func (k *Keeper) TxConfig(ctx cosmos.Context, txHash common.Hash) states.TxConfig {
+func (k *Keeper) TxConfig(ctx cosmos.Context, txHash common.Hash, txType uint8) states.TxConfig {
 	return states.NewTxConfig(
 		common.BytesToHash(ctx.HeaderHash()), // BlockHash
 		txHash,                               // TxHash
 		uint(k.GetTxIndexTransient(ctx)),     // TxIndex
 		uint(k.GetLogSizeTransient(ctx)),     // LogIndex
+		uint(txType),
 	)
 }

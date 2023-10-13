@@ -3,6 +3,8 @@ module github.com/artela-network/artela
 go 1.19
 
 require (
+	github.com/artela-network/artelasdk v0.3.3-beta
+	github.com/artela-network/evm v0.3.3-beta
 	cosmossdk.io/api v0.3.1
 	cosmossdk.io/errors v1.0.0
 	cosmossdk.io/math v1.0.1
@@ -32,8 +34,11 @@ require (
 
 require (
 	github.com/DataDog/zstd v1.5.2 // indirect
+	github.com/artela-network/artelasdk v0.3.3-beta // indirect
+	github.com/artela-network/runtime v0.3.2-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
+	github.com/bytecodealliance/wasmtime-go/v9 v9.0.0 // indirect
 	github.com/cockroachdb/errors v1.9.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v0.0.0-20230209160836-829675f94811 // indirect
@@ -105,7 +110,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
+	github.com/dvsekhvalnov/jose2go v1.5.0
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff // indirect
@@ -141,7 +146,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
-	github.com/holiman/uint256 v1.2.2-0.20230321075855-87b91420868c // indirect
+	github.com/holiman/uint256 v1.2.2 // indirect
 	github.com/huandu/skiplist v1.2.0 // indirect
 	github.com/huin/goupnp v1.0.3 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
@@ -221,4 +226,10 @@ replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.3 // TODO artela: btcd/btcec become not valid for 0.23.x, need to dig into it
 	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+)
+
+replace (
+	github.com/artela-network/artelasdk => ../artelasdk
+	github.com/artela-network/evm => ../evm
+	github.com/artela-network/runtime => ../runtime
 )
