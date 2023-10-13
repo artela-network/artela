@@ -10,7 +10,9 @@ import (
 )
 
 // BeginBlock sets the cosmos Context and EIP155 chain id to the Keeper.
-func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestBeginBlock) {
+func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeginBlock) {
+	k.GetAspectRuntimeContext().ExtBlockContext().WithEvidenceList(beginBlock.ByzantineValidators).WithLastCommit(beginBlock.LastCommitInfo).WithRpcClient(k.GetClientContext())
+
 	k.WithChainID(ctx)
 }
 
@@ -24,5 +26,7 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	bloom := ethereum.BytesToBloom(k.GetBlockBloomTransient(infCtx).Bytes())
 	k.EmitBlockBloomEvent(infCtx, bloom)
 
+	//clear aspect  block context
+	k.GetAspectRuntimeContext().ClearBlockContext()
 	return []abci.ValidatorUpdate{}
 }

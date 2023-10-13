@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 )
 
@@ -25,6 +26,19 @@ func NewAspectMint(storeKey storetypes.StoreKey, getCtxByHeight func(height int6
 	service := contract.NewAspectService(storeKey, getCtxByHeight)
 
 	return &AspectMintProvider{service: service}
+}
+
+func (j *AspectMintProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
+
+	ethTransaction, err := asptypes.NewEthTransaction(transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
+	if err != nil {
+		return nil, err
+	}
+	return &asptypes.EthTxAspect{
+		Tx:          ethTransaction,
+		CurrInnerTx: innerTx,
+		GasInfo:     &asptypes.GasInfo{},
+	}, nil
 }
 
 func (j *AspectMintProvider) CreateTxPointRequest(sdkCtx sdk.Context, msg sdk.Msg, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {

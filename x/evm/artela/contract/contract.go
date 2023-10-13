@@ -6,12 +6,12 @@ import (
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
-	"github.com/artela-network/evm/vm"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
@@ -71,7 +71,7 @@ func (k *AspectNativeContract) Query(ctx sdk.Context, tx *ethtypes.Transaction) 
 	return nil, nil
 }
 
-func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction, msg core.Message) (*evmtxs.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction, msg *core.Message) (*evmtxs.MsgEthereumTxResponse, error) {
 	method, parameters, err := types.ParseMethod(tx)
 	if err != nil {
 		return nil, err

@@ -3,12 +3,12 @@ module github.com/artela-network/artela
 go 1.19
 
 require (
-	github.com/artela-network/artelasdk v0.3.3-beta
-	github.com/artela-network/evm v0.3.3-beta
 	cosmossdk.io/api v0.3.1
 	cosmossdk.io/errors v1.0.0
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.2.1
+	github.com/artela-network/artelasdk v0.3.3-beta
+	github.com/artela-network/evm v0.3.3-beta
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft v0.37.2
 	github.com/cometbft/cometbft-db v0.7.0
@@ -34,7 +34,6 @@ require (
 
 require (
 	github.com/DataDog/zstd v1.5.2 // indirect
-	github.com/artela-network/artelasdk v0.3.3-beta // indirect
 	github.com/artela-network/runtime v0.3.2-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
