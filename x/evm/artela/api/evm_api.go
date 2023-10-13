@@ -2,13 +2,14 @@ package api
 
 import (
 	"context"
-	"github.com/artela-network/artela/x/evm/types"
+	ethermint "github.com/artela-network/artela/ethereum/types"
+	txs "github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	inherent "github.com/artela-network/artelasdk/chaincoreext/jit_inherent"
 	"github.com/artela-network/artelasdk/integration"
 	artelatypes "github.com/artela-network/artelasdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/log"
-	ethermint "github.com/evmos/ethermint/types"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"strconv"
@@ -21,11 +22,11 @@ var (
 
 type evmHostApi struct {
 	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
-	ethCall        func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error)
+	ethCall        func(c context.Context, req *txs.EthCallRequest) (*txs.MsgEthereumTxResponse, error)
 }
 
 func NewEvmHostInstance(getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
-	ethCall func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error),
+	ethCall func(c context.Context, req *txs.EthCallRequest) (*txs.MsgEthereumTxResponse, error),
 ) {
 	evmHostInstance = &evmHostApi{
 		getCtxByHeight: getCtxByHeight,
@@ -59,7 +60,7 @@ func (e evmHostApi) StaticCall(ctx *artelatypes.RunnerContext, request *artelaty
 		return artelatypes.ErrEthMessageCallResult(chainErr)
 	}
 
-	ethRequest := &types.EthCallRequest{
+	ethRequest := &txs.EthCallRequest{
 		Args:            marshal,
 		GasCap:          parseUint,
 		ProposerAddress: nil,
@@ -79,7 +80,7 @@ func (e evmHostApi) StaticCall(ctx *artelatypes.RunnerContext, request *artelaty
 
 }
 
-func ConvertEthLogs(logs []*types.Log) []*artelatypes.EthLog {
+func ConvertEthLogs(logs []*support.Log) []*artelatypes.EthLog {
 	if logs == nil {
 		return nil
 	}
@@ -89,7 +90,7 @@ func ConvertEthLogs(logs []*types.Log) []*artelatypes.EthLog {
 	}
 	return ethLogs
 }
-func ConvertEthLog(logs *types.Log) *artelatypes.EthLog {
+func ConvertEthLog(logs *support.Log) *artelatypes.EthLog {
 	if logs == nil {
 		return nil
 	}

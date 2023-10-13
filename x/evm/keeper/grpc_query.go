@@ -5,16 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/artela/contract"
-	asptypes "github.com/artela-network/artelasdk/types"
-
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
 	"math/big"
 	"time"
-
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,11 +15,20 @@ import (
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	artela "github.com/artela-network/artela/ethereum/types"
+
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	asptypes "github.com/artela-network/artelasdk/types"
+
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
+	"github.com/artela-network/evm/tracers"
+	"github.com/artela-network/evm/tracers/logger"
+	"github.com/artela-network/evm/vm"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"

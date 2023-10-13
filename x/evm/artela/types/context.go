@@ -2,11 +2,10 @@ package types
 
 import (
 	statedb "github.com/artela-network/artela/x/evm/states"
-	artelavm "github.com/artela-network/evm/vm"
+	"github.com/artela-network/evm/vm"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"sync"
 )
 
@@ -63,7 +62,7 @@ func (c *AspectRuntimeContext) ClearContext() {
 type EthTxContext struct {
 	// eth Transaction,it is set in
 	txContent     *ethtypes.Transaction
-	vmTracer      *artelavm.Tracer
+	vmTracer      *vm.Tracer
 	receipt       *ethtypes.Receipt
 	stateDb       vm.StateDB
 	evmCfg        *statedb.EVMConfig
@@ -91,9 +90,9 @@ func (c *EthTxContext) TxTo() string {
 }
 func (c *EthTxContext) EvmCfg() *statedb.EVMConfig            { return c.evmCfg }
 func (c *EthTxContext) TxContent() *ethtypes.Transaction      { return c.txContent }
-func (c *EthTxContext) VmTracer() *artelavm.Tracer            { return c.vmTracer }
+func (c *EthTxContext) VmTracer() *vm.Tracer                  { return c.vmTracer }
 func (c *EthTxContext) Receipt() *ethtypes.Receipt            { return c.receipt }
-func (c *EthTxContext) VmStateDB() artelavm.StateDB           { return c.stateDb }
+func (c *EthTxContext) VmStateDB() vm.StateDB                 { return c.stateDb }
 func (c *EthTxContext) ExtProperties() map[string]interface{} { return c.extProperties }
 func (c *EthTxContext) LastEvm() *vm.EVM                      { return c.lastEvm }
 
@@ -106,11 +105,11 @@ func (c *EthTxContext) WithEvmCfg(cfg *statedb.EVMConfig) *EthTxContext {
 	c.evmCfg = cfg
 	return c
 }
-func (c *EthTxContext) WithVmMonitor(monitor *artelavm.Tracer) *EthTxContext {
+func (c *EthTxContext) WithVmMonitor(monitor *vm.Tracer) *EthTxContext {
 	c.vmTracer = monitor
 	return c
 }
-func (c *EthTxContext) WithStateDB(db artelavm.StateDB) *EthTxContext {
+func (c *EthTxContext) WithStateDB(db vm.StateDB) *EthTxContext {
 	c.stateDb = db
 	return c
 }

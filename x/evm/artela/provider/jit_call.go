@@ -3,6 +3,7 @@ package provider
 import (
 	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artelasdk/integration"
+	"github.com/artela-network/evm/vm"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
@@ -10,6 +11,24 @@ import (
 var (
 	_ integration.AspectProtocol = (*AspectProtocolProvider)(nil)
 )
+
+type IntegrationVM struct {
+	lastVM *vm.EVM
+}
+
+func NewIntegrationVM(lastVM *vm.EVM) *IntegrationVM {
+	return &IntegrationVM{
+		lastVM: lastVM,
+	}
+}
+func (vm *IntegrationVM) Msg() integration.Message {
+	return vm.lastVM.TxContext.Msg
+}
+
+// Call executes the contract call using the given input.
+func (vm *IntegrationVM) Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+	return vm.lastVM.Call(caller, addr, input, gas, value)
+}
 
 type AspectProtocolProvider struct {
 	getEthTxContext func() *types.EthTxContext
