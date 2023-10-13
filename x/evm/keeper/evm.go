@@ -139,7 +139,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
-	txConfig := k.TxConfig(ctx, tx.Hash())
+	txConfig := k.TxConfig(ctx, tx.Hash(), tx.Type())
 
 	// get the signer according to the chain rules from the config and block height
 	signer := ethereum.MakeSigner(evmConfig.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
