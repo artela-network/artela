@@ -30,7 +30,7 @@ import (
 	"github.com/artela-network/artela/x/evm/txs"
 )
 
-func (b *backend) Accounts() []common.Address {
+func (b *BackendImpl) Accounts() []common.Address {
 	addresses := make([]common.Address, 0) // return [] instead of nil if empty
 
 	infos, err := b.clientCtx.Keyring.List()
@@ -52,7 +52,7 @@ func (b *backend) Accounts() []common.Address {
 	return addresses
 }
 
-func (b *backend) NewAccount(password string) (common.AddressEIP55, error) {
+func (b *BackendImpl) NewAccount(password string) (common.AddressEIP55, error) {
 	name := "key_" + time.Now().UTC().Format(time.RFC3339)
 
 	cfg := sdktypes.GetConfig()
@@ -81,7 +81,7 @@ func (b *backend) NewAccount(password string) (common.AddressEIP55, error) {
 	return common.AddressEIP55(addr), nil
 }
 
-func (b *backend) ImportRawKey(privkey, password string) (common.Address, error) {
+func (b *BackendImpl) ImportRawKey(privkey, password string) (common.Address, error) {
 	priv, err := crypto.HexToECDSA(privkey)
 	if err != nil {
 		return common.Address{}, err
@@ -110,7 +110,7 @@ func (b *backend) ImportRawKey(privkey, password string) (common.Address, error)
 	return ethereumAddr, nil
 }
 
-func (b *backend) SignTransaction(args *ethapi2.TransactionArgs) (*ethtypes.Transaction, error) {
+func (b *BackendImpl) SignTransaction(args *ethapi2.TransactionArgs) (*ethtypes.Transaction, error) {
 	_, err := b.clientCtx.Keyring.KeyByAddress(sdktypes.AccAddress(args.From.Bytes()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to find key in the node's keyring; %s; %s", keystore.ErrNoMatch, err.Error())
@@ -141,7 +141,7 @@ func (b *backend) SignTransaction(args *ethapi2.TransactionArgs) (*ethtypes.Tran
 }
 
 // Sign signs the provided data using the private key of address via Geth's signature standard.
-func (b *backend) Sign(address common.Address, data hexutil.Bytes) (hexutil.Bytes, error) {
+func (b *BackendImpl) Sign(address common.Address, data hexutil.Bytes) (hexutil.Bytes, error) {
 	from := sdktypes.AccAddress(address.Bytes())
 
 	_, err := b.clientCtx.Keyring.KeyByAddress(from)
@@ -159,7 +159,7 @@ func (b *backend) Sign(address common.Address, data hexutil.Bytes) (hexutil.Byte
 	return signature, nil
 }
 
-func (b *backend) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
+func (b *BackendImpl) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
 	n := hexutil.Uint64(0)
 	height, err := b.blockNumberFromCosmos(blockNrOrHash)
 	currentHeight := b.CurrentHeader().Number
@@ -189,7 +189,7 @@ func (b *backend) GetTransactionCount(address common.Address, blockNrOrHash rpc.
 	return &n, nil
 }
 
-func (b *backend) getAccountNonce(accAddr common.Address, pending bool, height int64) (uint64, error) {
+func (b *BackendImpl) getAccountNonce(accAddr common.Address, pending bool, height int64) (uint64, error) {
 	queryClient := authtypes.NewQueryClient(b.clientCtx)
 	adr := sdktypes.AccAddress(accAddr.Bytes()).String()
 	ctx := types.ContextWithHeight(height)
@@ -244,7 +244,7 @@ func (b *backend) getAccountNonce(accAddr common.Address, pending bool, height i
 	return nonce, nil
 }
 
-func (b *backend) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
+func (b *BackendImpl) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
 	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
 	if err != nil {
 		return nil, err

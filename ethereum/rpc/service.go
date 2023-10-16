@@ -1,8 +1,10 @@
 package rpc
 
 import (
+	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
+
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
@@ -10,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	"github.com/artela-network/artela/ethereum/rpc/types"
 )
 
@@ -21,15 +22,18 @@ var defaultEthConfig = ethconfig.Config{
 
 type ArtelaService struct {
 	clientCtx    client.Context
+	wsClient     *rpcclient.WSClient
 	cfg          *Config
 	stack        types.NetworkingStack
-	backend      ethapi.Backend
+	backend      *BackendImpl
 	filterSystem *filters.FilterSystem
+	logger       log.Logger
 }
 
 func NewArtelaService(
 	ctx *server.Context,
 	clientCtx client.Context,
+	wsClient *rpcclient.WSClient,
 	cfg *Config,
 	stack types.NetworkingStack,
 	am *accounts.Manager,
@@ -39,6 +43,8 @@ func NewArtelaService(
 		cfg:       cfg,
 		stack:     stack,
 		clientCtx: clientCtx,
+		wsClient:  wsClient,
+		logger:    logger,
 	}
 
 	art.backend = NewBackend(ctx, clientCtx, art, stack.ExtRPCEnabled(), cfg, logger)
@@ -66,7 +72,7 @@ func Accounts(clientCtx client.Context) ([]common.Address, error) {
 }
 
 func (art *ArtelaService) APIs() []rpc.API {
-	return ethapi.GetAPIs(art.clientCtx, art.backend)
+	return GetAPIs(art.clientCtx, art.wsClient, art.logger, art.backend)
 }
 
 // Start start the ethereum JsonRPC service

@@ -42,7 +42,7 @@ The artela project comes with executable found in the `build` directory.
 
 ## Running Testnet
 
-### Setting Up a Single-Node Ethermint Testnet
+### Setting Up a Single-Node Artela Testnet
 
 Initialize the testnet by running a simple script<br />
 
