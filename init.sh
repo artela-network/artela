@@ -72,16 +72,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' 's/prometheus = false/prometheus = true/' $HOME/.artelad/config/config.toml
     sed -i '' 's/prometheus-retention-time = 0/prometheus-retention-time  = 1000000000000/g' $HOME/.artelad/config/app.toml
     sed -i '' 's/enabled = false/enabled = true/g' $HOME/.artelad/config/app.toml
+    sed -i '' 's/127.0.0.1:8545/0.0.0.0:8545/g' $HOME/.artelad/config/app.toml
 else
     sed -i 's/create_empty_blocks = true/create_empty_blocks = false/g' $HOME/.artelad/config/config.toml
     sed -i 's/prometheus = false/prometheus = true/' $HOME/.artelad/config/config.toml
     sed -i 's/prometheus-retention-time  = "0"/prometheus-retention-time  = "1000000000000"/g' $HOME/.artelad/config/app.toml
     sed -i 's/enabled = false/enabled = true/g' $HOME/.artelad/config/app.toml
+    sed -i 's/127.0.0.1:8545/0.0.0.0:8545/g' $HOME/.artelad/config/app.toml
 fi
-
-# start serve listen on the ports of all ips
-sed -i 's/127.0.0.1/0.0.0.0/g' $HOME/.artelad/config/config.toml
-sed -i 's/127.0.0.1/0.0.0.0/g' $HOME/.artelad/config/app.toml
 
 if [[ $1 == "pending" ]]; then
     echo "pending mode is on, please wait for the first block committed."
