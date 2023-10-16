@@ -16,7 +16,7 @@ COPY ./artela-cometbft ./artela-cometbft
 # Reset the working directory for the build
 WORKDIR /go/src/github.com/artela-network/artela
 
-# build Ethermint
+# build artelad
 RUN make build-linux
 
 # Final image

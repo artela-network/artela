@@ -161,7 +161,7 @@ func startInProcess(cfg Config, val *Validator) error {
 			panic(err)
 		}
 
-		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}), log.Root())
+		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, nil, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}), log.Root())
 		val.artelaService.Start()
 	}
 

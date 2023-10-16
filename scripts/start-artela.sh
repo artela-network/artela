@@ -2,8 +2,7 @@
 
 DATA_DIR="$HOME/.artelad"
 
-sed -i 's/127.0.0.1/0.0.0.0/g' $DATA_DIR/config/app.toml
-sed -i 's/127.0.0.1/0.0.0.0/g' $DATA_DIR/config/config.toml
+sed -i 's/127.0.0.1:8545/0.0.0.0:8545/g' $DATA_DIR/config/app.toml
 sed -i 's/"extra_eips": \[\]/"extra_eips": \[3855\]/g' $DATA_DIR/config/genesis.json
 
 echo "starting artela node $i in background ..."

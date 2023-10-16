@@ -7,20 +7,24 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
-	rpc2 "github.com/artela-network/artela/ethereum/rpc"
-	"github.com/artela-network/artela/ethereum/server/config"
+	"github.com/spf13/cobra"
+
+	"github.com/ethereum/go-ethereum/accounts"
 	ethlog "github.com/ethereum/go-ethereum/log"
 
 	dbm "github.com/cometbft/cometbft-db"
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
+	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/spf13/cobra"
+
+	rpc2 "github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
 )
 
 // add server commands
@@ -97,8 +101,10 @@ func CreateJSONRPC(ctx *server.Context,
 		return nil, err
 	}
 
+	wsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, nodeCfg.Logger)
+
 	am := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false})
-	serv := rpc2.NewArtelaService(ctx, clientCtx, cfg, stack, am, nodeCfg.Logger)
+	serv := rpc2.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, am, nodeCfg.Logger)
 
 	return serv, nil
 }
@@ -117,4 +123,32 @@ func openTraceWriter(traceWriterFile string) (w io.WriteCloser, err error) {
 		os.O_WRONLY|os.O_APPEND|os.O_CREATE,
 		0o666,
 	)
+}
+
+func ConnectTmWS(tmRPCAddr, tmEndpoint string, logger ethlog.Logger) *rpcclient.WSClient {
+	tmWsClient, err := rpcclient.NewWS(tmRPCAddr, tmEndpoint,
+		rpcclient.MaxReconnectAttempts(256),
+		rpcclient.ReadWait(120*time.Second),
+		rpcclient.WriteWait(120*time.Second),
+		rpcclient.PingPeriod(50*time.Second),
+		rpcclient.OnReconnect(func() {
+			logger.Debug("EVM RPC reconnects to Tendermint WS", "address", tmRPCAddr+tmEndpoint)
+		}),
+	)
+
+	if err != nil {
+		logger.Error(
+			"Tendermint WS client could not be created",
+			"address", tmRPCAddr+tmEndpoint,
+			"error", err,
+		)
+	} else if err := tmWsClient.OnStart(); err != nil {
+		logger.Error(
+			"Tendermint WS client could not start",
+			"address", tmRPCAddr+tmEndpoint,
+			"error", err,
+		)
+	}
+
+	return tmWsClient
 }

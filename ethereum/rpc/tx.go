@@ -21,6 +21,7 @@ import (
 
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	"github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -29,7 +30,7 @@ import (
 
 // Transaction pool API
 
-func (b *backend) SendTx(ctx context.Context, signedTx *ethtypes.Transaction) error {
+func (b *BackendImpl) SendTx(ctx context.Context, signedTx *ethtypes.Transaction) error {
 	// verify the ethereum tx
 	ethereumTx := &txs.MsgEthereumTx{}
 	if err := ethereumTx.FromEthereumTx(signedTx); err != nil {
@@ -77,7 +78,7 @@ func (b *backend) SendTx(ctx context.Context, signedTx *ethtypes.Transaction) er
 	return nil
 }
 
-func (b *backend) GetTransaction(ctx context.Context, txHash common.Hash) (*ethapi.RPCTransaction, error) {
+func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*ethapi.RPCTransaction, error) {
 	res, err := b.GetTxByEthHash(txHash)
 	hexTx := txHash.Hex()
 
@@ -139,44 +140,44 @@ func (b *backend) GetTransaction(ctx context.Context, txHash common.Hash) (*etha
 	), nil
 }
 
-func (b *backend) GetPoolTransactions() (ctypes.Transactions, error) {
+func (b *BackendImpl) GetPoolTransactions() (ctypes.Transactions, error) {
 	b.logger.Debug("called eth.rpc.backend.GetPoolTransactions")
 	return nil, errors.New("GetPoolTransactions is not implemented")
 }
 
-func (b *backend) GetPoolTransaction(txHash common.Hash) *ethtypes.Transaction {
+func (b *BackendImpl) GetPoolTransaction(txHash common.Hash) *ethtypes.Transaction {
 	b.logger.Error("GetPoolTransaction is not implemented")
 	return nil
 }
 
-func (b *backend) GetPoolNonce(_ context.Context, addr common.Address) (uint64, error) {
+func (b *BackendImpl) GetPoolNonce(_ context.Context, addr common.Address) (uint64, error) {
 	return 0, errors.New("GetPoolNonce is not implemented")
 }
 
-func (b *backend) Stats() (int, int) {
+func (b *BackendImpl) Stats() (int, int) {
 	b.logger.Error("Stats is not implemented")
 	return 0, 0
 }
 
-func (b *backend) TxPoolContent() (
+func (b *BackendImpl) TxPoolContent() (
 	map[common.Address]ctypes.Transactions, map[common.Address]ctypes.Transactions,
 ) {
 	b.logger.Error("TxPoolContent is not implemented")
 	return nil, nil
 }
 
-func (b *backend) TxPoolContentFrom(addr common.Address) (
+func (b *BackendImpl) TxPoolContentFrom(addr common.Address) (
 	ctypes.Transactions, ctypes.Transactions,
 ) {
 	return nil, nil
 }
 
-func (b *backend) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Subscription {
+func (b *BackendImpl) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Subscription {
 	return b.scope.Track(b.newTxsFeed.Subscribe(ch))
 }
 
 // Version returns the current ethereum protocol version.
-func (b *backend) Version() string {
+func (b *BackendImpl) Version() string {
 	chainID := b.ChainConfig().ChainID
 	if chainID == nil {
 		b.logger.Error("eth.rpc.backend.Version", "ChainID is nil")
@@ -185,12 +186,12 @@ func (b *backend) Version() string {
 	return chainID.String()
 }
 
-func (b *backend) Engine() consensus.Engine {
+func (b *BackendImpl) Engine() consensus.Engine {
 	b.logger.Error("Engine is not implemented")
 	return nil
 }
 
-func (b *backend) GetTxByEthHash(hash common.Hash) (*types.TxResult, error) {
+func (b *BackendImpl) GetTxByEthHash(hash common.Hash) (*types.TxResult, error) {
 	// if b.indexer != nil {
 	// 	return b.indexer.GetByTxHash(hash)
 	// }
@@ -207,7 +208,7 @@ func (b *backend) GetTxByEthHash(hash common.Hash) (*types.TxResult, error) {
 }
 
 // GetTransactionReceipt get receipt by transaction hash
-func (b *backend) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
+func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
 	res, err := b.GetTxByEthHash(hash)
 	if err != nil {
 		b.logger.Debug("GetTransactionReceipt failed", "error", err)
@@ -254,7 +255,7 @@ func (b *backend) GetTransactionReceipt(ctx context.Context, hash common.Hash) (
 
 	// parse tx logs from events
 	msgIndex := int(res.MsgIndex)
-	logs, _ := TxLogsFromEvents(blockRes.TxsResults[res.TxIndex].Events, msgIndex)
+	logs, _ := utils.TxLogsFromEvents(blockRes.TxsResults[res.TxIndex].Events, msgIndex)
 
 	if res.EthTxIndex == -1 {
 		// Fallback to find tx index by iterating all valid eth transactions
@@ -315,7 +316,7 @@ func (b *backend) GetTransactionReceipt(ctx context.Context, hash common.Hash) (
 	return receipt, nil
 }
 
-func (b *backend) queryCosmosTxIndexer(query string, txGetter func(*rpctypes.ParsedTxs) *rpctypes.ParsedTx) (*types.TxResult, error) {
+func (b *BackendImpl) queryCosmosTxIndexer(query string, txGetter func(*rpctypes.ParsedTxs) *rpctypes.ParsedTx) (*types.TxResult, error) {
 	resTxs, err := b.clientCtx.Client.TxSearch(b.ctx, query, false, nil, nil, "")
 	if err != nil {
 		return nil, err
@@ -340,12 +341,12 @@ func (b *backend) queryCosmosTxIndexer(query string, txGetter func(*rpctypes.Par
 	return rpctypes.ParseTxIndexerResult(txResult, tx, txGetter)
 }
 
-func (b *backend) txResult(ctx context.Context, hash common.Hash, prove bool) (*tmrpctypes.ResultTx, error) {
+func (b *BackendImpl) txResult(ctx context.Context, hash common.Hash, prove bool) (*tmrpctypes.ResultTx, error) {
 	return b.clientCtx.Client.Tx(ctx, hash.Bytes(), prove)
 }
 
 // getTransactionByHashPending find pending tx from mempool
-func (b *backend) getTransactionByHashPending(txHash common.Hash) (*ethapi.RPCTransaction, error) {
+func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.RPCTransaction, error) {
 	hexTx := txHash.Hex()
 	// try to find tx in mempool
 	ptxs, err := b.PendingTransactions()
@@ -379,7 +380,7 @@ func (b *backend) getTransactionByHashPending(txHash common.Hash) (*ethapi.RPCTr
 	return nil, nil
 }
 
-func (b *backend) EstimateGas(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
+func (b *BackendImpl) EstimateGas(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
 	blockNum := rpc.LatestBlockNumber
 	if blockNrOrHash != nil {
 		blockNum, _ = b.blockNumberFromCosmos(*blockNrOrHash)

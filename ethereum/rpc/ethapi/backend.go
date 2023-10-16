@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -17,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
-	ethereumTypes "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 )
 
@@ -64,40 +62,4 @@ type Backend interface {
 	Engine() consensus.Engine
 
 	// This is copied from filters.Backend
-}
-
-func GetAPIs(clientCtx client.Context, apiBackend Backend) []rpc.API {
-	chainID, err := ethereumTypes.ParseChainID(clientCtx.ChainID)
-	if err != nil {
-		panic(err)
-	}
-
-	nonceLock := new(AddrLocker)
-	return []rpc.API{
-		{
-			Namespace: "eth",
-			Service:   NewEthereumAPI(apiBackend),
-		}, {
-			Namespace: "eth",
-			Service:   NewBlockChainAPI(apiBackend),
-		}, {
-			Namespace: "eth",
-			Service:   NewTransactionAPI(apiBackend, nonceLock),
-		}, {
-			Namespace: "txpool",
-			Service:   NewTxPoolAPI(apiBackend),
-		}, {
-			Namespace: "debug",
-			Service:   NewDebugAPI(apiBackend),
-		}, {
-			Namespace: "eth",
-			Service:   NewEthereumAccountAPI(apiBackend),
-		}, {
-			Namespace: "personal",
-			Service:   NewPersonalAccountAPI(apiBackend, nonceLock),
-		}, {
-			Namespace: "net",
-			Service:   NewNetAPI(nil, chainID.Uint64()),
-		},
-	}
 }
