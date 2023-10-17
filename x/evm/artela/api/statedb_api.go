@@ -2,8 +2,8 @@ package api
 
 import (
 	artelatypes "github.com/artela-network/artelasdk/types"
+	"github.com/artela-network/evm/vm"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/pkg/errors"
 )
 

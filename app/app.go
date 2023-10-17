@@ -743,6 +743,13 @@ func NewArtela(
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+	//init Aspect
+	bApp.SetAspect(app.EvmKeeper.GetAspectCosmosProvider())
+
+	//// aspect add ProposalHandler
+	//aspectProposalHandler := handle.NewArtelaProposalHandler(bApp.GetMemPool(), bApp)
+	//bApp.SetPrepareProposal(aspectProposalHandler.PrepareProposalHandler())
+	//bApp.SetProcessProposal(aspectProposalHandler.ProcessProposalHandler())
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -750,19 +757,17 @@ func NewArtela(
 		}
 	}
 
-	app.ScopedIBCKeeper = scopedIBCKeeper
-	app.ScopedTransferKeeper = scopedTransferKeeper
-	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
-
-	//djpm.NewHostApiMint(&djpm.Store{}, app.BaseApp, app.EvmKeeper, encodingConfig.TxConfig.TxDecoder())
-	//init Aspect
-	bApp.SetAspect(app.EvmKeeper.GetAspectCosmosProvider())
 	evmStoreKey := keys[evmmoduletypes.StoreKey]
 	store := bApp.CommitMultiStore().GetKVStore(evmStoreKey)
 	schErr := scheduler.NewScheduleManager(store, app.WrapTx)
 	if schErr != nil {
 		panic(schErr)
 	}
+
+	app.ScopedIBCKeeper = scopedIBCKeeper
+	app.ScopedTransferKeeper = scopedTransferKeeper
+	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
+
 	return app
 }
 

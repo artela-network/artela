@@ -80,8 +80,8 @@ else
 fi
 
 # start serve listen on the ports of all ips
-sed -i 's/127.0.0.1/0.0.0.0/g' $HOME/.artelad/config/config.toml
-sed -i 's/127.0.0.1/0.0.0.0/g' $HOME/.artelad/config/app.toml
+#sed -i 's/127.0.0.1/0.0.0.0/g' $HOME/.artelad/config/config.toml
+#sed -i 's/127.0.0.1/0.0.0.0/g' $HOME/.artelad/config/app.toml
 
 if [[ $1 == "pending" ]]; then
     echo "pending mode is on, please wait for the first block committed."
