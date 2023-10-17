@@ -91,7 +91,7 @@ func (AspectMintProvider) FilterAspectTx(tx sdk.Msg) bool {
 		return false
 	}
 	ethTx := types.ConvertEthTx(tx)
-	if ethTx.To() == nil || asptypes.IsAspectContractAddr(ethTx.To()) {
+	if ethTx == nil || ethTx.To() == nil || asptypes.IsAspectContractAddr(ethTx.To()) {
 		return false
 	}
 

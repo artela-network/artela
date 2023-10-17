@@ -2,6 +2,7 @@ package evm
 
 import (
 	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -48,7 +49,10 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx cosmos.Context, tx cosmos
 				errortypes.ErrNotSupported,
 				"rejected unprotected Ethereum transaction. Please EIP155 sign your transaction to protect it against replay-attacks")
 		}
-
+		isScheduleTx := scheduler.TaskInstance().IsScheduleTx(ethTx.Hash())
+		if isScheduleTx {
+			continue
+		}
 		sender, err := signer.Sender(ethTx)
 		if err != nil {
 			return ctx, errorsmod.Wrapf(
