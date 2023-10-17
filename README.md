@@ -2,12 +2,15 @@
 
 <div align="center">
   <a href="https://t.me/artela_official" target="_blank">
-    <img alt="Telegram Chat" src="https://img.shields.io/endpoint?color=neon&logo=telegram&label=chat&url=https%3A%2F%2Ftg.sumanjay.workers.dev%2Fpolaris_devs">
+    <img alt="Telegram Chat" src="https://img.shields.io/badge/chat-telegram-blue?logo=telegram&chat">
   </a>
   <a href="https://twitter.com/Artela_Network" target="_blank">
     <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/Artela_Network">
   <a href="https://discord.gg/artela">
-   <img src="https://img.shields.io/badge/discord-join%20chat-blue.svg" alt="Discord">
+   <img src="https://img.shields.io/badge/chat-discord-green?logo=discord&chat" alt="Discord">
+  </a>
+  <a href="https://www.artela.network/">
+   <img src="https://img.shields.io/badge/Artela%20Network-3282f8" alt="Artela Network">
   </a>
 </div>
 
@@ -61,7 +64,7 @@ artelad start
 Run the following command to initialize a 4-validator testnet:
 
 ```
-make start-testnet
+make create-testnet
 ```
 
 To view node logs, use `tail -f _testnet/node2/artelad/node.log`.<br />
