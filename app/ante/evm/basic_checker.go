@@ -366,8 +366,7 @@ func (issd EthIncrementSenderSequenceDecorator) AnteHandle(ctx cosmos.Context, t
 		hash := common.HexToHash(msgEthTx.Hash)
 		from := msgEthTx.GetFrom()
 		if scheduler.TaskInstance().IsScheduleTx(hash) {
-			schFrom := scheduler.TaskInstance().GetFromAddr(hash)
-			from, err = cosmos.AccAddressFromHexUnsafe(schFrom)
+			from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash)).Bytes()
 		}
 		// increase sequence of sender
 		acc := issd.ak.GetAccount(ctx, from)
