@@ -72,10 +72,7 @@ func (msg MsgEthereumTx) AsTransaction() *ethereum.Transaction {
 
 	return ethereum.NewTx(txData.AsEthereumData())
 }
-
-// AsMessage creates an Ethereum core.Message from the msg fields
-func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
-	tx := msg.AsTransaction()
+func ToMessage(tx *ethereum.Transaction, signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
 	message := &core.Message{
 		Nonce:             tx.Nonce(),
 		GasLimit:          tx.Gas(),
@@ -93,7 +90,7 @@ func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*c
 		message.GasPrice = cmath.BigMin(message.GasPrice.Add(message.GasTipCap, baseFee), message.GasFeeCap)
 	}
 	var err error
-	hash := common.HexToHash(msg.Hash)
+	hash := tx.Hash()
 	if scheduler.TaskInstance().IsScheduleTx(hash) {
 		from := common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
 		message.From = from
@@ -101,6 +98,12 @@ func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*c
 		message.From, err = ethereum.Sender(signer, tx)
 	}
 	return message, err
+}
+
+// AsMessage creates an Ethereum core.Message from the msg fields
+func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
+	tx := msg.AsTransaction()
+	return ToMessage(tx, signer, baseFee)
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnPackInterfaces

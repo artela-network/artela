@@ -149,7 +149,8 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 
 	// get the signer according to the chain rules from the config and block height
 	signer := ethereum.MakeSigner(evmConfig.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
-	msg, err := core.TransactionToMessage(tx, signer, evmConfig.BaseFee)
+
+	msg, err := txs.ToMessage(tx, signer, evmConfig.BaseFee)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to return ethereum txs as core message")
 	}
