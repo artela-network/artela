@@ -42,7 +42,6 @@ func (k *aspectStateHostApi) GetAspectState(ctx *artelatypes.RunnerContext, key 
 	codeStore := k.newPrefixStore(types.AspectStateKeyPrefix)
 	aspectPropertyKey := types.AspectArrayKey(
 		ctx.AspectId.Bytes(),
-		ctx.ContractAddr.Bytes(),
 		[]byte(key),
 	)
 	get := codeStore.Get(aspectPropertyKey)
@@ -55,7 +54,6 @@ func (k *aspectStateHostApi) SetAspectState(ctx *artelatypes.RunnerContext, key,
 	codeStore := k.newPrefixStore(types.AspectStateKeyPrefix)
 	aspectPropertyKey := types.AspectArrayKey(
 		ctx.AspectId.Bytes(),
-		ctx.ContractAddr.Bytes(),
 		[]byte(key),
 	)
 	codeStore.Set(aspectPropertyKey, []byte(value))
@@ -67,7 +65,6 @@ func (k *aspectStateHostApi) RemoveAspectState(ctx *artelatypes.RunnerContext, k
 	codeStore := k.newPrefixStore(types.AspectStateKeyPrefix)
 	aspectPropertyKey := types.AspectArrayKey(
 		ctx.AspectId.Bytes(),
-		ctx.ContractAddr.Bytes(),
 		[]byte(key),
 	)
 
