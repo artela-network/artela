@@ -69,7 +69,7 @@ func (j *AspectMintProvider) CreateTxPointRequestInEvm(sdkCtx sdk.Context, msg c
 	chainId := sdkCtx.ChainID()
 	blockHash := common.BytesToHash(sdkCtx.HeaderHash().Bytes())
 	blockHeight := sdkCtx.BlockHeight()
-	ethTx := asptypes.NewEthTransactionByMessage(msg, txConfig.TxHash, chainId, blockHash, blockHeight, uint8(txConfig.TxType))
+	ethTx := asptypes.NewEthTransactionByMessage(&msg, txConfig.TxHash, chainId, blockHash, blockHeight, uint8(txConfig.TxType))
 	return &asptypes.EthTxAspect{
 		Tx:          ethTx,
 		CurrInnerTx: innerTx,
