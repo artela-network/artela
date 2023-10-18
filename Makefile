@@ -48,7 +48,7 @@ all: build
 
 build-testnet:
 	docker build --platform linux/amd64 --no-cache --tag artela-network/artela ../. -f ./Dockerfile
-	@if ! [ -f _testnet/node0/artelad/config/genesis.json ]; then docker run --rm -v $(CURDIR)/_testnet:/artela:Z artela-network/artela "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
+	@if ! [ -f _testnet/node0/artelad/config/genesis.json ]; then docker run --platform linux/amd64 --rm -v $(CURDIR)/_testnet:/artela:Z artela-network/artela:latest "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
 
 create-testnet: remove-testnet build-testnet
 	docker-compose up -d
