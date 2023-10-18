@@ -4,10 +4,11 @@ services:
   node0:
     container_name: artela0
     image: "artela-network/artela:latest"
+    platform: linux/amd64
     ports:
       - "26656-26657:26656-26657"
     volumes:
-      - ./testnet/node0/artelad:/root/.artelad:Z
+      - ./_testnet/node0/artelad:/root/.artelad:Z
     command:
       - bash /start-artela.sh
     networks:
@@ -17,10 +18,11 @@ services:
   node1:
     container_name: artela1
     image: "artela-network/artela:latest"
+    platform: linux/amd64
     ports:
       - "26659-26660:26656-26657"
     volumes:
-      - ./testnet/node1/artelad:/root/.artelad:Z
+      - ./_testnet/node1/artelad:/root/.artelad:Z
     command:
       - bash /start-artela.sh
     networks:
@@ -30,10 +32,11 @@ services:
   node2:
     container_name: artela2
     image: "artela-network/artela:latest"
+    platform: linux/amd64
     ports:
       - "26661-26662:26656-26657"
     volumes:
-      - ./testnet/node2/artelad:/root/.artelad:Z
+      - ./_testnet/node2/artelad:/root/.artelad:Z
     command:
       - bash /start-artela.sh
     networks:
@@ -43,10 +46,11 @@ services:
   node3:
     container_name: artela3
     image: "artela-network/artela:latest"
+    platform: linux/amd64
     ports:
       - "26663-26664:26656-26657"
     volumes:
-      - ./testnet/node3/artelad:/root/.artelad:Z
+      - ./_testnet/node3/artelad:/root/.artelad:Z
     command:
       - bash /start-artela.sh
     networks:
@@ -59,5 +63,4 @@ networks:
     ipam:
       driver: default
       config:
-        -
-          subnet: 172.16.10.0/16
+        - subnet: 172.16.10.0/24

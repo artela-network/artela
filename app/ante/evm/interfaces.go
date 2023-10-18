@@ -20,7 +20,7 @@ type EVMKeeper interface { //nolint: revive
 	states.Keeper
 	DynamicFeeEVMKeeper
 
-	NewEVM(ctx cosmos.Context, msg core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger, stateDB vm.StateDB) *vm.EVM
+	NewEVM(ctx cosmos.Context, msg *core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger, stateDB vm.StateDB) *vm.EVM
 	DeductTxCostsFromUserBalance(ctx cosmos.Context, fees cosmos.Coins, from common.Address) error
 	GetBalance(ctx cosmos.Context, addr common.Address) *big.Int
 	ResetTransientGasUsed(ctx cosmos.Context)

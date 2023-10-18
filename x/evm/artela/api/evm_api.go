@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-	ethermint "github.com/artela-network/artela/ethereum/types"
-	txs "github.com/artela-network/artela/x/evm/txs"
+	artela "github.com/artela-network/artela/ethereum/types"
+	types "github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	inherent "github.com/artela-network/artelasdk/chaincoreext/jit_inherent"
 	"github.com/artela-network/artelasdk/integration"
@@ -22,11 +22,11 @@ var (
 
 type evmHostApi struct {
 	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
-	ethCall        func(c context.Context, req *txs.EthCallRequest) (*txs.MsgEthereumTxResponse, error)
+	ethCall        func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error)
 }
 
 func NewEvmHostInstance(getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
-	ethCall func(c context.Context, req *txs.EthCallRequest) (*txs.MsgEthereumTxResponse, error),
+	ethCall func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error),
 ) {
 	evmHostInstance = &evmHostApi{
 		getCtxByHeight: getCtxByHeight,
@@ -55,12 +55,12 @@ func (e evmHostApi) StaticCall(ctx *artelatypes.RunnerContext, request *artelaty
 	if parseErr != nil {
 		return artelatypes.ErrEthMessageCallResult(parseErr)
 	}
-	chainID, chainErr := ethermint.ParseChainID(sdkCtx.ChainID())
+	chainID, chainErr := artela.ParseChainID(sdkCtx.ChainID())
 	if chainErr != nil {
 		return artelatypes.ErrEthMessageCallResult(chainErr)
 	}
 
-	ethRequest := &txs.EthCallRequest{
+	ethRequest := &types.EthCallRequest{
 		Args:            marshal,
 		GasCap:          parseUint,
 		ProposerAddress: nil,

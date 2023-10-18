@@ -29,17 +29,18 @@ import (
 
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	"github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 // Blockchain API
 
-func (b *backend) SetHead(_ uint64) {
+func (b *BackendImpl) SetHead(_ uint64) {
 	b.logger.Error("SetHead is not implemented")
 }
 
-func (b *backend) HeaderByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Header, error) {
+func (b *BackendImpl) HeaderByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Header, error) {
 	resBlock, err := b.CosmosBlockByNumber(number)
 	if err != nil {
 		return nil, err
@@ -69,17 +70,17 @@ func (b *backend) HeaderByNumber(_ context.Context, number rpc.BlockNumber) (*et
 	return ethHeader, nil
 }
 
-func (b *backend) HeaderByHash(_ context.Context, hash common.Hash) (*ethtypes.Header, error) {
+func (b *BackendImpl) HeaderByHash(_ context.Context, hash common.Hash) (*ethtypes.Header, error) {
 	return nil, nil
 }
 
-func (b *backend) HeaderByNumberOrHash(ctx context.Context,
+func (b *BackendImpl) HeaderByNumberOrHash(ctx context.Context,
 	blockNrOrHash rpc.BlockNumberOrHash,
 ) (*ethtypes.Header, error) {
 	return nil, errors.New("HeaderByNumberOrHash is not implemented")
 }
 
-func (b *backend) CurrentHeader() *ethtypes.Header {
+func (b *BackendImpl) CurrentHeader() *ethtypes.Header {
 	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil || block == nil {
 		b.logger.Error("geet CurrentHeader failed, error or block is nil", "error", err)
@@ -88,7 +89,7 @@ func (b *backend) CurrentHeader() *ethtypes.Header {
 	return block.Header()
 }
 
-func (b *backend) CurrentBlock() *rpctypes.Block {
+func (b *BackendImpl) CurrentBlock() *rpctypes.Block {
 	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil {
 		b.logger.Error("get CurrentBlock failed", "error", err)
@@ -97,7 +98,7 @@ func (b *backend) CurrentBlock() *rpctypes.Block {
 	return block
 }
 
-func (b *backend) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
+func (b *BackendImpl) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
 	block, err := b.ArtBlockByNumber(context.Background(), number)
 	if err != nil {
 		return nil, err
@@ -105,7 +106,7 @@ func (b *backend) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*eth
 	return block.EthBlock(), nil
 }
 
-func (b *backend) ArtBlockByNumber(_ context.Context, number rpc.BlockNumber) (*rpctypes.Block, error) {
+func (b *BackendImpl) ArtBlockByNumber(_ context.Context, number rpc.BlockNumber) (*rpctypes.Block, error) {
 	resBlock, err := b.CosmosBlockByNumber(number)
 	if err != nil || resBlock == nil {
 		return nil, fmt.Errorf("query block failed, block number %d, %w", number, err)
@@ -119,7 +120,7 @@ func (b *backend) ArtBlockByNumber(_ context.Context, number rpc.BlockNumber) (*
 	return b.BlockFromCosmosBlock(resBlock, blockRes)
 }
 
-func (b *backend) BlockByHash(_ context.Context, hash common.Hash) (*rpctypes.Block, error) {
+func (b *BackendImpl) BlockByHash(_ context.Context, hash common.Hash) (*rpctypes.Block, error) {
 	resBlock, err := b.CosmosBlockByHash(hash)
 	if err != nil || resBlock == nil {
 		return nil, fmt.Errorf("failed to get block by hash %s, %w", hash.Hex(), err)
@@ -133,38 +134,38 @@ func (b *backend) BlockByHash(_ context.Context, hash common.Hash) (*rpctypes.Bl
 	return b.BlockFromCosmosBlock(resBlock, blockRes)
 }
 
-func (b *backend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
+func (b *BackendImpl) BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
 	return nil, errors.New("BlockByNumberOrHash is not implemented")
 }
 
-func (b *backend) StateAndHeaderByNumber(
+func (b *BackendImpl) StateAndHeaderByNumber(
 	ctx context.Context, number rpc.BlockNumber,
 ) (*state.StateDB, *ethtypes.Header, error) {
 	return nil, nil, errors.New("StateAndHeaderByNumber is not implemented")
 }
 
-func (b *backend) StateAndHeaderByNumberOrHash(
+func (b *BackendImpl) StateAndHeaderByNumberOrHash(
 	ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash,
 ) (*state.StateDB, *ethtypes.Header, error) {
 	return nil, nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-func (b *backend) PendingBlockAndReceipts() (*ethtypes.Block, types.Receipts) {
+func (b *BackendImpl) PendingBlockAndReceipts() (*ethtypes.Block, types.Receipts) {
 	b.logger.Error("PendingBlockAndReceipts is not implemented")
 	return nil, nil
 }
 
 // GetReceipts get receipts by block hash
-func (b *backend) GetReceipts(_ context.Context, hash common.Hash) (types.Receipts, error) {
+func (b *BackendImpl) GetReceipts(_ context.Context, hash common.Hash) (types.Receipts, error) {
 	return nil, errors.New("GetReceipts is not implemented")
 }
 
-func (b *backend) GetTd(_ context.Context, hash common.Hash) *big.Int {
+func (b *BackendImpl) GetTd(_ context.Context, hash common.Hash) *big.Int {
 	b.logger.Error("GetTd is not implemented")
 	return nil
 }
 
-func (b *backend) GetEVM(ctx context.Context, msg *core.Message, state *state.StateDB,
+func (b *BackendImpl) GetEVM(ctx context.Context, msg *core.Message, state *state.StateDB,
 	header *ethtypes.Header, vmConfig *vm.Config, _ *vm.BlockContext,
 ) (*vm.EVM, func() error) {
 	return nil, func() error {
@@ -172,21 +173,21 @@ func (b *backend) GetEVM(ctx context.Context, msg *core.Message, state *state.St
 	}
 }
 
-func (b *backend) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
+func (b *BackendImpl) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
 	return b.scope.Track(b.chainFeed.Subscribe(ch))
 }
 
-func (b *backend) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
+func (b *BackendImpl) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
 	b.logger.Debug("called eth.rpc.backend.SubscribeChainHeadEvent", "ch", ch)
 	return b.scope.Track(b.chainHeadFeed.Subscribe(ch))
 }
 
-func (b *backend) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
+func (b *BackendImpl) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
 	b.logger.Debug("called eth.rpc.backend.SubscribeChainSideEvent", "ch", ch)
 	return b.scope.Track(b.chainSideFeed.Subscribe(ch))
 }
 
-func (b *backend) CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error) {
+func (b *BackendImpl) CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error) {
 	resBlock, err := b.clientCtx.Client.BlockByHash(b.ctx, blockHash.Bytes())
 	if err != nil {
 		return nil, err
@@ -199,7 +200,7 @@ func (b *backend) CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBl
 	return resBlock, nil
 }
 
-func (b *backend) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.ResultBlock, error) {
+func (b *BackendImpl) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.ResultBlock, error) {
 	height := blockNum.Int64()
 	if height <= 0 {
 		// fetch the latest block number from the app state, more accurate than the tendermint block store state.
@@ -222,7 +223,7 @@ func (b *backend) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.Res
 }
 
 // BlockNumberFromTendermint returns the BlockNumber from BlockNumberOrHash
-func (b *backend) blockNumberFromCosmos(blockNrOrHash rpc.BlockNumberOrHash) (rpc.BlockNumber, error) {
+func (b *BackendImpl) blockNumberFromCosmos(blockNrOrHash rpc.BlockNumberOrHash) (rpc.BlockNumber, error) {
 	switch {
 	case blockNrOrHash.BlockHash == nil && blockNrOrHash.BlockNumber == nil:
 		return rpc.EarliestBlockNumber, fmt.Errorf("types BlockHash and BlockNumber cannot be both nil")
@@ -243,7 +244,7 @@ func (b *backend) blockNumberFromCosmos(blockNrOrHash rpc.BlockNumberOrHash) (rp
 	}
 }
 
-func (b *backend) BlockNumber() (hexutil.Uint64, error) {
+func (b *BackendImpl) BlockNumber() (hexutil.Uint64, error) {
 	// do any grpc query, ignore the response and use the returned block height
 	var header metadata.MD
 	_, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{}, grpc.Header(&header))
@@ -268,7 +269,7 @@ func (b *backend) BlockNumber() (hexutil.Uint64, error) {
 	return hexutil.Uint64(height), nil
 }
 
-func (b *backend) BlockTimeByNumber(blockNum int64) (uint64, error) {
+func (b *BackendImpl) BlockTimeByNumber(blockNum int64) (uint64, error) {
 	resBlock, err := b.clientCtx.Client.Block(b.ctx, &blockNum)
 	if err != nil {
 		return 0, err
@@ -276,11 +277,11 @@ func (b *backend) BlockTimeByNumber(blockNum int64) (uint64, error) {
 	return uint64(resBlock.Block.Time.Unix()), nil
 }
 
-func (b *backend) CosmosBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
+func (b *BackendImpl) CosmosBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
 	return b.clientCtx.Client.BlockResults(b.ctx, height)
 }
 
-func (b *backend) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+func (b *BackendImpl) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
 	if err != nil {
 		return nil, err
@@ -299,7 +300,7 @@ func (b *backend) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberO
 }
 
 // BlockBloom query block bloom filter from block results
-func (b *backend) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.Bloom, error) {
+func (b *BackendImpl) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.Bloom, error) {
 	for _, event := range blockRes.EndBlockEvents {
 		if event.Type != evmtypes.EventTypeBlockBloom {
 			continue
@@ -314,7 +315,7 @@ func (b *backend) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.
 	return ethtypes.Bloom{}, errors.New("block bloom event is not found")
 }
 
-func (b *backend) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) (*rpctypes.Block, error) {
+func (b *BackendImpl) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) (*rpctypes.Block, error) {
 	block := resBlock.Block
 	height := block.Height
 	bloom, err := b.blockBloom(blockRes)
@@ -338,7 +339,7 @@ func (b *backend) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRe
 	gasUsed := uint64(0)
 	for _, txsResult := range blockRes.TxsResults {
 		// workaround for cosmos-sdk bug. https://github.com/cosmos/cosmos-sdk/issues/10832
-		if ShouldIgnoreGasUsed(txsResult) {
+		if utils.ShouldIgnoreGasUsed(txsResult) {
 			// block gas limit has exceeded, other txs must have failed with same reason.
 			break
 		}
@@ -364,7 +365,7 @@ func (b *backend) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRe
 	return res, nil
 }
 
-func (b *backend) EthMsgsFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) []*txs.MsgEthereumTx {
+func (b *BackendImpl) EthMsgsFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) []*txs.MsgEthereumTx {
 	var result []*txs.MsgEthereumTx
 	block := resBlock.Block
 
@@ -399,7 +400,7 @@ func (b *backend) EthMsgsFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, block
 	return result
 }
 
-func (b *backend) DoCall(args ethapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error) {
+func (b *BackendImpl) DoCall(args ethapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error) {
 	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
 	if err != nil {
 		return nil, err
@@ -454,4 +455,17 @@ func (b *backend) DoCall(args ethapi.TransactionArgs, blockNrOrHash rpc.BlockNum
 	}
 
 	return res, nil
+}
+
+func (b *BackendImpl) BlockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.Bloom, error) {
+	return b.blockBloom(blockRes)
+}
+
+func (b *BackendImpl) GetBlockByNumber(blockNum rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
+	block, err := b.BlockByNumber(context.Background(), blockNum)
+	if err != nil {
+		return nil, err
+	}
+
+	return ethapi.RPCMarshalHeader(block.Header(), block.Hash()), nil
 }

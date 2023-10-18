@@ -1,4 +1,4 @@
-package rpc
+package utils
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	support "github.com/artela-network/artela/x/evm/txs/support"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
@@ -71,4 +72,36 @@ func BlockMaxGasFromConsensusParams(ctx context.Context, clientCtx client.Contex
 // workaround for issue: https://github.com/cosmos/cosmos-sdk/issues/10832
 func ShouldIgnoreGasUsed(res *abci.ResponseDeliverTx) bool {
 	return res.GetCode() == 11 && strings.Contains(res.GetLog(), "no block gas left to run tx: out of gas")
+}
+
+// GetLogsFromBlockResults returns the list of event logs from the tendermint block result response
+func GetLogsFromBlockResults(blockRes *tmrpctypes.ResultBlockResults) ([][]*ethtypes.Log, error) {
+	blockLogs := [][]*ethtypes.Log{}
+	for _, txResult := range blockRes.TxsResults {
+		logs, err := AllTxLogsFromEvents(txResult.Events)
+		if err != nil {
+			return nil, err
+		}
+
+		blockLogs = append(blockLogs, logs...)
+	}
+	return blockLogs, nil
+}
+
+// AllTxLogsFromEvents parses all ethereum logs from cosmos events
+func AllTxLogsFromEvents(events []abci.Event) ([][]*ethtypes.Log, error) {
+	allLogs := make([][]*ethtypes.Log, 0, 4)
+	for _, event := range events {
+		if event.Type != evmtypes.EventTypeTxLog {
+			continue
+		}
+
+		logs, err := ParseTxLogsFromEvent(event)
+		if err != nil {
+			return nil, err
+		}
+
+		allLogs = append(allLogs, logs)
+	}
+	return allLogs, nil
 }

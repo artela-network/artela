@@ -21,12 +21,12 @@ import (
 
 type AspectNativeContract struct {
 	aspectService    *AspectService
-	applyMessageFunc func(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)
+	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)
 }
 
 func NewAspectNativeContract(storeKey storetypes.StoreKey,
 	getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
-	applyMessageFunc func(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)) *AspectNativeContract {
+	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)) *AspectNativeContract {
 
 	return &AspectNativeContract{
 		aspectService:    NewAspectService(storeKey, getCtxByHeight),

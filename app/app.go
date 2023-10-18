@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
 	artelasdkType "github.com/artela-network/artelasdk/types"
@@ -825,6 +826,7 @@ func (app *Artela) WrapTx(tx *artelasdkType.EthTransaction) (common.Hash, []byte
 	}
 	ethTx := msg.AsTransaction()
 	txHash := ethTx.Hash()
+	fmt.Print("tx hash==" + txHash.String())
 	return txHash, txBytes, nil
 }
 

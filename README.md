@@ -2,12 +2,15 @@
 
 <div align="center">
   <a href="https://t.me/artela_official" target="_blank">
-    <img alt="Telegram Chat" src="https://img.shields.io/endpoint?color=neon&logo=telegram&label=chat&url=https%3A%2F%2Ftg.sumanjay.workers.dev%2Fpolaris_devs">
+    <img alt="Telegram Chat" src="https://img.shields.io/badge/chat-telegram-blue?logo=telegram&chat">
   </a>
   <a href="https://twitter.com/Artela_Network" target="_blank">
     <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/Artela_Network">
   <a href="https://discord.gg/artela">
-   <img src="https://img.shields.io/badge/discord-join%20chat-blue.svg" alt="Discord">
+   <img src="https://img.shields.io/badge/chat-discord-green?logo=discord&chat" alt="Discord">
+  </a>
+  <a href="https://www.artela.network/">
+   <img src="https://img.shields.io/badge/Artela%20Network-3282f8" alt="Artela Network">
   </a>
 </div>
 
@@ -42,7 +45,7 @@ The artela project comes with executable found in the `build` directory.
 
 ## Running Testnet
 
-### Setting Up a Single-Node Ethermint Testnet
+### Setting Up a Single-Node Artela Testnet
 
 Initialize the testnet by running a simple script<br />
 
@@ -61,12 +64,12 @@ artelad start
 Run the following command to initialize a 4-validator testnet:
 
 ```
-make start-testnet
+make create-testnet
 ```
 
-To view node logs, use `tail -f testnet/node2/artelad/node.log`.<br />
+To view node logs, use `tail -f _testnet/node2/artelad/node.log`.<br />
 
-This command compiles the current repository code and generates Docker images. It launches Docker containers named artela0 to artela3, each running artelad as a node. Disk mapping is configured to map directories artea/testnet/node0 to node3 to Docker containers artela0 to artela3. <br />
+This command compiles the current repository code and generates Docker images. It launches Docker containers named artela0 to artela3, each running artelad as a node. Disk mapping is configured to map directories artea/_testnet/node0 to node3 to Docker containers artela0 to artela3. <br />
 
 More options about the testnet:
 | Command           | Description                                                                                     |

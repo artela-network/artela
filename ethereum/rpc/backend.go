@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 
 	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
+	"github.com/artela-network/artela/ethereum/rpc/filters"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/server/config"
 	"github.com/artela-network/artela/ethereum/types"
@@ -33,19 +34,14 @@ import (
 	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 
-// Backend represents the backend object for a artela. It extends the standard
-// go-ethereum backend object.
-type Backend interface {
-	ethapi2.Backend
-}
-
 var (
-	_ gasprice.OracleBackend = (*backend)(nil)
-	_ Backend                = (*backend)(nil)
+	_ gasprice.OracleBackend = (*BackendImpl)(nil)
+	_ ethapi2.Backend        = (*BackendImpl)(nil)
+	_ filters.Backend        = (*BackendImpl)(nil)
 )
 
 // backend represents the backend for the JSON-RPC service.
-type backend struct {
+type BackendImpl struct {
 	extRPCEnabled bool
 	artela        *ArtelaService
 	cfg           *Config
@@ -76,8 +72,8 @@ func NewBackend(
 	extRPCEnabled bool,
 	cfg *Config,
 	logger log.Logger,
-) Backend {
-	b := &backend{
+) *BackendImpl {
+	b := &BackendImpl{
 		ctx:           context.Background(),
 		extRPCEnabled: extRPCEnabled,
 		artela:        artela,
@@ -109,14 +105,14 @@ func NewBackend(
 
 // General Ethereum API
 
-func (b *backend) SyncProgress() ethereum.SyncProgress {
+func (b *BackendImpl) SyncProgress() ethereum.SyncProgress {
 	return ethereum.SyncProgress{
 		CurrentBlock: 0,
 		HighestBlock: 0,
 	}
 }
 
-func (b *backend) SuggestGasTipCap(baseFee *big.Int) (*big.Int, error) {
+func (b *BackendImpl) SuggestGasTipCap(baseFee *big.Int) (*big.Int, error) {
 	if baseFee == nil {
 		// london hardfork not enabled or feemarket not enabled
 		return big.NewInt(0), nil
@@ -144,7 +140,7 @@ func (b *backend) SuggestGasTipCap(baseFee *big.Int) (*big.Int, error) {
 	return big.NewInt(maxDelta), nil
 }
 
-func (b *backend) ChainConfig() *params.ChainConfig {
+func (b *BackendImpl) ChainConfig() *params.ChainConfig {
 	params, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{})
 	if err != nil {
 		b.logger.Info("queryClient.Params failed", err)
@@ -154,32 +150,32 @@ func (b *backend) ChainConfig() *params.ChainConfig {
 	return params.Params.ChainConfig.EthereumConfig(b.chainID)
 }
 
-func (b *backend) FeeHistory(ctx context.Context, blockCount uint64, lastBlock rpc.BlockNumber,
+func (b *BackendImpl) FeeHistory(ctx context.Context, blockCount uint64, lastBlock rpc.BlockNumber,
 	rewardPercentiles []float64) (*big.Int, [][]*big.Int, []*big.Int, []float64, error) {
 	return b.gpo.FeeHistory(ctx, blockCount, lastBlock, rewardPercentiles)
 }
 
-func (b *backend) ChainDb() ethdb.Database { //nolint:stylecheck // conforms to interface.
+func (b *BackendImpl) ChainDb() ethdb.Database { //nolint:stylecheck // conforms to interface.
 	return ethdb.Database(nil)
 }
 
-func (b *backend) ExtRPCEnabled() bool {
+func (b *BackendImpl) ExtRPCEnabled() bool {
 	return b.extRPCEnabled
 }
 
-func (b *backend) RPCGasCap() uint64 {
+func (b *BackendImpl) RPCGasCap() uint64 {
 	return b.cfg.RPCGasCap
 }
 
-func (b *backend) RPCEVMTimeout() time.Duration {
+func (b *BackendImpl) RPCEVMTimeout() time.Duration {
 	return b.cfg.RPCEVMTimeout
 }
 
-func (b *backend) RPCTxFeeCap() float64 {
+func (b *BackendImpl) RPCTxFeeCap() float64 {
 	return b.cfg.RPCTxFeeCap
 }
 
-func (b *backend) UnprotectedAllowed() bool {
+func (b *BackendImpl) UnprotectedAllowed() bool {
 	return false
 }
 
@@ -188,60 +184,60 @@ func (b *backend) UnprotectedAllowed() bool {
 // it must also be included here.
 
 // GetBody retrieves the block body.
-func (b *backend) GetBody(ctx context.Context, hash common.Hash,
+func (b *BackendImpl) GetBody(ctx context.Context, hash common.Hash,
 	number rpc.BlockNumber,
 ) (*ethtypes.Body, error) {
 	return nil, nil
 }
 
 // GetLogs returns the logs.
-func (b *backend) GetLogs(
+func (b *BackendImpl) GetLogs(
 	_ context.Context, blockHash common.Hash, number uint64,
 ) ([][]*ethtypes.Log, error) {
 	return nil, nil
 }
 
-func (b *backend) SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription {
+func (b *BackendImpl) SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription {
 	return b.scope.Track(b.rmLogsFeed.Subscribe(ch))
 }
 
-func (b *backend) SubscribeLogsEvent(ch chan<- []*ethtypes.Log) event.Subscription {
+func (b *BackendImpl) SubscribeLogsEvent(ch chan<- []*ethtypes.Log) event.Subscription {
 	return b.scope.Track(b.logsFeed.Subscribe(ch))
 }
 
-func (b *backend) SubscribePendingLogsEvent(ch chan<- []*ethtypes.Log) event.Subscription {
+func (b *BackendImpl) SubscribePendingLogsEvent(ch chan<- []*ethtypes.Log) event.Subscription {
 	return b.scope.Track(b.pendingLogsFeed.Subscribe(ch))
 }
 
-func (b *backend) BloomStatus() (uint64, uint64) {
+func (b *BackendImpl) BloomStatus() (uint64, uint64) {
 	return 0, 0
 }
 
-func (b *backend) ServiceFilter(_ context.Context, _ *bloombits.MatcherSession) {
+func (b *BackendImpl) ServiceFilter(_ context.Context, _ *bloombits.MatcherSession) {
 }
 
 // artela rpc API
 
-func (b *backend) Listening() bool {
+func (b *BackendImpl) Listening() bool {
 	return true
 }
 
-func (b *backend) PeerCount() hexutil.Uint {
+func (b *BackendImpl) PeerCount() hexutil.Uint {
 	return 1
 }
 
 // ClientVersion returns the current client version.
-func (b *backend) ClientVersion() string {
+func (b *BackendImpl) ClientVersion() string {
 	return ""
 }
 
-// func (b *backend) GetBlockContext(
+// func (b *BackendImpl) GetBlockContext(
 // 	_ context.Context, header *ethtypes.Header,
 // ) *vm.BlockContext {
 // 	return nil
 // }
 
-func (b *backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, error) {
+func (b *BackendImpl) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, error) {
 	// return BaseFee if London hard fork is activated and feemarket is enabled
 	res, err := b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &txs.QueryBaseFeeRequest{})
 	if err != nil || res.BaseFee == nil {
@@ -269,11 +265,11 @@ func (b *backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, er
 	return res.BaseFee.BigInt(), nil
 }
 
-func (b *backend) PendingTransactions() ([]*sdktypes.Tx, error) {
+func (b *BackendImpl) PendingTransactions() ([]*sdktypes.Tx, error) {
 	return nil, errors.New("PendingTransactions is not implemented")
 }
 
-func (b *backend) GasPrice(ctx context.Context) (*hexutil.Big, error) {
+func (b *BackendImpl) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 	var (
 		result *big.Int
 		err    error
@@ -301,7 +297,7 @@ func (b *backend) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 	return (*hexutil.Big)(result), nil
 }
 
-func (b *backend) RPCMinGasPrice() int64 {
+func (b *BackendImpl) RPCMinGasPrice() int64 {
 	evmParams, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{})
 	if err != nil {
 		return types.DefaultGasPrice
@@ -318,10 +314,25 @@ func (b *backend) RPCMinGasPrice() int64 {
 }
 
 // GlobalMinGasPrice returns MinGasPrice param from FeeMarket
-func (b *backend) GlobalMinGasPrice() (sdktypes.Dec, error) {
+func (b *BackendImpl) GlobalMinGasPrice() (sdktypes.Dec, error) {
 	res, err := b.queryClient.FeeMarket.Params(b.ctx, &feetypes.QueryParamsRequest{})
 	if err != nil {
 		return sdktypes.ZeroDec(), err
 	}
 	return res.Params.MinGasPrice, nil
+}
+
+// RPCBlockRangeCap defines the max block range allowed for `eth_getLogs` query.
+func (b *BackendImpl) RPCBlockRangeCap() int32 {
+	return b.appConf.JSONRPC.BlockRangeCap
+}
+
+// RPCFilterCap is the limit for total number of filters that can be created
+func (b *BackendImpl) RPCFilterCap() int32 {
+	return b.appConf.JSONRPC.FilterCap
+}
+
+// RPCLogsCap defines the max number of results can be returned from single `eth_getLogs` query.
+func (b *BackendImpl) RPCLogsCap() int32 {
+	return b.appConf.JSONRPC.LogsCap
 }

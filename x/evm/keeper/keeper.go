@@ -73,7 +73,7 @@ type Keeper struct {
 	// keep the evm and matched stateDB instance just finished running
 	aspectRuntimeContext *artvmtype.AspectRuntimeContext
 
-	aspectMint *provider.AspectMintProvider
+	aspectMint *provider.ArtelaProvider
 
 	clientContext client.Context
 }
@@ -104,7 +104,7 @@ func NewKeeper(
 	}
 
 	// init aspect mint
-	newAspectMint := provider.NewAspectMint(storeKey, app.CreateQueryContext)
+	newAspectMint := provider.NewArtelaProvider(storeKey, app.CreateQueryContext)
 	// new  Aspect Runtime Context
 	newAspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
 
@@ -367,7 +367,7 @@ func (k *Keeper) GetBalance(ctx cosmos.Context, addr common.Address) *big.Int {
 // ----------------------------------------------------------------------------
 
 // Tracer return a default vm.Tracer based on current keeper states
-func (k Keeper) Tracer(ctx cosmos.Context, msg core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
+func (k Keeper) Tracer(ctx cosmos.Context, msg *core.Message, ethCfg *params.ChainConfig) vm.EVMLogger {
 	return txs.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
 }
 

@@ -38,7 +38,7 @@ func (k *Keeper) EVMConfig(ctx cosmos.Context, proposerAddress cosmos.ConsAddres
 
 // VMConfig creates an EVM configuration from the debug setting and the extra EIPs enabled on the
 // module parameters. The config support uses the default JumpTable from the EVM.
-func (k Keeper) VMConfig(ctx cosmos.Context, _ core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger) vm.Config {
+func (k Keeper) VMConfig(ctx cosmos.Context, _ *core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger) vm.Config {
 	noBaseFee := true
 	if support.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
 		noBaseFee = k.feeKeeper.GetParams(ctx).NoBaseFee
