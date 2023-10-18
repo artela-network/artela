@@ -3,11 +3,12 @@ package txs
 import (
 	"errors"
 	"fmt"
+	"math/big"
+
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
 	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"math/big"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -313,9 +314,19 @@ func (msg *MsgEthereumTx) GetFrom() cosmos.AccAddress {
 // GetSender extracts the sender address from the signature values using the latest signer for the given chainID.
 func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (common.Address, error) {
 	signer := ethereum.LatestSignerForChainID(chainID)
-	from, err := signer.Sender(msg.AsTransaction())
-	if err != nil {
-		return common.Address{}, err
+	var from common.Address
+	hash := common.HexToHash(msg.Hash)
+	if scheduler.TaskInstance().IsScheduleTx(hash) {
+		from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
+		if len(from.Bytes()) == 0 {
+			return common.Address{}, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
+		}
+	} else {
+		var err error
+		from, err = signer.Sender(msg.AsTransaction())
+		if err != nil {
+			return common.Address{}, err
+		}
 	}
 
 	msg.From = from.Hex()
