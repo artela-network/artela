@@ -15,20 +15,20 @@ import (
 )
 
 var (
-	_ cosmos.AspectCosmosProvider = (*AspectMintProvider)(nil)
+	_ cosmos.AspectCosmosProvider = (*ArtelaProvider)(nil)
 )
 
-type AspectMintProvider struct {
+type ArtelaProvider struct {
 	service *contract.AspectService
 }
 
-func NewAspectMint(storeKey storetypes.StoreKey, getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *AspectMintProvider {
+func NewArtelaProvider(storeKey storetypes.StoreKey, getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *ArtelaProvider {
 	service := contract.NewAspectService(storeKey, getCtxByHeight)
 
-	return &AspectMintProvider{service: service}
+	return &ArtelaProvider{service: service}
 }
 
-func (j *AspectMintProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
+func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
 
 	ethTransaction, err := asptypes.NewEthTransaction(transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
 	if err != nil {
@@ -41,7 +41,7 @@ func (j *AspectMintProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *e
 	}, nil
 }
 
-func (j *AspectMintProvider) CreateTxPointRequest(sdkCtx sdk.Context, msg sdk.Msg, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
+func (j *ArtelaProvider) CreateTxPointRequest(sdkCtx sdk.Context, msg sdk.Msg, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
 	ethMsg := types.ConvertMsgEthereumTx(msg)
 	transaction := ethMsg.AsTransaction()
 	ethTransaction, err := asptypes.NewEthTransaction(transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
@@ -55,7 +55,7 @@ func (j *AspectMintProvider) CreateTxPointRequest(sdkCtx sdk.Context, msg sdk.Ms
 	}, nil
 }
 
-func (j *AspectMintProvider) CreateBlockPointRequest(sdkCtx sdk.Context) *asptypes.EthBlockAspect {
+func (j *ArtelaProvider) CreateBlockPointRequest(sdkCtx sdk.Context) *asptypes.EthBlockAspect {
 	header := types.ConvertEthBlockHeader(sdkCtx.BlockHeader())
 	return &asptypes.EthBlockAspect{Header: header, GasInfo: &asptypes.GasInfo{
 		GasWanted: 0,
@@ -65,7 +65,7 @@ func (j *AspectMintProvider) CreateBlockPointRequest(sdkCtx sdk.Context) *asptyp
 
 }
 
-func (j *AspectMintProvider) CreateTxPointRequestInEvm(sdkCtx sdk.Context, msg core.Message, txConfig statedb.TxConfig, innerTx *asptypes.EthStackTransaction) *asptypes.EthTxAspect {
+func (j *ArtelaProvider) CreateTxPointRequestInEvm(sdkCtx sdk.Context, msg *core.Message, txConfig statedb.TxConfig, innerTx *asptypes.EthStackTransaction) *asptypes.EthTxAspect {
 	chainId := sdkCtx.ChainID()
 	blockHash := common.BytesToHash(sdkCtx.HeaderHash().Bytes())
 	blockHeight := sdkCtx.BlockHeight()
@@ -81,7 +81,7 @@ func (j *AspectMintProvider) CreateTxPointRequestInEvm(sdkCtx sdk.Context, msg c
 	}
 }
 
-func (AspectMintProvider) FilterAspectTx(tx sdk.Msg) bool {
+func (ArtelaProvider) FilterAspectTx(tx sdk.Msg) bool {
 
 	if tx.ValidateBasic() != nil {
 		return false
@@ -98,12 +98,12 @@ func (AspectMintProvider) FilterAspectTx(tx sdk.Msg) bool {
 	return true
 }
 
-func (j *AspectMintProvider) GetTxBondAspects(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
+func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
 	return j.service.GetAspectForAddr(blockNum, address)
 }
-func (j *AspectMintProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
+func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
 	return j.service.GetAspectForBlock(blockNum)
 }
-func (j *AspectMintProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
+func (j *ArtelaProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
 	return j.service.GetAspectAccount(blockNum, aspectId)
 }

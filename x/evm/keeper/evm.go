@@ -33,7 +33,7 @@ import (
 // beneficiary of the coinbase txs (since we're not mining).
 func (k *Keeper) NewEVM(
 	ctx cosmos.Context,
-	msg core.Message,
+	msg *core.Message,
 	cfg *states.EVMConfig,
 	tracer vm.EVMLogger,
 	stateDB vm.StateDB,
@@ -52,7 +52,7 @@ func (k *Keeper) NewEVM(
 		Random:      nil, // not supported
 	}
 
-	txCtx := artcore.NewEVMTxContext(&msg)
+	txCtx := artcore.NewEVMTxContext(msg)
 	if tracer == nil {
 		tracer = k.Tracer(ctx, msg, cfg.ChainConfig)
 	}
@@ -169,7 +169,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
 	// pass true to commit the StateDB
-	res, err := k.ApplyMessageWithConfig(tmpCtx, *msg, nil, true, evmConfig, txConfig)
+	res, err := k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
 	if err != nil {
 		ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
@@ -224,7 +224,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	}
 
 	// refund gas in order to match the Ethereum gas consumption instead of the default SDK one.
-	if err = k.RefundGas(ctx, *msg, msg.GasLimit-res.GasUsed, evmConfig.Params.EvmDenom); err != nil {
+	if err = k.RefundGas(ctx, msg, msg.GasLimit-res.GasUsed, evmConfig.Params.EvmDenom); err != nil {
 		return nil, errorsmod.Wrapf(err, "failed to refund gas leftover gas to sender %s", msg.From)
 	}
 
@@ -262,7 +262,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 }
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
-func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
 	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
@@ -311,7 +311,7 @@ func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg core.Message, tracer vm.EV
 //
 // If commit is true, the `StateDB` will be committed, otherwise discarded.
 func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
-	msg core.Message,
+	msg *core.Message,
 	tracer vm.EVMLogger,
 	commit bool,
 	cfg *states.EVMConfig,

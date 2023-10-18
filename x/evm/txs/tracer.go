@@ -31,7 +31,7 @@ type TxTraceResult struct {
 
 // NewTracer creates a new Logger tracer to collect execution traces from an
 // EVM txs.
-func NewTracer(tracer string, msg core.Message, cfg *params.ChainConfig, height int64) vm.EVMLogger {
+func NewTracer(tracer string, msg *core.Message, cfg *params.ChainConfig, height int64) vm.EVMLogger {
 	// TODO: enable additional log configuration
 	logCfg := &logger.Config{
 		Debug: true,

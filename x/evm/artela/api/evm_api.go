@@ -2,13 +2,14 @@ package api
 
 import (
 	"context"
-	"github.com/artela-network/artela/x/evm/types"
+	artela "github.com/artela-network/artela/ethereum/types"
+	types "github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	inherent "github.com/artela-network/artelasdk/chaincoreext/jit_inherent"
 	"github.com/artela-network/artelasdk/integration"
 	artelatypes "github.com/artela-network/artelasdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/log"
-	ethermint "github.com/evmos/ethermint/types"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"strconv"
@@ -54,7 +55,7 @@ func (e evmHostApi) StaticCall(ctx *artelatypes.RunnerContext, request *artelaty
 	if parseErr != nil {
 		return artelatypes.ErrEthMessageCallResult(parseErr)
 	}
-	chainID, chainErr := ethermint.ParseChainID(sdkCtx.ChainID())
+	chainID, chainErr := artela.ParseChainID(sdkCtx.ChainID())
 	if chainErr != nil {
 		return artelatypes.ErrEthMessageCallResult(chainErr)
 	}
@@ -79,7 +80,7 @@ func (e evmHostApi) StaticCall(ctx *artelatypes.RunnerContext, request *artelaty
 
 }
 
-func ConvertEthLogs(logs []*types.Log) []*artelatypes.EthLog {
+func ConvertEthLogs(logs []*support.Log) []*artelatypes.EthLog {
 	if logs == nil {
 		return nil
 	}
@@ -89,7 +90,7 @@ func ConvertEthLogs(logs []*types.Log) []*artelatypes.EthLog {
 	}
 	return ethLogs
 }
-func ConvertEthLog(logs *types.Log) *artelatypes.EthLog {
+func ConvertEthLog(logs *support.Log) *artelatypes.EthLog {
 	if logs == nil {
 		return nil
 	}
