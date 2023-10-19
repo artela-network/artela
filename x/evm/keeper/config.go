@@ -2,7 +2,7 @@ package keeper
 
 import (
 	"github.com/artela-network/artela/x/evm/txs/support"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/artela-network/evm/vm"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -38,19 +38,13 @@ func (k *Keeper) EVMConfig(ctx cosmos.Context, proposerAddress cosmos.ConsAddres
 
 // VMConfig creates an EVM configuration from the debug setting and the extra EIPs enabled on the
 // module parameters. The config support uses the default JumpTable from the EVM.
-func (k Keeper) VMConfig(ctx cosmos.Context, _ core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger) vm.Config {
+func (k Keeper) VMConfig(ctx cosmos.Context, _ *core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger) vm.Config {
 	noBaseFee := true
 	if support.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
 		noBaseFee = k.feeKeeper.GetParams(ctx).NoBaseFee
 	}
 
-	// var debug bool
-	// if _, ok := tracer.(types.NoOpTracer); !ok {
-	// 	debug = true
-	// }
-
 	return vm.Config{
-		// Debug:     debug,
 		Tracer:    tracer,
 		NoBaseFee: noBaseFee,
 		ExtraEips: cfg.Params.EIPs(),
@@ -62,11 +56,12 @@ func (k Keeper) VMConfig(ctx cosmos.Context, _ core.Message, cfg *states.EVMConf
 // ----------------------------------------------------------------------------
 
 // TxConfig loads `TxConfig` from current transient storage
-func (k *Keeper) TxConfig(ctx cosmos.Context, txHash common.Hash) states.TxConfig {
+func (k *Keeper) TxConfig(ctx cosmos.Context, txHash common.Hash, txType uint8) states.TxConfig {
 	return states.NewTxConfig(
 		common.BytesToHash(ctx.HeaderHash()), // BlockHash
 		txHash,                               // TxHash
 		uint(k.GetTxIndexTransient(ctx)),     // TxIndex
 		uint(k.GetLogSizeTransient(ctx)),     // LogIndex
+		uint(txType),
 	)
 }

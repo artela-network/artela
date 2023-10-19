@@ -27,6 +27,7 @@ const (
 	codeErrGasOverflow
 	codeErrInvalidAccount
 	codeErrInvalidGasLimit
+	codeErrCallContract
 )
 
 var (
@@ -74,6 +75,8 @@ var (
 
 	// ErrInvalidGasLimit returns an error if gas limit value is invalid
 	ErrInvalidGasLimit = errorsmod.Register(ModuleName, codeErrInvalidGasLimit, "invalid gas limit")
+
+	ErrCallContract = errorsmod.Register(ModuleName, codeErrCallContract, "call contract error")
 )
 
 // NewExecErrorWithReason unpacks the revert return bytes and returns a wrapped error

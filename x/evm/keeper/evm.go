@@ -1,16 +1,20 @@
 package keeper
 
 import (
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	"github.com/artela-network/artelasdk/djpm"
+	asptypes "github.com/artela-network/artelasdk/types"
 	"math/big"
 
 	cometbft "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
+	artcore "github.com/artela-network/evm/core"
+	"github.com/artela-network/evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -19,6 +23,8 @@ import (
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
+
+	artelatype "github.com/artela-network/artela/x/evm/artela/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
@@ -27,15 +33,15 @@ import (
 // beneficiary of the coinbase txs (since we're not mining).
 func (k *Keeper) NewEVM(
 	ctx cosmos.Context,
-	msg core.Message,
+	msg *core.Message,
 	cfg *states.EVMConfig,
 	tracer vm.EVMLogger,
 	stateDB vm.StateDB,
 ) *vm.EVM {
 
 	blockCtx := vm.BlockContext{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
+		CanTransfer: artcore.CanTransfer,
+		Transfer:    artcore.Transfer,
 		GetHash:     k.GetHashFn(ctx),
 		Coinbase:    cfg.CoinBase,
 		GasLimit:    artela.BlockGasLimit(ctx),
@@ -46,7 +52,7 @@ func (k *Keeper) NewEVM(
 		Random:      nil, // not supported
 	}
 
-	txCtx := core.NewEVMTxContext(&msg)
+	txCtx := artcore.NewEVMTxContext(msg)
 	if tracer == nil {
 		tracer = k.Tracer(ctx, msg, cfg.ChainConfig)
 	}
@@ -135,26 +141,35 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	)
 
 	// build evm config and txs config
-	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
+	evmConfig, err := k.EVMConfig(ctx, ctx.BlockHeader().ProposerAddress, k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
-	txConfig := k.TxConfig(ctx, tx.Hash())
+	txConfig := k.TxConfig(ctx, tx.Hash(), tx.Type())
 
 	// get the signer according to the chain rules from the config and block height
 	signer := ethereum.MakeSigner(evmConfig.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
-	msg, err := core.TransactionToMessage(tx, signer, evmConfig.BaseFee)
+
+	msg, err := txs.ToMessage(tx, signer, evmConfig.BaseFee)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to return ethereum txs as core message")
+	}
+	// if transaction is Aspect operational, short the circuit and skip the processes
+	if isAspectOpTx := asptypes.IsAspectContractAddr(tx.To()); isAspectOpTx {
+		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
+		return nativeContract.ApplyTx(ctx, tx, msg)
 	}
 
 	// snapshot to contain the txs processing and post processing in same scope
 	var commit func()
 	tmpCtx := ctx
 	tmpCtx, commit = ctx.CacheContext()
+	//set aspect tx context
+	ethTxContext := artelatype.NewEthTxContext(tx)
+	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
 	// pass true to commit the StateDB
-	res, err := k.ApplyMessageWithConfig(tmpCtx, *msg, nil, true, evmConfig, txConfig)
+	res, err := k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
 	if err != nil {
 		ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
@@ -209,7 +224,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	}
 
 	// refund gas in order to match the Ethereum gas consumption instead of the default SDK one.
-	if err = k.RefundGas(ctx, *msg, msg.GasLimit-res.GasUsed, evmConfig.Params.EvmDenom); err != nil {
+	if err = k.RefundGas(ctx, msg, msg.GasLimit-res.GasUsed, evmConfig.Params.EvmDenom); err != nil {
 		return nil, errorsmod.Wrapf(err, "failed to refund gas leftover gas to sender %s", msg.From)
 	}
 
@@ -228,11 +243,26 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 
 	// reset the gas meter for current cosmos txs
 	k.ResetGasMeterAndConsumeGas(ctx, totalGasUsed)
+
+	k.GetAspectRuntimeContext().EthTxContext().WithReceipt(receipt)
+	// commit
+	// aspect OnTxCommit start
+	pointRequest, err := k.aspectMint.TxToPointRequest(ctx, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
+	if err != nil {
+		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
+	} else {
+		txCommit := djpm.AspectInstance().PostTxCommit(pointRequest)
+		if hasErr, txCommitErr := txCommit.HasErr(); hasErr {
+			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
+		}
+	}
+	//artela aspect ClearEvmObject set stateDb、monitor to nil
+	k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 	return res, nil
 }
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
-func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
 	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
@@ -281,7 +311,7 @@ func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg core.Message, tracer vm.EV
 //
 // If commit is true, the `StateDB` will be committed, otherwise discarded.
 func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
-	msg core.Message,
+	msg *core.Message,
 	tracer vm.EVMLogger,
 	commit bool,
 	cfg *states.EVMConfig,
@@ -301,6 +331,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	stateDB := states.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
+	k.GetAspectRuntimeContext().EthTxContext().WithLastEvm(evm).WithEvmCfg(cfg).WithStateDB(stateDB).WithVmMonitor(evm.Tracer())
 
 	leftoverGas := msg.GasLimit
 
@@ -344,7 +375,23 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		ret, _, leftoverGas, vmErr = evm.Create(sender, msg.Data, leftoverGas, msg.Value)
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
-		ret, leftoverGas, vmErr = evm.Call(sender, *msg.To, msg.Data, leftoverGas, msg.Value)
+		pointRequest := k.aspectMint.CreateTxPointRequestInEvm(ctx, msg, txConfig, nil)
+		pointRequest.GasInfo.Gas = leftoverGas
+
+		execute := djpm.AspectInstance().PreTxExecute(pointRequest)
+		leftoverGas = execute.GasInfo.Gas
+		if hasErr, execErr := execute.HasErr(); hasErr {
+			vmErr = execErr
+		} else {
+			ret, leftoverGas, vmErr = evm.Call(sender, *msg.To, msg.Data, leftoverGas, msg.Value)
+			// artela aspect PostTxExecute start
+			pointRequest.GasInfo.Gas = leftoverGas
+			txExecute := djpm.AspectInstance().PostTxExecute(pointRequest)
+			if hasPostErr, postExecErr := txExecute.HasErr(); hasPostErr {
+				vmErr = postExecErr
+			}
+			leftoverGas = txExecute.GasInfo.Gas
+		}
 	}
 
 	refundQuotient := params.RefundQuotient

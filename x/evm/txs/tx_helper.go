@@ -3,7 +3,7 @@ package txs
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/artela-network/evm/vm"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"

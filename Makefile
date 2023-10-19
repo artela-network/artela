@@ -15,7 +15,7 @@ ldflags = -X $(REPO)/version.AppVersion=$(VERSION) \
           -X $(REPO)/version.GitCommitDate=$(GIT_COMMIT_DATE)
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
-  ldflags += -w -s
+ # ldflags += -w -s
 endif
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
@@ -23,7 +23,7 @@ ldflags := $(strip $(ldflags))
 BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
 # check for nostrip option
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
-  BUILD_FLAGS += -trimpath
+ # BUILD_FLAGS += -trimpath
 endif
 
 # check if no optimization option is passed
@@ -47,8 +47,8 @@ install:
 all: build
 
 build-testnet:
-	docker build --no-cache --tag artela-network/artela ../. -f ./Dockerfile
-	@if ! [ -f _testnet/node0/artelad/config/genesis.json ]; then docker run --rm -v $(CURDIR)/_testnet:/artela:Z artela-network/artela "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
+	docker build --platform linux/amd64 --no-cache --tag artela-network/artela ../. -f ./Dockerfile
+	@if ! [ -f _testnet/node0/artelad/config/genesis.json ]; then docker run --platform linux/amd64 --rm -v $(CURDIR)/_testnet:/artela:Z artela-network/artela:latest "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
 
 create-testnet: remove-testnet build-testnet
 	docker-compose up -d

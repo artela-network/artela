@@ -4,11 +4,11 @@ import (
 	"github.com/artela-network/artela/x/evm/states"
 	"math/big"
 
+	"github.com/artela-network/evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
 	evmtypes "github.com/artela-network/artela/x/evm/txs/support"
@@ -20,7 +20,7 @@ type EVMKeeper interface { //nolint: revive
 	states.Keeper
 	DynamicFeeEVMKeeper
 
-	NewEVM(ctx cosmos.Context, msg core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger, stateDB vm.StateDB) *vm.EVM
+	NewEVM(ctx cosmos.Context, msg *core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger, stateDB vm.StateDB) *vm.EVM
 	DeductTxCostsFromUserBalance(ctx cosmos.Context, fees cosmos.Coins, from common.Address) error
 	GetBalance(ctx cosmos.Context, addr common.Address) *big.Int
 	ResetTransientGasUsed(ctx cosmos.Context)

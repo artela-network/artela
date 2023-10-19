@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
 	"math"
 	"math/big"
 
@@ -66,6 +67,10 @@ func (avd EthAccountVerificationDecorator) AnteHandle(
 
 		// sender address should be in the tx cache from the previous AnteHandle call
 		from := msgEthTx.GetFrom()
+		hash := common.HexToHash(msgEthTx.Hash)
+		if scheduler.TaskInstance().IsScheduleTx(hash) {
+			from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash)).Bytes()
+		}
 		if from.Empty() {
 			return ctx, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
 		}
@@ -197,8 +202,13 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, 
 		// if err != nil {
 		// 	return ctx, err
 		// }
-
-		err = egcd.evmKeeper.DeductTxCostsFromUserBalance(ctx, fees, common.HexToAddress(msgEthTx.From))
+		fromAddr := msgEthTx.From
+		//for schedule Tx
+		hash := common.HexToHash(msgEthTx.Hash)
+		if scheduler.TaskInstance().IsScheduleTx(hash) {
+			fromAddr = scheduler.TaskInstance().GetFromAddr(hash)
+		}
+		err = egcd.evmKeeper.DeductTxCostsFromUserBalance(ctx, fees, common.HexToAddress(fromAddr))
 		if err != nil {
 			return ctx, errorsmod.Wrapf(err, "failed to deduct transaction costs from user balance")
 		}
@@ -310,7 +320,7 @@ func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, sim
 		}
 
 		stateDB := states.New(ctx, ctd.evmKeeper, states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes())))
-		evm := ctd.evmKeeper.NewEVM(ctx, *coreMsg, cfg, txs.NewNoOpTracer(), stateDB)
+		evm := ctd.evmKeeper.NewEVM(ctx, coreMsg, cfg, txs.NewNoOpTracer(), stateDB)
 
 		// check that caller has enough balance to cover asset transfer for **topmost** call
 		// NOTE: here the gas consumed is from the context with the infinite gas meter
@@ -353,9 +363,13 @@ func (issd EthIncrementSenderSequenceDecorator) AnteHandle(ctx cosmos.Context, t
 		if err != nil {
 			return ctx, errorsmod.Wrap(err, "failed to unpack tx data")
 		}
-
+		hash := common.HexToHash(msgEthTx.Hash)
+		from := msgEthTx.GetFrom()
+		if scheduler.TaskInstance().IsScheduleTx(hash) {
+			from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash)).Bytes()
+		}
 		// increase sequence of sender
-		acc := issd.ak.GetAccount(ctx, msgEthTx.GetFrom())
+		acc := issd.ak.GetAccount(ctx, from)
 		if acc == nil {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrUnknownAddress,
@@ -363,21 +377,22 @@ func (issd EthIncrementSenderSequenceDecorator) AnteHandle(ctx cosmos.Context, t
 			)
 		}
 		nonce := acc.GetSequence()
+		if !scheduler.TaskInstance().IsScheduleTx(hash) {
+			// we merged the nonce verification to nonce increment, so when tx includes multiple messages
+			// with same sender, they'll be accepted.
+			if txData.GetNonce() != nonce {
+				return ctx, errorsmod.Wrapf(
+					errortypes.ErrInvalidSequence,
+					"invalid nonce; got %d, expected %d", txData.GetNonce(), nonce,
+				)
+			}
 
-		// we merged the nonce verification to nonce increment, so when tx includes multiple messages
-		// with same sender, they'll be accepted.
-		if txData.GetNonce() != nonce {
-			return ctx, errorsmod.Wrapf(
-				errortypes.ErrInvalidSequence,
-				"invalid nonce; got %d, expected %d", txData.GetNonce(), nonce,
-			)
+			if err := acc.SetSequence(nonce + 1); err != nil {
+				return ctx, errorsmod.Wrapf(err, "failed to set sequence to %d", acc.GetSequence()+1)
+			}
+
+			issd.ak.SetAccount(ctx, acc)
 		}
-
-		if err := acc.SetSequence(nonce + 1); err != nil {
-			return ctx, errorsmod.Wrapf(err, "failed to set sequence to %d", acc.GetSequence()+1)
-		}
-
-		issd.ak.SetAccount(ctx, acc)
 	}
 
 	return next(ctx, tx, simulate)

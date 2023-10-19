@@ -3,10 +3,12 @@ package txs
 import (
 	"errors"
 	"fmt"
+	"math/big"
+
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"math/big"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -18,8 +20,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-
 	"github.com/ethereum/go-ethereum/common"
+	cmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
@@ -71,10 +73,38 @@ func (msg MsgEthereumTx) AsTransaction() *ethereum.Transaction {
 
 	return ethereum.NewTx(txData.AsEthereumData())
 }
+func ToMessage(tx *ethereum.Transaction, signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
+	message := &core.Message{
+		Nonce:             tx.Nonce(),
+		GasLimit:          tx.Gas(),
+		GasPrice:          new(big.Int).Set(tx.GasPrice()),
+		GasFeeCap:         new(big.Int).Set(tx.GasFeeCap()),
+		GasTipCap:         new(big.Int).Set(tx.GasTipCap()),
+		To:                tx.To(),
+		Value:             tx.Value(),
+		Data:              tx.Data(),
+		AccessList:        tx.AccessList(),
+		SkipAccountChecks: false,
+	}
+	// If baseFee provided, set gasPrice to effectiveGasPrice.
+	if baseFee != nil {
+		message.GasPrice = cmath.BigMin(message.GasPrice.Add(message.GasTipCap, baseFee), message.GasFeeCap)
+	}
+	var err error
+	hash := tx.Hash()
+	if scheduler.TaskInstance().IsScheduleTx(hash) {
+		from := common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
+		message.From = from
+	} else {
+		message.From, err = ethereum.Sender(signer, tx)
+	}
+	return message, err
+}
 
 // AsMessage creates an Ethereum core.Message from the msg fields
 func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
-	return core.TransactionToMessage(msg.AsTransaction(), signer, baseFee)
+	tx := msg.AsTransaction()
+	return ToMessage(tx, signer, baseFee)
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnPackInterfaces
@@ -284,9 +314,19 @@ func (msg *MsgEthereumTx) GetFrom() cosmos.AccAddress {
 // GetSender extracts the sender address from the signature values using the latest signer for the given chainID.
 func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (common.Address, error) {
 	signer := ethereum.LatestSignerForChainID(chainID)
-	from, err := signer.Sender(msg.AsTransaction())
-	if err != nil {
-		return common.Address{}, err
+	var from common.Address
+	hash := common.HexToHash(msg.Hash)
+	if scheduler.TaskInstance().IsScheduleTx(hash) {
+		from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
+		if len(from.Bytes()) == 0 {
+			return common.Address{}, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
+		}
+	} else {
+		var err error
+		from, err = signer.Sender(msg.AsTransaction())
+		if err != nil {
+			return common.Address{}, err
+		}
 	}
 
 	msg.From = from.Hex()

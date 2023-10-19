@@ -1,14 +1,13 @@
 package txs
 
 import (
+	"github.com/artela-network/evm/tracers/logger"
 	"math/big"
 	"os"
 
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-
+	"github.com/artela-network/evm/vm"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -32,7 +31,7 @@ type TxTraceResult struct {
 
 // NewTracer creates a new Logger tracer to collect execution traces from an
 // EVM txs.
-func NewTracer(tracer string, msg core.Message, cfg *params.ChainConfig, height int64) vm.EVMLogger {
+func NewTracer(tracer string, msg *core.Message, cfg *params.ChainConfig, height int64) vm.EVMLogger {
 	// TODO: enable additional log configuration
 	logCfg := &logger.Config{
 		Debug: true,

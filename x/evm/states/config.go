@@ -22,15 +22,17 @@ type TxConfig struct {
 	TxHash    common.Hash // hash of current txs
 	TxIndex   uint        // the index of current txs
 	LogIndex  uint        // the index of next log within current block
+	TxType    uint        // the index of next log within current block
 }
 
 // NewTxConfig returns a TxConfig
-func NewTxConfig(blockHash, txHash common.Hash, txIndex, logIndex uint) TxConfig {
+func NewTxConfig(blockHash, txHash common.Hash, txIndex, logIndex uint, txType uint) TxConfig {
 	return TxConfig{
 		BlockHash: blockHash,
 		TxHash:    txHash,
 		TxIndex:   txIndex,
 		LogIndex:  logIndex,
+		TxType:    txType,
 	}
 }
 

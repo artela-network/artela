@@ -2,7 +2,13 @@ package app
 
 import (
 	"encoding/json"
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
+	artelasdkType "github.com/artela-network/artelasdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"io"
+	"math/big"
 	"os"
 	"path/filepath"
 
@@ -540,7 +546,7 @@ func NewArtela(
 	app.EvmKeeper = evmmodulekeeper.NewKeeper(
 		appCodec, keys[evmmoduletypes.StoreKey], tkeys[evmmoduletypes.TransientKey], authmodule.NewModuleAddress(govmodule.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeKeeper,
-		"1", app.GetSubspace(evmmoduletypes.ModuleName),
+		"1", app.GetSubspace(evmmoduletypes.ModuleName), bApp,
 	)
 	evmModule := evmmodule.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmmoduletypes.ModuleName))
 
@@ -737,6 +743,13 @@ func NewArtela(
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+	//init Aspect
+	bApp.SetAspect(app.EvmKeeper.GetAspectCosmosProvider())
+
+	//// aspect add ProposalHandler
+	//aspectProposalHandler := handle.NewArtelaProposalHandler(bApp.GetMemPool(), bApp)
+	//bApp.SetPrepareProposal(aspectProposalHandler.PrepareProposalHandler())
+	//bApp.SetProcessProposal(aspectProposalHandler.ProcessProposalHandler())
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -744,11 +757,75 @@ func NewArtela(
 		}
 	}
 
+	evmStoreKey := keys[evmmoduletypes.StoreKey]
+	store := bApp.CommitMultiStore().GetKVStore(evmStoreKey)
+	schErr := scheduler.NewScheduleManager(store, app.WrapTx)
+	if schErr != nil {
+		panic(schErr)
+	}
+
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
 
 	return app
+}
+
+func (app *Artela) WrapTx(tx *artelasdkType.EthTransaction) (common.Hash, []byte, error) {
+	//todo fix context create
+	context, err := app.BaseApp.CreateQueryContext(tx.BlockNumber-1, false)
+	if err != nil {
+		return common.Hash{}, nil, err
+	}
+	chainId := app.EvmKeeper.ChainID()
+	address := common.HexToAddress(tx.From)
+	toAddr := common.HexToAddress(tx.To)
+	bigPerGas := new(big.Int)
+	MaxFeePerGas, _ := bigPerGas.SetString(tx.GasFeeCap, 10)
+	bigFeePerGas := new(big.Int)
+	priorityFeePerGas, _ := bigFeePerGas.SetString(tx.GasTipCap, 10)
+	value := new(big.Int)
+	value, _ = value.SetString(tx.Value, 10)
+
+	bytes := hexutil.Bytes(tx.Input)
+	//todo add  getNonce()
+
+	transactionArgs := evmtypes.TransactionArgs{
+		From:                 &address,
+		To:                   &toAddr,
+		Gas:                  (*hexutil.Uint64)(&tx.Gas),
+		GasPrice:             nil,
+		MaxFeePerGas:         (*hexutil.Big)(MaxFeePerGas),
+		MaxPriorityFeePerGas: (*hexutil.Big)(priorityFeePerGas),
+		Value:                (*hexutil.Big)(value),
+		Nonce:                nil,
+		Data:                 nil,
+		Input:                &bytes,
+		AccessList:           nil,
+		ChainID:              (*hexutil.Big)(chainId),
+	}
+
+	msg := transactionArgs.ToTransaction()
+	if err := msg.ValidateBasic(); err != nil {
+		return common.Hash{}, nil, err
+	}
+	res, err := app.EvmKeeper.Params(context, &evmtypes.QueryParamsRequest{})
+	if err != nil {
+		return common.Hash{}, nil, err
+	}
+	txx, errs := msg.BuildTx(app.txConfig.NewTxBuilder(), res.Params.EvmDenom)
+	if errs != nil {
+		return common.Hash{}, nil, errs
+	}
+	// Encode transaction by default Tx encoder
+	txEncoder := app.txConfig.TxEncoder()
+	txBytes, err := txEncoder(txx)
+	if err != nil {
+		return common.Hash{}, nil, err
+	}
+	ethTx := msg.AsTransaction()
+	txHash := ethTx.Hash()
+	return txHash, txBytes, nil
 }
 
 // TODO mark
@@ -901,6 +978,8 @@ func (app *Artela) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICon
 
 	// register app's OpenAPI routes.
 	docs.RegisterOpenAPIService(Name, apiSvr.Router)
+
+	app.EvmKeeper.SetClientContext(clientCtx)
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
