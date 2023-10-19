@@ -257,6 +257,14 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-metrics v0.4.1 h1:hR91U9KYmb6bLBYLQjyM+3j+rcd/UhE+G78SFnF8gJA=
 github.com/armon/go-metrics v0.4.1/go.mod h1:E6amYzXo6aW1tqzoZGT755KkbgrJsSdpwZ+3JqfkOG4=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
+github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-beta h1:lbbPEq17cYpHuRw1TI1A5JLZLkOYdsixrX3j36lZCaw=
+github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-beta/go.mod h1:cq2KbpOwuWLOXUIoJyZE7BHWKkzfMWqETTmzR4xTz1M=
+github.com/artela-network/artelasdk v0.4.0-beta h1:1fBxhiAnJENuCes+Jo/KUb1OUCbIADqlpY8/C8KWgRU=
+github.com/artela-network/artelasdk v0.4.0-beta/go.mod h1:0G9AVpQGRr1taj6KFg2dRjRV8cJ30L6aW5q+wnbbt2E=
+github.com/artela-network/evm v0.4.0-beta h1:nhAS7kcMmT5qx2zgYFLkpvFhS+d+bTcxoE3RTbzG4A0=
+github.com/artela-network/evm v0.4.0-beta/go.mod h1:pDA+dVrSqP9TmzFEX8Js3T5pF2tc9RLVspB+mzGu3bE=
+github.com/artela-network/runtime v0.4.0-beta h1:pzLI6GrweRd4uUF/JUKtxTwAdhqVXn7cKAL3wdDynPk=
+github.com/artela-network/runtime v0.4.0-beta/go.mod h1:VaE6t3gdq3zVrJY/s6w8k/ARAuN/oXyBwwdW4OEXntw=
 github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6lCRdSC2Tm3DSWRPvIPr6xNKyeHdqDQSQT+A=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
