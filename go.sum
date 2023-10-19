@@ -259,7 +259,7 @@ github.com/armon/go-metrics v0.4.1/go.mod h1:E6amYzXo6aW1tqzoZGT755KkbgrJsSdpwZ+
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-beta h1:lbbPEq17cYpHuRw1TI1A5JLZLkOYdsixrX3j36lZCaw=
 github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-beta/go.mod h1:cq2KbpOwuWLOXUIoJyZE7BHWKkzfMWqETTmzR4xTz1M=
-github.com/artela-network/artelasdk v0.4.0-beta h1:1fBxhiAnJENuCes+Jo/KUb1OUCbIADqlpY8/C8KWgRU=
+github.com/artela-network/artelasdk v0.4.0-beta h1:rAMn47pJgazIjNC1XY+awtvdozgHkQ+j75XJwZDp8bk=
 github.com/artela-network/artelasdk v0.4.0-beta/go.mod h1:0G9AVpQGRr1taj6KFg2dRjRV8cJ30L6aW5q+wnbbt2E=
 github.com/artela-network/evm v0.4.0-beta h1:nhAS7kcMmT5qx2zgYFLkpvFhS+d+bTcxoE3RTbzG4A0=
 github.com/artela-network/evm v0.4.0-beta/go.mod h1:pDA+dVrSqP9TmzFEX8Js3T5pF2tc9RLVspB+mzGu3bE=
