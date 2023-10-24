@@ -15,7 +15,7 @@ ldflags = -X $(REPO)/version.AppVersion=$(VERSION) \
           -X $(REPO)/version.GitCommitDate=$(GIT_COMMIT_DATE)
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
- # ldflags += -w -s
+ ldflags += -w -s
 endif
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
@@ -23,7 +23,7 @@ ldflags := $(strip $(ldflags))
 BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
 # check for nostrip option
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
- # BUILD_FLAGS += -trimpath
+ BUILD_FLAGS += -trimpath
 endif
 
 # check if no optimization option is passed
