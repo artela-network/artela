@@ -2,10 +2,11 @@ package contract
 
 import (
 	"bytes"
-	"cosmossdk.io/errors"
 	"encoding/json"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
+	"sort"
+
+	"cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,7 +14,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"golang.org/x/exp/slices"
-	"sort"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 type AspectStore struct {
@@ -25,6 +28,7 @@ func NewAspectStore(storeKey storetypes.StoreKey) *AspectStore {
 		storeKey: storeKey,
 	}
 }
+
 func (k *AspectStore) newPrefixStore(ctx sdk.Context, fixKey string) prefix.Store {
 	return prefix.NewStore(ctx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
 }
@@ -59,7 +63,7 @@ func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, aspectId common.Add
 		// order by
 		dataSet = make(map[string]int64)
 	}
-	//oder by block height
+	// oder by block height
 	dataSet[aspectId.String()] = ctx.BlockHeight()
 	jsonBytes, err := json.Marshal(dataSet)
 	if err != nil {
@@ -90,10 +94,10 @@ func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context) (map[string]int64, e
 
 // StoreAspectCode aspect code
 func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) {
-	//get last value
+	// get last value
 	version := k.GetAspectLastVersion(ctx, aspectId)
 
-	//store code
+	// store code
 	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
 	newVersion := version.Add(version, uint256.NewInt(1))
 	versionKey := types.AspectVersionKey(
@@ -101,9 +105,10 @@ func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, 
 		newVersion.Bytes(),
 	)
 	codeStore.Set(versionKey, code)
-	//update last version
+	// update last version
 	k.StoreAspectVersion(ctx, aspectId, newVersion)
 }
+
 func (k *AspectStore) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
 	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
 	if version == nil {
@@ -125,6 +130,7 @@ func (k *AspectStore) StoreAspectVersion(ctx sdk.Context, aspectId common.Addres
 	)
 	versionStore.Set(versionKey, version.Bytes())
 }
+
 func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Address) *uint256.Int {
 	aspectVersionStore := k.newPrefixStore(ctx, types.AspectCodeVersionKeyPrefix)
 	versionKey := types.AspectIdKey(
@@ -140,7 +146,7 @@ func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Addr
 
 // StoreAspectProperty Property
 func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property) {
-	//get treemap value
+	// get treemap value
 	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
 	for i := range prop {
 		key := prop[i].Key
@@ -173,7 +179,7 @@ func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Ad
 }
 
 func (k *AspectStore) BindContractAspects(ctx sdk.Context, contract common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8) error {
-	//get treemap value
+	// get treemap value
 	bindings, err := k.GetContractBondAspects(ctx, contract)
 	if err != nil {
 		return err
@@ -213,7 +219,7 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 		return err
 	}
 	toDelete := slices.IndexFunc(bindings, func(meta *types.AspectMeta) bool {
-		return bytes.Compare(meta.Id.Bytes(), aspectId.Bytes()) == 0
+		return bytes.Equal(meta.Id.Bytes(), aspectId.Bytes())
 	})
 	if toDelete < 0 {
 		return errors.Wrapf(nil, "aspect %s not bound with contract %s", aspectId.Hex(), contract.Hex())
@@ -232,8 +238,8 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }
-func (k *AspectStore) GetContractBondAspects(ctx sdk.Context, contract common.Address) ([]*types.AspectMeta, error) {
 
+func (k *AspectStore) GetContractBondAspects(ctx sdk.Context, contract common.Address) ([]*types.AspectMeta, error) {
 	// retrieve raw binding store
 	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
 	contractKey := types.ContractKey(
@@ -242,7 +248,7 @@ func (k *AspectStore) GetContractBondAspects(ctx sdk.Context, contract common.Ad
 	sortAry := contractBindingStore.Get(contractKey)
 
 	var bindings []*types.AspectMeta
-	if sortAry == nil || len(sortAry) == 0 {
+	if len(sortAry) == 0 {
 		return bindings, nil
 	}
 	if err := json.Unmarshal(sortAry, &bindings); err != nil {
@@ -258,7 +264,7 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.
 	}
 	hasAspect := false
 	for _, aspect := range meta {
-		if bytes.Compare(aspect.Id.Bytes(), aspectId.Bytes()) == 0 {
+		if bytes.Equal(aspect.Id.Bytes(), aspectId.Bytes()) {
 			aspect.Version = uint256.NewInt(version)
 			hasAspect = true
 		}
@@ -321,7 +327,6 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, contract common.Addre
 }
 
 func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-
 	dataSet, err := k.GetAspectRefValue(ctx, contract)
 	if err != nil {
 		return err
@@ -329,9 +334,9 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 	if dataSet == nil {
 		return nil
 	}
-	//remove contract
+	// remove contract
 	dataSet.Remove(contract.String())
-	//marshal set and put treemap with new blockHeight
+	// marshal set and put treemap with new blockHeight
 	jsonBytes, err := dataSet.MarshalJSON()
 	if err != nil {
 		return err

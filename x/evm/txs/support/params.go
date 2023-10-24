@@ -2,11 +2,13 @@ package support
 
 import (
 	"fmt"
-	"github.com/artela-network/artela/ethereum/utils"
-	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
 	"math/big"
 
-	"github.com/artela-network/evm/vm"
+	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	"github.com/artela-network/artela/ethereum/utils"
+
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/ethereum/go-ethereum/params"
 
 	cosmos "github.com/cosmos/cosmos-sdk/types"

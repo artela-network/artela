@@ -1,7 +1,7 @@
 package datactx
 
 import (
-	artelatypes "github.com/artela-network/artelasdk/types"
+	artelatypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

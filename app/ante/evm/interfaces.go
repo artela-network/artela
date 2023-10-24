@@ -1,10 +1,11 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/states"
 	"math/big"
 
-	"github.com/artela-network/evm/vm"
+	"github.com/artela-network/artela/x/evm/states"
+
+	"github.com/artela-network/artela-evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,7 +17,7 @@ import (
 )
 
 // EVMKeeper defines the expected keeper interface used on the AnteHandler
-type EVMKeeper interface { //nolint: revive
+type EVMKeeper interface { // nolint: revive
 	states.Keeper
 	DynamicFeeEVMKeeper
 

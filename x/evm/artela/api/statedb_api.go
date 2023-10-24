@@ -1,8 +1,8 @@
 package api
 
 import (
-	artelatypes "github.com/artela-network/artelasdk/types"
-	"github.com/artela-network/evm/vm"
+	"github.com/artela-network/artela-evm/vm"
+	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
@@ -21,6 +21,7 @@ func NewStateDbApi(getLastStateDB func() vm.StateDB) {
 		getLastStateDB: getLastStateDB,
 	}
 }
+
 func GetStateApiInstance() (artelatypes.StateDbHostApi, error) {
 	if stateDbInstance == nil {
 		return nil, errors.New("AspectStateHostApi not init")

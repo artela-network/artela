@@ -2,9 +2,10 @@ package client
 
 import (
 	"fmt"
-	"github.com/artela-network/artela/ethereum/types"
 	"os"
 	"path"
+
+	"github.com/artela-network/artela/ethereum/types"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

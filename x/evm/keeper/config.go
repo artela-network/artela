@@ -1,15 +1,18 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/txs/support"
-	"github.com/artela-network/evm/vm"
 	"math/big"
 
+	"github.com/artela-network/artela-evm/vm"
+
+	"github.com/artela-network/artela/x/evm/txs/support"
+
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela/x/evm/states"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+
+	"github.com/artela-network/artela/x/evm/states"
 )
 
 // ----------------------------------------------------------------------------

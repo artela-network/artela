@@ -4,7 +4,7 @@ import (
 	statedb "github.com/artela-network/artela/x/evm/states"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 
-	asptypes "github.com/artela-network/artelasdk/types"
+	asptypes "github.com/artela-network/aspect-core/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -59,7 +59,6 @@ func ConvertEthTransaction(sdkCtx sdk.Context, ethMsg *evmtxs.MsgEthereumTx) *as
 }
 
 func ConvertEthBlockHeader(header tmproto.Header) *asptypes.EthBlockHeader {
-
 	return &asptypes.EthBlockHeader{
 		ParentHash:       asptypes.Ternary(header.LastBlockId.Hash != nil && len(header.LastBlockId.Hash) > 0, func() string { return common.BytesToHash(header.LastBlockId.Hash).String() }, ""),
 		UncleHash:        "",
@@ -77,8 +76,8 @@ func ConvertEthBlockHeader(header tmproto.Header) *asptypes.EthBlockHeader {
 		Nonce:            0,
 		BaseFee:          0,
 	}
-
 }
+
 func ConvertEthTx(msg sdk.Msg) *ethtypes.Transaction {
 	if IsEthTx(msg) {
 		ethTx, _ := msg.(*evmtxs.MsgEthereumTx)
@@ -86,6 +85,7 @@ func ConvertEthTx(msg sdk.Msg) *ethtypes.Transaction {
 	}
 	return nil
 }
+
 func ConvertMsgEthereumTx(msg sdk.Msg) *evmtxs.MsgEthereumTx {
 	if IsEthTx(msg) {
 		ethTx, _ := msg.(*evmtxs.MsgEthereumTx)
@@ -93,6 +93,7 @@ func ConvertMsgEthereumTx(msg sdk.Msg) *evmtxs.MsgEthereumTx {
 	}
 	return nil
 }
+
 func IsEthTx(msg sdk.Msg) bool {
 	_, ok := msg.(*evmtxs.MsgEthereumTx)
 	return ok

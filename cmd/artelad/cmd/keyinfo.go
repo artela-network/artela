@@ -17,8 +17,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const flagKeyinfoFile = "file"
-const flagKeyinfoPasswd = "passwd"
+const (
+	flagKeyinfoFile   = "file"
+	flagKeyinfoPasswd = "passwd"
+)
 
 // Item is a thing stored on the keyring
 type Item struct {

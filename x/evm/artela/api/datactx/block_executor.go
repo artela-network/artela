@@ -1,10 +1,11 @@
 package datactx
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/types"
-	artelatypes "github.com/artela-network/artelasdk/types"
+	artelatypes "github.com/artela-network/aspect-core/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 type EthBlockTxs struct {
@@ -14,6 +15,7 @@ type EthBlockTxs struct {
 func NewEthBlockTxs(getExtBlockContext func() *types.ExtBlockContext) *EthBlockTxs {
 	return &EthBlockTxs{getExtBlockContext: getExtBlockContext}
 }
+
 func (c EthBlockTxs) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, keys []string) *artelatypes.ContextQueryResponse {
 	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
 		return nil
@@ -40,6 +42,7 @@ type EthBlockEvidence struct {
 func NewEthBlockEvidence(getExtBlockContext func() *types.ExtBlockContext) *EthBlockEvidence {
 	return &EthBlockEvidence{getExtBlockContext: getExtBlockContext}
 }
+
 func (c EthBlockEvidence) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, keys []string) *artelatypes.ContextQueryResponse {
 	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
 		return nil
@@ -75,6 +78,7 @@ type EthBlockId struct {
 func NewEthBlockId(getExtBlockContext func() *types.ExtBlockContext) *EthBlockId {
 	return &EthBlockId{getExtBlockContext: getExtBlockContext}
 }
+
 func (c EthBlockId) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, keys []string) *artelatypes.ContextQueryResponse {
 	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
 		return nil
@@ -96,8 +100,7 @@ func (c EthBlockId) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, 
 	return response
 }
 
-type EthBlockHeader struct {
-}
+type EthBlockHeader struct{}
 
 func NewEthBlockHeader() *EthBlockHeader {
 	return &EthBlockHeader{}
@@ -105,7 +108,6 @@ func NewEthBlockHeader() *EthBlockHeader {
 
 // getAspectContext data
 func (c EthBlockHeader) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, keys []string) *artelatypes.ContextQueryResponse {
-
 	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
 		return nil
 	}
@@ -119,7 +121,6 @@ func (c EthBlockHeader) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerConte
 		response.SetData(blockHeader)
 		return response
 	}
-
 }
 
 // block last commit info
@@ -161,8 +162,8 @@ func ConvertVoteInfos(infos []abci.VoteInfo) []*artelatypes.VoteInfo {
 	}
 	return voteInfos
 }
-func ConvertVoteInfo(info abci.VoteInfo) *artelatypes.VoteInfo {
 
+func ConvertVoteInfo(info abci.VoteInfo) *artelatypes.VoteInfo {
 	return &artelatypes.VoteInfo{
 		Validator: &artelatypes.Validator{
 			Address: info.Validator.Address,
@@ -173,8 +174,7 @@ func ConvertVoteInfo(info abci.VoteInfo) *artelatypes.VoteInfo {
 }
 
 // block minGasPrice
-type BlockMinGasPrice struct {
-}
+type BlockMinGasPrice struct{}
 
 func NewBlockMinGasPrice() *BlockMinGasPrice {
 	return &BlockMinGasPrice{}
@@ -191,7 +191,7 @@ func (c BlockMinGasPrice) Execute(sdkContext sdk.Context, ctx *artelatypes.Runne
 		return contextQueryResponse
 	}
 	meter := sdkContext.MinGasPrices()
-	//convert
+	// convert
 	coins := make([]*artelatypes.DecCoin, meter.Len())
 	sort := meter.Sort()
 	for i, coin := range sort {
@@ -200,7 +200,7 @@ func (c BlockMinGasPrice) Execute(sdkContext sdk.Context, ctx *artelatypes.Runne
 			Amount: coin.Amount.String(),
 		}
 	}
-	//set data
+	// set data
 	gasMsg := &artelatypes.MinGasPrice{
 		Coins: coins,
 	}
@@ -211,8 +211,7 @@ func (c BlockMinGasPrice) Execute(sdkContext sdk.Context, ctx *artelatypes.Runne
 
 // /block gas meter
 
-type EthBlockGasMeter struct {
-}
+type EthBlockGasMeter struct{}
 
 func NewEthBlockGasMeter() *EthBlockGasMeter {
 	return &EthBlockGasMeter{}
@@ -230,7 +229,7 @@ func (c EthBlockGasMeter) Execute(sdkContext sdk.Context, ctx *artelatypes.Runne
 	}
 	meter := sdkContext.BlockGasMeter()
 
-	//set data
+	// set data
 	gasMsg := &artelatypes.GasMeter{
 		GasConsumed:        meter.GasConsumed(),
 		GasConsumedToLimit: meter.GasConsumedToLimit(),
@@ -240,5 +239,4 @@ func (c EthBlockGasMeter) Execute(sdkContext sdk.Context, ctx *artelatypes.Runne
 	contextQueryResponse.GetResult().Message = "success"
 	contextQueryResponse.SetData(gasMsg)
 	return contextQueryResponse
-
 }

@@ -2,8 +2,10 @@ package types
 
 import (
 	"fmt"
-	evmtypes "github.com/artela-network/artela/x/evm/txs"
+
 	"github.com/cosmos/cosmos-sdk/types/tx"
+
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"

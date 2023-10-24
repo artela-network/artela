@@ -1,18 +1,21 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/api"
-	"github.com/artela-network/artela/x/evm/artela/provider"
-	"github.com/artela-network/artelasdk/chaincoreext/jit_inherent"
+	"math/big"
+
+	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
-	"math/big"
+
+	"github.com/artela-network/artela/x/evm/artela/api"
+	"github.com/artela-network/artela/x/evm/artela/provider"
+
+	"github.com/artela-network/artela-evm/vm"
 
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
-	"github.com/artela-network/evm/vm"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/libs/log"
@@ -26,15 +29,15 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
+	artelaType "github.com/artela-network/aspect-core/types"
+	cosmosAspect "github.com/cosmos/cosmos-sdk/aspect/cosmos"
+
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/types"
-	artelaType "github.com/artela-network/artelasdk/types"
-	cosmosAspect "github.com/cosmos/cosmos-sdk/aspect/cosmos"
 )
 
 // Keeper grants access to the EVM module states and implements the go-ethereum StateDB interface.
 type Keeper struct {
-
 	// protobuf codec
 	cdc codec.BinaryCodec
 
@@ -90,9 +93,7 @@ func NewKeeper(
 	tracer string,
 	subSpace paramsmodule.Subspace,
 	app *baseapp.BaseApp,
-
 ) *Keeper {
-
 	// ensure evm module account is set
 	if addr := accountKeeper.GetModuleAddress(types.ModuleName); addr == nil {
 		panic("the EVM module account has not been set")

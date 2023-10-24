@@ -1,12 +1,13 @@
 package states
 
-//Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/state_object.go
+// Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/state_object.go
 
 import (
 	"bytes"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"math/big"
 )
 
 var emptyCodeHash = crypto.Keccak256(nil)

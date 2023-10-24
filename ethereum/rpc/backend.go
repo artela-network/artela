@@ -151,7 +151,8 @@ func (b *BackendImpl) ChainConfig() *params.ChainConfig {
 }
 
 func (b *BackendImpl) FeeHistory(ctx context.Context, blockCount uint64, lastBlock rpc.BlockNumber,
-	rewardPercentiles []float64) (*big.Int, [][]*big.Int, []*big.Int, []float64, error) {
+	rewardPercentiles []float64,
+) (*big.Int, [][]*big.Int, []*big.Int, []float64, error) {
 	return b.gpo.FeeHistory(ctx, blockCount, lastBlock, rewardPercentiles)
 }
 

@@ -162,6 +162,9 @@ func (b *BackendImpl) Sign(address common.Address, data hexutil.Bytes) (hexutil.
 func (b *BackendImpl) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
 	n := hexutil.Uint64(0)
 	height, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return &n, err
+	}
 	currentHeight := b.CurrentHeader().Number
 	if height.Int64() > currentHeight.Int64() {
 		return &n, fmt.Errorf(

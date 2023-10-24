@@ -5,9 +5,9 @@ import (
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	xtype "github.com/artela-network/artela/x/evm/types"
 
-	"github.com/artela-network/artelasdk/djpm/contract"
-	"github.com/artela-network/artelasdk/djpm/run"
-	artelasdkType "github.com/artela-network/artelasdk/types"
+	"github.com/artela-network/aspect-core/djpm/contract"
+	"github.com/artela-network/aspect-core/djpm/run"
+	artelasdkType "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -83,9 +83,8 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, tx *ethtypes.Trans
 }
 
 func (k *AspectNativeContract) bind(ctx sdk.Context, tx *ethtypes.Transaction, aspectId common.Address, contract common.Address, aspectVersion *uint256.Int, priority int8) (*evmtypes.MsgEthereumTxResponse, error) {
-
 	level, err := k.checkTransactionLevel(ctx, aspectId)
-	if err != nil || level == false {
+	if err != nil || !level {
 		return nil, errors.Wrapf(xtype.ErrCallContract, "aspect not implement `IAspectTransaction`, aspectId: %s , err: %s", aspectId, err.Error())
 	}
 	if err := k.aspectService.aspectStore.BindContractAspects(ctx, contract, aspectId, aspectVersion, priority); err != nil {
@@ -151,12 +150,16 @@ func (k *AspectNativeContract) version(ctx sdk.Context, tx *ethtypes.Transaction
 		Hash:    tx.Hash().Hex(),
 	}, nil
 }
+
 func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, tx *ethtypes.Transaction, method *abi.Method, contract common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
 	aspects, err := k.aspectService.GetAspectForAddr(ctx.BlockHeight()-1, contract)
 	if err != nil {
 		return nil, err
 	}
-	ret, err := method.Outputs.Pack(aspects)
+	ret, pkErr := method.Outputs.Pack(aspects)
+	if pkErr != nil {
+		return nil, pkErr
+	}
 	return &evmtypes.MsgEthereumTxResponse{
 		GasUsed: ctx.GasMeter().GasConsumed(),
 		VmError: "",
@@ -182,6 +185,7 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	}
 	return result
 }
+
 func (k *AspectNativeContract) checkContractBinding(ctx sdk.Context, aspectId common.Address, contract common.Address) (bool, error) {
 	bHeight := ctx.BlockHeight() - 1
 	code, _ := k.aspectService.GetAspectCode(bHeight, aspectId)
@@ -192,6 +196,7 @@ func (k *AspectNativeContract) checkContractBinding(ctx sdk.Context, aspectId co
 	binding, runErr := runner.OnContractBinding(bHeight, 0, &contract, contract.String())
 	return binding, runErr
 }
+
 func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address) (bool, error) {
 	bHeight := ctx.BlockHeight() - 1
 	code, _ := k.aspectService.GetAspectCode(bHeight, aspectId)
@@ -205,6 +210,7 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	binding, runErr := runner.IsOwner(bHeight, 0, &sender, sender.String())
 	return binding, runErr
 }
+
 func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectId common.Address, code []byte, sender common.Address) (bool, error) {
 	runner, newErr := run.NewRunner(aspectId.String(), code)
 	if newErr != nil {
@@ -228,7 +234,7 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, tx *ethtypes.Transaction,
 			return nil, storeErr
 		}
 	} else {
-		//for k.update,one aspect trans to tx level
+		// for k.update,one aspect trans to tx level
 		removeErr := k.aspectService.aspectStore.RemoveBlockLevelAspect(ctx, aspectId)
 		if removeErr != nil {
 			return nil, removeErr
@@ -252,6 +258,7 @@ func (k *AspectNativeContract) checkBlockLevel(aspectId common.Address, code []b
 	binding, runErr := runner.IsBlockLevel()
 	return binding, runErr
 }
+
 func (k *AspectNativeContract) checkTransactionLevel(ctx sdk.Context, aspectId common.Address) (bool, error) {
 	code, _ := k.aspectService.GetAspectCode(ctx.BlockHeight()-1, aspectId)
 	if code == nil {

@@ -2,6 +2,7 @@ package support
 
 import (
 	"fmt"
+
 	"github.com/artela-network/artela/ethereum/types"
 )
 

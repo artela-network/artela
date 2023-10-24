@@ -1,12 +1,13 @@
 package datactx
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/types"
-	"github.com/artela-network/artela/x/evm/txs/support"
-	artelatypes "github.com/artela-network/artelasdk/types"
+	artelatypes "github.com/artela-network/aspect-core/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/txs/support"
 )
 
 type EnvBaseInfo struct {
@@ -16,6 +17,7 @@ type EnvBaseInfo struct {
 func NewEnvBaseInfo(getEthTxContext func() *types.EthTxContext) *EnvBaseInfo {
 	return &EnvBaseInfo{getEthTxContext: getEthTxContext}
 }
+
 func (c EnvBaseInfo) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerContext, keys []string) *artelatypes.ContextQueryResponse {
 	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
 		return nil
@@ -38,6 +40,7 @@ type EnvEvmParams struct {
 func NewEnvEvmParams(getEthTxContext func() *types.EthTxContext) *EnvEvmParams {
 	return &EnvEvmParams{getEthTxContext: getEthTxContext}
 }
+
 func (c EnvEvmParams) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerContext, keys []string) *artelatypes.ContextQueryResponse {
 	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
 		return nil
@@ -86,6 +89,7 @@ func (c EnvChainConfig) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerC
 	response.SetData(chainConfig)
 	return response
 }
+
 func ConvertChainConfig(param *params.ChainConfig) *artelatypes.ChainConfig {
 	if param == nil {
 		return nil
@@ -122,8 +126,7 @@ func ConvertChainConfig(param *params.ChainConfig) *artelatypes.ChainConfig {
 	}
 }
 
-type EnvConsParams struct {
-}
+type EnvConsParams struct{}
 
 func NewEnvConsParams() *EnvConsParams {
 	return &EnvConsParams{}

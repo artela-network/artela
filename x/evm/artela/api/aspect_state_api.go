@@ -1,14 +1,15 @@
 package api
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/contract"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
-	artelatypes "github.com/artela-network/artelasdk/types"
+	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	"github.com/artela-network/artela/x/evm/artela/types"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 type aspectStateHostApi struct {
@@ -33,10 +34,10 @@ func (k *aspectStateHostApi) newPrefixStore(fixKey string) prefix.Store {
 	return prefix.NewStore(sdkCtx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
 }
 
-//func (k *aspectStateHostApi) newTransientStore(blockHeight int64, fixKey string) prefix.Store {
+// func (k *aspectStateHostApi) newTransientStore(blockHeight int64, fixKey string) prefix.Store {
 //	ctx, _ := k.getCtxByHeight(blockHeight, false)
 //	return prefix.NewStore(ctx.TransientStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
-//}
+// }
 
 func (k *aspectStateHostApi) GetAspectState(ctx *artelatypes.RunnerContext, key string) string {
 	codeStore := k.newPrefixStore(types.AspectStateKeyPrefix)
@@ -77,5 +78,4 @@ func (k *aspectStateHostApi) GetProperty(ctx *artelatypes.RunnerContext, key str
 	codeStore := contract.NewAspectStore(k.storeKey)
 	sdkCtx, _ := k.getCtxByHeight(ctx.BlockNumber-1, false)
 	return codeStore.GetAspectPropertyValue(sdkCtx, *ctx.AspectId, key)
-
 }

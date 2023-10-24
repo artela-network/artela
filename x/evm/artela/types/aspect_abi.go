@@ -47,6 +47,7 @@ var (
 	})
 )
 
+// nolint
 var methods = map[string]abi.Method{
 	"deploy":        abi.NewMethod("deploy", "deploy", abi.Function, "", false, false, []abi.Argument{{"code", Bytes, false}, {"properties", KvPairArr, false}, {"account", Address, false}, {"proof", Bytes, false}}, nil),
 	"upgrade":       abi.NewMethod("upgrade", "upgrade", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"code", Bytes, false}, {"properties", KvPairArr, false}}, nil),
@@ -58,6 +59,8 @@ var methods = map[string]abi.Method{
 	"contractsOf":   abi.NewMethod("contractsOf", "contractsOf", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}}, []abi.Argument{{"contracts", AddressArr, false}}),
 	"entrypoint":    abi.NewMethod("entrypoint", "entrypoint", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"optArgs", Bytes, false}}, []abi.Argument{{"resultMap", Bytes, false}}),
 }
+
+// nolint
 var AspectOwnableMethod = map[string]abi.Method{
 	"isOwner": abi.NewMethod("isOwner", "isOwner", abi.Function, "", false, false, []abi.Argument{{"sender", Address, false}}, []abi.Argument{{"result", Bool, false}}),
 }

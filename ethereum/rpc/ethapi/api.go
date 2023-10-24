@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/evm/vm"
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -28,6 +27,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/artela-network/artela/x/evm/txs"
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 )
@@ -345,6 +346,7 @@ func (s *BlockChainAPI) GetProof(ctx context.Context, address common.Address, st
 
 // decodeHash parses a hex-encoded 32-byte hash. The input may optionally
 // be prefixed by 0x and can have a byte length up to 32.
+// nolint:unused
 func decodeHash(s string) (common.Hash, error) {
 	if strings.HasPrefix(s, "0x") || strings.HasPrefix(s, "0X") {
 		s = s[2:]
@@ -612,6 +614,7 @@ func (context *ChainContext) GetHeader(hash common.Hash, number uint64) *types.H
 	return header
 }
 
+// nolint:unused
 func newRevertError(result *core.ExecutionResult) *revertError {
 	reason, errUnpack := abi.UnpackRevert(result.Revert())
 	err := errors.New("execution reverted")
@@ -626,6 +629,7 @@ func newRevertError(result *core.ExecutionResult) *revertError {
 
 // revertError is an API error that encompasses an EVM revertal with JSON error
 // code and a binary data blob.
+// nolint:unused
 type revertError struct {
 	error
 	reason string // revert reason hex encoded
@@ -633,11 +637,13 @@ type revertError struct {
 
 // ErrorCode returns the JSON error code for a revertal.
 // See: https://github.com/ethereum/wiki/wiki/JSON-RPC-Error-Codes-Improvement-Proposal
+// nolint:unused
 func (e *revertError) ErrorCode() int {
 	return 3
 }
 
 // ErrorData returns the hex encoded revert reason.
+// nolint:unused
 func (e *revertError) ErrorData() interface{} {
 	return e.reason
 }
@@ -746,6 +752,7 @@ func (s *BlockChainAPI) rpcMarshalBlock(ctx context.Context, b *rpctypes.Block, 
 	if err != nil {
 		return nil, err
 	}
+	// nolint
 	if inclTx {
 		// fields["totalDifficulty"] = (*hexutil.Big)(s.b.GetTd(ctx, b.Hash()))
 	}
@@ -976,6 +983,7 @@ func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.
 }
 
 // sign is a helper function that signs a transaction with the private key of the given address.
+// nolint:unused
 func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
 	// return s.b.AccountManager().SignTransaction()
 	// TODO
@@ -1234,6 +1242,7 @@ func checkTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
 }
 
 // toHexSlice creates a slice of hex-strings based on []byte.
+// nolint:unused
 func toHexSlice(b [][]byte) []string {
 	r := make([]string, len(b))
 	for i := range b {

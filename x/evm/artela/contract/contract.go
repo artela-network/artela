@@ -2,11 +2,11 @@ package contract
 
 import (
 	"bytes"
+	"math/big"
+	"strings"
+
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	evmtxs "github.com/artela-network/artela/x/evm/txs"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
-	"github.com/artela-network/evm/vm"
+	"github.com/artela-network/artela-evm/vm"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,8 +15,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
-	"math/big"
-	"strings"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
+	evmtxs "github.com/artela-network/artela/x/evm/txs"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 type AspectNativeContract struct {
@@ -26,8 +28,8 @@ type AspectNativeContract struct {
 
 func NewAspectNativeContract(storeKey storetypes.StoreKey,
 	getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
-	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)) *AspectNativeContract {
-
+	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error),
+) *AspectNativeContract {
 	return &AspectNativeContract{
 		aspectService:    NewAspectService(storeKey, getCtxByHeight),
 		applyMessageFunc: applyMessageFunc,

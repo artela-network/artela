@@ -1,16 +1,18 @@
 package keeper
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/contract"
-	"github.com/artela-network/artelasdk/djpm"
-	asptypes "github.com/artela-network/artelasdk/types"
 	"math/big"
+
+	"github.com/artela-network/aspect-core/djpm"
+	asptypes "github.com/artela-network/aspect-core/types"
+
+	"github.com/artela-network/artela/x/evm/artela/contract"
 
 	cometbft "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
-	artcore "github.com/artela-network/evm/core"
-	"github.com/artela-network/evm/vm"
+	artcore "github.com/artela-network/artela-evm/core"
+	"github.com/artela-network/artela-evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -38,7 +40,6 @@ func (k *Keeper) NewEVM(
 	tracer vm.EVMLogger,
 	stateDB vm.StateDB,
 ) *vm.EVM {
-
 	blockCtx := vm.BlockContext{
 		CanTransfer: artcore.CanTransfer,
 		Transfer:    artcore.Transfer,
@@ -161,10 +162,10 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	}
 
 	// snapshot to contain the txs processing and post processing in same scope
-	var commit func()
-	tmpCtx := ctx
-	tmpCtx, commit = ctx.CacheContext()
-	//set aspect tx context
+	// var commit func()
+	// tmpCtx := ctx
+	tmpCtx, commit := ctx.CacheContext()
+	// set aspect tx context
 	ethTxContext := artelatype.NewEthTxContext(tx)
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
@@ -256,7 +257,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
 		}
 	}
-	//artela aspect ClearEvmObject set stateDb、monitor to nil
+	// artela aspect ClearEvmObject set stateDb、monitor to nil
 	k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 	return res, nil
 }
@@ -336,13 +337,13 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	leftoverGas := msg.GasLimit
 
 	// Allow the tracer captures the txs level events, mainly the gas consumption.
-	//evmCfg := evm.Config
-	//if evmCfg.Debug {
+	// evmCfg := evm.Config
+	// if evmCfg.Debug {
 	//	evmCfg.Tracer.CaptureTxStart(leftoverGas)
 	//	defer func() {
 	//		evmCfg.Tracer.CaptureTxEnd(leftoverGas)
 	//	}()
-	//}
+	// }
 
 	sender := vm.AccountRef(msg.From)
 	contractCreation := msg.To == nil
@@ -439,6 +440,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	gasUsed := cosmos.MaxDec(minimumGasUsed, cosmos.NewDec(int64(temporaryGasUsed))).TruncateInt().Uint64()
 	// reset leftoverGas, to be used by the tracer
+	// nolint
 	leftoverGas = msg.GasLimit - gasUsed
 
 	return &txs.MsgEthereumTxResponse{

@@ -1,13 +1,14 @@
 package api
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/api/datactx"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	asptypes "github.com/artela-network/artelasdk/types"
+	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
+
+	"github.com/artela-network/artela/x/evm/artela/api/datactx"
+	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 var (
@@ -22,13 +23,15 @@ type aspectRuntimeHostApi struct {
 	getCtxByHeight     func(height int64, prove bool) (sdk.Context, error)
 	execMap            map[string]datactx.Executor
 	aspectStateHostApi *aspectStateHostApi
-	app                *baseapp.BaseApp
+	// nolint
+	app *baseapp.BaseApp
 }
 
 func NewAspectRuntime(storeKey storetypes.StoreKey, getEthTxContext func() *types.EthTxContext,
 	getAspectContext func() *types.AspectContext,
 	getExtBlockContext func() *types.ExtBlockContext,
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error), app *baseapp.BaseApp) { //nolint:gofumpt
+	getCtxByHeight func(height int64, prove bool) (sdk.Context, error), app *baseapp.BaseApp,
+) { //nolint:gofumpt
 
 	aspectRuntimeInstance = &aspectRuntimeHostApi{
 		getEthTxContext:    getEthTxContext,
@@ -97,6 +100,7 @@ func (a *aspectRuntimeHostApi) Set(ctx *asptypes.RunnerContext, set *asptypes.Co
 	}
 	return true
 }
+
 func (a *aspectRuntimeHostApi) Query(ctx *asptypes.RunnerContext, query *asptypes.ContextQueryRequest) *asptypes.ContextQueryResponse {
 	keyData := &asptypes.StringData{}
 	err := query.Query.UnmarshalTo(keyData)
@@ -116,8 +120,8 @@ func (a *aspectRuntimeHostApi) Query(ctx *asptypes.RunnerContext, query *asptype
 		response.SetData(valueData)
 	}
 	return response
-
 }
+
 func (a *aspectRuntimeHostApi) Remove(ctx *asptypes.RunnerContext, query *asptypes.ContextRemoveRequest) bool {
 	keyData := &asptypes.StringData{}
 	err := query.Query.UnmarshalTo(keyData)
@@ -126,11 +130,9 @@ func (a *aspectRuntimeHostApi) Remove(ctx *asptypes.RunnerContext, query *asptyp
 	}
 	if query.NameSpace == asptypes.RemoveNameSpace_RemoveAspectContext {
 		return a.getAspectContext().Remove(ctx.AspectId.String(), keyData.Data)
-
 	}
 	if query.NameSpace == asptypes.RemoveNameSpace_RemoveAspectState {
 		return a.aspectStateHostApi.RemoveAspectState(ctx, keyData.Data)
 	}
 	return false
-
 }

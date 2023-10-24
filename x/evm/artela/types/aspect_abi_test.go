@@ -3,10 +3,11 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/holiman/uint256"
-	jsoniter "github.com/json-iterator/go"
 	"reflect"
 	"testing"
+
+	"github.com/holiman/uint256"
+	jsoniter "github.com/json-iterator/go"
 
 	pq "github.com/emirpasic/gods/queues/priorityqueue"
 	"github.com/emirpasic/gods/sets/treeset"
@@ -17,7 +18,6 @@ import (
 )
 
 func TestAbi(t *testing.T) {
-
 	bytes, errs := rlp.EncodeToBytes("owner")
 	if errs != nil {
 		return
@@ -33,7 +33,7 @@ func TestAbi(t *testing.T) {
 	exp := abi.ABI{
 		Methods: methods,
 	}
-	marshal, errs := jsoniter.Marshal(exp)
+	marshal, _ := jsoniter.Marshal(exp)
 	fmt.Println(string(marshal))
 
 	abiIndex := make(map[string]abi.Method)
@@ -53,7 +53,6 @@ func TestAbi(t *testing.T) {
 		keccak256 := crypto.Keccak256([]byte(gotM.Sig))
 		fmt.Println(sig, hex.EncodeToString(gotM.ID), hex.EncodeToString(keccak256[:4]))
 	}
-
 }
 
 type Dummy struct {
@@ -148,7 +147,6 @@ func TestAspectsOfPack(t *testing.T) {
 		Priority int8           `json:"Priority"`
 	})
 	fmt.Println(aspects)
-
 }
 
 func TestContractOfPack(t *testing.T) {

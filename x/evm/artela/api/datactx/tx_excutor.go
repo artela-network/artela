@@ -2,15 +2,17 @@ package datactx
 
 import (
 	"encoding/hex"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	artelatypes "github.com/artela-network/artelasdk/types"
-	"github.com/artela-network/evm/vm"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-	"google.golang.org/protobuf/proto"
 	"math/big"
 	"sort"
 	"strconv"
+
+	"github.com/artela-network/artela-evm/vm"
+	artelatypes "github.com/artela-network/aspect-core/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 const AccountBalanceMagic = ".balance"
@@ -67,7 +69,9 @@ func (c StateChanges) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerCon
 	}
 
 	var result proto.Message
+	// nolint:gosimple
 	switch storageChanges.(type) {
+	// nolint:gosimple
 	case *vm.StorageChanges:
 		changes := storageChanges.(*vm.StorageChanges).Changes()
 		ethStateChanges := &artelatypes.EthStateChanges{
@@ -96,6 +100,7 @@ func (c StateChanges) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerCon
 			}
 		}
 		result = ethStateChanges
+	// nolint:gosimple
 	case [][]byte:
 		indices := storageChanges.([][]byte)
 		ethStateChangeIndices := &artelatypes.EthStateChangeIndices{
@@ -110,7 +115,6 @@ func (c StateChanges) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerCon
 	contextQueryResponse := artelatypes.NewContextQueryResponse(true, "success")
 	contextQueryResponse.SetData(result)
 	return contextQueryResponse
-
 }
 
 type TxReceipt struct {
@@ -133,7 +137,7 @@ func (c TxReceipt) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerContex
 	}
 	receipt := txContext.Receipt()
 
-	//set data
+	// set data
 	receiptMsg := &artelatypes.EthReceipt{
 		Type:              uint32(receipt.Type),
 		PostState:         receipt.PostState,
@@ -160,7 +164,6 @@ func (c TxReceipt) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerContex
 	contextQueryResponse.GetResult().Message = "success"
 	contextQueryResponse.SetData(receiptMsg)
 	return contextQueryResponse
-
 }
 
 type ExtProperties struct {
@@ -188,18 +191,16 @@ func (c ExtProperties) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerCo
 	for k, v := range extProperties {
 		dataMap[k] = v.(string)
 	}
-	//set data
+	// set data
 	txProperty := &artelatypes.TxExtProperty{
 		Property: dataMap,
 	}
 	contextQueryResponse.GetResult().Message = "success"
 	contextQueryResponse.SetData(txProperty)
 	return contextQueryResponse
-
 }
 
-type TxGasMeter struct {
-}
+type TxGasMeter struct{}
 
 func NewTxGasMeter() *TxGasMeter {
 	return &TxGasMeter{}
@@ -216,7 +217,7 @@ func (c TxGasMeter) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerConte
 	}
 	meter := sdkContext.GasMeter()
 
-	//set data
+	// set data
 	gasMsg := &artelatypes.GasMeter{
 		GasConsumed:        meter.GasConsumed(),
 		GasConsumedToLimit: meter.GasConsumedToLimit(),
@@ -226,7 +227,6 @@ func (c TxGasMeter) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerConte
 	contextQueryResponse.GetResult().Message = "success"
 	contextQueryResponse.SetData(gasMsg)
 	return contextQueryResponse
-
 }
 
 type TxContent struct {
@@ -253,7 +253,7 @@ func (c TxContent) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, k
 	index := int64(-1)
 	baseFee := big.NewInt(-1)
 	chainID := sdkCtx.ChainID()
-	//set data
+	// set data
 	txMsg, errs := artelatypes.NewEthTransaction(ethTx, blockHash, blockNumber, index, baseFee, chainID)
 	if errs != nil {
 		contextQueryResponse.GetResult().Message = errs.Error()

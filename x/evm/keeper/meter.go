@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"math/big"
+
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/types"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -9,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
@@ -33,7 +34,6 @@ func (k *Keeper) GetEthIntrinsicGas(ctx cosmos.Context, msg *core.Message, cfg *
 // returned by the EVM execution, thus ignoring the previous intrinsic gas consumed during in the
 // AnteHandler.
 func (k *Keeper) RefundGas(ctx cosmos.Context, msg *core.Message, leftoverGas uint64, denom string) error {
-
 	// return EVM tokens for remaining gas, exchanged at the original rate.
 	remaining := new(big.Int).Mul(new(big.Int).SetUint64(leftoverGas), msg.GasPrice)
 
@@ -74,7 +74,6 @@ func (k *Keeper) DeductTxCostsFromUserBalance(
 	fees cosmos.Coins,
 	from common.Address,
 ) error {
-
 	// fetch sender account
 	signerAcc, err := authante.GetSignerAcc(ctx, k.accountKeeper, from.Bytes())
 	if err != nil {
@@ -110,7 +109,6 @@ func CheckSenderBalance(
 	balance sdkmath.Int,
 	txData txs.TxData,
 ) error {
-
 	cost := txData.Cost()
 	if cost.Sign() < 0 {
 		return errorsmod.Wrapf(
@@ -138,7 +136,6 @@ func VerifyFee(
 	baseFee *big.Int,
 	homestead, istanbul, isCheckTx bool,
 ) (cosmos.Coins, error) {
-
 	gasLimit := txData.GetGas()
 	isContractCreation := txData.GetTo() == nil
 

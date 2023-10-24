@@ -15,17 +15,19 @@ import (
 	"github.com/artela-network/artela/ethereum/rpc/types"
 )
 
+// nolint:unused
 var defaultEthConfig = ethconfig.Config{
 	SyncMode:           0,
 	FilterLogCacheSize: 0,
 }
 
 type ArtelaService struct {
-	clientCtx    client.Context
-	wsClient     *rpcclient.WSClient
-	cfg          *Config
-	stack        types.NetworkingStack
-	backend      *BackendImpl
+	clientCtx client.Context
+	wsClient  *rpcclient.WSClient
+	cfg       *Config
+	stack     types.NetworkingStack
+	backend   *BackendImpl
+	// nolint:unused
 	filterSystem *filters.FilterSystem
 	logger       log.Logger
 }

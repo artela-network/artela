@@ -2,8 +2,9 @@ package keys
 
 import (
 	"fmt"
-	"github.com/artela-network/artela/ethereum/crypto/codec"
 	"io"
+
+	"github.com/artela-network/artela/ethereum/crypto/codec"
 
 	"sigs.k8s.io/yaml"
 

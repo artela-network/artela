@@ -1,9 +1,11 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
 	"math/big"
+
+	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
+
+	"github.com/artela-network/artela/x/evm/txs"
 
 	errorsmod "cosmossdk.io/errors"
 	cosmos "github.com/cosmos/cosmos-sdk/types"

@@ -1,8 +1,9 @@
 package tx
 
 import (
-	"github.com/artela-network/artela/ethereum/utils"
 	"math"
+
+	"github.com/artela-network/artela/ethereum/utils"
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"

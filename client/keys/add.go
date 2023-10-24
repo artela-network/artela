@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sort"
+
 	"github.com/artela-network/artela/ethereum/crypto/codec"
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	cryptohd "github.com/artela-network/artela/ethereum/crypto/hd"
-	"sort"
 
-	bip39 "github.com/cosmos/go-bip39"
+	"github.com/cosmos/go-bip39"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"

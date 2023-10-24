@@ -3,9 +3,10 @@ package cli
 import (
 	"bufio"
 	"fmt"
+	"os"
+
 	rpc "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
-	"os"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
