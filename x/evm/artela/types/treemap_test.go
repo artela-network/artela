@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	_ "encoding/json"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/emirpasic/gods/maps/treemap"
 	pq "github.com/emirpasic/gods/queues/priorityqueue"
-	"strings"
-	"testing"
 )
 
 func TestPriorityqueue(t *testing.T) {
@@ -55,6 +56,7 @@ func TestPriorityqueue(t *testing.T) {
 	}
 	fmt.Println(newQueue.Values())
 }
+
 func TestTreemap(t *testing.T) {
 	m := hashmap.New()
 	m.Put("a", "1")
@@ -93,7 +95,10 @@ func TestTreemap(t *testing.T) {
 	fmt.Println(string(bytes))
 
 	comparator := treemap.NewWithIntComparator()
-	json.Unmarshal(bytes, &comparator)
+	errJson := json.Unmarshal(bytes, &comparator)
+	if errJson != nil {
+		return
+	}
 	foundKey7, foundValue7 := comparator.Floor("90")
 	fmt.Print("%w,  %w \n", foundKey, foundValue)
 	fmt.Print("%w,  %w \n", foundKey2, foundValue2)

@@ -2,7 +2,8 @@ package handle
 
 import (
 	"errors"
-	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
+
+	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
@@ -54,11 +55,8 @@ func NewArtelaProposalHandler(mp mempool.Mempool, txVerifier ProposalTxVerifier)
 // FIFO order.
 func (h ArtelaProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
-
 		scheduledTxs := scheduler.TaskInstance().GetTxs()
-		for _, scheduledTx := range scheduledTxs {
-			req.Txs = append(req.Txs, scheduledTx)
-		}
+		req.Txs = append(req.Txs, scheduledTxs...)
 
 		// If the mempool is nil or NoOp we simply return the transactions
 		// requested from CometBFT, which, by default, should be in FIFO order.

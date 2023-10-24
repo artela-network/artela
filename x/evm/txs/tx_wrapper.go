@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
-	"github.com/artela-network/artelasdk/chaincoreext/scheduler"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -41,7 +42,7 @@ var (
 
 // GetSigners returns the expected signers for a MsgUpdateParams message.
 func (m MsgUpdateParams) GetSigners() []cosmos.AccAddress {
-	//#nosec G703 -- gosec raises a warning about a non-handled error which we deliberately ignore here
+	// #nosec G703 -- gosec raises a warning about a non-handled error which we deliberately ignore here
 	addr, _ := cosmos.AccAddressFromBech32(m.Authority)
 	return []cosmos.AccAddress{addr}
 }
@@ -73,6 +74,7 @@ func (msg MsgEthereumTx) AsTransaction() *ethereum.Transaction {
 
 	return ethereum.NewTx(txData.AsEthereumData())
 }
+
 func ToMessage(tx *ethereum.Transaction, signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
 	message := &core.Message{
 		Nonce:             tx.Nonce(),

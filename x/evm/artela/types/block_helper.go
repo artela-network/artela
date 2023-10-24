@@ -1,16 +1,18 @@
 package types
 
 import (
-	asptypes "github.com/artela-network/artelasdk/types"
+	"strings"
+
+	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	"strings"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/types"
 )
 
 func GetEthTxsInBlock(clientCtx client.Context, sdkCtx sdk.Context, blockHeight int64, filterHexAddress string) ([]*evmtypes.MsgEthereumTx, error) {
@@ -63,8 +65,8 @@ func GetEthTxsInBlock(clientCtx client.Context, sdkCtx sdk.Context, blockHeight 
 		}
 	}
 	return result, nil
-
 }
+
 func ProtoToEthBlockHeader(header *tmproto.Header) *asptypes.EthBlockHeader {
 	return &asptypes.EthBlockHeader{
 		ParentHash: common.BytesToHash(header.LastBlockId.Hash).String(),

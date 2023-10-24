@@ -5,11 +5,12 @@ import (
 	"math"
 
 	errorsmod "cosmossdk.io/errors"
-	anteutils "github.com/artela-network/artela/app/ante/utils"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
+	anteutils "github.com/artela-network/artela/app/ante/utils"
 )
 
 // DeductFeeDecorator deducts fees from the first signer of the tx.
@@ -125,9 +126,9 @@ func (dfd DeductFeeDecorator) deductFee(ctx cosmos.Context, sdkTx cosmos.Tx, fee
 	}
 
 	// TODO mark deduct the fees
-	//if err := deductFeesFromBalanceOrUnclaimedStakingRewards(ctx, dfd, deductFeesFromAcc, fees); err != nil {
+	// if err := deductFeesFromBalanceOrUnclaimedStakingRewards(ctx, dfd, deductFeesFromAcc, fees); err != nil {
 	//	return fmt.Errorf("insufficient funds and failed to claim sufficient staking rewards to pay for fees: %w", err)
-	//}
+	// }
 
 	events := cosmos.Events{
 		cosmos.NewEvent(
@@ -143,6 +144,7 @@ func (dfd DeductFeeDecorator) deductFee(ctx cosmos.Context, sdkTx cosmos.Tx, fee
 
 // deductFeesFromBalanceOrUnclaimedStakingRewards tries to deduct the fees from the account balance.
 // If the account balance is not enough, it tries to claim enough staking rewards to cover the fees.
+// nolint:unused
 func deductFeesFromBalanceOrUnclaimedStakingRewards(
 	ctx cosmos.Context, dfd DeductFeeDecorator, deductFeesFromAcc authtypes.AccountI, fees cosmos.Coins,
 ) error {
@@ -171,7 +173,7 @@ func checkTxFeeWithValidatorMinGasPrices(ctx cosmos.Context, feeTx cosmos.FeeTx)
 		}
 	}
 
-	priority := getTxPriority(feeCoins, int64(gas)) //#nosec G701 -- gosec warning about integer overflow is not relevant here
+	priority := getTxPriority(feeCoins, int64(gas)) // #nosec G701 -- gosec warning about integer overflow is not relevant here
 	return feeCoins, priority, nil
 }
 
@@ -187,7 +189,7 @@ func checkFeeCoinsAgainstMinGasPrices(ctx cosmos.Context, feeCoins cosmos.Coins,
 
 	// Determine the required fees by multiplying each required minimum gas
 	// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
-	glDec := cosmos.NewDec(int64(gas)) //#nosec G701 -- gosec warning about integer overflow is not relevant here
+	glDec := cosmos.NewDec(int64(gas)) // #nosec G701 -- gosec warning about integer overflow is not relevant here
 	for i, gp := range minGasPrices {
 		fee := gp.Amount.Mul(glDec)
 		requiredFees[i] = cosmos.NewCoin(gp.Denom, fee.Ceil().RoundInt())

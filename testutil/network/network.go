@@ -6,10 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/ethereum/rpc"
-	"github.com/artela-network/artela/ethereum/server/config"
-	"github.com/artela-network/artela/ethereum/types"
-	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,6 +14,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
+	"github.com/artela-network/artela/ethereum/types"
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
 
 	"cosmossdk.io/math"
 	dbm "github.com/cometbft/cometbft-db"
@@ -32,8 +33,6 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
-	"github.com/artela-network/artela/app"
-	"github.com/artela-network/artela/app/params"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -46,6 +45,9 @@ import (
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
+
+	"github.com/artela-network/artela/app"
+	"github.com/artela-network/artela/app/params"
 
 	"github.com/cosmos/cosmos-sdk/testutil"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -183,7 +185,8 @@ type (
 		jsonrpc     *http.Server
 		jsonrpcDone chan struct{}
 
-		artelaService     *rpc.ArtelaService
+		artelaService *rpc.ArtelaService
+		// nolint:unused
 		artelaServiceDone chan struct{}
 	}
 )

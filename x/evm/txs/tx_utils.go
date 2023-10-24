@@ -2,6 +2,8 @@ package txs
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/artela-network/artela/x/evm/txs/support"
 	//"github.com/artela-network/artela/x/evm/txs"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -9,7 +11,6 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/types/tx"
-	"math/big"
 
 	"github.com/cosmos/gogoproto/proto"
 

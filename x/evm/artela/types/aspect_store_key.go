@@ -2,11 +2,12 @@ package types
 
 import (
 	"encoding/binary"
-	artela "github.com/artela-network/artelasdk/types"
+	"strings"
+
+	artela "github.com/artela-network/aspect-core/types"
 	"github.com/emirpasic/gods/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"strings"
 )
 
 var _ binary.ByteOrder
@@ -52,6 +53,7 @@ func AspectPropertyKey(
 
 	return key
 }
+
 func AspectVersionKey(
 	aspectId []byte,
 	version []byte,
@@ -76,12 +78,14 @@ func AspectIdKey(
 
 	return key
 }
+
 func AspectBlockKey() []byte {
 	var key []byte
 	key = append(key, []byte("AspectBlock")...)
 	key = append(key, []byte("/")...)
 	return key
 }
+
 func ContractKey(
 	contract []byte,
 ) []byte {
@@ -125,6 +129,7 @@ func NewBindingPriorityComparator(x []*AspectMeta) func(i, j int) bool {
 		return x[i].Priority < x[j].Priority
 	}
 }
+
 func NewBindingAspectPriorityComparator(x []*artela.AspectCode) func(i, j int) bool {
 	return func(i, j int) bool {
 		return (x[i].Priority < x[j].Priority) && (strings.Compare(x[i].AspectId, x[j].AspectId) >= 0)

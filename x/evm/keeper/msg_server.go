@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/artela-network/artela/x/evm/txs"
 	"strconv"
+
+	"github.com/artela-network/artela/x/evm/txs"
 
 	govmodule "github.com/cosmos/cosmos-sdk/x/gov/types"
 

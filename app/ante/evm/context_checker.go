@@ -2,17 +2,19 @@ package evm
 
 import (
 	"errors"
-	"github.com/artela-network/artela/x/evm/txs"
 	"strconv"
+
+	"github.com/artela-network/artela/x/evm/txs"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-	evmmodule "github.com/artela-network/artela/x/evm/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	evmmodule "github.com/artela-network/artela/x/evm/types"
 )
 
 // EthSetupContextDecorator is adapted from SetUpContextDecorator from cosmos-cosmos, it ignores gas consumption

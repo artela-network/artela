@@ -4,13 +4,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	artela "github.com/artela-network/artela/ethereum/types"
 	"strconv"
 	"strings"
 
-	"github.com/artela-network/artela/ethereum/eip712"
+	artela "github.com/artela-network/artela/ethereum/types"
+
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	"github.com/pkg/errors"
+
+	"github.com/artela-network/artela/ethereum/eip712"
 
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/spf13/cobra"

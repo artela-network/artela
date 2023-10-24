@@ -1,15 +1,17 @@
 package contract
 
 import (
-	evmtypes "github.com/artela-network/artela/x/evm/artela/types"
-	artela "github.com/artela-network/artelasdk/types"
+	"sort"
+
+	artela "github.com/artela-network/aspect-core/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
-	"sort"
+
+	evmtypes "github.com/artela-network/artela/x/evm/artela/types"
 )
 
 type AspectService struct {
@@ -35,6 +37,7 @@ func (service *AspectService) GetAspectOf(blockNumber int64, aspectId common.Add
 	}
 	return aspects, nil
 }
+
 func (service *AspectService) GetAspectCode(blockNumber int64, aspectId common.Address) ([]byte, *uint256.Int) {
 	sdkCtx, getErr := service.getCtxByHeight(blockNumber, true)
 	if getErr != nil {
@@ -71,6 +74,7 @@ func (service *AspectService) GetAspectForAddr(height int64, to common.Address) 
 	}
 	return aspectCodes, nil
 }
+
 func (service *AspectService) GetAspectForBlock(height int64) ([]*artela.AspectCode, error) {
 	sdkCtx, getErr := service.getCtxByHeight(height, true)
 	if getErr != nil || sdkCtx.ChainID() == "" {
@@ -111,6 +115,7 @@ func (service *AspectService) GetAspectAccount(height int64, aspectId common.Add
 	address := common.HexToAddress(value)
 	return &address, nil
 }
+
 func (service *AspectService) GetAspectProof(height int64, aspectId common.Address) ([]byte, error) {
 	sdkCtx, getErr := service.getCtxByHeight(height, true)
 	if getErr != nil || sdkCtx.ChainID() == "" {

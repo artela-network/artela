@@ -2,8 +2,9 @@ package states
 
 import (
 	"bytes"
-	"github.com/ethereum/go-ethereum/common"
 	"sort"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Storage represents in-memory cache/buffer of contract storage.

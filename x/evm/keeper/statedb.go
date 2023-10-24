@@ -2,8 +2,9 @@ package keeper
 
 import (
 	"fmt"
-	artela "github.com/artela-network/artela/ethereum/types"
 	"math/big"
+
+	artela "github.com/artela-network/artela/ethereum/types"
 
 	sdkmath "cosmossdk.io/math"
 

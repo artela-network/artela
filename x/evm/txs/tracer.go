@@ -1,11 +1,12 @@
 package txs
 
 import (
-	"github.com/artela-network/evm/tracers/logger"
 	"math/big"
 	"os"
 
-	"github.com/artela-network/evm/vm"
+	"github.com/artela-network/artela-evm/tracers/logger"
+
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"

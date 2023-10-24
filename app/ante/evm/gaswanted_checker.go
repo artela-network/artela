@@ -1,8 +1,9 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/ethereum/types"
 	"math/big"
+
+	"github.com/artela-network/artela/ethereum/types"
 
 	errorsmod "cosmossdk.io/errors"
 	cosmos "github.com/cosmos/cosmos-sdk/types"

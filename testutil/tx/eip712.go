@@ -2,6 +2,7 @@ package tx
 
 import (
 	"errors"
+
 	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
 	types2 "github.com/artela-network/artela/ethereum/types"
 
@@ -15,9 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+
 	"github.com/artela-network/artela/app"
 	"github.com/artela-network/artela/ethereum/eip712"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
 type EIP712TxArgs struct {
@@ -85,7 +87,7 @@ func PrepareEIP712CosmosTx(
 		return nil, err
 	}
 
-	fee := legacytx.NewStdFee(txArgs.Gas, txArgs.Fees) //nolint: staticcheck
+	fee := legacytx.NewStdFee(txArgs.Gas, txArgs.Fees) // nolint: staticcheck
 
 	msgs := txArgs.Msgs
 	data := legacytx.StdSignBytes(ctx.ChainID(), accNumber, nonce, 0, fee, msgs, "", nil)

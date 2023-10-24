@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 

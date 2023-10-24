@@ -1,12 +1,14 @@
 package types
 
 import (
-	statedb "github.com/artela-network/artela/x/evm/states"
-	"github.com/artela-network/evm/vm"
+	"sync"
+
+	"github.com/artela-network/artela-evm/vm"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"sync"
+
+	statedb "github.com/artela-network/artela/x/evm/states"
 )
 
 type AspectRuntimeContext struct {
@@ -26,29 +28,36 @@ func NewAspectRuntimeContext() *AspectRuntimeContext {
 func (c *AspectRuntimeContext) SetEthTxContext(newTxCtx *EthTxContext) {
 	c.ethTxContext = newTxCtx
 }
+
 func (c *AspectRuntimeContext) NewAspectContext() {
 	c.aspectContext = NewAspectContext()
 }
+
 func (c *AspectRuntimeContext) ExtBlockContext() *ExtBlockContext {
 	return c.extBlockContext
 }
+
 func (c *AspectRuntimeContext) EthTxContext() *EthTxContext {
 	return c.ethTxContext
 }
+
 func (c *AspectRuntimeContext) AspectContext() *AspectContext {
 	return c.aspectContext
 }
+
 func (c *AspectRuntimeContext) StateDb() vm.StateDB {
 	if c.EthTxContext() == nil {
 		return nil
 	}
 	return c.EthTxContext().stateDb
 }
+
 func (c *AspectRuntimeContext) ClearBlockContext() {
 	if c.extBlockContext != nil {
 		c.extBlockContext = NewExtBlockContext()
 	}
 }
+
 func (c *AspectRuntimeContext) ClearContext() {
 	if c.EthTxContext().TxTo() == "" {
 		c.ethTxContext = nil
@@ -79,6 +88,7 @@ func NewEthTxContext(ethTx *ethtypes.Transaction) *EthTxContext {
 		extProperties: make(map[string]interface{}),
 	}
 }
+
 func (c *EthTxContext) TxTo() string {
 	if c.txContent == nil {
 		return ""
@@ -105,18 +115,22 @@ func (c *EthTxContext) WithEvmCfg(cfg *statedb.EVMConfig) *EthTxContext {
 	c.evmCfg = cfg
 	return c
 }
+
 func (c *EthTxContext) WithVmMonitor(monitor *vm.Tracer) *EthTxContext {
 	c.vmTracer = monitor
 	return c
 }
+
 func (c *EthTxContext) WithStateDB(db vm.StateDB) *EthTxContext {
 	c.stateDb = db
 	return c
 }
+
 func (c *EthTxContext) WithReceipt(receipt *ethtypes.Receipt) *EthTxContext {
 	c.receipt = receipt
 	return c
 }
+
 func (c *EthTxContext) AddExtProperties(key string, value interface{}) *EthTxContext {
 	if value == nil || key == "" {
 		return c
@@ -124,6 +138,7 @@ func (c *EthTxContext) AddExtProperties(key string, value interface{}) *EthTxCon
 	c.extProperties[key] = value
 	return c
 }
+
 func (c *EthTxContext) ClearEvmObject() *EthTxContext {
 	c.stateDb = nil
 	c.vmTracer = nil
@@ -155,6 +170,7 @@ func (c *AspectContext) Add(aspectId string, key string, value string) {
 	}
 	c.context[aspectId][key] = value
 }
+
 func (c *AspectContext) Get(aspectId string, key string) string {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
@@ -163,6 +179,7 @@ func (c *AspectContext) Get(aspectId string, key string) string {
 	}
 	return c.context[aspectId][key]
 }
+
 func (c *AspectContext) Remove(aspectId string, key string) bool {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
@@ -196,10 +213,12 @@ func (c *ExtBlockContext) WithEvidenceList(cfg []abci.Misbehavior) *ExtBlockCont
 	c.evidenceList = cfg
 	return c
 }
+
 func (c *ExtBlockContext) WithLastCommit(cfg abci.CommitInfo) *ExtBlockContext {
 	c.lastCommitInfo = cfg
 	return c
 }
+
 func (c *ExtBlockContext) WithRpcClient(cfg client.Context) *ExtBlockContext {
 	c.getRpcClient = cfg
 	return c
@@ -208,9 +227,11 @@ func (c *ExtBlockContext) WithRpcClient(cfg client.Context) *ExtBlockContext {
 func (c *ExtBlockContext) EvidenceList() []abci.Misbehavior {
 	return c.evidenceList
 }
+
 func (c *ExtBlockContext) LastCommitInfo() abci.CommitInfo {
 	return c.lastCommitInfo
 }
+
 func (c *ExtBlockContext) RpcClient() client.Context {
 	return c.getRpcClient
 }

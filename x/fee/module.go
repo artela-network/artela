@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -127,10 +128,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
 
 	// TODO mark
-	//m := keeper.NewMigrator(am.keeper, am.legacySubspace)
-	//if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
+	// m := keeper.NewMigrator(am.keeper, am.legacySubspace)
+	// if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
 	//	panic(err)
-	//}
+	// }
 }
 
 // InitGenesis performs genesis initialization for the fee market module. It returns
@@ -154,6 +155,7 @@ func (am AppModule) ExportGenesis(ctx cosmos.Context, cdc codec.JSONCodec) json.
 func (am AppModule) RegisterStoreDecoder(_ cosmos.StoreDecoderRegistry) {}
 
 // ProposalContents doesn't return any content functions for governance proposals.
+// nolint
 func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
 	return nil
 }

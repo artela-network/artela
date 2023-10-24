@@ -3,9 +3,10 @@ package client
 import (
 	"bufio"
 	"fmt"
+	"strings"
+
 	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/input"

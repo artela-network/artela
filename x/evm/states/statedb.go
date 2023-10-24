@@ -1,6 +1,6 @@
 package states
 
-//Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/statedb.go
+// Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/statedb.go
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/evm/vm"
+	"github.com/artela-network/artela-evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
@@ -67,7 +67,7 @@ func New(ctx cosmos.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 }
 
 func (s *StateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses ethereum.AccessList) {
-	//TODO mark this is a new method in ethereum 1.20, implement this here.
+	// TODO mark this is a new method in ethereum 1.20, implement this here.
 }
 
 func (s *StateDB) GetTransientState(addr common.Address, key common.Hash) common.Hash {
@@ -75,7 +75,6 @@ func (s *StateDB) GetTransientState(addr common.Address, key common.Hash) common
 }
 
 func (s *StateDB) SetTransientState(addr common.Address, key, value common.Hash) {
-
 }
 
 // Keeper returns the underlying `Keeper`

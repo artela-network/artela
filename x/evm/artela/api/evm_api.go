@@ -2,17 +2,19 @@ package api
 
 import (
 	"context"
-	artela "github.com/artela-network/artela/ethereum/types"
-	types "github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
-	inherent "github.com/artela-network/artelasdk/chaincoreext/jit_inherent"
-	"github.com/artela-network/artelasdk/integration"
-	artelatypes "github.com/artela-network/artelasdk/types"
+	"strconv"
+
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
+	"github.com/artela-network/aspect-core/integration"
+	artelatypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/log"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
-	"strconv"
+
+	artela "github.com/artela-network/artela/ethereum/types"
+	types "github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 )
 
 var (
@@ -42,7 +44,6 @@ func GetEvmHostInstance() (artelatypes.EvmHostApi, error) {
 }
 
 func (e evmHostApi) StaticCall(ctx *artelatypes.RunnerContext, request *artelatypes.EthMessage) *artelatypes.EthMessageCallResult {
-
 	sdkCtx, err := e.getCtxByHeight(ctx.BlockNumber, false)
 	if err != nil {
 		return artelatypes.ErrEthMessageCallResult(err)
@@ -77,7 +78,6 @@ func (e evmHostApi) StaticCall(ctx *artelatypes.RunnerContext, request *artelaty
 		VmError: call.VmError,
 		GasUsed: call.GasUsed,
 	}
-
 }
 
 func ConvertEthLogs(logs []*support.Log) []*artelatypes.EthLog {
@@ -90,14 +90,14 @@ func ConvertEthLogs(logs []*support.Log) []*artelatypes.EthLog {
 	}
 	return ethLogs
 }
+
 func ConvertEthLog(logs *support.Log) *artelatypes.EthLog {
 	if logs == nil {
 		return nil
 	}
 	topicStrArray := make([]string, len(logs.Topics))
-	for i, topic := range logs.Topics {
-		topicStrArray[i] = topic
-	}
+	copy(topicStrArray, logs.Topics)
+
 	return &artelatypes.EthLog{
 		Address:     logs.Address,
 		Topics:      topicStrArray,
@@ -109,7 +109,6 @@ func ConvertEthLog(logs *support.Log) *artelatypes.EthLog {
 		Index:       logs.Index,
 		Removed:     logs.Removed,
 	}
-
 }
 
 func (e evmHostApi) JITCall(ctx *artelatypes.RunnerContext, request *artelatypes.JitInherentRequest) *artelatypes.JitInherentResponse {
@@ -137,9 +136,8 @@ func (e evmHostApi) JITCall(ctx *artelatypes.RunnerContext, request *artelatypes
 
 	// FIXME: get leftover gas from last evm
 	resp, err := inherent.Get().Submit(aspect, ctx.Gas, stage, request)
-
 	if err != nil {
-		//if errors.Is(err, vm.ErrOutOfGas) {
+		// if errors.Is(err, vm.ErrOutOfGas) {
 		resp.Success = false
 		resp.ErrorMsg = err.Error()
 		//	}

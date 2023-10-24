@@ -2,6 +2,7 @@ package fee
 
 import (
 	"fmt"
+
 	"github.com/artela-network/artela/x/fee/keeper"
 
 	"github.com/artela-network/artela/x/fee/types"

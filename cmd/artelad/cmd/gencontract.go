@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	ethtypes "github.com/artela-network/artela/ethereum/types"
-	evmstate "github.com/artela-network/artela/x/evm/txs/support"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
+	"os"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/spf13/cobra"
-	"os"
+
+	ethtypes "github.com/artela-network/artela/ethereum/types"
+	evmstate "github.com/artela-network/artela/x/evm/txs/support"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"

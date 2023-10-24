@@ -2,6 +2,7 @@ package eip712
 
 import (
 	"fmt"
+
 	types2 "github.com/artela-network/artela/ethereum/types"
 
 	"github.com/cosmos/cosmos-sdk/client"

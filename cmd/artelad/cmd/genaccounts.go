@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 
 	"github.com/cosmos/cosmos-sdk/client"

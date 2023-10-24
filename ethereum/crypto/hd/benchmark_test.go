@@ -1,8 +1,9 @@
 package hd
 
 import (
-	"github.com/artela-network/artela/ethereum/types"
 	"testing"
+
+	"github.com/artela-network/artela/ethereum/types"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 )

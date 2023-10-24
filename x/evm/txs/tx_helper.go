@@ -3,8 +3,9 @@ package txs
 import (
 	"errors"
 	"fmt"
-	"github.com/artela-network/evm/vm"
 	"math/big"
+
+	"github.com/artela-network/artela-evm/vm"
 
 	sdkmath "cosmossdk.io/math"
 

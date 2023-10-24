@@ -9,7 +9,7 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/artela-network/evm/vm"
+	"github.com/artela-network/artela-evm/vm"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
@@ -208,7 +208,7 @@ func (b *BackendImpl) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes
 		if err != nil {
 			return nil, err
 		}
-		height = int64(n) //#nosec G701 -- checked for int overflow already
+		height = int64(n) // #nosec G701 -- checked for int overflow already
 	}
 	resBlock, err := b.clientCtx.Client.Block(b.ctx, &height)
 	if err != nil {

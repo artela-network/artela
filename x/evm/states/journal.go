@@ -1,6 +1,6 @@
 package states
 
-//Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/journal.go
+// Derived from https://github.com/ethereum/go-ethereum/blob/v1.12.0/core/state/journal.go
 
 import (
 	"bytes"

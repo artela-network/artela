@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 
@@ -11,8 +12,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/spf13/cobra"
 
-	clientkeys "github.com/artela-network/artela/client/keys"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+
+	clientkeys "github.com/artela-network/artela/client/keys"
 )
 
 // KeyCommands registers a sub-tree of commands to interact with

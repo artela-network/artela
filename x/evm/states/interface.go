@@ -1,7 +1,7 @@
 package states
 
 import (
-	"github.com/artela-network/evm/vm"
+	"github.com/artela-network/artela-evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 )

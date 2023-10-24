@@ -1,8 +1,9 @@
 package types
 
 import (
-	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"math/big"
+
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	authmodule "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"

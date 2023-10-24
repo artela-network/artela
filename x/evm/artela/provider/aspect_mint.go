@@ -1,22 +1,22 @@
 package provider
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/contract"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	statedb "github.com/artela-network/artela/x/evm/states"
-	asptypes "github.com/artela-network/artelasdk/types"
+	"math/big"
+
+	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/aspect/cosmos"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
-	"math/big"
+
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	"github.com/artela-network/artela/x/evm/artela/types"
+	statedb "github.com/artela-network/artela/x/evm/states"
 )
 
-var (
-	_ cosmos.AspectCosmosProvider = (*AspectMintProvider)(nil)
-)
+var _ cosmos.AspectCosmosProvider = (*AspectMintProvider)(nil)
 
 type AspectMintProvider struct {
 	service *contract.AspectService
@@ -29,7 +29,6 @@ func NewAspectMint(storeKey storetypes.StoreKey, getCtxByHeight func(height int6
 }
 
 func (j *AspectMintProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
-
 	ethTransaction, err := asptypes.NewEthTransaction(transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
 	if err != nil {
 		return nil, err
@@ -62,7 +61,6 @@ func (j *AspectMintProvider) CreateBlockPointRequest(sdkCtx sdk.Context) *asptyp
 		GasUsed:   0,
 		Gas:       0,
 	}}
-
 }
 
 func (j *AspectMintProvider) CreateTxPointRequestInEvm(sdkCtx sdk.Context, msg core.Message, txConfig statedb.TxConfig, innerTx *asptypes.EthStackTransaction) *asptypes.EthTxAspect {
@@ -82,7 +80,6 @@ func (j *AspectMintProvider) CreateTxPointRequestInEvm(sdkCtx sdk.Context, msg c
 }
 
 func (AspectMintProvider) FilterAspectTx(tx sdk.Msg) bool {
-
 	if tx.ValidateBasic() != nil {
 		return false
 	}
@@ -101,9 +98,11 @@ func (AspectMintProvider) FilterAspectTx(tx sdk.Msg) bool {
 func (j *AspectMintProvider) GetTxBondAspects(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
 	return j.service.GetAspectForAddr(blockNum, address)
 }
+
 func (j *AspectMintProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
 	return j.service.GetAspectForBlock(blockNum)
 }
+
 func (j *AspectMintProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
 	return j.service.GetAspectAccount(blockNum, aspectId)
 }

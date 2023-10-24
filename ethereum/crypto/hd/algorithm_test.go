@@ -1,10 +1,11 @@
 package hd
 
 import (
-	artelatypes "github.com/artela-network/artela/ethereum/types"
 	"os"
 	"strings"
 	"testing"
+
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 
 	amino "github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"

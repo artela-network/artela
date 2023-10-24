@@ -162,7 +162,10 @@ func startInProcess(cfg Config, val *Validator) error {
 		}
 
 		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, nil, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}), log.Root())
-		val.artelaService.Start()
+		startErr := val.artelaService.Start()
+		if startErr != nil {
+			return startErr
+		}
 	}
 
 	return nil
@@ -230,6 +233,7 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 	var govGenState govv1.GenesisState
 	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[govtypes.ModuleName], &govGenState)
 
+	// nolint:staticcheck
 	govGenState.DepositParams.MinDeposit[0].Denom = cfg.BondDenom
 	cfg.GenesisState[govtypes.ModuleName] = cfg.Codec.MustMarshalJSON(&govGenState)
 
