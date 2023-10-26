@@ -14,9 +14,25 @@
   </a>
 </div>
 
-**artela** is a blockchain built using Cosmos SDK and Cometbft and created with [Ignite CLI](https://ignite.com/cli).
+## Introduction
+
+
+Artela Blockchain is a layer 1 network that empowers developers to add user-defined native extensions and build feature-rich dApps. It offers extensibility that goes beyond EVM-equivalence, inter-domain interoperability, and boundless scalability with its Elastic Block Space design.
+
+As the first layer 1 network equipped with Aspects, Artela network aims to **maximize the value of Aspect and enable developers to build feature-rich dApps.**
+<p align="center">
+  <img src="https://github.com/artela-network/artela/assets/125882837/a64eb459-8b85-43a4-8337-99d8b8d10ecb" width="500" height="500">
+</p>
+
+* **Base Layer:** Provide basic functions, including consensus engine, networking, EVM environments for the smart contract execution, and WASM environments for the Aspects execution. This layer is launched by Artela.
+
+* **Extension Layer:** Provide the Aspect SDK. Developers are able to build Aspects. Aspects have access to all APIs within the base layer and can be freely combined with smart contracts and other Aspects. Aspect is securely isolated from Base Layer, ensuring that it has no impact on the security or availability of the core network.
+
+* **Application Layer:** Developers can build smart contracts as usual. Initially, EVM will be provided for the seamless landing of most dApps in crypto.
+
 
 ## Build the source
+Artela is a blockchain built using Cosmos SDK and Cometbft and created with [Ignite CLI](https://ignite.com/cli).
 
 1). Set Up Your Go Development Environment<br />
 Make sure you have set up your Go programming language development environment.
@@ -106,7 +122,7 @@ Presistent nodes of artela testnet:
 * `https://testnet-rpc4.artela.network`
 
 ---
-Find more about Artela in <https://www.artela.network/>
+Learn more about Artela in <https://artela.network/>
 
 
 ## License
