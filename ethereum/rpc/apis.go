@@ -28,7 +28,7 @@ func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.
 			Service:   ethapi.NewBlockChainAPI(apiBackend),
 		}, {
 			Namespace: "eth",
-			Service:   ethapi.NewTransactionAPI(apiBackend, nonceLock),
+			Service:   ethapi.NewTransactionAPI(apiBackend, logger, nonceLock),
 		}, {
 			Namespace: "txpool",
 			Service:   ethapi.NewTxPoolAPI(apiBackend),
@@ -40,7 +40,7 @@ func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.
 			Service:   ethapi.NewEthereumAccountAPI(apiBackend),
 		}, {
 			Namespace: "personal",
-			Service:   ethapi.NewPersonalAccountAPI(apiBackend, nonceLock),
+			Service:   ethapi.NewPersonalAccountAPI(apiBackend, logger, nonceLock),
 		}, {
 			Namespace: "net",
 			Service:   ethapi.NewNetAPI(nil, chainID.Uint64()),
