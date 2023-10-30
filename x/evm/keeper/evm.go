@@ -155,11 +155,6 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to return ethereum txs as core message")
 	}
-	// if transaction is Aspect operational, short the circuit and skip the processes
-	if isAspectOpTx := asptypes.IsAspectContractAddr(tx.To()); isAspectOpTx {
-		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
-		return nativeContract.ApplyTx(ctx, tx, msg)
-	}
 
 	// snapshot to contain the txs processing and post processing in same scope
 	// var commit func()
@@ -168,6 +163,12 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	// set aspect tx context
 	ethTxContext := artelatype.NewEthTxContext(tx)
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+
+	// if transaction is Aspect operational, short the circuit and skip the processes
+	if isAspectOpTx := asptypes.IsAspectContractAddr(tx.To()); isAspectOpTx {
+		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
+		return nativeContract.ApplyTx(ctx, tx, msg)
+	}
 
 	// pass true to commit the StateDB
 	res, err := k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
