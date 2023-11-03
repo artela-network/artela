@@ -21,7 +21,7 @@ Artela Blockchain is a layer 1 network that empowers developers to add user-defi
 
 As the first layer 1 network equipped with Aspects, Artela network aims to **maximize the value of Aspect and enable developers to build feature-rich dApps.**
 <p align="center">
-  <img src="https://github.com/artela-network/artela/assets/125882837/a64eb459-8b85-43a4-8337-99d8b8d10ecb" width="500" height="500">
+  <img src="https://docs.artela.network/assets/images/2-a4045260ad64e65eaa2af9fc50c06a4a.png" width="500" height="500">
 </p>
 
 * **Base Layer:** Provide basic functions, including consensus engine, networking, EVM environments for the smart contract execution, and WASM environments for the Aspects execution. This layer is launched by Artela.
