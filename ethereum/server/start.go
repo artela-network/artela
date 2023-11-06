@@ -469,7 +469,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 
 		go func() {
 			// wait for the start of the RPC server.
-			time.Sleep(4 * time.Second)
+			time.Sleep(8 * time.Second)
 			if err := jsonrpcSrv.Start(); err != nil {
 				errCh <- err
 			}

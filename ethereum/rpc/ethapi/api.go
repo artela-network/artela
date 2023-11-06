@@ -293,12 +293,13 @@ func (s *PersonalAccountAPI) Unpair(ctx context.Context, url string, pin string)
 
 // BlockChainAPI provides an API to access Ethereum blockchain data.
 type BlockChainAPI struct {
-	b Backend
+	logger log.Logger
+	b      Backend
 }
 
 // NewBlockChainAPI creates a new Ethereum blockchain API.
-func NewBlockChainAPI(b Backend) *BlockChainAPI {
-	return &BlockChainAPI{b}
+func NewBlockChainAPI(b Backend, logger log.Logger) *BlockChainAPI {
+	return &BlockChainAPI{logger, b}
 }
 
 // ChainId is the EIP-155 replay-protection chain id for the current Ethereum chain config.
@@ -313,7 +314,11 @@ func (api *BlockChainAPI) ChainId() *hexutil.Big {
 
 // BlockNumber returns the block number of the chain head.
 func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
-	header, _ := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available
+	header, err := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available
+	if err == nil || header == nil {
+		s.logger.Debug("get BlockNumber failed", err)
+		return 0
+	}
 	return hexutil.Uint64(header.Number.Uint64())
 }
 

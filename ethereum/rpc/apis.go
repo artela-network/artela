@@ -25,7 +25,7 @@ func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.
 			Service:   ethapi.NewEthereumAPI(apiBackend),
 		}, {
 			Namespace: "eth",
-			Service:   ethapi.NewBlockChainAPI(apiBackend),
+			Service:   ethapi.NewBlockChainAPI(apiBackend, logger),
 		}, {
 			Namespace: "eth",
 			Service:   ethapi.NewTransactionAPI(apiBackend, logger, nonceLock),
