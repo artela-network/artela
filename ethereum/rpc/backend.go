@@ -177,7 +177,10 @@ func (b *BackendImpl) RPCTxFeeCap() float64 {
 }
 
 func (b *BackendImpl) UnprotectedAllowed() bool {
-	return false
+	if b.cfg.AppCfg == nil {
+		return false
+	}
+	return b.cfg.AppCfg.JSONRPC.AllowUnprotectedTxs
 }
 
 // This is copied from filters.Backend

@@ -68,6 +68,7 @@ func CreateJSONRPC(ctx *server.Context,
 	cfg.RPCGasCap = config.JSONRPC.GasCap
 	cfg.RPCEVMTimeout = config.JSONRPC.EVMTimeout
 	cfg.RPCTxFeeCap = config.JSONRPC.TxFeeCap
+	cfg.AppCfg = config
 
 	nodeCfg := rpc2.DefaultGethNodeConfig()
 	address := strings.Split(config.JSONRPC.Address, ":")

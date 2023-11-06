@@ -11,7 +11,10 @@ import (
 	"github.com/cometbft/cometbft/libs/strings"
 
 	errorsmod "cosmossdk.io/errors"
+	clientflags "github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/config"
+	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -178,10 +181,83 @@ func AppConfig(denom string) (string, interface{}) {
 // DefaultConfig returns server's default configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		Config:  *config.DefaultConfig(),
+		Config:  *DefaultServerConfig(),
 		EVM:     *DefaultEVMConfig(),
 		JSONRPC: *DefaultJSONRPCConfig(),
 		TLS:     *DefaultTLSConfig(),
+	}
+}
+
+// DefaultConfig returns server's default configuration.
+func DefaultServerConfig() *config.Config {
+	return &config.Config{
+		BaseConfig: config.BaseConfig{
+			MinGasPrices:        "",
+			InterBlockCache:     true,
+			Pruning:             pruningtypes.PruningOptionCustom,
+			PruningKeepRecent:   "2",
+			PruningInterval:     "10",
+			MinRetainBlocks:     0,
+			IndexEvents:         make([]string, 0),
+			IAVLCacheSize:       781250,
+			IAVLDisableFastNode: false,
+			IAVLLazyLoading:     false,
+			AppDBBackend:        "",
+		},
+		Telemetry: telemetry.Config{
+			Enabled:      false,
+			GlobalLabels: [][]string{},
+		},
+		API: config.APIConfig{
+			Enable:             false,
+			Swagger:            false,
+			Address:            config.DefaultAPIAddress,
+			MaxOpenConnections: 1000,
+			RPCReadTimeout:     10,
+			RPCMaxBodyBytes:    1000000,
+		},
+		GRPC: config.GRPCConfig{
+			Enable:         true,
+			Address:        config.DefaultGRPCAddress,
+			MaxRecvMsgSize: config.DefaultGRPCMaxRecvMsgSize,
+			MaxSendMsgSize: config.DefaultGRPCMaxSendMsgSize,
+		},
+		Rosetta: config.RosettaConfig{
+			Enable:              false,
+			Address:             ":8080",
+			Blockchain:          "app",
+			Network:             "network",
+			Retries:             3,
+			Offline:             false,
+			EnableFeeSuggestion: false,
+			GasToSuggest:        clientflags.DefaultGasLimit,
+			DenomToSuggest:      "uatom",
+		},
+		GRPCWeb: config.GRPCWebConfig{
+			Enable:  true,
+			Address: config.DefaultGRPCWebAddress,
+		},
+		StateSync: config.StateSyncConfig{
+			SnapshotInterval:   0,
+			SnapshotKeepRecent: 2,
+		},
+		Store: config.StoreConfig{
+			Streamers: []string{},
+		},
+		Streamers: config.StreamersConfig{
+			File: config.FileStreamerConfig{
+				Keys:            []string{"*"},
+				WriteDir:        "",
+				OutputMetadata:  true,
+				StopNodeOnError: true,
+				// NOTICE: The default config doesn't protect the streamer data integrity
+				// in face of system crash.
+				Fsync: false,
+			},
+		},
+		Mempool: config.MempoolConfig{
+			MaxTxs: 5_000,
+		},
 	}
 }
 
@@ -343,6 +419,7 @@ func GetConfig(v *viper.Viper) (Config, error) {
 			EnableIndexer:            v.GetBool("json-rpc.enable-indexer"),
 			MetricsAddress:           v.GetString("json-rpc.metrics-address"),
 			FixRevertGasRefundHeight: v.GetInt64("json-rpc.fix-revert-gas-refund-height"),
+			AllowUnprotectedTxs:      v.GetBool("json-rpc.allow-unprotected-txs"),
 		},
 		TLS: TLSConfig{
 			CertificatePath: v.GetString("tls.certificate-path"),
