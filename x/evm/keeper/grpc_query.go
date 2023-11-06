@@ -316,6 +316,10 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	if req.GasCap != 0 && hi > req.GasCap {
 		hi = req.GasCap
 	}
+	txMsg := args.ToTransaction()
+	// set aspect tx context
+	ethTxContext := artelatypes.NewEthTxContext(txMsg.AsTransaction())
+	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
@@ -422,6 +426,10 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		}
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
+		// set aspect tx context
+		ethTxContext := artelatypes.NewEthTxContext(ethTx)
+		k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+
 		rsp, err := k.ApplyMessageWithConfig(ctx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
@@ -591,6 +599,9 @@ func (k *Keeper) traceTx(
 			tracer.Stop(errors.New("execution timeout"))
 		}
 	}()
+	// set aspect tx context
+	ethTxContext := artelatypes.NewEthTxContext(tx)
+	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
 	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
