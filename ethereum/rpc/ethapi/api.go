@@ -315,7 +315,7 @@ func (api *BlockChainAPI) ChainId() *hexutil.Big {
 // BlockNumber returns the block number of the chain head.
 func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
 	header, err := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available
-	if err == nil || header == nil {
+	if err != nil || header == nil {
 		s.logger.Debug("get BlockNumber failed", err)
 		return 0
 	}
