@@ -10,10 +10,6 @@ WORKDIR /go/src/github.com/artela-network
 
 # Add source files
 COPY ./artela ./artela
-COPY ./artela-cosmos-sdk ./artela-cosmos-sdk
-COPY ./evm ./evm
-COPY ./artelasdk ./artelasdk
-COPY ./runtime ./runtime
 
 # Reset the working directory for the build
 WORKDIR /go/src/github.com/artela-network/artela
