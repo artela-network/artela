@@ -6,8 +6,6 @@ import (
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
 
-	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-
 	errorsmod "cosmossdk.io/errors"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
@@ -95,15 +93,6 @@ func (tx LegacyTx) Validate() error {
 		if err := artela.ValidateAddress(tx.To); err != nil {
 			return errorsmod.Wrap(err, "invalid to address")
 		}
-	}
-
-	chainID := tx.GetChainID()
-
-	if chainID == nil {
-		return errorsmod.Wrap(
-			errortypes.ErrInvalidChainID,
-			"chain ID must be present on AccessList txs",
-		)
 	}
 
 	return nil
