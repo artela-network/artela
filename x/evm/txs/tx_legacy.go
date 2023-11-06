@@ -106,13 +106,6 @@ func (tx LegacyTx) Validate() error {
 		)
 	}
 
-	if !(chainID.Cmp(big.NewInt(11820)) == 0 || chainID.Cmp(big.NewInt(11821)) == 0) {
-		return errorsmod.Wrapf(
-			errortypes.ErrInvalidChainID,
-			"chain ID must be 11820 or 11821 on Artela, got %s", chainID,
-		)
-	}
-
 	return nil
 }
 

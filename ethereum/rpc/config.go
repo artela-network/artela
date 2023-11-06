@@ -8,6 +8,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"github.com/artela-network/artela/ethereum/server/config"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
 )
@@ -34,6 +35,9 @@ func DefaultConfig() *Config {
 
 // Config represents the configurable parameters for Polaris.
 type Config struct {
+	// AppCfg preserve the server config
+	AppCfg *config.Config
+
 	// Gas Price Oracle config.
 	GPO *gasprice.Config
 
