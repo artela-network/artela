@@ -31,10 +31,10 @@ echo artelad config chain-id $CHAINID
 artelad config chain-id $CHAINID
 
 # if $KEY exists it should be deleted
-artelad keys add --coin-type 60 $KEY --keyring-backend $KEYRING --algo $KEYALGO
-artelad keys add --coin-type 60 $KEY2 --keyring-backend $KEYRING --algo $KEYALGO
-artelad keys add --coin-type 60 $KEY3 --keyring-backend $KEYRING --algo $KEYALGO
-artelad keys add --coin-type 60 $KEY4 --keyring-backend $KEYRING --algo $KEYALGO
+artelad keys add $KEY --keyring-backend $KEYRING --algo $KEYALGO
+artelad keys add $KEY2 --keyring-backend $KEYRING --algo $KEYALGO
+artelad keys add $KEY3 --keyring-backend $KEYRING --algo $KEYALGO
+artelad keys add $KEY4 --keyring-backend $KEYRING --algo $KEYALGO
 
 # Set moniker and chain-id for artela (Moniker can be anything, chain-id must be an integer)
 echo artelad init $MONIKER --chain-id $CHAINID
