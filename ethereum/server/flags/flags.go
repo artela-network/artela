@@ -63,6 +63,11 @@ const (
 	EVMMaxTxGasWanted = "evm.max-txs-gas-wanted"
 )
 
+// Aspect flags
+const (
+	AspectPoolSize = "aspect.pool-size"
+)
+
 // TLS flags
 const (
 	TLSCertPath = "tls.certificate-path"
