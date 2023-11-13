@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
-	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -86,10 +84,8 @@ $ %s keyinfo --file '/root/.artelad/keyring/mykey.info' --passwd 'test'
 }
 
 func readKeyStore(file string, passwd string) ([]byte, error) {
-	if !filepath.IsAbs(file) {
-		home := os.Getenv("HOME")
-		file = path.Join(home, file)
-	}
+	// Expand environment variables in the file path
+	file = os.ExpandEnv(file)
 	fmt.Printf("file: %s\n", file)
 
 	bytes, err := os.ReadFile(file)

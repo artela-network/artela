@@ -361,6 +361,7 @@ func initAppConfig() (string, interface{}) {
 		EVM     config2.EVMConfig     `mapstructure:"evm"`
 		JSONRPC config2.JSONRPCConfig `mapstructure:"json-rpc"`
 		TLS     config2.TLSConfig     `mapstructure:"tls"`
+		Aspect  config2.AspectConfig  `mapstructure:"aspect"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -385,6 +386,7 @@ func initAppConfig() (string, interface{}) {
 		EVM:     *config2.DefaultEVMConfig(),
 		JSONRPC: *config2.DefaultJSONRPCConfig(),
 		TLS:     *config2.DefaultTLSConfig(),
+		Aspect:  *config2.DefaultAspectConfig(),
 	}
 	customAppTemplate := serverconfig.DefaultConfigTemplate + config2.DefaultConfigTemplate
 
