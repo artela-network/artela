@@ -194,6 +194,7 @@ func DefaultConfig() *Config {
 		EVM:     *DefaultEVMConfig(),
 		JSONRPC: *DefaultJSONRPCConfig(),
 		TLS:     *DefaultTLSConfig(),
+		Aspect:  *DefaultAspectConfig(),
 	}
 }
 
