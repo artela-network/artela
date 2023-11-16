@@ -80,6 +80,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' 's/enabled = false/enabled = true/g' $HOME/.artelad/config/app.toml
     sed -i '' 's/127.0.0.1:8545/0.0.0.0:8545/g' $HOME/.artelad/config/app.toml
     sed -i '' 's/allow-unprotected-txs = false/allow-unprotected-txs = true/g' $HOME/.artelad/config/app.toml
+    sed -i '' 's/pool-size = 0/pool-size = 10/g' $HOME/.artelad/config/app.toml
 else
     sed -i 's/create_empty_blocks = true/create_empty_blocks = false/g' $HOME/.artelad/config/config.toml
     sed -i 's/prometheus = false/prometheus = true/' $HOME/.artelad/config/config.toml
@@ -87,6 +88,7 @@ else
     sed -i 's/enabled = false/enabled = true/g' $HOME/.artelad/config/app.toml
     sed -i 's/127.0.0.1:8545/0.0.0.0:8545/g' $HOME/.artelad/config/app.toml
     sed -i 's/allow-unprotected-txs = false/allow-unprotected-txs = true/g' $HOME/.artelad/config/app.toml
+    sed -i 's/pool-size = 0/pool-size = 10/g' $HOME/.artelad/config/app.toml
 fi
 
 if [[ $1 == "pending" ]]; then
