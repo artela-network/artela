@@ -164,19 +164,21 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	ethTxContext := artelatype.NewEthTxContext(tx)
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
+	var res *txs.MsgEthereumTxResponse
+
 	// if transaction is Aspect operational, short the circuit and skip the processes
 	if isAspectOpTx := asptypes.IsAspectContractAddr(tx.To()); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
-		return nativeContract.ApplyTx(ctx, tx, msg)
+		res, err = nativeContract.ApplyTx(tmpCtx, tx, msg)
+	} else {
+		// pass true to commit the StateDB
+		res, err = k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
+		if err != nil {
+			ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
+			return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
+		}
+		ctx.Logger().Debug("ApplyMessageWithConfig", "txhash", tx.Hash().String(), "response", res)
 	}
-
-	// pass true to commit the StateDB
-	res, err := k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
-	if err != nil {
-		ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
-		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
-	}
-	ctx.Logger().Debug("ApplyMessageWithConfig", "txhash", tx.Hash().String(), "response", res)
 
 	logs := support.LogsToEthereum(res.Logs)
 
