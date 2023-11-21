@@ -3,6 +3,8 @@ package evm
 import (
 	"math/big"
 
+	ethereum "github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/artela-network/artela/x/evm/states"
 
 	"github.com/artela-network/artela-evm/vm"
@@ -27,6 +29,7 @@ type EVMKeeper interface { // nolint: revive
 	ResetTransientGasUsed(ctx cosmos.Context)
 	GetTxIndexTransient(ctx cosmos.Context) uint64
 	GetParams(ctx cosmos.Context) evmtypes.Params
+	VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error)
 }
 
 type FeeKeeper interface {

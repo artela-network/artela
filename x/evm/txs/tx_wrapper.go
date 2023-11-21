@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/artela-network/aspect-core/djpm"
+
 	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 
@@ -314,9 +316,11 @@ func (msg *MsgEthereumTx) GetFrom() cosmos.AccAddress {
 }
 
 // GetSender extracts the sender address from the signature values using the latest signer for the given chainID.
-func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (common.Address, error) {
-	signer := ethereum.LatestSignerForChainID(chainID)
-	var from common.Address
+func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err error) {
+	if msg.From != "" {
+		return common.HexToAddress(msg.From), nil
+	}
+
 	hash := common.HexToHash(msg.Hash)
 	if scheduler.TaskInstance().IsScheduleTx(hash) {
 		from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
@@ -324,8 +328,20 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (common.Address, error) {
 			return common.Address{}, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
 		}
 	} else {
-		var err error
-		from, err = signer.Sender(msg.AsTransaction())
+		tx := msg.AsTransaction()
+		v, r, s := tx.RawSignatureValues()
+
+		// retrieve sender info from aspect if tx is not signed
+		// FIXME: currently we cannot verify whether the destination account is a contract or not
+		//        in a ethereum transaction, need to find out a way later
+		if v == nil || r == nil || s == nil &&
+			(tx.To() != nil && *tx.To() != common.Address{}) {
+			sender, _, err := djpm.AspectInstance().GetSenderAndCallData(-1, tx)
+			return sender, err
+		}
+
+		signer := ethereum.LatestSignerForChainID(chainID)
+		from, err = signer.Sender(tx)
 		if err != nil {
 			return common.Address{}, err
 		}

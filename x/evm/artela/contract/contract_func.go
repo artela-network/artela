@@ -3,7 +3,8 @@ package contract
 import (
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
-	xtype "github.com/artela-network/artela/x/evm/types"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/artela-network/aspect-core/djpm/contract"
 	"github.com/artela-network/aspect-core/djpm/run"
@@ -11,12 +12,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 )
 
-func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, tx *ethtypes.Transaction, method *abi.Method, aspectId common.Address, data []byte) (*evmtypes.MsgEthereumTxResponse, error) {
+func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte) (*evmtypes.MsgEthereumTxResponse, error) {
 	lastHeight := ctx.BlockHeight()
 	code, _ := anc.aspectService.GetAspectCode(lastHeight-1, aspectId)
 	runner, newErr := run.NewRunner(aspectId.String(), code)
@@ -31,7 +31,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, tx *ethtypes.Transa
 		Input:       data,
 		To:          aspectId.String(),
 	}
-	ret, runErr := runner.JoinPoint(artelasdkType.OPERATION_METHOD, tx.Gas(), lastHeight, tx.To(), transaction)
+	ret, runErr := runner.JoinPoint(artelasdkType.OPERATION_METHOD, msg.GasLimit, lastHeight, msg.To, transaction)
 	vmError := ""
 	retByte := make([]byte, 0)
 	if runErr != nil {
@@ -52,11 +52,10 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, tx *ethtypes.Transa
 		VmError: vmError,
 		Ret:     retByte,
 		Logs:    nil,
-		Hash:    tx.Hash().Hex(),
 	}, nil
 }
 
-func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, tx *ethtypes.Transaction, method *abi.Method, aspectId common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
+func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method, aspectId common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
 	lastHeight := ctx.BlockHeight() - 1
 	value, err := anc.aspectService.GetAspectOf(lastHeight, aspectId)
 	if err != nil {
@@ -80,31 +79,54 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, tx *ethtypes.Trans
 		VmError: "",
 		Ret:     ret,
 		Logs:    nil,
-		Hash:    tx.Hash().Hex(),
 	}, nil
 }
 
-func (k *AspectNativeContract) bind(ctx sdk.Context, tx *ethtypes.Transaction, aspectId common.Address, contract common.Address, aspectVersion *uint256.Int, priority int8) (*evmtypes.MsgEthereumTxResponse, error) {
-	level, err := k.checkTransactionLevel(ctx, aspectId)
-	if err != nil || !level {
-		return nil, errors.Wrapf(xtype.ErrCallContract, "aspect not implement `IAspectTransaction`, aspectId: %s , err: %s", aspectId, err.Error())
-	}
-	if err := k.aspectService.aspectStore.BindContractAspects(ctx, contract, aspectId, aspectVersion, priority); err != nil {
+func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, account common.Address, aspectVersion *uint256.Int, priority int8, isContract bool) (*evmtypes.MsgEthereumTxResponse, error) {
+	// check aspect types
+	txAspect, err := k.checkIsTransactionLevel(ctx, aspectId)
+	if err != nil {
 		return nil, err
 	}
-	if err := k.aspectService.aspectStore.StoreAspectRefValue(ctx, contract, aspectId); err != nil {
+
+	txVerifier, err := k.checkIsTxVerifier(ctx, aspectId)
+	if err != nil {
 		return nil, err
 	}
+
+	// EoA can only bind with tx verifier
+	if !txVerifier && !isContract {
+		return nil, errors.New("unable to bind non-tx-verifier Aspect to an EoA account")
+	}
+
+	// bind tx processing aspect if account is a contract
+	if txAspect && isContract {
+		if err := k.aspectService.aspectStore.BindTxAspect(ctx, account, aspectId, aspectVersion, priority); err != nil {
+			return nil, err
+		}
+	}
+
+	// bind tx verifier aspect
+	if txVerifier {
+		if err := k.aspectService.aspectStore.BindVerificationAspect(ctx, account, aspectId, aspectVersion, priority, isContract); err != nil {
+			return nil, err
+		}
+	}
+
+	// save reverse index
+	if err := k.aspectService.aspectStore.StoreAspectRefValue(ctx, account, aspectId); err != nil {
+		return nil, err
+	}
+
 	return &evmtypes.MsgEthereumTxResponse{
 		GasUsed: ctx.GasMeter().GasConsumed(),
 		VmError: "",
 		Ret:     nil,
 		Logs:    nil,
-		Hash:    tx.Hash().Hex(),
 	}, nil
 }
 
-func (k *AspectNativeContract) unbind(ctx sdk.Context, tx *ethtypes.Transaction, aspectId common.Address, contract common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) unbind(ctx sdk.Context, aspectId common.Address, contract common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
 	if err := k.aspectService.aspectStore.UnBindContractAspects(ctx, contract, aspectId); err != nil {
 		return nil, err
 	}
@@ -117,11 +139,10 @@ func (k *AspectNativeContract) unbind(ctx sdk.Context, tx *ethtypes.Transaction,
 		VmError: "",
 		Ret:     nil,
 		Logs:    nil,
-		Hash:    tx.Hash().Hex(),
 	}, nil
 }
 
-func (k *AspectNativeContract) changeVersion(ctx sdk.Context, tx *ethtypes.Transaction, aspectId common.Address, contract common.Address, version uint64) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) changeVersion(ctx sdk.Context, aspectId common.Address, contract common.Address, version uint64) (*evmtypes.MsgEthereumTxResponse, error) {
 	err := k.aspectService.aspectStore.ChangeBoundAspectVersion(ctx, contract, aspectId, version)
 	if err != nil {
 		return nil, err
@@ -132,11 +153,10 @@ func (k *AspectNativeContract) changeVersion(ctx sdk.Context, tx *ethtypes.Trans
 		VmError: "",
 		Ret:     nil,
 		Logs:    nil,
-		Hash:    tx.Hash().Hex(),
 	}, nil
 }
 
-func (k *AspectNativeContract) version(ctx sdk.Context, tx *ethtypes.Transaction, method *abi.Method, aspectId common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) version(ctx sdk.Context, method *abi.Method, aspectId common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
 	version := k.aspectService.aspectStore.GetAspectLastVersion(ctx, aspectId)
 
 	ret, err := method.Outputs.Pack(version)
@@ -149,11 +169,10 @@ func (k *AspectNativeContract) version(ctx sdk.Context, tx *ethtypes.Transaction
 		VmError: "",
 		Ret:     ret,
 		Logs:    nil,
-		Hash:    tx.Hash().Hex(),
 	}, nil
 }
 
-func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, tx *ethtypes.Transaction, method *abi.Method, contract common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, contract common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
 	aspects, err := k.aspectService.GetAspectForAddr(ctx.BlockHeight()-1, contract)
 	if err != nil {
 		return nil, err
@@ -167,7 +186,6 @@ func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, tx *ethtypes.Transacti
 		VmError: "",
 		Ret:     ret,
 		Logs:    nil,
-		Hash:    tx.Hash().Hex(),
 	}, nil
 }
 
@@ -205,7 +223,7 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	bHeight := ctx.BlockHeight() - 1
 	code, _ := k.aspectService.GetAspectCode(bHeight, aspectId)
 	if code == nil {
-		return true, nil
+		return false, nil
 	}
 	runner, newErr := run.NewRunner(aspectId.String(), code)
 	if newErr != nil {
@@ -228,7 +246,7 @@ func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectI
 	return binding, runErr
 }
 
-func (k *AspectNativeContract) deploy(ctx sdk.Context, tx *ethtypes.Transaction, aspectId common.Address, code []byte, properties []types.Property) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property) (*evmtypes.MsgEthereumTxResponse, error) {
 	k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
 	k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
 
@@ -254,7 +272,6 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, tx *ethtypes.Transaction,
 		VmError: "",
 		Ret:     nil,
 		Logs:    nil,
-		Hash:    tx.Hash().Hex(),
 	}, nil
 }
 
@@ -269,10 +286,10 @@ func (k *AspectNativeContract) checkBlockLevel(aspectId common.Address, code []b
 	return binding, runErr
 }
 
-func (k *AspectNativeContract) checkTransactionLevel(ctx sdk.Context, aspectId common.Address) (bool, error) {
+func (k *AspectNativeContract) checkIsTransactionLevel(ctx sdk.Context, aspectId common.Address) (bool, error) {
 	code, _ := k.aspectService.GetAspectCode(ctx.BlockHeight()-1, aspectId)
 	if code == nil {
-		return true, nil
+		return false, nil
 	}
 	runner, newErr := run.NewRunner(aspectId.String(), code)
 	if newErr != nil {
@@ -283,3 +300,19 @@ func (k *AspectNativeContract) checkTransactionLevel(ctx sdk.Context, aspectId c
 	binding, runErr := runner.IsTransactionLevel()
 	return binding, runErr
 }
+
+func (k *AspectNativeContract) checkIsTxVerifier(ctx sdk.Context, aspectId common.Address) (bool, error) {
+	code, _ := k.aspectService.GetAspectCode(ctx.BlockHeight()-1, aspectId)
+	if code == nil {
+		return false, nil
+	}
+	runner, newErr := run.NewRunner(aspectId.String(), code)
+	if newErr != nil {
+		return false, newErr
+	}
+	defer runner.Return()
+
+	binding, runErr := runner.IsTxVerifier()
+	return binding, runErr
+}
+

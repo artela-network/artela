@@ -76,7 +76,7 @@ type Keeper struct {
 	// keep the evm and matched stateDB instance just finished running
 	aspectRuntimeContext *artvmtype.AspectRuntimeContext
 
-	aspectMint *provider.ArtelaProvider
+	aspect *provider.ArtelaProvider
 
 	clientContext client.Context
 }
@@ -105,7 +105,7 @@ func NewKeeper(
 	}
 
 	// init aspect mint
-	newAspectMint := provider.NewArtelaProvider(storeKey, app.CreateQueryContext)
+	newAspectMint := provider.NewArtelaProvider(storeKey, app.CreateQueryContext, app.LastBlockHeight)
 	// new  Aspect Runtime Context
 	newAspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
 
@@ -135,7 +135,7 @@ func NewKeeper(
 		ss:                   subSpace,
 		getCtxByHeight:       app.CreateQueryContext,
 		aspectRuntimeContext: newAspectRuntimeContext,
-		aspectMint:           newAspectMint,
+		aspect:               newAspectMint,
 	}
 	// init jit inherent
 	newAspectProtocol := provider.NewAspectProtocolProvider(newAspectRuntimeContext.EthTxContext)
@@ -162,7 +162,7 @@ func (k Keeper) GetClientContext() client.Context {
 }
 
 func (k Keeper) GetAspectCosmosProvider() cosmosAspect.AspectCosmosProvider {
-	return k.aspectMint
+	return k.aspect
 }
 
 func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {

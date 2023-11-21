@@ -858,7 +858,7 @@ func (app *Artela) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64)
 		panic(err)
 	}
 
-	app.SetAnteHandler(ante.NewAnteHandler(options))
+	app.SetAnteHandler(ante.NewAnteHandler(app.BaseApp, options))
 }
 
 // Name returns the name of the App

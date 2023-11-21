@@ -2,6 +2,7 @@ package ante
 
 import (
 	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -82,7 +83,7 @@ func (options AnteDecorators) Validate() error {
 }
 
 // newEVMAnteHandler creates the default ante handler for Ethereum transactions
-func newEVMAnteHandler(options AnteDecorators) cosmos.AnteHandler {
+func newEVMAnteHandler(app *baseapp.BaseApp, options AnteDecorators) cosmos.AnteHandler {
 	return cosmos.ChainAnteDecorators(
 		// outermost AnteDecorator. SetUpContext must be called first
 		evmante.NewEthSetUpContextDecorator(options.EvmKeeper),
@@ -91,7 +92,7 @@ func newEVMAnteHandler(options AnteDecorators) cosmos.AnteHandler {
 		// Check eth effective gas price against the global MinGasPrice
 		evmante.NewEthMinGasPriceDecorator(options.FeeKeeper, options.EvmKeeper),
 		evmante.NewEthValidateBasicDecorator(options.EvmKeeper),
-		evmante.NewEthSigVerificationDecorator(options.EvmKeeper),
+		evmante.NewEthSigVerificationDecorator(app, options.EvmKeeper),
 		evmante.NewEthAccountVerificationDecorator(options.AccountKeeper, options.EvmKeeper),
 		evmante.NewCanTransferDecorator(options.EvmKeeper),
 		// evmante.NewEthVestingTransactionDecorator(options.AccountKeeper, options.BankKeeper, options.EvmKeeper),
