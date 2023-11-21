@@ -23,6 +23,8 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, tx *ethtypes.Transa
 	if newErr != nil {
 		return nil, newErr
 	}
+	defer runner.Return()
+
 	transaction := &artelasdkType.EthTransaction{
 		BlockNumber: ctx.BlockHeight(),
 		From:        artelasdkType.ARTELA_ADDR,
@@ -193,6 +195,8 @@ func (k *AspectNativeContract) checkContractBinding(ctx sdk.Context, aspectId co
 	if newErr != nil {
 		return false, newErr
 	}
+	defer runner.Return()
+
 	binding, runErr := runner.OnContractBinding(bHeight, 0, &contract, contract.String())
 	return binding, runErr
 }
@@ -207,6 +211,8 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	if newErr != nil {
 		return false, newErr
 	}
+	defer runner.Return()
+
 	binding, runErr := runner.IsOwner(bHeight, 0, &sender, sender.String())
 	return binding, runErr
 }
@@ -216,6 +222,8 @@ func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectI
 	if newErr != nil {
 		return false, newErr
 	}
+	defer runner.Return()
+
 	binding, runErr := runner.IsOwner(ctx.BlockHeight(), 0, &sender, sender.String())
 	return binding, runErr
 }
@@ -255,6 +263,8 @@ func (k *AspectNativeContract) checkBlockLevel(aspectId common.Address, code []b
 	if newErr != nil {
 		return false, newErr
 	}
+	defer runner.Return()
+
 	binding, runErr := runner.IsBlockLevel()
 	return binding, runErr
 }
@@ -268,6 +278,8 @@ func (k *AspectNativeContract) checkTransactionLevel(ctx sdk.Context, aspectId c
 	if newErr != nil {
 		return false, newErr
 	}
+	defer runner.Return()
+
 	binding, runErr := runner.IsTransactionLevel()
 	return binding, runErr
 }
