@@ -3,6 +3,8 @@ package provider
 import (
 	"math/big"
 
+	"google.golang.org/protobuf/types/known/anypb"
+
 	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/aspect/cosmos"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -22,8 +24,11 @@ type ArtelaProvider struct {
 	service *contract.AspectService
 }
 
-func NewArtelaProvider(storeKey storetypes.StoreKey, getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *ArtelaProvider {
-	service := contract.NewAspectService(storeKey, getCtxByHeight)
+func NewArtelaProvider(storeKey storetypes.StoreKey,
+	getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
+	getBlockHeight func() int64,
+) *ArtelaProvider {
+	service := contract.NewAspectService(storeKey, getCtxByHeight, getBlockHeight)
 
 	return &ArtelaProvider{service: service}
 }
@@ -50,6 +55,19 @@ func (j *ArtelaProvider) CreateTxPointRequest(sdkCtx sdk.Context, msg sdk.Msg, t
 	return &asptypes.EthTxAspect{
 		Tx:          ethTransaction,
 		CurrInnerTx: innerTx,
+		GasInfo:     &asptypes.GasInfo{},
+	}, nil
+}
+
+func (j *ArtelaProvider) CreateTxPointRequestWithData(data []byte) (*asptypes.EthTxAspect, error) {
+	anyData, err := anypb.New(&asptypes.BytesData{Data: data})
+	if err != nil {
+		return nil, err
+	}
+	return &asptypes.EthTxAspect{
+		Tx:          nil,
+		CurrInnerTx: nil,
+		CallData:    anyData,
 		GasInfo:     &asptypes.GasInfo{},
 	}, nil
 }
@@ -99,10 +117,18 @@ func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address
 	return j.service.GetAspectForAddr(blockNum, address)
 }
 
+func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
+	return j.service.GetAccountVerifiers(blockNum, address)
+}
+
 func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
 	return j.service.GetAspectForBlock(blockNum)
 }
 
 func (j *ArtelaProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
 	return j.service.GetAspectAccount(blockNum, aspectId)
+}
+
+func (j *ArtelaProvider) GetLatestBlock() int64 {
+	return j.service.GetBlockHeight()
 }

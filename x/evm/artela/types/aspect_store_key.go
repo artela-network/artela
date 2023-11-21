@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/binary"
 	"strings"
 
@@ -18,6 +19,7 @@ const (
 	AspectCodeVersionKeyPrefix = "AspectStore/Version/"
 	AspectPropertyKeyPrefix    = "AspectStore/Property/"
 	ContractBindKeyPrefix      = "AspectStore/ContractBind/"
+	VerifierBindingKeyPrefix   = "AspectStore/VerifierBind/"
 	AspectRefKeyPrefix         = "AspectStore/AspectRef/"
 	AspectBlockKeyPrefix       = "AspectStore/Block/"
 	AspectStateKeyPrefix       = "AspectStore/State/"
@@ -30,11 +32,16 @@ const (
 	AspectProofKey   = "Aspect_@Proof@_"
 )
 
+var (
+	PathSeparator    = []byte("/")
+	PathSeparatorLen = len(PathSeparator)
+)
+
 func AspectArrayKey(keys ...[]byte) []byte {
 	var key []byte
 	for _, b := range keys {
 		key = append(key, b...)
-		key = append(key, []byte("/")...)
+		key = append(key, PathSeparator...)
 	}
 	return key
 }
@@ -44,12 +51,12 @@ func AspectPropertyKey(
 	aspectId []byte,
 	propertyKey []byte,
 ) []byte {
-	var key []byte
+	key := make([]byte, 0, len(aspectId)+PathSeparatorLen*2+len(propertyKey))
 
 	key = append(key, aspectId...)
-	key = append(key, []byte("/")...)
+	key = append(key, PathSeparator...)
 	key = append(key, propertyKey...)
-	key = append(key, []byte("/")...)
+	key = append(key, PathSeparator...)
 
 	return key
 }
@@ -58,12 +65,12 @@ func AspectVersionKey(
 	aspectId []byte,
 	version []byte,
 ) []byte {
-	var key []byte
+	key := make([]byte, 0, len(aspectId)+PathSeparatorLen*2+len(version))
 
 	key = append(key, aspectId...)
-	key = append(key, []byte("/")...)
+	key = append(key, PathSeparator...)
 	key = append(key, version...)
-	key = append(key, []byte("/")...)
+	key = append(key, PathSeparator...)
 
 	return key
 }
@@ -71,10 +78,9 @@ func AspectVersionKey(
 func AspectIdKey(
 	aspectId []byte,
 ) []byte {
-	var key []byte
-
+	key := make([]byte, 0, len(aspectId)+PathSeparatorLen)
 	key = append(key, aspectId...)
-	key = append(key, []byte("/")...)
+	key = append(key, PathSeparator...)
 
 	return key
 }
@@ -82,16 +88,16 @@ func AspectIdKey(
 func AspectBlockKey() []byte {
 	var key []byte
 	key = append(key, []byte("AspectBlock")...)
-	key = append(key, []byte("/")...)
+	key = append(key, PathSeparator...)
 	return key
 }
 
-func ContractKey(
-	contract []byte,
+func AccountKey(
+	account []byte,
 ) []byte {
-	var key []byte
-	key = append(key, contract...)
-	key = append(key, []byte("/")...)
+	key := make([]byte, 0, len(account)+PathSeparatorLen)
+	key = append(key, account...)
+	key = append(key, PathSeparator...)
 	return key
 }
 
@@ -126,12 +132,12 @@ func ByMapKeyPriority(a, b interface{}) int {
 
 func NewBindingPriorityComparator(x []*AspectMeta) func(i, j int) bool {
 	return func(i, j int) bool {
-		return x[i].Priority < x[j].Priority
+		return x[i].Priority < x[j].Priority && (bytes.Compare(x[i].Id.Bytes(), x[j].Id.Bytes()) < 0)
 	}
 }
 
 func NewBindingAspectPriorityComparator(x []*artela.AspectCode) func(i, j int) bool {
 	return func(i, j int) bool {
-		return (x[i].Priority < x[j].Priority) && (strings.Compare(x[i].AspectId, x[j].AspectId) >= 0)
+		return (x[i].Priority < x[j].Priority) && (strings.Compare(x[i].AspectId, x[j].AspectId) < 0)
 	}
 }

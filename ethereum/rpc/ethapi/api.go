@@ -1005,7 +1005,7 @@ func SubmitTransaction(ctx context.Context, logger log.Logger, b Backend, tx *ty
 	if err := checkTxFee(tx.GasPrice(), tx.Gas(), b.RPCTxFeeCap()); err != nil {
 		return common.Hash{}, err
 	}
-	if !b.UnprotectedAllowed() && !tx.Protected() {
+	if !isCustomizedVerificationRequired(tx) || !b.UnprotectedAllowed() && !tx.Protected() {
 		// Ensure only eip155 signed transactions are submitted if EIP155Required is set.
 		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
 	}
@@ -1257,4 +1257,9 @@ func toHexSlice(b [][]byte) []string {
 		r[i] = hexutil.Encode(b[i])
 	}
 	return r
+}
+
+func isCustomizedVerificationRequired(tx *types.Transaction) bool {
+	v, r, s := tx.RawSignatureValues()
+	return v == nil || r == nil || s == nil
 }

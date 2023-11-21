@@ -39,7 +39,7 @@ func newLegacyTx(tx *ethereum.Transaction) (*LegacyTx, error) {
 		txData.GasPrice = &gasPriceInt
 	}
 
-	txData.SetSignatureValues(tx.ChainId(), v, r, s)
+	txData.SetSignatureValues(v, r, s)
 	return txData, nil
 }
 
@@ -206,7 +206,7 @@ func (tx *LegacyTx) GetRawSignatureValues() (v, r, s *big.Int) {
 }
 
 // SetSignatureValues sets the signature values to the txs.
-func (tx *LegacyTx) SetSignatureValues(_, v, r, s *big.Int) {
+func (tx *LegacyTx) SetSignatureValues(v, r, s *big.Int) {
 	if v != nil {
 		tx.V = v.Bytes()
 	}
@@ -216,4 +216,7 @@ func (tx *LegacyTx) SetSignatureValues(_, v, r, s *big.Int) {
 	if s != nil {
 		tx.S = s.Bytes()
 	}
+}
+
+func (tx *LegacyTx) SetChainId(_ *big.Int) {
 }

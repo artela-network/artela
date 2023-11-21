@@ -39,7 +39,8 @@ type TxData interface {
 	GetTo() *common.Address
 
 	GetRawSignatureValues() (v, r, s *big.Int)
-	SetSignatureValues(chainID, v, r, s *big.Int)
+	SetSignatureValues(v, r, s *big.Int)
+	SetChainId(chainID *big.Int)
 
 	AsEthereumData() ethereum.TxData
 	Validate() error

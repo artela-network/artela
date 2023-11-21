@@ -3,11 +3,10 @@ package keeper
 import (
 	"math/big"
 
-	"github.com/artela-network/aspect-core/djpm"
+	"github.com/artela-network/artela/x/evm/artela/contract"
 	asptypes "github.com/artela-network/aspect-core/types"
 
-	"github.com/artela-network/artela/x/evm/artela/contract"
-
+	"github.com/artela-network/aspect-core/djpm"
 	cometbft "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
@@ -164,21 +163,13 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	ethTxContext := artelatype.NewEthTxContext(tx)
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
-	var res *txs.MsgEthereumTxResponse
-
-	// if transaction is Aspect operational, short the circuit and skip the processes
-	if isAspectOpTx := asptypes.IsAspectContractAddr(tx.To()); isAspectOpTx {
-		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
-		res, err = nativeContract.ApplyTx(tmpCtx, tx, msg)
-	} else {
-		// pass true to commit the StateDB
-		res, err = k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
-		if err != nil {
-			ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
-			return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
-		}
-		ctx.Logger().Debug("ApplyMessageWithConfig", "txhash", tx.Hash().String(), "response", res)
+	// pass true to commit the StateDB
+	res, err := k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
+	if err != nil {
+		ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
+		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
 	}
+	ctx.Logger().Debug("ApplyMessageWithConfig", "txhash", tx.Hash().String(), "response", res)
 
 	logs := support.LogsToEthereum(res.Logs)
 
@@ -251,7 +242,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	k.GetAspectRuntimeContext().EthTxContext().WithReceipt(receipt)
 	// commit
 	// aspect OnTxCommit start
-	pointRequest, err := k.aspectMint.TxToPointRequest(ctx, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
+	pointRequest, err := k.aspect.TxToPointRequest(ctx, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
 	if err != nil {
 		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
 	} else {
@@ -371,7 +362,17 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		stateDB.PrepareAccessList(msg.From, msg.To, vm.ActivePrecompiles(rules), msg.AccessList)
 	}
 
-	if contractCreation {
+	// if transaction is Aspect operational, short the circuit and skip the processes
+	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
+		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage, func() int64 {
+			return ctx.BlockHeight()
+		}, stateDB)
+		resp, err := nativeContract.ApplyMsg(ctx, msg)
+		if resp != nil {
+			resp.Hash = txConfig.TxHash.Hex()
+		}
+		return resp, err
+	} else if contractCreation {
 		// take over the nonce management from evm:
 		// - reset sender's nonce to msg.Nonce() before calling evm.
 		// - increase sender's nonce by one no matter the result.
@@ -379,7 +380,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		ret, _, leftoverGas, vmErr = evm.Create(sender, msg.Data, leftoverGas, msg.Value)
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
-		pointRequest := k.aspectMint.CreateTxPointRequestInEvm(ctx, msg, txConfig, nil)
+		pointRequest := k.aspect.CreateTxPointRequestInEvm(ctx, msg, txConfig, nil)
 		pointRequest.GasInfo.Gas = leftoverGas
 
 		execute := djpm.AspectInstance().PreTxExecute(pointRequest)

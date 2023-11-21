@@ -5,13 +5,14 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/artela-network/artela/x/evm/states"
+
 	errorsmod "cosmossdk.io/errors"
 	"github.com/artela-network/artela-evm/vm"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
@@ -24,23 +25,27 @@ import (
 type AspectNativeContract struct {
 	aspectService    *AspectService
 	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)
+	evmState         *states.StateDB
 }
 
 func NewAspectNativeContract(storeKey storetypes.StoreKey,
 	getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
 	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error),
+	getBlockHeight func() int64,
+	evmState *states.StateDB,
 ) *AspectNativeContract {
 	return &AspectNativeContract{
-		aspectService:    NewAspectService(storeKey, getCtxByHeight),
+		aspectService:    NewAspectService(storeKey, getCtxByHeight, getBlockHeight),
 		applyMessageFunc: applyMessageFunc,
+		evmState:         evmState,
 	}
 }
 
-func (k *AspectNativeContract) Query(ctx sdk.Context, tx *ethtypes.Transaction) (*evmtxs.MsgEthereumTxResponse, error) {
-	if tx == nil {
-		return nil, nil
+func (k *AspectNativeContract) Query(ctx sdk.Context, msg *core.Message) (*evmtxs.MsgEthereumTxResponse, error) {
+	if msg == nil {
+		return nil, errors.Wrapf(evmtypes.ErrCallContract, "msg is nil")
 	}
-	method, params, err := types.ParseInput(tx.Data())
+	method, params, err := types.ParseInput(msg.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -48,33 +53,33 @@ func (k *AspectNativeContract) Query(ctx sdk.Context, tx *ethtypes.Transaction) 
 	case "versionof":
 		{
 			aspectId := params["aspectId"].(common.Address)
-			return k.version(ctx, tx, method, aspectId)
+			return k.version(ctx, method, aspectId)
 		}
 
 	case "aspectsof":
 		{
 			contract := params["contract"].(common.Address)
-			return k.aspectsOf(ctx, tx, method, contract)
+			return k.aspectsOf(ctx, method, contract)
 		}
 
 	case "contractsof":
 		{
 			aspectId := params["aspectId"].(common.Address)
-			return k.contractsOf(ctx, tx, method, aspectId)
+			return k.contractsOf(ctx, method, aspectId)
 		}
 	case "entrypoint":
 		{
 			aspectId := params["aspectId"].(common.Address)
 			data := params["optArgs"].([]byte)
-			return k.entrypoint(ctx, tx, method, aspectId, data)
+			return k.entrypoint(ctx, msg, method, aspectId, data)
 		}
 	}
 
 	return nil, nil
 }
 
-func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction, msg *core.Message) (*evmtxs.MsgEthereumTxResponse, error) {
-	method, parameters, err := types.ParseMethod(tx)
+func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*evmtxs.MsgEthereumTxResponse, error) {
+	method, parameters, err := types.ParseMethod(msg.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +92,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 				Value string `json:"value"`
 			})
 			var propertyAry []types.Property
-			for i := range properties { //nolint:typecheck
+			for i := range properties {
 				s := properties[i]
 				if types.AspectProofKey == s.Key || types.AspectAccountKey == s.Key {
 					// Block query of account and Proof
@@ -122,7 +127,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 			}
 
 			aspectId := crypto.CreateAddress(sender.Address(), msg.Nonce)
-			return k.deploy(ctx, tx, aspectId, code, propertyAry)
+			return k.deploy(ctx, aspectId, code, propertyAry)
 		}
 	case "upgrade":
 		{
@@ -152,29 +157,36 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 			if !aspectOwner {
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to upgrade, sender: %s , aspectId: %s", sender.Address().String(), aspectId.String())
 			}
-			return k.deploy(ctx, tx, aspectId, code, propertyAry)
+			return k.deploy(ctx, aspectId, code, propertyAry)
 		}
 	case "bind":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
 			aspectVersion := parameters["aspectVersion"].(*big.Int)
-			contract := parameters["contract"].(common.Address)
+			account := parameters["contract"].(common.Address)
 			priority := parameters["priority"].(int8)
 			versionU256, _ := uint256.FromBig(aspectVersion)
 			sender := vm.AccountRef(msg.From)
-			owner := k.checkContractOwner(ctx, &contract, tx.Nonce()+1, sender.Address())
-			if !owner {
-				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), contract.String())
-			}
-			binding, err := k.checkContractBinding(ctx, aspectId, contract)
-			if err != nil {
-				return nil, err
-			}
-			if !binding {
-				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check contract binding fail, aspectId: %s , contract: %s", aspectId.String(), contract.String())
+			isContract := k.evmState.GetCodeHash(msg.From) != common.Hash{}
+			if isContract {
+				// Bind with contract account, need to verify contract ownerships first
+				owner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
+				if !owner {
+					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
+				}
+				binding, err := k.checkContractBinding(ctx, aspectId, account)
+				if err != nil {
+					return nil, err
+				}
+				if !binding {
+					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check contract binding fail, aspectId: %s , contract: %s", aspectId.String(), account.String())
+				}
+			} else if account != sender.Address() {
+				// For EoA account binding, only the account itself can issue the bind request
+				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect binding")
 			}
 
-			return k.bind(ctx, tx, aspectId, contract, versionU256, priority)
+			return k.bind(ctx, aspectId, account, versionU256, priority, isContract)
 		}
 
 	case "unbind":
@@ -182,7 +194,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 			aspectId := parameters["aspectId"].(common.Address)
 			contract := parameters["contract"].(common.Address)
 			sender := vm.AccountRef(msg.From)
-			owner := k.checkContractOwner(ctx, &contract, tx.Nonce()+1, sender.Address())
+			owner := k.checkContractOwner(ctx, &contract, msg.Nonce+1, sender.Address())
 			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address())
 			if err != nil {
 				return nil, err
@@ -190,7 +202,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 			if !owner || !aspectOwner {
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to unbind, sender: %s , contract: %s", sender.Address().String(), contract.String())
 			}
-			return k.unbind(ctx, tx, aspectId, contract)
+			return k.unbind(ctx, aspectId, contract)
 
 		}
 	case "changeversion":
@@ -206,30 +218,30 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 			if !aspectOwner {
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to changeversion, sender: %s , contract: %s", sender.Address().String(), contract.String())
 			}
-			return k.changeVersion(ctx, tx, aspectId, contract, version)
+			return k.changeVersion(ctx, aspectId, contract, version)
 		}
 	case "versionof":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
-			return k.version(ctx, tx, method, aspectId)
+			return k.version(ctx, method, aspectId)
 		}
 
 	case "aspectsof":
 		{
 			contract := parameters["contract"].(common.Address)
-			return k.aspectsOf(ctx, tx, method, contract)
+			return k.aspectsOf(ctx, method, contract)
 		}
 
 	case "contractsof":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
-			return k.contractsOf(ctx, tx, method, aspectId)
+			return k.contractsOf(ctx, method, aspectId)
 		}
 	case "entrypoint":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
 			data := parameters["optArgs"].([]byte)
-			return k.entrypoint(ctx, tx, method, aspectId, data)
+			return k.entrypoint(ctx, msg, method, aspectId, data)
 		}
 	}
 	return nil, nil

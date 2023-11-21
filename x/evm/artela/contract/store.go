@@ -3,6 +3,7 @@ package contract
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"sort"
 
 	"cosmossdk.io/errors"
@@ -22,6 +23,8 @@ import (
 type AspectStore struct {
 	storeKey storetypes.StoreKey
 }
+
+type bindingQueryFunc func(sdk.Context, common.Address) ([]*types.AspectMeta, error)
 
 func NewAspectStore(storeKey storetypes.StoreKey) *AspectStore {
 	return &AspectStore{
@@ -178,16 +181,56 @@ func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Ad
 	}
 }
 
-func (k *AspectStore) BindContractAspects(ctx sdk.Context, contract common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8) error {
-	// get treemap value
-	bindings, err := k.GetContractBondAspects(ctx, contract)
+func (k *AspectStore) BindTxAspect(ctx sdk.Context, account common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8) error {
+	return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
+		k.GetTxLevelAspects, types.ContractBindKeyPrefix, math.MaxUint8)
+}
+
+func (k *AspectStore) BindVerificationAspect(ctx sdk.Context, account common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8, isContractAccount bool) error {
+	if isContractAccount {
+		// contract can have only 1 verifier
+		return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
+			k.GetVerificationAspects, types.VerifierBindingKeyPrefix, 1)
+	} else {
+		// EoA can have multiple verifiers
+		return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
+			k.GetVerificationAspects, types.VerifierBindingKeyPrefix, math.MaxUint8)
+	}
+}
+
+func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, aspectId common.Address,
+	aspectVersion *uint256.Int, priority int8, queryBinding bindingQueryFunc, bindingNameSpace string, limit int,
+) error {
+	// check aspect existence
+	code, version := k.GetAspectCode(ctx, aspectId, aspectVersion)
+	if code == nil || version == nil {
+		return errors.Wrap(nil, "aspect not exist")
+	}
+
+	// get transaction level aspect binding relationships
+	bindings, err := queryBinding(ctx, account)
 	if err != nil {
 		return err
 	}
 
-	code, version := k.GetAspectCode(ctx, aspectId, aspectVersion)
-	if code == nil || version == nil {
-		return errors.Wrap(nil, "aspect not exist")
+	if len(bindings) >= limit {
+		return errors.Wrap(nil, "aspect binding limit exceeds")
+	}
+
+	// check duplicates
+	existing := -1
+	for index, binding := range bindings {
+		if bytes.Equal(binding.Id.Bytes(), aspectId.Bytes()) {
+			// ignore if binding already exists
+			if binding.Priority == int64(priority) &&
+				binding.Version.Cmp(aspectVersion) == 0 {
+				return nil
+			}
+
+			// record existing, replace later
+			existing = index
+			break
+		}
 	}
 
 	newAspect := &types.AspectMeta{
@@ -196,69 +239,87 @@ func (k *AspectStore) BindContractAspects(ctx sdk.Context, contract common.Addre
 		Priority: int64(priority),
 	}
 
-	bindings = append(bindings, newAspect)
-	sort.Slice(bindings, types.NewBindingPriorityComparator(bindings))
+	// replace existing binding
+	if existing > 0 {
+		bindings[existing] = newAspect
+	} else {
+		bindings = append(bindings, newAspect)
+	}
+
+	// re-sort aspects by priority
+	if limit != 1 {
+		sort.Slice(bindings, types.NewBindingPriorityComparator(bindings))
+	}
 
 	jsonBytes, err := json.Marshal(bindings)
 	if err != nil {
 		return err
 	}
-	// store
-	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
-	aspectPropertyKey := types.ContractKey(
-		contract.Bytes(),
+
+	// save bindings
+	aspectBindingStore := k.newPrefixStore(ctx, bindingNameSpace)
+	aspectPropertyKey := types.AccountKey(
+		account.Bytes(),
 	)
-	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
+	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 
 	return nil
 }
 
 func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	bindings, err := k.GetContractBondAspects(ctx, contract)
+	txAspectBindings, err := k.GetTxLevelAspects(ctx, contract)
 	if err != nil {
 		return err
 	}
-	toDelete := slices.IndexFunc(bindings, func(meta *types.AspectMeta) bool {
+	toDelete := slices.IndexFunc(txAspectBindings, func(meta *types.AspectMeta) bool {
 		return bytes.Equal(meta.Id.Bytes(), aspectId.Bytes())
 	})
 	if toDelete < 0 {
 		return errors.Wrapf(nil, "aspect %s not bound with contract %s", aspectId.Hex(), contract.Hex())
 	}
-	bindings = slices.Delete(bindings, toDelete, toDelete)
-	jsonBytes, err := json.Marshal(bindings)
+	txAspectBindings = slices.Delete(txAspectBindings, toDelete, toDelete)
+	jsonBytes, err := json.Marshal(txAspectBindings)
 	if err != nil {
 		return err
 	}
 	// store
 	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
 
-	aspectPropertyKey := types.ContractKey(
+	aspectPropertyKey := types.AccountKey(
 		contract.Bytes(),
 	)
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }
 
-func (k *AspectStore) GetContractBondAspects(ctx sdk.Context, contract common.Address) ([]*types.AspectMeta, error) {
+func (k *AspectStore) GetTxLevelAspects(ctx sdk.Context, contract common.Address) ([]*types.AspectMeta, error) {
+	return k.getAccountBondAspects(ctx, contract, types.ContractBindKeyPrefix)
+}
+
+func (k *AspectStore) GetVerificationAspects(ctx sdk.Context, account common.Address) ([]*types.AspectMeta, error) {
+	return k.getAccountBondAspects(ctx, account, types.VerifierBindingKeyPrefix)
+}
+
+func (k *AspectStore) getAccountBondAspects(ctx sdk.Context, account common.Address, bindingPrefix string) ([]*types.AspectMeta, error) {
 	// retrieve raw binding store
-	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
-	contractKey := types.ContractKey(
-		contract.Bytes(),
+	aspectBindingStore := k.newPrefixStore(ctx, bindingPrefix)
+	accountKey := types.AccountKey(
+		account.Bytes(),
 	)
-	sortAry := contractBindingStore.Get(contractKey)
+	rawJSON := aspectBindingStore.Get(accountKey)
 
 	var bindings []*types.AspectMeta
-	if len(sortAry) == 0 {
+	if len(rawJSON) == 0 {
 		return bindings, nil
 	}
-	if err := json.Unmarshal(sortAry, &bindings); err != nil {
+	if err := json.Unmarshal(rawJSON, &bindings); err != nil {
 		return nil, errors.Wrap(err, "unable to deserialize value bytes")
 	}
 	return bindings, nil
 }
 
 func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.Address, aspectId common.Address, version uint64) error {
-	meta, err := k.GetContractBondAspects(ctx, contract)
+	meta, err := k.GetTxLevelAspects(ctx, contract)
 	if err != nil {
 		return err
 	}
@@ -278,7 +339,7 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.
 	}
 	// store
 	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
-	aspectPropertyKey := types.ContractKey(
+	aspectPropertyKey := types.AccountKey(
 		contract.Bytes(),
 	)
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
@@ -303,15 +364,15 @@ func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, aspectId common.Address
 	return set, nil
 }
 
-func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, contract)
+func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Address, aspectId common.Address) error {
+	dataSet, err := k.GetAspectRefValue(ctx, account)
 	if err != nil {
 		return err
 	}
 	if dataSet == nil {
 		dataSet = treeset.NewWithStringComparator()
 	}
-	dataSet.Add(contract.String())
+	dataSet.Add(account.String())
 	jsonBytes, err := dataSet.MarshalJSON()
 	if err != nil {
 		return err
@@ -319,10 +380,10 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, contract common.Addre
 	// store
 	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
 
-	aspectPropertyKey := types.AspectIdKey(
+	aspectIdKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
-	aspectRefStore.Set(aspectPropertyKey, jsonBytes)
+	aspectRefStore.Set(aspectIdKey, jsonBytes)
 	return nil
 }
 

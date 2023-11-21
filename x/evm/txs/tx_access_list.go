@@ -51,7 +51,12 @@ func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {
 	}
 
 	// fill the (v,r,s)
-	alTx.SetSignatureValues(tx.ChainId(), v, r, s)
+	if v != nil && r != nil && s != nil {
+		alTx.SetSignatureValues(v, r, s)
+	}
+
+	alTx.SetChainId(tx.ChainId())
+
 	return alTx, nil
 }
 
@@ -245,7 +250,7 @@ func (tx *AccessListTx) GetRawSignatureValues() (v, r, s *big.Int) {
 }
 
 // SetSignatureValues sets the signature values to the txs
-func (tx *AccessListTx) SetSignatureValues(chainID, v, r, s *big.Int) {
+func (tx *AccessListTx) SetSignatureValues(v, r, s *big.Int) {
 	if v != nil {
 		tx.V = v.Bytes()
 	}
@@ -255,6 +260,9 @@ func (tx *AccessListTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 	if s != nil {
 		tx.S = s.Bytes()
 	}
+}
+
+func (tx *AccessListTx) SetChainId(chainID *big.Int) {
 	if chainID != nil {
 		chainIDInt := sdkmath.NewIntFromBigInt(chainID)
 		tx.ChainID = &chainIDInt

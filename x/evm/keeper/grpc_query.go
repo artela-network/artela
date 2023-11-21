@@ -8,10 +8,6 @@ import (
 	"math/big"
 	"time"
 
-	asptypes "github.com/artela-network/aspect-core/types"
-
-	"github.com/artela-network/artela/x/evm/artela/contract"
-
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 
@@ -234,12 +230,6 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	chainID, err := getChainID(ctx, req.ChainId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	if isAspectOpTx := asptypes.IsAspectContractAddr(args.To); isAspectOpTx {
-		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
-		transaction := args.ToTransaction()
-		return nativeContract.Query(ctx, transaction.AsTransaction())
 	}
 
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
