@@ -36,35 +36,9 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx cosmos.Context, tx cosmos
 		}
 
 		ethTx := msgEthTx.AsTransaction()
-		sender, callData, err := esvd.evmKeeper.VerifySig(ctx, ethTx)
+		sender, _, err := esvd.evmKeeper.VerifySig(ctx, ethTx)
 		if err != nil {
 			return ctx, err
-		}
-
-		// if calldata is not nil,
-		// which means we need to replace the current calldata with new one
-		// unpack the tx and reconstruct it
-		if callData != nil {
-			txData, err := txs.UnpackTxData(msgEthTx.Data)
-			if err != nil {
-				return ctx, err
-			}
-
-			switch actual := txData.(type) {
-			case *txs.DynamicFeeTx:
-				actual.Data = callData
-			case *txs.AccessListTx:
-				actual.Data = callData
-			case *txs.LegacyTx:
-				actual.Data = callData
-			default:
-				return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "unsupported tx type")
-			}
-
-			msgEthTx.Data, err = txs.PackTxData(txData)
-			if err != nil {
-				return ctx, errorsmod.Wrap(err, "unable to repack tx data")
-			}
 		}
 
 		// set up the sender to the transaction field if not already

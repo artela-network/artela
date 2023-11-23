@@ -13,21 +13,21 @@ import (
 )
 
 type aspectStateHostApi struct {
-	app            *baseapp.BaseApp
-	storeKey       storetypes.StoreKey
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
+	storeKey           storetypes.StoreKey
+	getDeliverStateCtx func() (sdk.Context, error)
+	getCtxByHeight     func(height int64, prove bool) (sdk.Context, error)
 }
 
-func NewAspectState(app *baseapp.BaseApp, storeKey storetypes.StoreKey, getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *aspectStateHostApi {
+func newAspectState(app *baseapp.BaseApp, storeKey storetypes.StoreKey) *aspectStateHostApi {
 	return &aspectStateHostApi{
-		app:            app,
-		storeKey:       storeKey,
-		getCtxByHeight: getCtxByHeight,
+		storeKey:           storeKey,
+		getDeliverStateCtx: app.DeliverStateCtx,
+		getCtxByHeight:     app.CreateQueryContext,
 	}
 }
 
 func (k *aspectStateHostApi) newPrefixStore(fixKey string) prefix.Store {
-	sdkCtx, err := k.app.DeliverStateCtx()
+	sdkCtx, err := k.getDeliverStateCtx()
 	if err != nil {
 		sdkCtx, _ = k.getCtxByHeight(0, false)
 	}

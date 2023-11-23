@@ -24,8 +24,6 @@ import (
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
-
-	artelatype "github.com/artela-network/artela/x/evm/artela/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
@@ -147,21 +145,23 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	}
 	txConfig := k.TxConfig(ctx, tx.Hash(), tx.Type())
 
+	// snapshot to contain the txs processing and post processing in same scope
+	// var commit func()
+	// tmpCtx := ctx
+	tmpCtx, commit := ctx.CacheContext()
+
 	// get the signer according to the chain rules from the config and block height
-	signer := ethereum.MakeSigner(evmConfig.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
+	signer := k.MakeSigner(ctx, tx, evmConfig.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 
 	msg, err := txs.ToMessage(tx, signer, evmConfig.BaseFee)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to return ethereum txs as core message")
 	}
 
-	// snapshot to contain the txs processing and post processing in same scope
-	// var commit func()
-	// tmpCtx := ctx
-	tmpCtx, commit := ctx.CacheContext()
-	// set aspect tx context
-	ethTxContext := artelatype.NewEthTxContext(tx)
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	msg.Data, err = k.processMsgData(tx)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "unable to process msg data")
+	}
 
 	// pass true to commit the StateDB
 	res, err := k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
