@@ -81,6 +81,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' 's/127.0.0.1:8545/0.0.0.0:8545/g' $HOME/.artelad/config/app.toml
     sed -i '' 's/allow-unprotected-txs = false/allow-unprotected-txs = true/g' $HOME/.artelad/config/app.toml
     sed -i '' 's/pool-size = 0/pool-size = 10/g' $HOME/.artelad/config/app.toml
+
+    # set prunning options
+    sed -i '' 's/pruning = "default"/pruning = "custom"/g' $HOME/.artelad/config/app.toml
+    sed -i '' 's/pruning-keep-recent = "0"/pruning-keep-recent = "2"/g' $HOME/.artelad/config/app.toml
+    sed -i '' 's/pruning-interval = "0"/pruning-interval = "10"/g' $HOME/.artelad/config/app.toml
+
+    # set snapshot options
+    sed -i '' 's/snapshot-interval = 0/snapshot-interval = 2000/g' $HOME/.artelad/config/app.toml
 else
     sed -i 's/create_empty_blocks = true/create_empty_blocks = false/g' $HOME/.artelad/config/config.toml
     sed -i 's/prometheus = false/prometheus = true/' $HOME/.artelad/config/config.toml
@@ -89,6 +97,14 @@ else
     sed -i 's/127.0.0.1:8545/0.0.0.0:8545/g' $HOME/.artelad/config/app.toml
     sed -i 's/allow-unprotected-txs = false/allow-unprotected-txs = true/g' $HOME/.artelad/config/app.toml
     sed -i 's/pool-size = 0/pool-size = 10/g' $HOME/.artelad/config/app.toml
+
+    # set prunning options
+    sed -i 's/pruning = "default"/pruning = "custom"/g' $HOME/.artelad/config/app.toml
+    sed -i 's/pruning-keep-recent = "0"/pruning-keep-recent = "2"/g' $HOME/.artelad/config/app.toml
+    sed -i 's/pruning-interval = "0"/pruning-interval = "10"/g' $HOME/.artelad/config/app.toml
+
+    # set snapshot options
+    sed -i 's/snapshot-interval = 0/snapshot-interval = 2000/g' $HOME/.artelad/config/app.toml
 fi
 
 if [[ $1 == "pending" ]]; then
