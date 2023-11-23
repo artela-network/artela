@@ -1,11 +1,8 @@
 package evm
 
 import (
-	"github.com/artela-network/aspect-core/djpm"
-	asptypes "github.com/artela-network/aspect-core/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/keeper"
 
 	cosmos "github.com/cosmos/cosmos-sdk/types"
@@ -19,7 +16,8 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeg
 	k.WithChainID(ctx)
 
 	// --------aspect OnBlockInitialize start ---  //
-	header := types.ConvertEthBlockHeader(ctx.BlockHeader())
+	// TODO block level tx
+	/*header := types.ConvertEthBlockHeader(ctx.BlockHeader())
 	request := &asptypes.EthBlockAspect{Header: header, GasInfo: &asptypes.GasInfo{
 		GasWanted: 0,
 		GasUsed:   0,
@@ -30,7 +28,7 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeg
 	hasErr, receiveErr := receive.HasErr()
 	if hasErr {
 		ctx.Logger().Error("Aspect.OnBlockInitialize Return Error ", receiveErr.Error(), "height", request.Header.Number)
-	}
+	}*/
 
 	// --------aspect OnBlockInitialize end ---  //
 }
@@ -46,7 +44,8 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	k.EmitBlockBloomEvent(infCtx, bloom)
 
 	// --------aspect OnBlockFinalize start ---  //
-	header := types.ConvertEthBlockHeader(ctx.BlockHeader())
+	// TODO block level tx
+	/*header := types.ConvertEthBlockHeader(ctx.BlockHeader())
 	request := &asptypes.EthBlockAspect{Header: header, GasInfo: &asptypes.GasInfo{
 		GasWanted: 0,
 		GasUsed:   0,
@@ -57,7 +56,7 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	hasErr, receiveErr := receive.HasErr()
 	if hasErr {
 		ctx.Logger().Error("Aspect.OnBlockFinalize Return Error ", receiveErr.Error(), "height", request.Header.Number)
-	}
+	}*/
 
 	// --------aspect OnBlockFinalize end ---  //
 
