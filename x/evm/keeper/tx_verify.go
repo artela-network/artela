@@ -1,6 +1,9 @@
 package keeper
 
 import (
+	"errors"
+	artelatype "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -17,14 +20,10 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 	txConfig := k.TxConfig(ctx, tx.Hash(), tx.Type())
 	stateDB := states.New(ctx, k, txConfig)
 
-	v, r, s := tx.RawSignatureValues()
-
 	// calling a contract without signature, verify with aspect
 	// this verification method is only allowed in call contract,
 	// transactions that transfer value or creating contract must be signed
-	if v == nil || r == nil || s == nil &&
-		(tx.To() != nil && *tx.To() != common.Address{}) &&
-		(stateDB.GetCodeHash(*tx.To()) != common.Hash{}) {
+	if k.isCustomizedVerification(tx) && (stateDB.GetCodeHash(*tx.To()) != common.Hash{}) {
 		return k.tryAspectVerifier(ctx, tx)
 	}
 
@@ -56,4 +55,61 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 
 func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {
 	return djpm.AspectInstance().GetSenderAndCallData(ctx.BlockHeight(), tx)
+}
+
+func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer {
+	// set aspect tx context
+	ethTxContext := artelatype.NewEthTxContext(tx)
+	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+
+	txConfig := k.TxConfig(ctx, tx.Hash(), tx.Type())
+	stateDB := states.New(ctx, k, txConfig)
+	if k.isCustomizedVerification(tx) && (stateDB.GetCodeHash(*tx.To()) != common.Hash{}) {
+		return &aspectSigner{k, ctx}
+	}
+
+	return ethereum.MakeSigner(config, blockNumber, blockTime)
+}
+
+func (k *Keeper) isCustomizedVerification(tx *ethereum.Transaction) bool {
+	v, r, s := tx.RawSignatureValues()
+	zero := big.NewInt(0)
+	return (v == nil || r == nil || s == nil || (v.Cmp(zero) == 0 && r.Cmp(zero) == 0 && s.Cmp(zero) == 0)) &&
+		(tx.To() != nil && *tx.To() != common.Address{})
+}
+
+func (k *Keeper) processMsgData(tx *ethereum.Transaction) ([]byte, error) {
+	if k.isCustomizedVerification(tx) {
+		_, callData, err := djpm.DecodeValidationAndCallData(tx.Data())
+		return callData, err
+	}
+
+	return tx.Data(), nil
+}
+
+type aspectSigner struct {
+	keeper *Keeper
+	ctx    cosmos.Context
+}
+
+func (a *aspectSigner) Sender(tx *ethereum.Transaction) (common.Address, error) {
+	sender, _, err := a.keeper.VerifySig(a.ctx, tx)
+	return sender, err
+}
+
+func (a *aspectSigner) SignatureValues(tx *ethereum.Transaction, sig []byte) (r, s, v *big.Int, err error) {
+	return nil, nil, nil, errors.New("not supported")
+}
+
+func (a *aspectSigner) ChainID() *big.Int {
+	return a.keeper.ChainID()
+}
+
+func (a *aspectSigner) Hash(tx *ethereum.Transaction) common.Hash {
+	return tx.Hash()
+}
+
+func (a *aspectSigner) Equal(signer ethereum.Signer) bool {
+	_, ok := signer.(*aspectSigner)
+	return ok
 }

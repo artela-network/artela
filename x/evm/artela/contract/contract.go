@@ -167,7 +167,7 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 			priority := parameters["priority"].(int8)
 			versionU256, _ := uint256.FromBig(aspectVersion)
 			sender := vm.AccountRef(msg.From)
-			isContract := k.evmState.GetCodeHash(msg.From) != common.Hash{}
+			isContract := len(k.evmState.GetCode(account)) > 0
 			if isContract {
 				// Bind with contract account, need to verify contract ownerships first
 				owner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())

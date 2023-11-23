@@ -86,7 +86,10 @@ func (service *AspectService) GetAspectForAddr(height int64, to common.Address) 
 func (service *AspectService) GetAccountVerifiers(height int64, to common.Address) ([]*artela.AspectCode, error) {
 	sdkCtx, getErr := service.getCtxByHeight(height, true)
 	if getErr != nil {
-		return nil, errors.Wrap(getErr, "load context by pre block height failed")
+		sdkCtx, getErr = service.getCtxByHeight(height-1, true)
+		if getErr != nil {
+			return nil, errors.Wrap(getErr, "load context by pre block height failed")
+		}
 	}
 
 	aspects, err := service.aspectStore.GetVerificationAspects(sdkCtx, to)

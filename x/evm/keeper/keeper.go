@@ -104,21 +104,22 @@ func NewKeeper(
 		panic(err)
 	}
 
-	// init aspect mint
-	newAspectMint := provider.NewArtelaProvider(storeKey, app.CreateQueryContext, app.LastBlockHeight)
-	// new  Aspect Runtime Context
-	newAspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
+	// init aspect
+	aspect := provider.NewArtelaProvider(storeKey, app.CreateQueryContext, app.LastBlockHeight)
+	// new Aspect Runtime Context
+	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
 
 	// init host api instance
 	// new AspectStateHostApi instance
 
-	api.NewStateDbApi(newAspectRuntimeContext.StateDb)
+	api.NewStateDbApi(aspectRuntimeContext.StateDb)
 	artelaType.GetStateDbHook = api.GetStateApiInstance
 
-	api.NewAspectRuntime(storeKey, newAspectRuntimeContext.EthTxContext,
-		newAspectRuntimeContext.AspectContext,
-		newAspectRuntimeContext.ExtBlockContext,
-		app.CreateQueryContext, app)
+	api.NewAspectRuntime(storeKey,
+		aspectRuntimeContext.EthTxContext,
+		aspectRuntimeContext.AspectContext,
+		aspectRuntimeContext.ExtBlockContext,
+		app)
 	artelaType.GetRuntimeHostHook = api.GetRuntimeInstance
 
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
@@ -134,24 +135,23 @@ func NewKeeper(
 		tracer:               tracer,
 		ss:                   subSpace,
 		getCtxByHeight:       app.CreateQueryContext,
-		aspectRuntimeContext: newAspectRuntimeContext,
-		aspect:               newAspectMint,
+		aspectRuntimeContext: aspectRuntimeContext,
+		aspect:               aspect,
 	}
 	// init jit inherent
-	newAspectProtocol := provider.NewAspectProtocolProvider(newAspectRuntimeContext.EthTxContext)
+	newAspectProtocol := provider.NewAspectProtocolProvider(aspectRuntimeContext.EthTxContext)
 	jit_inherent.Init(newAspectProtocol)
 
 	api.NewEvmHostInstance(app.CreateQueryContext, k.EthCall)
 	artelaType.GetEvmHostHook = api.GetEvmHostInstance
 
-	artelaType.GetAspectContext = newAspectRuntimeContext.AspectContext().Get
-	artelaType.SetAspectContext = newAspectRuntimeContext.AspectContext().Add
+	artelaType.GetAspectContext = aspectRuntimeContext.AspectContext().Get
+	artelaType.SetAspectContext = aspectRuntimeContext.AspectContext().Add
 
-	artelaType.GetAspectPaymaster = newAspectMint.GetAspectAccount
+	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
 	return k
 }
 
-// set rpc client
 func (k *Keeper) SetClientContext(ctx client.Context) {
 	k.clientContext = ctx
 	k.aspectRuntimeContext.ExtBlockContext().WithRpcClient(ctx)

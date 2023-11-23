@@ -27,19 +27,21 @@ type aspectRuntimeHostApi struct {
 	app *baseapp.BaseApp
 }
 
-func NewAspectRuntime(storeKey storetypes.StoreKey, getEthTxContext func() *types.EthTxContext,
+func NewAspectRuntime(
+	storeKey storetypes.StoreKey,
+	getEthTxContext func() *types.EthTxContext,
 	getAspectContext func() *types.AspectContext,
 	getExtBlockContext func() *types.ExtBlockContext,
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error), app *baseapp.BaseApp,
+	app *baseapp.BaseApp,
 ) { //nolint:gofumpt
 
 	aspectRuntimeInstance = &aspectRuntimeHostApi{
 		getEthTxContext:    getEthTxContext,
 		getAspectContext:   getAspectContext,
-		getCtxByHeight:     getCtxByHeight,
 		getExtBlockContext: getExtBlockContext,
+		getCtxByHeight:     app.CreateQueryContext,
 		execMap:            make(map[string]datactx.Executor),
-		aspectStateHostApi: NewAspectState(app, storeKey, getCtxByHeight),
+		aspectStateHostApi: newAspectState(app, storeKey),
 	}
 	aspectRuntimeInstance.Register()
 }
@@ -80,7 +82,13 @@ func (a *aspectRuntimeHostApi) GetContext(ctx *asptypes.RunnerContext, key strin
 	has, ctxKey, params := asptypes.HasContextKey(key)
 	if has {
 		if matcher, ok := a.execMap[ctxKey]; ok {
-			sdkCtx, _ := a.getCtxByHeight(ctx.BlockNumber, true)
+			sdkCtx, err := a.getCtxByHeight(ctx.BlockNumber, true)
+			if err != nil {
+				sdkCtx, err = a.getCtxByHeight(ctx.BlockNumber-1, true)
+				if err != nil {
+					return asptypes.NewContextQueryResponse(false, "Failed to retrieve chain context")
+				}
+			}
 			execute := matcher.Execute(sdkCtx, ctx, params)
 			if execute == nil {
 				return asptypes.NewContextQueryResponse(false, "Get fail.")
