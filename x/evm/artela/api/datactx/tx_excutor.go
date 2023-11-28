@@ -246,7 +246,7 @@ func (c TxMsgHash) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, k
 		return nil
 	}
 
-	contextQueryResponse := artelatypes.NewContextQueryResponse(false, "")
+	contextQueryResponse := artelatypes.NewContextQueryResponse(true, "")
 
 	tx := c.getEthTxContext().TxContent()
 

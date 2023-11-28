@@ -1,6 +1,8 @@
 package txs
 
 import (
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -227,9 +229,10 @@ func (tx *AccessListTx) GetTo() *common.Address {
 }
 
 // AsEthereumData returns an AccessListTx txs from the proto-formatted
-func (tx *AccessListTx) AsEthereumData() ethereum.TxData {
+func (tx *AccessListTx) AsEthereumData(stripCallData bool) ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
-	return &ethereum.AccessListTx{
+
+	txData := &ethereum.AccessListTx{
 		ChainID:    tx.GetChainID(),
 		Nonce:      tx.GetNonce(),
 		GasPrice:   tx.GetGasPrice(),
@@ -242,6 +245,12 @@ func (tx *AccessListTx) AsEthereumData() ethereum.TxData {
 		R:          r,
 		S:          s,
 	}
+
+	if stripCallData && utils.IsCustomizedVerification(ethereum.NewTx(txData)) {
+		_, txData.Data, _ = djpm.DecodeValidationAndCallData(tx.Data)
+	}
+
+	return txData
 }
 
 // GetRawSignatureValues returns the V, R, S signature values of the txs

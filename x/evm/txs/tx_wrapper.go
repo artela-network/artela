@@ -74,7 +74,16 @@ func (msg MsgEthereumTx) AsTransaction() *ethereum.Transaction {
 		return nil
 	}
 
-	return ethereum.NewTx(txData.AsEthereumData())
+	return ethereum.NewTx(txData.AsEthereumData(false))
+}
+
+func (msg MsgEthereumTx) AsEthCallTransaction() *ethereum.Transaction {
+	txData, err := UnpackTxData(msg.Data)
+	if err != nil {
+		return nil
+	}
+
+	return ethereum.NewTx(txData.AsEthereumData(true))
 }
 
 func ToMessage(tx *ethereum.Transaction, signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {

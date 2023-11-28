@@ -2,7 +2,7 @@ package keeper
 
 import (
 	"errors"
-	artelatype "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/ethereum/utils"
 	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
@@ -58,10 +58,6 @@ func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction)
 }
 
 func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer {
-	// set aspect tx context
-	ethTxContext := artelatype.NewEthTxContext(tx)
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-
 	txConfig := k.TxConfig(ctx, tx.Hash(), tx.Type())
 	stateDB := states.New(ctx, k, txConfig)
 	if k.isCustomizedVerification(tx) && (stateDB.GetCodeHash(*tx.To()) != common.Hash{}) {
@@ -72,10 +68,7 @@ func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config
 }
 
 func (k *Keeper) isCustomizedVerification(tx *ethereum.Transaction) bool {
-	v, r, s := tx.RawSignatureValues()
-	zero := big.NewInt(0)
-	return (v == nil || r == nil || s == nil || (v.Cmp(zero) == 0 && r.Cmp(zero) == 0 && s.Cmp(zero) == 0)) &&
-		(tx.To() != nil && *tx.To() != common.Address{})
+	return utils.IsCustomizedVerification(tx)
 }
 
 func (k *Keeper) processMsgData(tx *ethereum.Transaction) ([]byte, error) {

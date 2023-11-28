@@ -1,6 +1,8 @@
 package txs
 
 import (
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -255,9 +257,9 @@ func (tx *DynamicFeeTx) GetTo() *common.Address {
 
 // AsEthereumData returns an DynamicFeeTx txs txs from the proto-formatted
 // TxData defined on the Cosmos EVM.
-func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
+func (tx *DynamicFeeTx) AsEthereumData(stripCallData bool) ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
-	return &ethereum.DynamicFeeTx{
+	txData := &ethereum.DynamicFeeTx{
 		ChainID:    tx.GetChainID(),
 		Nonce:      tx.GetNonce(),
 		GasTipCap:  tx.GetGasTipCap(),
@@ -271,6 +273,12 @@ func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
 		R:          r,
 		S:          s,
 	}
+
+	if stripCallData && utils.IsCustomizedVerification(ethereum.NewTx(txData)) {
+		_, txData.Data, _ = djpm.DecodeValidationAndCallData(tx.Data)
+	}
+
+	return txData
 }
 
 // GetRawSignatureValues returns the V, R, S signature values of the txs.

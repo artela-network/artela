@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"github.com/artela-network/artela/x/evm/artela/types"
 	"math"
 	"math/big"
 
@@ -285,6 +286,9 @@ func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, sim
 		}
 
 		baseFee := ctd.evmKeeper.GetBaseFee(ctx, ethCfg)
+
+		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
+		ctd.evmKeeper.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
 		signer := ctd.evmKeeper.MakeSigner(ctx, msgEthTx.AsTransaction(),
 			ethCfg, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))

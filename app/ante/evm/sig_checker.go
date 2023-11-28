@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 
@@ -34,6 +35,9 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx cosmos.Context, tx cosmos
 		if !ok {
 			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*txs.MsgEthereumTx)(nil))
 		}
+
+		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
+		esvd.evmKeeper.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
 		ethTx := msgEthTx.AsTransaction()
 		sender, _, err := esvd.evmKeeper.VerifySig(ctx, ethTx)
