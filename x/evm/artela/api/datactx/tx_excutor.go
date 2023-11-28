@@ -253,8 +253,9 @@ func (c TxContent) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, k
 	index := int64(-1)
 	baseFee := big.NewInt(-1)
 	chainID := sdkCtx.ChainID()
+
 	// set data
-	txMsg, errs := artelatypes.NewEthTransaction(ethTx, blockHash, blockNumber, index, baseFee, chainID)
+	txMsg, errs := artelatypes.NewEthTransaction(txContext.TxFrom(), ethTx, blockHash, blockNumber, index, baseFee, chainID)
 	if errs != nil {
 		contextQueryResponse.GetResult().Message = errs.Error()
 		contextQueryResponse.GetResult().Success = false

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"sync"
 
 	"github.com/artela-network/artela-evm/vm"
@@ -77,6 +78,7 @@ type EthTxContext struct {
 	evmCfg        *statedb.EVMConfig
 	lastEvm       *vm.EVM
 	extProperties map[string]interface{}
+	from          common.Address
 }
 
 func NewEthTxContext(ethTx *ethtypes.Transaction) *EthTxContext {
@@ -98,6 +100,11 @@ func (c *EthTxContext) TxTo() string {
 	}
 	return c.txContent.To().String()
 }
+
+func (c *EthTxContext) TxFrom() common.Address {
+	return c.from
+}
+
 func (c *EthTxContext) EvmCfg() *statedb.EVMConfig            { return c.evmCfg }
 func (c *EthTxContext) TxContent() *ethtypes.Transaction      { return c.txContent }
 func (c *EthTxContext) VmTracer() *vm.Tracer                  { return c.vmTracer }
@@ -105,6 +112,11 @@ func (c *EthTxContext) Receipt() *ethtypes.Receipt            { return c.receipt
 func (c *EthTxContext) VmStateDB() vm.StateDB                 { return c.stateDb }
 func (c *EthTxContext) ExtProperties() map[string]interface{} { return c.extProperties }
 func (c *EthTxContext) LastEvm() *vm.EVM                      { return c.lastEvm }
+
+func (c *EthTxContext) WithFrom(from common.Address) *EthTxContext {
+	c.from = from
+	return c
+}
 
 func (c *EthTxContext) WithLastEvm(lastEvm *vm.EVM) *EthTxContext {
 	c.lastEvm = lastEvm

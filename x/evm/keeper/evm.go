@@ -242,7 +242,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	k.GetAspectRuntimeContext().EthTxContext().WithReceipt(receipt)
 	// commit
 	// aspect OnTxCommit start
-	pointRequest, err := k.aspect.TxToPointRequest(ctx, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
+	pointRequest, err := k.aspect.TxToPointRequest(ctx, msg.From, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
 	if err != nil {
 		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
 	} else {
@@ -326,7 +326,12 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	stateDB := states.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
-	k.GetAspectRuntimeContext().EthTxContext().WithLastEvm(evm).WithEvmCfg(cfg).WithStateDB(stateDB).WithVmMonitor(evm.Tracer())
+	k.GetAspectRuntimeContext().EthTxContext().
+		WithLastEvm(evm).
+		WithEvmCfg(cfg).
+		WithStateDB(stateDB).
+		WithVmMonitor(evm.Tracer()).
+		WithFrom(msg.From)
 
 	leftoverGas := msg.GasLimit
 
