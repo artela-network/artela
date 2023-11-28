@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela/x/evm/artela/contract"
 	"github.com/artela-network/artela/x/evm/artela/types"
@@ -33,8 +34,8 @@ func NewArtelaProvider(storeKey storetypes.StoreKey,
 	return &ArtelaProvider{service: service}
 }
 
-func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
-	ethTransaction, err := asptypes.NewEthTransaction(transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
+func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, from common.Address, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
+	ethTransaction, err := asptypes.NewEthTransaction(from, transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +48,24 @@ func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ether
 
 func (j *ArtelaProvider) CreateTxPointRequest(sdkCtx sdk.Context, msg sdk.Msg, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
 	ethMsg := types.ConvertMsgEthereumTx(msg)
-	transaction := ethMsg.AsTransaction()
-	ethTransaction, err := asptypes.NewEthTransaction(transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
+	tx := ethMsg.AsTransaction()
+
+	// Determine the signer. For replay-protected transactions, use the most permissive
+	// signer, because we assume that signers are backwards-compatible with old
+	// transactions. For non-protected transactions, the homestead signer signer is used
+	// because the return value of ChainId is zero for those transactions.
+	var signer ethtypes.Signer
+	if tx.Protected() {
+		signer = ethtypes.LatestSignerForChainID(tx.ChainId())
+	} else {
+		signer = ethtypes.HomesteadSigner{}
+	}
+	from, err := ethtypes.Sender(signer, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	ethTransaction, err := asptypes.NewEthTransaction(from, tx, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
 	if err != nil {
 		return nil, err
 	}
