@@ -248,15 +248,16 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 	// set aspect tx context
-	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsTransaction())
+	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsEthCallTransaction())
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+
+	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
+
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	// artela aspect ClearEvmObject set stateDb、monitor to nil
-	k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 	return res, nil
 }
 

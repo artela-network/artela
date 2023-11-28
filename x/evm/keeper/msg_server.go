@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	types2 "github.com/artela-network/artela/x/evm/artela/types"
 	"strconv"
 
 	"github.com/artela-network/artela/x/evm/txs"
@@ -32,6 +33,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 
 	sender := msg.From
 	tx := msg.AsTransaction()
+	ethCallTx := msg.AsEthCallTransaction()
 	txIndex := k.GetTxIndexTransient(ctx)
 
 	labels := []metrics.Label{
@@ -42,6 +44,11 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	} else {
 		labels = append(labels, telemetry.NewLabel("execution", "call"))
 	}
+
+	// set aspect tx context
+	ethTxContext := types2.NewEthTxContext(ethCallTx)
+	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {

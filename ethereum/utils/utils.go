@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"github.com/ethereum/go-ethereum/common"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
+	"math/big"
 	"strings"
 
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
@@ -81,4 +84,11 @@ func GetArtelaAddressFromBech32(address string) (sdk.AccAddress, error) {
 	}
 
 	return sdk.AccAddress(addressBz), nil
+}
+
+func IsCustomizedVerification(tx *ethereum.Transaction) bool {
+	v, r, s := tx.RawSignatureValues()
+	zero := big.NewInt(0)
+	return (v == nil || r == nil || s == nil || (v.Cmp(zero) == 0 && r.Cmp(zero) == 0 && s.Cmp(zero) == 0)) &&
+		(tx.To() != nil && *tx.To() != common.Address{})
 }

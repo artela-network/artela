@@ -42,7 +42,7 @@ type TxData interface {
 	SetSignatureValues(v, r, s *big.Int)
 	SetChainId(chainID *big.Int)
 
-	AsEthereumData() ethereum.TxData
+	AsEthereumData(stripCallData bool) ethereum.TxData
 	Validate() error
 
 	Fee() *big.Int

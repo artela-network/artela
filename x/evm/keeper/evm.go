@@ -251,8 +251,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
 		}
 	}
-	// artela aspect ClearEvmObject set stateDb、monitor to nil
-	k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
+
 	return res, nil
 }
 

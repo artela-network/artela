@@ -1,6 +1,8 @@
 package txs
 
 import (
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
 
 	artela "github.com/artela-network/artela/ethereum/types"
@@ -184,9 +186,9 @@ func (tx *LegacyTx) GetTo() *common.Address {
 
 // AsEthereumData returns an AccessListTx txs txs from the proto-formatted
 // TxData defined on the Cosmos EVM.
-func (tx *LegacyTx) AsEthereumData() ethereum.TxData {
+func (tx *LegacyTx) AsEthereumData(stripCallData bool) ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
-	return &ethereum.LegacyTx{
+	txData := &ethereum.LegacyTx{
 		Nonce:    tx.GetNonce(),
 		GasPrice: tx.GetGasPrice(),
 		Gas:      tx.GetGas(),
@@ -197,6 +199,12 @@ func (tx *LegacyTx) AsEthereumData() ethereum.TxData {
 		R:        r,
 		S:        s,
 	}
+
+	if stripCallData && utils.IsCustomizedVerification(ethereum.NewTx(txData)) {
+		_, txData.Data, _ = djpm.DecodeValidationAndCallData(tx.Data)
+	}
+
+	return txData
 }
 
 // GetRawSignatureValues returns the V, R, S signature values of the txs.
