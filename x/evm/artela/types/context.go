@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
 	"sync"
 
 	"github.com/artela-network/artela-evm/vm"
@@ -72,6 +73,7 @@ func (c *AspectRuntimeContext) ClearContext() {
 type EthTxContext struct {
 	// eth Transaction,it is set in
 	txContent     *ethtypes.Transaction
+	msg           *core.Message
 	vmTracer      *vm.Tracer
 	receipt       *ethtypes.Receipt
 	stateDb       vm.StateDB
@@ -112,9 +114,15 @@ func (c *EthTxContext) Receipt() *ethtypes.Receipt            { return c.receipt
 func (c *EthTxContext) VmStateDB() vm.StateDB                 { return c.stateDb }
 func (c *EthTxContext) ExtProperties() map[string]interface{} { return c.extProperties }
 func (c *EthTxContext) LastEvm() *vm.EVM                      { return c.lastEvm }
+func (c *EthTxContext) Message() *core.Message                { return c.msg }
 
 func (c *EthTxContext) WithFrom(from common.Address) *EthTxContext {
 	c.from = from
+	return c
+}
+
+func (c *EthTxContext) WithMessage(msg *core.Message) *EthTxContext {
+	c.msg = msg
 	return c
 }
 

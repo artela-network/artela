@@ -2,6 +2,8 @@ package datactx
 
 import (
 	"encoding/hex"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 	"sort"
 	"strconv"
@@ -226,6 +228,32 @@ func (c TxGasMeter) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerConte
 	}
 	contextQueryResponse.GetResult().Message = "success"
 	contextQueryResponse.SetData(gasMsg)
+	return contextQueryResponse
+}
+
+type TxMsgHash struct {
+	getEthTxContext   func() *types.EthTxContext
+	getEthereumConfig func(ctx sdk.Context) *params.ChainConfig
+}
+
+func NewTxMsgHash(getEthTxContext func() *types.EthTxContext,
+	getEthereumConfig func(ctx sdk.Context) *params.ChainConfig) *TxMsgHash {
+	return &TxMsgHash{getEthTxContext, getEthereumConfig}
+}
+
+func (c TxMsgHash) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, keys []string) *artelatypes.ContextQueryResponse {
+	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
+		return nil
+	}
+
+	contextQueryResponse := artelatypes.NewContextQueryResponse(false, "")
+
+	tx := c.getEthTxContext().TxContent()
+
+	signer := ethereum.MakeSigner(c.getEthereumConfig(sdkCtx), big.NewInt(sdkCtx.BlockHeight()), uint64(sdkCtx.BlockTime().Unix()))
+
+	contextQueryResponse.GetResult().Message = "success"
+	contextQueryResponse.SetData(&artelatypes.BytesData{Data: signer.Hash(tx).Bytes()})
 	return contextQueryResponse
 }
 

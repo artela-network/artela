@@ -5,6 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
 
 	"github.com/artela-network/artela/x/evm/artela/api/datactx"
@@ -20,6 +21,7 @@ type aspectRuntimeHostApi struct {
 	getEthTxContext    func() *types.EthTxContext
 	getAspectContext   func() *types.AspectContext
 	getExtBlockContext func() *types.ExtBlockContext
+	getEthereumConfig  func(ctx sdk.Context) *ethparams.ChainConfig
 	getCtxByHeight     func(height int64, prove bool) (sdk.Context, error)
 	execMap            map[string]datactx.Executor
 	aspectStateHostApi *aspectStateHostApi
@@ -32,6 +34,7 @@ func NewAspectRuntime(
 	getEthTxContext func() *types.EthTxContext,
 	getAspectContext func() *types.AspectContext,
 	getExtBlockContext func() *types.ExtBlockContext,
+	getEthereumConfig func(ctx sdk.Context) *ethparams.ChainConfig,
 	app *baseapp.BaseApp,
 ) { //nolint:gofumpt
 
@@ -40,6 +43,7 @@ func NewAspectRuntime(
 		getAspectContext:   getAspectContext,
 		getExtBlockContext: getExtBlockContext,
 		getCtxByHeight:     app.CreateQueryContext,
+		getEthereumConfig:  getEthereumConfig,
 		execMap:            make(map[string]datactx.Executor),
 		aspectStateHostApi: newAspectState(app, storeKey),
 	}
@@ -52,6 +56,7 @@ func (k *aspectRuntimeHostApi) Register() {
 	k.execMap[asptypes.TxStateChanges] = datactx.NewStateChanges(k.getEthTxContext)
 	k.execMap[asptypes.TxExtProperties] = datactx.NewExtProperties(k.getEthTxContext)
 	k.execMap[asptypes.TxContent] = datactx.NewTxContent(k.getEthTxContext)
+	k.execMap[asptypes.TxMsgHash] = datactx.NewTxMsgHash(k.getEthTxContext, k.getEthereumConfig)
 	k.execMap[asptypes.TxCallTree] = datactx.NewTxCallTree(k.getEthTxContext)
 	k.execMap[asptypes.TxReceipt] = datactx.NewTxReceipt(k.getEthTxContext)
 	k.execMap[asptypes.TxGasMeter] = datactx.NewTxGasMeter()
