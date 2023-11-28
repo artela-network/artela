@@ -4,6 +4,7 @@ import (
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // GetParams returns the total set of evm parameters.
@@ -17,6 +18,15 @@ func (k Keeper) GetParams(ctx cosmos.Context) (params support.Params) {
 
 	k.cdc.MustUnmarshal(bz, &params)
 	return
+}
+
+func (k *Keeper) GetChainConfig(ctx cosmos.Context) *params.ChainConfig {
+	params := k.GetParams(ctx)
+	if k.ChainID() == nil {
+		k.WithChainID(ctx)
+	}
+	ethCfg := params.ChainConfig.EthereumConfig(k.ChainID())
+	return ethCfg
 }
 
 // SetParams sets the EVM params each in their individual key for better get performance

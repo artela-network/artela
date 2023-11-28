@@ -115,11 +115,6 @@ func NewKeeper(
 	api.NewStateDbApi(aspectRuntimeContext.StateDb)
 	artelaType.GetStateDbHook = api.GetStateApiInstance
 
-	api.NewAspectRuntime(storeKey,
-		aspectRuntimeContext.EthTxContext,
-		aspectRuntimeContext.AspectContext,
-		aspectRuntimeContext.ExtBlockContext,
-		app)
 	artelaType.GetRuntimeHostHook = api.GetRuntimeInstance
 
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
@@ -138,6 +133,14 @@ func NewKeeper(
 		aspectRuntimeContext: aspectRuntimeContext,
 		aspect:               aspect,
 	}
+
+	api.NewAspectRuntime(storeKey,
+		aspectRuntimeContext.EthTxContext,
+		aspectRuntimeContext.AspectContext,
+		aspectRuntimeContext.ExtBlockContext,
+		k.GetChainConfig,
+		app)
+
 	// init jit inherent
 	newAspectProtocol := provider.NewAspectProtocolProvider(aspectRuntimeContext.EthTxContext)
 	jit_inherent.Init(newAspectProtocol)
@@ -180,6 +183,10 @@ func (k Keeper) Logger(ctx cosmos.Context) log.Logger {
 
 // WithChainID sets the chain id to the local variable in the keeper
 func (k *Keeper) WithChainID(ctx cosmos.Context) {
+	if k.eip155ChainID != nil {
+		return
+	}
+
 	chainID, err := artela.ParseChainID(ctx.ChainID())
 	if err != nil {
 		panic(err)
