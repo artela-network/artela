@@ -186,7 +186,7 @@ func queryCommand() *cobra.Command {
 // txCommand returns the sub-command to send transactions to the app
 func txCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        "txs",
+		Use:                        "tx",
 		Short:                      "Transactions subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
