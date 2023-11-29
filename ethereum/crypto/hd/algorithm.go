@@ -1,7 +1,7 @@
 package hd
 
 import (
-	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	bip39 "github.com/tyler-smith/go-bip39"
@@ -16,17 +16,17 @@ import (
 
 const (
 	// EthSecp256k1Type defines the ECDSA secp256k1 used on Ethereum
-	EthSecp256k1Type = hd.PubKeyType(ethsecp256k12.KeyType)
+	EthSecp256k1Type = hd.PubKeyType(ethsecp256k1.KeyType)
 )
 
 var (
 	// SupportedAlgorithms defines the list of signing algorithms used on Artela:
 	//  - eth_secp256k1 (Ethereum)
-	//  - secp256k1 (Tendermint)
+	//  - secp256k1 (Cosmos)
 	SupportedAlgorithms = keyring.SigningAlgoList{EthSecp256k1, hd.Secp256k1}
 	// SupportedAlgorithmsLedger defines the list of signing algorithms used on Artela for the Ledger device:
 	//  - eth_secp256k1 (Ethereum)
-	//  - secp256k1 (Tendermint)
+	//  - secp256k1 (Cosmos)
 	SupportedAlgorithmsLedger = keyring.SigningAlgoList{EthSecp256k1, hd.Secp256k1}
 )
 
@@ -96,14 +96,13 @@ func (s ethSecp256k1Algo) Derive() hd.DeriveFn {
 	}
 }
 
-// Generate generates a eth_secp256k1 private key from the given bytes.
+// Generate generates an eth_secp256k1 private key from the given bytes.
 func (s ethSecp256k1Algo) Generate() hd.GenerateFn {
 	return func(bz []byte) cryptotypes.PrivKey {
-		bzArr := make([]byte, ethsecp256k12.PrivKeySize)
+		bzArr := make([]byte, ethsecp256k1.PrivKeySize)
 		copy(bzArr, bz)
 
-		// TODO: modulo P
-		return &ethsecp256k12.PrivKey{
+		return &ethsecp256k1.PrivKey{
 			Key: bzArr,
 		}
 	}

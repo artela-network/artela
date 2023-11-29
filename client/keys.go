@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 
 	"github.com/cometbft/cometbft/libs/cli"
@@ -51,7 +50,7 @@ The pass backend requires GnuPG: https://gnupg.org/
 	addCmd := keys.AddKeyCommand()
 
 	// update the default signing algorithm value to "eth_secp256k1"
-	algoFlag := addCmd.Flag(ethsecp256k1.FlagKeyAlgorithm)
+	algoFlag := addCmd.Flag(flags.FlagKeyType)
 	algoFlag.DefValue = string(hd.EthSecp256k1Type)
 	err := algoFlag.Value.Set(string(hd.EthSecp256k1Type))
 	if err != nil {
