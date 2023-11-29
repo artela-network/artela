@@ -58,9 +58,11 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
+		WithBroadcastMode(flags.FlagBroadcastMode).
 		WithHomeDir(app.DefaultNodeHome).
 		WithKeyringOptions(artelakeyring.Option()).
-		WithViper("")
+		WithViper("ARTELA").
+		WithLedgerHasProtobuf(true)
 
 	eip712.SetEncodingConfig(encodingConfig)
 	rootCmd := &cobra.Command{
@@ -197,11 +199,12 @@ func txCommand() *cobra.Command {
 		authcmd.GetSignCommand(),
 		authcmd.GetSignBatchCommand(),
 		authcmd.GetMultiSignCommand(),
+		authcmd.GetMultiSignBatchCmd(),
 		authcmd.GetValidateSignaturesCommand(),
-		flags.LineBreak,
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
+		authcmd.GetAuxToFeeCommand(),
 	)
 
 	app.ModuleBasics.AddTxCommands(cmd)
