@@ -51,7 +51,7 @@ build-testnet:
 	@if ! [ -f _testnet/node0/artelad/config/genesis.json ]; then docker run --platform linux/amd64 --rm -v $(CURDIR)/_testnet:/artela:Z artela-network/artela:latest "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
 
 create-testnet: remove-testnet build-testnet
-	docker-compose up -d
+	docker compose up -d
 
 start-testnet:
 ifeq ($(shell docker images -q artela-network/artela:latest 2> /dev/null),)
@@ -62,10 +62,10 @@ else
 endif
 
 stop-testnet:
-	docker-compose stop
+	docker compose stop
 
 remove-testnet:
-	docker-compose down
+	docker compose down
 ifneq ($(shell docker images -q artela-network/artela:latest 2> /dev/null),)
 	docker rmi artela-network/artela:latest 
 endif

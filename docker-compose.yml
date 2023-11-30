@@ -6,6 +6,7 @@ services:
     image: "artela-network/artela:latest"
     platform: linux/amd64
     ports:
+      - "8545:8545"
       - "26656-26657:26656-26657"
     volumes:
       - ./_testnet/node0/artelad:/root/.artelad:Z
