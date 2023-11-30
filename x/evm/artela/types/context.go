@@ -1,6 +1,14 @@
 package types
 
 import (
+	"fmt"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
+	artelatypes "github.com/artela-network/aspect-core/types"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 	"sync"
 
 	"github.com/artela-network/artela-evm/vm"
@@ -15,6 +23,7 @@ type AspectRuntimeContext struct {
 	ethTxContext    *EthTxContext
 	aspectContext   *AspectContext
 	extBlockContext *ExtBlockContext
+	aspectState     *AspectState
 }
 
 func NewAspectRuntimeContext() *AspectRuntimeContext {
@@ -22,6 +31,7 @@ func NewAspectRuntimeContext() *AspectRuntimeContext {
 		ethTxContext:    nil,
 		aspectContext:   NewAspectContext(),
 		extBlockContext: NewExtBlockContext(),
+		aspectState:     NewAspectState(),
 	}
 }
 
@@ -43,6 +53,9 @@ func (c *AspectRuntimeContext) EthTxContext() *EthTxContext {
 
 func (c *AspectRuntimeContext) AspectContext() *AspectContext {
 	return c.aspectContext
+}
+func (c *AspectRuntimeContext) AspectState() *AspectState {
+	return c.aspectState
 }
 
 func (c *AspectRuntimeContext) StateDb() vm.StateDB {
@@ -234,4 +247,145 @@ func (c *ExtBlockContext) LastCommitInfo() abci.CommitInfo {
 
 func (c *ExtBlockContext) RpcClient() client.Context {
 	return c.getRpcClient
+}
+
+type AspectState struct {
+	stateCache map[int64]map[string]*AspectStateObject
+}
+
+func NewAspectState() *AspectState {
+	return &AspectState{
+		stateCache: make(map[int64]map[string]*AspectStateObject),
+	}
+}
+
+func (k *AspectState) CreateStateObject(ctx cosmos.Context, storeKey storetypes.StoreKey, temporary bool, blockHeight int64, lockKey string) {
+	object := NewAspectStateObject(ctx, storeKey, AspectStateKeyPrefix, temporary)
+	m := k.stateCache[blockHeight]
+	if m == nil {
+		k.stateCache[blockHeight] = make(map[string]*AspectStateObject)
+	}
+	k.stateCache[blockHeight][lockKey] = object
+}
+func (k *AspectState) ClearState(needCommit bool, blockHeight int64, lockKey string) {
+	if blockHeight < 0 {
+		return
+	}
+	if len(lockKey) == 0 {
+		if mapResult, ok := k.stateCache[blockHeight]; ok {
+			if needCommit {
+				for _, object := range mapResult {
+					object.commit()
+				}
+			}
+			delete(k.stateCache, blockHeight)
+		}
+		return
+	}
+	if stateObject, exist := k.stateCache[blockHeight][lockKey]; exist {
+		if needCommit {
+			stateObject.commit()
+		}
+		delete(k.stateCache[blockHeight], lockKey)
+	}
+}
+
+func (k *AspectState) GetAspectState(ctx *artelatypes.RunnerContext, key string) string {
+
+	point := GetAspectStatePoint(ctx.Point)
+	if len(point) == 0 {
+		return ""
+	}
+	if object, exist := k.stateCache[ctx.BlockNumber][point]; exist {
+		aspectPropertyKey := AspectArrayKey(
+			ctx.AspectId.Bytes(),
+			[]byte(key),
+		)
+		get := object.Get(aspectPropertyKey)
+		return artelatypes.Ternary(get != nil, func() string {
+			return string(get)
+		}, "")
+	}
+	return ""
+}
+
+func (k *AspectState) SetAspectState(ctx *artelatypes.RunnerContext, key, value string) bool {
+	point := GetAspectStatePoint(ctx.Point)
+	if len(point) == 0 {
+		return false
+	}
+	aspectPropertyKey := AspectArrayKey(
+		ctx.AspectId.Bytes(),
+		[]byte(key),
+	)
+	if object, exist := k.stateCache[ctx.BlockNumber][point]; exist {
+		object.Set(aspectPropertyKey, []byte(value))
+		return true
+	}
+	return false
+}
+
+// RemoveAspectState RemoveAspectState( key string) bool
+func (k *AspectState) RemoveAspectState(ctx *artelatypes.RunnerContext, key string) bool {
+	point := GetAspectStatePoint(ctx.Point)
+	if len(point) == 0 {
+		return false
+	}
+	aspectPropertyKey := AspectArrayKey(
+		ctx.AspectId.Bytes(),
+		[]byte(key),
+	)
+	if object, exist := k.stateCache[ctx.BlockNumber][point]; exist {
+		object.Set(aspectPropertyKey, nil)
+		return true
+	}
+	return false
+}
+
+type AspectStateObject struct {
+	preStore prefix.Store
+	commit   func()
+
+	log log.Logger
+}
+
+func NewAspectStateObject(ctx cosmos.Context, storeKey storetypes.StoreKey, fixKey string, temporary bool) *AspectStateObject {
+	store := prefix.NewStore(ctx.KVStore(storeKey), evmtypes.KeyPrefix(fixKey))
+	tempState := &AspectStateObject{
+		preStore: store,
+		commit:   nil,
+		log:      ctx.Logger(),
+	}
+	if temporary {
+		cc, wc := ctx.CacheContext()
+		cacheStore := prefix.NewStore(cc.KVStore(storeKey), evmtypes.KeyPrefix(fixKey))
+		tempState.commit = wc
+		tempState.preStore = cacheStore
+	}
+	return tempState
+}
+
+func (k *AspectStateObject) Set(key, value []byte) {
+	action := "updated"
+	if len(value) == 0 {
+		k.preStore.Delete(key)
+		action = "deleted"
+	} else {
+		k.preStore.Set(key, value)
+	}
+	k.log.Info(
+		fmt.Sprintf("states %s", action),
+		"key", common.Bytes2Hex(key),
+		"value", common.Bytes2Hex(key),
+	)
+}
+
+func (k *AspectStateObject) Get(key []byte) []byte {
+	return k.preStore.Get(key)
+}
+
+func (k *AspectStateObject) Commit() {
+	if k.commit != nil {
+		k.commit()
+	}
 }

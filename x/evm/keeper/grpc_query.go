@@ -235,6 +235,14 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	// set aspect tx context
+	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsTransaction())
+	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	// artela aspect ClearEvmObject set stateDb、monitor to nil
+	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
+	//create aspect state
+	k.GetAspectRuntimeContext().AspectState().CreateStateObject(ctx, k.storeKey, true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
+	defer k.GetAspectRuntimeContext().AspectState().ClearState(false, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 	if isAspectOpTx := asptypes.IsAspectContractAddr(args.To); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
@@ -257,16 +265,12 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	}
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
-	// set aspect tx context
-	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsTransaction())
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	// artela aspect ClearEvmObject set stateDb、monitor to nil
-	k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 	return res, nil
 }
 
@@ -320,6 +324,9 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	// set aspect tx context
 	ethTxContext := artelatypes.NewEthTxContext(txMsg.AsTransaction())
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	// create aspect temporary state
+	k.GetAspectRuntimeContext().AspectState().CreateStateObject(ctx, k.storeKey, true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
+	defer k.GetAspectRuntimeContext().AspectState().ClearState(false, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
@@ -429,11 +436,16 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		// set aspect tx context
 		ethTxContext := artelatypes.NewEthTxContext(ethTx)
 		k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+		// create aspect temporary state
+		k.GetAspectRuntimeContext().AspectState().CreateStateObject(ctx, k.storeKey, true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 		rsp, err := k.ApplyMessageWithConfig(ctx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
+			k.GetAspectRuntimeContext().AspectState().ClearState(false, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 			continue
 		}
+		// commit aspect state
+		k.GetAspectRuntimeContext().AspectState().ClearState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 		txConfig.LogIndex += uint(len(rsp.Logs))
 	}
 
@@ -602,10 +614,19 @@ func (k *Keeper) traceTx(
 	// set aspect tx context
 	ethTxContext := artelatypes.NewEthTxContext(tx)
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	// create aspect temporary state
+	k.GetAspectRuntimeContext().AspectState().CreateStateObject(ctx, k.storeKey, true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
+		k.GetAspectRuntimeContext().AspectState().ClearState(false, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 		return nil, 0, status.Error(codes.Internal, err.Error())
+	}
+
+	if commitMessage {
+		k.GetAspectRuntimeContext().AspectState().ClearState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
+	} else {
+		k.GetAspectRuntimeContext().AspectState().ClearState(false, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 	}
 
 	var result interface{}

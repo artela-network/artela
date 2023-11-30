@@ -10,7 +10,7 @@ import (
 )
 
 type (
-	// ProposalTxVerifier defines the interface that is implemented by BaseApp,
+	// ProposalTxVerifier defines the interface that is implemented by baseApp,
 	// that any custom ABCI PrepareProposal and ProcessProposal handler can use
 	// to verify a transaction.
 	ProposalTxVerifier interface {

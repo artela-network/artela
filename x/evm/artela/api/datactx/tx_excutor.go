@@ -260,6 +260,7 @@ func (c TxContent) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, k
 		contextQueryResponse.GetResult().Success = false
 		return contextQueryResponse
 	}
+	
 	contextQueryResponse.GetResult().Message = "success"
 	contextQueryResponse.SetData(txMsg)
 	return contextQueryResponse

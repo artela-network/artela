@@ -115,10 +115,7 @@ func NewKeeper(
 	api.NewStateDbApi(newAspectRuntimeContext.StateDb)
 	artelaType.GetStateDbHook = api.GetStateApiInstance
 
-	api.NewAspectRuntime(storeKey, newAspectRuntimeContext.EthTxContext,
-		newAspectRuntimeContext.AspectContext,
-		newAspectRuntimeContext.ExtBlockContext,
-		app.CreateQueryContext, app)
+	api.NewAspectRuntime(storeKey, newAspectRuntimeContext, app.CreateQueryContext, app)
 	artelaType.GetRuntimeHostHook = api.GetRuntimeInstance
 
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
@@ -167,6 +164,12 @@ func (k Keeper) GetAspectCosmosProvider() cosmosAspect.AspectCosmosProvider {
 
 func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {
 	return k.aspectRuntimeContext
+}
+func (k Keeper) StoreKey() storetypes.StoreKey {
+	return k.storeKey
+}
+func (k Keeper) TransientKey() storetypes.StoreKey {
+	return k.transientKey
 }
 
 // ----------------------------------------------------------------------------

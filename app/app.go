@@ -341,7 +341,7 @@ func NewArtela(
 		tkeys[paramsmodule.TStoreKey],
 	)
 
-	// set the BaseApp's parameter store
+	// set the baseApp's parameter store
 	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, keys[upgrademodule.StoreKey], authmodule.NewModuleAddress(govmodule.ModuleName).String())
 	bApp.SetParamStore(&app.ConsensusParamsKeeper)
 
@@ -739,7 +739,7 @@ func NewArtela(
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
-	// initialize BaseApp
+	// initialize baseApp
 	maxGasWanted := cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted))
 	app.setAnteHandler(encodingConfig.TxConfig, maxGasWanted)
 	app.SetInitChainer(app.InitChainer)

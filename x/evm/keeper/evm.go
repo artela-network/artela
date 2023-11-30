@@ -162,12 +162,23 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	tmpCtx, commit := ctx.CacheContext()
 	// set aspect tx context
 	ethTxContext := artelatype.NewEthTxContext(tx)
+
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	// artela aspect ClearEvmObject set stateDb、monitor to nil
+	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
+
+	// Create a Aspect State Object for OnBlockFinalize
+	k.GetAspectRuntimeContext().AspectState().CreateStateObject(ctx, k.StoreKey(), true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
 
 	// if transaction is Aspect operational, short the circuit and skip the processes
 	if isAspectOpTx := asptypes.IsAspectContractAddr(tx.To()); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
-		return nativeContract.ApplyTx(ctx, tx, msg)
+		applyTx, aspectErr := nativeContract.ApplyTx(ctx, tx, msg)
+		if aspectErr == nil && len(applyTx.VmError) == 0 {
+			//commit aspect state
+			k.GetAspectRuntimeContext().AspectState().ClearState(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
+		}
+		return applyTx, aspectErr
 	}
 
 	// pass true to commit the StateDB
@@ -247,6 +258,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	k.ResetGasMeterAndConsumeGas(ctx, totalGasUsed)
 
 	k.GetAspectRuntimeContext().EthTxContext().WithReceipt(receipt)
+
 	// commit
 	// aspect OnTxCommit start
 	pointRequest, err := k.aspectMint.TxToPointRequest(ctx, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
@@ -258,8 +270,11 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
 		}
 	}
-	// artela aspect ClearEvmObject set stateDb、monitor to nil
-	k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
+
+	if !res.Failed() {
+		// flash Aspect state
+		k.GetAspectRuntimeContext().AspectState().ClearState(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
+	}
 	return res, nil
 }
 

@@ -230,3 +230,10 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-beta-2
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
+
+replace (
+	github.com/artela-network/artela-evm => ../artela-evm
+	github.com/artela-network/aspect-core => ../aspect-core
+	github.com/artela-network/aspect-runtime => ../aspect-runtime
+
+)

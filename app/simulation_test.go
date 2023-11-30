@@ -50,7 +50,7 @@ func init() {
 	simcli.GetSimulatorFlags()
 }
 
-// fauxMerkleModeOpt returns a BaseApp option to use a dbStoreAdapter instead of
+// fauxMerkleModeOpt returns a baseApp option to use a dbStoreAdapter instead of
 // an IAVLStore for faster simulation speed.
 func fauxMerkleModeOpt(bapp *baseapp.BaseApp) {
 	bapp.SetFauxMerkleMode()
