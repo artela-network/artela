@@ -3,15 +3,13 @@ package contract
 import (
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/artela-network/aspect-core/djpm/contract"
 	"github.com/artela-network/aspect-core/djpm/run"
 	artelasdkType "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 )
@@ -315,4 +313,3 @@ func (k *AspectNativeContract) checkIsTxVerifier(ctx sdk.Context, aspectId commo
 	binding, runErr := runner.IsTxVerifier()
 	return binding, runErr
 }
-
