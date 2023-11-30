@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 	"time"
@@ -150,10 +151,93 @@ func (b *BackendImpl) ChainConfig() *params.ChainConfig {
 	return params.Params.ChainConfig.EthereumConfig(b.chainID)
 }
 
-func (b *BackendImpl) FeeHistory(ctx context.Context, blockCount uint64, lastBlock rpc.BlockNumber,
+func (b *BackendImpl) FeeHistory(blockCount uint64, lastBlock rpc.BlockNumber,
 	rewardPercentiles []float64,
-) (*big.Int, [][]*big.Int, []*big.Int, []float64, error) {
-	return b.gpo.FeeHistory(ctx, blockCount, lastBlock, rewardPercentiles)
+) (*rpctypes.FeeHistoryResult, error) {
+	blockEnd := int64(lastBlock)
+
+	if blockEnd < 0 {
+		blockNumber, err := b.BlockNumber()
+		if err != nil {
+			return nil, err
+		}
+		blockEnd = int64(blockNumber)
+	}
+
+	blocks := int64(blockCount)
+	maxBlockCount := int64(b.cfg.AppCfg.JSONRPC.FeeHistoryCap)
+	if blocks > maxBlockCount {
+		return nil, fmt.Errorf("FeeHistory user block count %d higher than %d", blocks, maxBlockCount)
+	}
+
+	if blockEnd+1 < blocks {
+		blocks = blockEnd + 1
+	}
+
+	blockStart := blockEnd + 1 - blocks
+	oldestBlock := (*hexutil.Big)(big.NewInt(blockStart))
+
+	reward := make([][]*hexutil.Big, blocks)
+	rewardCount := len(rewardPercentiles)
+	for i := 0; i < int(blocks); i++ {
+		reward[i] = make([]*hexutil.Big, rewardCount)
+	}
+
+	thisBaseFee := make([]*hexutil.Big, blocks+1)
+	thisGasUsedRatio := make([]float64, blocks)
+	calculateRewards := rewardCount != 0
+
+	for blockID := blockStart; blockID <= blockEnd; blockID++ {
+		index := int32(blockID - blockStart) // #nosec G701
+		// tendermint block
+		tendermintblock, err := b.CosmosBlockByNumber(rpc.BlockNumber(blockID))
+		if tendermintblock == nil {
+			return nil, err
+		}
+
+		// eth block
+		ethBlock, err := b.GetBlockByNumber(rpc.BlockNumber(blockID), true)
+		if ethBlock == nil {
+			return nil, err
+		}
+
+		// tendermint block result
+		tendermintBlockResult, err := b.CosmosBlockResultByNumber(&tendermintblock.Block.Height)
+		if tendermintBlockResult == nil {
+			b.logger.Debug("block result not found", "height", tendermintblock.Block.Height, "error", err.Error())
+			return nil, err
+		}
+
+		oneFeeHistory, err := b.processBlock(tendermintblock, &ethBlock, rewardPercentiles, tendermintBlockResult)
+		if err != nil {
+			return nil, err
+		}
+
+		// copy
+		thisBaseFee[index] = (*hexutil.Big)(oneFeeHistory.BaseFee)
+		thisBaseFee[index+1] = (*hexutil.Big)(oneFeeHistory.NextBaseFee)
+		thisGasUsedRatio[index] = oneFeeHistory.GasUsedRatio
+		if calculateRewards {
+			for j := 0; j < rewardCount; j++ {
+				reward[index][j] = (*hexutil.Big)(oneFeeHistory.Reward[j])
+				if reward[index][j] == nil {
+					reward[index][j] = (*hexutil.Big)(big.NewInt(0))
+				}
+			}
+		}
+	}
+
+	feeHistory := rpctypes.FeeHistoryResult{
+		OldestBlock:  oldestBlock,
+		BaseFee:      thisBaseFee,
+		GasUsedRatio: thisGasUsedRatio,
+	}
+
+	if calculateRewards {
+		feeHistory.Reward = reward
+	}
+
+	return &feeHistory, nil
 }
 
 func (b *BackendImpl) ChainDb() ethdb.Database { //nolint:stylecheck // conforms to interface.
