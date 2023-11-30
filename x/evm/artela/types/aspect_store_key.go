@@ -41,9 +41,6 @@ func GetAspectStatePoint(point string) string {
 		return AspectStateBeginBlock
 	case artela.ON_BLOCK_FINALIZE_METHOD:
 		return AspectStateEndBlock
-	case artela.ON_TX_VERIFY_METHOD:
-	case artela.ON_GAS_PAYMENT_METHOD:
-	case artela.ON_TX_RECEIVE_METHOD:
 	case artela.ON_TX_COMMIT_METHOD:
 	case artela.PRE_TX_EXECUTE_METHOD:
 	case artela.POST_TX_EXECUTE_METHOD:

@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	asptypes "github.com/artela-network/aspect-core/types"
 	"math/big"
 	"time"
-
-	asptypes "github.com/artela-network/aspect-core/types"
-
-	"github.com/artela-network/artela/x/evm/artela/contract"
 
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
@@ -244,12 +242,6 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	k.GetAspectRuntimeContext().AspectState().CreateStateObject(ctx, k.storeKey, true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 	defer k.GetAspectRuntimeContext().AspectState().ClearState(false, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
-	if isAspectOpTx := asptypes.IsAspectContractAddr(args.To); isAspectOpTx {
-		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
-		transaction := args.ToTransaction()
-		return nativeContract.Query(ctx, transaction.AsTransaction())
-	}
-
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -266,6 +258,11 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 
+	if isAspectOpTx := asptypes.IsAspectContractAddr(args.To); isAspectOpTx {
+		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
+		transaction := args.ToTransaction()
+		return nativeContract.ApplyTx(ctx, transaction.AsTransaction(), msg, false)
+	}
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
 	if err != nil {

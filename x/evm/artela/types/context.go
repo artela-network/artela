@@ -26,12 +26,12 @@ type AspectRuntimeContext struct {
 	aspectState     *AspectState
 }
 
-func NewAspectRuntimeContext() *AspectRuntimeContext {
+func NewAspectRuntimeContext(getCtxByHeightFunc func(height int64, keyPrefix string) (prefix.Store, error)) *AspectRuntimeContext {
 	return &AspectRuntimeContext{
 		ethTxContext:    nil,
 		aspectContext:   NewAspectContext(),
 		extBlockContext: NewExtBlockContext(),
-		aspectState:     NewAspectState(),
+		aspectState:     NewAspectState(getCtxByHeightFunc),
 	}
 }
 
@@ -250,12 +250,14 @@ func (c *ExtBlockContext) RpcClient() client.Context {
 }
 
 type AspectState struct {
-	stateCache map[int64]map[string]*AspectStateObject
+	stateCache       map[int64]map[string]*AspectStateObject
+	getStoreByHeight func(height int64, keyPrefix string) (prefix.Store, error)
 }
 
-func NewAspectState() *AspectState {
+func NewAspectState(getStoreByHeightFunc func(height int64, keyPrefix string) (prefix.Store, error)) *AspectState {
 	return &AspectState{
-		stateCache: make(map[int64]map[string]*AspectStateObject),
+		stateCache:       make(map[int64]map[string]*AspectStateObject),
+		getStoreByHeight: getStoreByHeightFunc,
 	}
 }
 
@@ -291,22 +293,26 @@ func (k *AspectState) ClearState(needCommit bool, blockHeight int64, lockKey str
 }
 
 func (k *AspectState) GetAspectState(ctx *artelatypes.RunnerContext, key string) string {
-
+	aspectPropertyKey := AspectArrayKey(
+		ctx.AspectId.Bytes(),
+		[]byte(key),
+	)
 	point := GetAspectStatePoint(ctx.Point)
+	var get []byte
 	if len(point) == 0 {
-		return ""
+		// If it's not a cut-point access to the DeliverTx stage, the data is accessed through the store at the previous block height
+		store, err := k.getStoreByHeight(ctx.BlockNumber-1, AspectStateKeyPrefix)
+		if err != nil {
+			return ""
+		}
+		get = store.Get(aspectPropertyKey)
 	}
 	if object, exist := k.stateCache[ctx.BlockNumber][point]; exist {
-		aspectPropertyKey := AspectArrayKey(
-			ctx.AspectId.Bytes(),
-			[]byte(key),
-		)
-		get := object.Get(aspectPropertyKey)
-		return artelatypes.Ternary(get != nil, func() string {
-			return string(get)
-		}, "")
+		get = object.Get(aspectPropertyKey)
 	}
-	return ""
+	return artelatypes.Ternary(get != nil, func() string {
+		return string(get)
+	}, "")
 }
 
 func (k *AspectState) SetAspectState(ctx *artelatypes.RunnerContext, key, value string) bool {

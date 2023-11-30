@@ -22,6 +22,7 @@ import (
 )
 
 type AspectNativeContract struct {
+	storeKey         storetypes.StoreKey
 	aspectService    *AspectService
 	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)
 }
@@ -31,53 +32,18 @@ func NewAspectNativeContract(storeKey storetypes.StoreKey,
 	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error),
 ) *AspectNativeContract {
 	return &AspectNativeContract{
+		storeKey:         storeKey,
 		aspectService:    NewAspectService(storeKey, getCtxByHeight),
 		applyMessageFunc: applyMessageFunc,
 	}
 }
 
-func (k *AspectNativeContract) Query(ctx sdk.Context, tx *ethtypes.Transaction) (*evmtxs.MsgEthereumTxResponse, error) {
-	if tx == nil {
-		return nil, nil
-	}
-	method, params, err := types.ParseInput(tx.Data())
-	if err != nil {
-		return nil, err
-	}
-	switch strings.ToLower(method.Name) {
-	case "versionof":
-		{
-			aspectId := params["aspectId"].(common.Address)
-			return k.version(ctx, tx, method, aspectId)
-		}
-
-	case "aspectsof":
-		{
-			contract := params["contract"].(common.Address)
-			return k.aspectsOf(ctx, tx, method, contract)
-		}
-
-	case "contractsof":
-		{
-			aspectId := params["aspectId"].(common.Address)
-			return k.contractsOf(ctx, tx, method, aspectId)
-		}
-	case "entrypoint":
-		{
-			aspectId := params["aspectId"].(common.Address)
-			data := params["optArgs"].([]byte)
-			return k.entrypoint(ctx, tx, method, aspectId, data)
-		}
-	}
-
-	return nil, nil
-}
-
-func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction, msg *core.Message) (*evmtxs.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction, msg *core.Message, commit bool) (*evmtxs.MsgEthereumTxResponse, error) {
 	method, parameters, err := types.ParseMethod(tx)
 	if err != nil {
 		return nil, err
 	}
+
 	switch strings.ToLower(method.Name) {
 	case "deploy":
 		{
@@ -145,7 +111,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 				})
 			}
 			sender := vm.AccountRef(msg.From)
-			aspectOwner, checkErr := k.checkAspectOwner(ctx, aspectId, sender.Address())
+			aspectOwner, checkErr := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 			if checkErr != nil {
 				return nil, checkErr
 			}
@@ -166,7 +132,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 			if !owner {
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), contract.String())
 			}
-			binding, err := k.checkContractBinding(ctx, aspectId, contract)
+			binding, err := k.checkContractBinding(ctx, aspectId, contract, commit)
 			if err != nil {
 				return nil, err
 			}
@@ -174,7 +140,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check contract binding fail, aspectId: %s , contract: %s", aspectId.String(), contract.String())
 			}
 
-			return k.bind(ctx, tx, aspectId, contract, versionU256, priority)
+			return k.bind(ctx, tx, aspectId, contract, versionU256, priority, commit)
 		}
 
 	case "unbind":
@@ -183,7 +149,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 			contract := parameters["contract"].(common.Address)
 			sender := vm.AccountRef(msg.From)
 			owner := k.checkContractOwner(ctx, &contract, tx.Nonce()+1, sender.Address())
-			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address())
+			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 			if err != nil {
 				return nil, err
 			}
@@ -199,7 +165,7 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 			contract := parameters["contract"].(common.Address)
 			version := parameters["version"].(uint64)
 			sender := vm.AccountRef(msg.From)
-			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address())
+			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 			if err != nil {
 				return nil, err
 			}
@@ -217,19 +183,19 @@ func (k *AspectNativeContract) ApplyTx(ctx sdk.Context, tx *ethtypes.Transaction
 	case "aspectsof":
 		{
 			contract := parameters["contract"].(common.Address)
-			return k.aspectsOf(ctx, tx, method, contract)
+			return k.aspectsOf(ctx, tx, method, contract, commit)
 		}
 
 	case "contractsof":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
-			return k.contractsOf(ctx, tx, method, aspectId)
+			return k.contractsOf(ctx, tx, method, aspectId, commit)
 		}
 	case "entrypoint":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
 			data := parameters["optArgs"].([]byte)
-			return k.entrypoint(ctx, tx, method, aspectId, data)
+			return k.entrypoint(ctx, tx, method, aspectId, data, commit)
 		}
 	}
 	return nil, nil

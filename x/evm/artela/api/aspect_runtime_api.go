@@ -1,10 +1,8 @@
 package api
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/contract"
 	asptypes "github.com/artela-network/aspect-core/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 
@@ -19,21 +17,21 @@ var (
 
 type aspectRuntimeHostApi struct {
 	aspectRuntimeContext *types.AspectRuntimeContext
-	getCtxByHeight       func(height int64, prove bool) (sdk.Context, error)
 	execMap              map[string]datactx.Executor
-	// nolint
-	storeKey storetypes.StoreKey
+	getDeliverStateCtx   func() (sdk.Context, error)
+	getStoreByHeight     func(height int64, prefixKey string) (prefix.Store, error)
 }
 
-func NewAspectRuntime(storeKey storetypes.StoreKey, aspectRuntimeContext *types.AspectRuntimeContext,
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error), app *baseapp.BaseApp,
+func NewAspectRuntime(aspectRuntimeContext *types.AspectRuntimeContext,
+	getDeliverStateCtx func() (sdk.Context, error),
+	getStoreByHeight func(height int64, prefixKey string) (prefix.Store, error),
 ) { //nolint:gofumpt
 
 	aspectRuntimeInstance = &aspectRuntimeHostApi{
 		aspectRuntimeContext: aspectRuntimeContext,
-		getCtxByHeight:       getCtxByHeight,
+		getDeliverStateCtx:   getDeliverStateCtx,
 		execMap:              make(map[string]datactx.Executor),
-		storeKey:             storeKey,
+		getStoreByHeight:     getStoreByHeight,
 	}
 	aspectRuntimeInstance.Register()
 }
@@ -74,7 +72,11 @@ func (a *aspectRuntimeHostApi) GetContext(ctx *asptypes.RunnerContext, key strin
 	has, ctxKey, params := asptypes.HasContextKey(key)
 	if has {
 		if matcher, ok := a.execMap[ctxKey]; ok {
-			sdkCtx, _ := a.getCtxByHeight(ctx.BlockNumber, true)
+			sdkCtx, err := a.getDeliverStateCtx()
+			if err != nil {
+				return asptypes.NewContextQueryResponse(false, err.Error())
+			}
+
 			execute := matcher.Execute(sdkCtx, ctx, params)
 			if execute == nil {
 				return asptypes.NewContextQueryResponse(false, "Get fail.")
@@ -104,13 +106,20 @@ func (a *aspectRuntimeHostApi) Query(ctx *asptypes.RunnerContext, query *asptype
 
 	response := asptypes.NewContextQueryResponse(true, "success.")
 	if query.NameSpace == asptypes.QueryNameSpace_QueryAspectProperty {
-		context, ctxErr := a.getCtxByHeight(ctx.BlockNumber-1, false)
+		storeByHeight, ctxErr := a.getStoreByHeight(ctx.BlockNumber-1, types.AspectPropertyKeyPrefix)
 		if ctxErr != nil {
 			return asptypes.NewContextQueryResponse(false, "get context by blockHeight error.")
 		}
-		codeStore := contract.NewAspectStore(a.storeKey)
-		property := codeStore.GetAspectPropertyValue(context, *ctx.AspectId, keyData.Data)
-		valueData := &asptypes.StringData{Data: property}
+		aspectPropertyKey := types.AspectPropertyKey(
+			ctx.AspectId.Bytes(),
+			[]byte(keyData.Data),
+		)
+		get := storeByHeight.Get(aspectPropertyKey)
+		data := ""
+		if len(get) > 0 {
+			data = string(get)
+		}
+		valueData := &asptypes.StringData{Data: data}
 		response.SetData(valueData)
 	}
 	if query.NameSpace == asptypes.QueryNameSpace_QueryAspectState {

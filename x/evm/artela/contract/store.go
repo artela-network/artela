@@ -20,21 +20,18 @@ import (
 )
 
 type AspectStore struct {
-	storeKey storetypes.StoreKey
 }
 
-func NewAspectStore(storeKey storetypes.StoreKey) *AspectStore {
-	return &AspectStore{
-		storeKey: storeKey,
-	}
+func NewAspectStore() *AspectStore {
+	return &AspectStore{}
 }
 
-func (k *AspectStore) newPrefixStore(ctx sdk.Context, fixKey string) prefix.Store {
-	return prefix.NewStore(ctx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
+func (k *AspectStore) newPrefixStore(ctx sdk.Context, storeKey storetypes.StoreKey, fixKey string) prefix.Store {
+	return prefix.NewStore(ctx.KVStore(storeKey), evmtypes.KeyPrefix(fixKey))
 }
 
-func (k *AspectStore) RemoveBlockLevelAspect(ctx sdk.Context, aspectId common.Address) error {
-	dataSet, err := k.GetBlockLevelAspects(ctx)
+func (k *AspectStore) RemoveBlockLevelAspect(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address) error {
+	dataSet, err := k.GetBlockLevelAspects(ctx, storeKey)
 	if err != nil {
 		return err
 	}
@@ -47,15 +44,15 @@ func (k *AspectStore) RemoveBlockLevelAspect(ctx sdk.Context, aspectId common.Ad
 		return err
 	}
 	// store
-	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
+	store := k.newPrefixStore(ctx, storeKey, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
 	store.Set(aspectBlockKey, jsonBytes)
 	return nil
 }
 
 // StoreBlockLevelAspect key="AspectBlock" value=map[string]int64
-func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, aspectId common.Address) error {
-	dataSet, err := k.GetBlockLevelAspects(ctx)
+func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address) error {
+	dataSet, err := k.GetBlockLevelAspects(ctx, storeKey)
 	if err != nil {
 		return err
 	}
@@ -72,14 +69,14 @@ func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, aspectId common.Add
 	//
 	// prefix
 	// kv
-	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
+	store := k.newPrefixStore(ctx, storeKey, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
 	store.Set(aspectBlockKey, jsonBytes)
 	return nil
 }
 
-func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context) (map[string]int64, error) {
-	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
+func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context, storeKey storetypes.StoreKey) (map[string]int64, error) {
+	store := k.newPrefixStore(ctx, storeKey, types.AspectBlockKeyPrefix)
 	blockKey := types.AspectBlockKey()
 	get := store.Get(blockKey)
 	if get == nil {
@@ -93,12 +90,12 @@ func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context) (map[string]int64, e
 }
 
 // StoreAspectCode aspect code
-func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) {
+func (k *AspectStore) StoreAspectCode(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address, code []byte) {
 	// get last value
-	version := k.GetAspectLastVersion(ctx, aspectId)
+	version := k.GetAspectLastVersion(ctx, storeKey, aspectId)
 
 	// store code
-	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
+	codeStore := k.newPrefixStore(ctx, storeKey, types.AspectCodeKeyPrefix)
 	newVersion := version.Add(version, uint256.NewInt(1))
 	versionKey := types.AspectVersionKey(
 		aspectId.Bytes(),
@@ -106,13 +103,13 @@ func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, 
 	)
 	codeStore.Set(versionKey, code)
 	// update last version
-	k.StoreAspectVersion(ctx, aspectId, newVersion)
+	k.StoreAspectVersion(ctx, storeKey, aspectId, newVersion)
 }
 
-func (k *AspectStore) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
-	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
+func (k *AspectStore) GetAspectCode(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
+	codeStore := k.newPrefixStore(ctx, storeKey, types.AspectCodeKeyPrefix)
 	if version == nil {
-		version = k.GetAspectLastVersion(ctx, aspectId)
+		version = k.GetAspectLastVersion(ctx, storeKey, aspectId)
 	}
 	versionKey := types.AspectVersionKey(
 		aspectId.Bytes(),
@@ -123,16 +120,16 @@ func (k *AspectStore) GetAspectCode(ctx sdk.Context, aspectId common.Address, ve
 }
 
 // StoreAspectVersion version
-func (k *AspectStore) StoreAspectVersion(ctx sdk.Context, aspectId common.Address, version *uint256.Int) {
-	versionStore := k.newPrefixStore(ctx, types.AspectCodeVersionKeyPrefix)
+func (k *AspectStore) StoreAspectVersion(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address, version *uint256.Int) {
+	versionStore := k.newPrefixStore(ctx, storeKey, types.AspectCodeVersionKeyPrefix)
 	versionKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
 	versionStore.Set(versionKey, version.Bytes())
 }
 
-func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Address) *uint256.Int {
-	aspectVersionStore := k.newPrefixStore(ctx, types.AspectCodeVersionKeyPrefix)
+func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address) *uint256.Int {
+	aspectVersionStore := k.newPrefixStore(ctx, storeKey, types.AspectCodeVersionKeyPrefix)
 	versionKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
@@ -145,9 +142,9 @@ func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Addr
 }
 
 // StoreAspectProperty Property
-func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property) {
+func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address, prop []types.Property) {
 	// get treemap value
-	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
+	aspectPropertyStore := k.newPrefixStore(ctx, storeKey, types.AspectPropertyKeyPrefix)
 	for i := range prop {
 		key := prop[i].Key
 		value := prop[i].Value
@@ -160,12 +157,12 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 	}
 }
 
-func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Address, propertyKey string) string {
+func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address, propertyKey string) string {
 	if types.AspectProofKey == propertyKey || types.AspectAccountKey == propertyKey {
 		// Block query of account and Proof
 		return ""
 	}
-	codeStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
+	codeStore := k.newPrefixStore(ctx, storeKey, types.AspectPropertyKeyPrefix)
 	aspectPropertyKey := types.AspectPropertyKey(
 		aspectId.Bytes(),
 		[]byte(propertyKey),
@@ -178,14 +175,14 @@ func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Ad
 	}
 }
 
-func (k *AspectStore) BindContractAspects(ctx sdk.Context, contract common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8) error {
+func (k *AspectStore) BindContractAspects(ctx sdk.Context, storeKey storetypes.StoreKey, contract common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8) error {
 	// get treemap value
-	bindings, err := k.GetContractBondAspects(ctx, contract)
+	bindings, err := k.GetContractBondAspects(ctx, storeKey, contract)
 	if err != nil {
 		return err
 	}
 
-	code, version := k.GetAspectCode(ctx, aspectId, aspectVersion)
+	code, version := k.GetAspectCode(ctx, storeKey, aspectId, aspectVersion)
 	if code == nil || version == nil {
 		return errors.Wrap(nil, "aspect not exist")
 	}
@@ -204,7 +201,7 @@ func (k *AspectStore) BindContractAspects(ctx sdk.Context, contract common.Addre
 		return err
 	}
 	// store
-	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
+	contractBindingStore := k.newPrefixStore(ctx, storeKey, types.ContractBindKeyPrefix)
 	aspectPropertyKey := types.ContractKey(
 		contract.Bytes(),
 	)
@@ -213,8 +210,8 @@ func (k *AspectStore) BindContractAspects(ctx sdk.Context, contract common.Addre
 	return nil
 }
 
-func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	bindings, err := k.GetContractBondAspects(ctx, contract)
+func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, storeKey storetypes.StoreKey, contract common.Address, aspectId common.Address) error {
+	bindings, err := k.GetContractBondAspects(ctx, storeKey, contract)
 	if err != nil {
 		return err
 	}
@@ -230,7 +227,7 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 		return err
 	}
 	// store
-	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
+	contractBindingStore := k.newPrefixStore(ctx, storeKey, types.ContractBindKeyPrefix)
 
 	aspectPropertyKey := types.ContractKey(
 		contract.Bytes(),
@@ -239,9 +236,9 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 	return nil
 }
 
-func (k *AspectStore) GetContractBondAspects(ctx sdk.Context, contract common.Address) ([]*types.AspectMeta, error) {
+func (k *AspectStore) GetContractBondAspects(ctx sdk.Context, storeKey storetypes.StoreKey, contract common.Address) ([]*types.AspectMeta, error) {
 	// retrieve raw binding store
-	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
+	contractBindingStore := k.newPrefixStore(ctx, storeKey, types.ContractBindKeyPrefix)
 	contractKey := types.ContractKey(
 		contract.Bytes(),
 	)
@@ -257,8 +254,8 @@ func (k *AspectStore) GetContractBondAspects(ctx sdk.Context, contract common.Ad
 	return bindings, nil
 }
 
-func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.Address, aspectId common.Address, version uint64) error {
-	meta, err := k.GetContractBondAspects(ctx, contract)
+func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, storeKey storetypes.StoreKey, contract common.Address, aspectId common.Address, version uint64) error {
+	meta, err := k.GetContractBondAspects(ctx, storeKey, contract)
 	if err != nil {
 		return err
 	}
@@ -277,7 +274,7 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.
 		return err
 	}
 	// store
-	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
+	contractBindingStore := k.newPrefixStore(ctx, storeKey, types.ContractBindKeyPrefix)
 	aspectPropertyKey := types.ContractKey(
 		contract.Bytes(),
 	)
@@ -285,8 +282,8 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.
 	return nil
 }
 
-func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, aspectId common.Address) (*treeset.Set, error) {
-	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
+func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, storeKey storetypes.StoreKey, aspectId common.Address) (*treeset.Set, error) {
+	aspectRefStore := k.newPrefixStore(ctx, storeKey, types.AspectRefKeyPrefix)
 	aspectPropertyKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
@@ -303,8 +300,8 @@ func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, aspectId common.Address
 	return set, nil
 }
 
-func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, contract)
+func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, storeKey storetypes.StoreKey, contract common.Address, aspectId common.Address) error {
+	dataSet, err := k.GetAspectRefValue(ctx, storeKey, contract)
 	if err != nil {
 		return err
 	}
@@ -317,7 +314,7 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, contract common.Addre
 		return err
 	}
 	// store
-	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
+	aspectRefStore := k.newPrefixStore(ctx, storeKey, types.AspectRefKeyPrefix)
 
 	aspectPropertyKey := types.AspectIdKey(
 		aspectId.Bytes(),
@@ -326,8 +323,8 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, contract common.Addre
 	return nil
 }
 
-func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, contract)
+func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, storeKey storetypes.StoreKey, contract common.Address, aspectId common.Address) error {
+	dataSet, err := k.GetAspectRefValue(ctx, storeKey, contract)
 	if err != nil {
 		return err
 	}
@@ -342,7 +339,7 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 		return err
 	}
 	// store
-	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
+	aspectRefStore := k.newPrefixStore(ctx, storeKey, types.AspectRefKeyPrefix)
 	aspectPropertyKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)

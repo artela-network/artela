@@ -19,13 +19,14 @@ import (
 var _ cosmos.AspectCosmosProvider = (*ArtelaProvider)(nil)
 
 type ArtelaProvider struct {
-	service *contract.AspectService
+	service        *contract.AspectService
+	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
 }
 
 func NewArtelaProvider(storeKey storetypes.StoreKey, getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *ArtelaProvider {
 	service := contract.NewAspectService(storeKey, getCtxByHeight)
 
-	return &ArtelaProvider{service: service}
+	return &ArtelaProvider{service: service, getCtxByHeight: getCtxByHeight}
 }
 
 func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
@@ -96,7 +97,11 @@ func (ArtelaProvider) FilterAspectTx(tx sdk.Msg) bool {
 }
 
 func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
-	return j.service.GetAspectForAddr(blockNum, address)
+	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	if err != nil {
+		return nil, err
+	}
+	return j.service.GetAspectForAddr(heightCtx, address, false)
 }
 
 func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
@@ -104,5 +109,9 @@ func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.Aspect
 }
 
 func (j *ArtelaProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
-	return j.service.GetAspectAccount(blockNum, aspectId)
+	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	if err != nil {
+		return nil, err
+	}
+	return j.service.GetAspectAccount(heightCtx, aspectId, false)
 }

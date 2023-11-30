@@ -104,18 +104,26 @@ func NewKeeper(
 		panic(err)
 	}
 
+	newStoreByHeight := func(height int64, keyPrefix string) (prefix.Store, error) {
+		context, err := app.CreateQueryContext(height, true)
+		if err != nil {
+			return prefix.Store{}, err
+		}
+		store := prefix.NewStore(context.KVStore(storeKey), types.KeyPrefix(keyPrefix))
+		return store, nil
+	}
+
 	// init aspect mint
 	newAspectMint := provider.NewArtelaProvider(storeKey, app.CreateQueryContext)
 	// new  Aspect Runtime Context
-	newAspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
+	newAspectRuntimeContext := artvmtype.NewAspectRuntimeContext(newStoreByHeight)
 
 	// init host api instance
 	// new AspectStateHostApi instance
-
 	api.NewStateDbApi(newAspectRuntimeContext.StateDb)
 	artelaType.GetStateDbHook = api.GetStateApiInstance
 
-	api.NewAspectRuntime(storeKey, newAspectRuntimeContext, app.CreateQueryContext, app)
+	api.NewAspectRuntime(newAspectRuntimeContext, app.DeliverStateCtx, newStoreByHeight)
 	artelaType.GetRuntimeHostHook = api.GetRuntimeInstance
 
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
@@ -146,6 +154,15 @@ func NewKeeper(
 
 	artelaType.GetAspectPaymaster = newAspectMint.GetAspectAccount
 	return k
+}
+
+func (k *Keeper) NewStoreByHeight(height int64, keyPrefix string) (prefix.Store, error) {
+	context, err := k.getCtxByHeight(height, true)
+	if err != nil {
+		return prefix.Store{}, err
+	}
+	store := prefix.NewStore(context.KVStore(k.storeKey), types.KeyPrefix(keyPrefix))
+	return store, nil
 }
 
 // set rpc client

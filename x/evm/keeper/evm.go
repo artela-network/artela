@@ -173,7 +173,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	// if transaction is Aspect operational, short the circuit and skip the processes
 	if isAspectOpTx := asptypes.IsAspectContractAddr(tx.To()); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage)
-		applyTx, aspectErr := nativeContract.ApplyTx(ctx, tx, msg)
+		applyTx, aspectErr := nativeContract.ApplyTx(ctx, tx, msg, true)
 		if aspectErr == nil && len(applyTx.VmError) == 0 {
 			//commit aspect state
 			k.GetAspectRuntimeContext().AspectState().ClearState(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
