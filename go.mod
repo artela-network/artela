@@ -36,7 +36,7 @@ require (
 
 require (
 	github.com/DataDog/zstd v1.5.2 // indirect
-	github.com/artela-network/aspect-runtime v0.4.1-beta // indirect
+	github.com/artela-network/aspect-runtime v0.4.2-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
 	github.com/bytecodealliance/wasmtime-go/v9 v9.0.0 // indirect
