@@ -174,13 +174,6 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 				if !owner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
-				binding, err := k.checkContractBinding(ctx, aspectId, account)
-				if err != nil {
-					return nil, err
-				}
-				if !binding {
-					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check contract binding fail, aspectId: %s , contract: %s", aspectId.String(), account.String())
-				}
 			} else if account != sender.Address() {
 				// For EoA account binding, only the account itself can issue the bind request
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect binding")
