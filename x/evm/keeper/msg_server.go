@@ -48,6 +48,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	// set aspect tx context
 	ethTxContext := types2.NewEthTxContext(ethCallTx)
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
 	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 
 	response, err := k.ApplyTransaction(ctx, tx)

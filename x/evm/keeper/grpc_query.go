@@ -250,6 +250,7 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	// set aspect tx context
 	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsEthCallTransaction())
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
 
 	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 
@@ -311,6 +312,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	// set aspect tx context
 	ethTxContext := artelatypes.NewEthTxContext(txMsg.AsTransaction())
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
 
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
@@ -420,6 +422,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		// set aspect tx context
 		ethTxContext := artelatypes.NewEthTxContext(ethTx)
 		k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+		k.GetAspectRuntimeContext().WithCosmosContext(ctx)
 
 		rsp, err := k.ApplyMessageWithConfig(ctx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
@@ -593,6 +596,7 @@ func (k *Keeper) traceTx(
 	// set aspect tx context
 	ethTxContext := artelatypes.NewEthTxContext(tx)
 	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
 
 	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {

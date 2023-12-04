@@ -30,12 +30,33 @@ const (
 
 	AspectAccountKey = "Aspect_@Acount@_"
 	AspectProofKey   = "Aspect_@Proof@_"
+
+	AspectStateBeginBlock     = "State/BeginBlock"
+	AspectStateDeliverTxState = "State/DeliverTx"
+	AspectStateEndBlock       = "State/EndBlock"
 )
 
 var (
 	PathSeparator    = []byte("/")
 	PathSeparatorLen = len(PathSeparator)
 )
+
+func GetAspectStatePoint(point string) string {
+	cut := artela.PointCut(point)
+	switch cut {
+	case artela.ON_BLOCK_INITIALIZE_METHOD:
+		return AspectStateBeginBlock
+	case artela.ON_BLOCK_FINALIZE_METHOD:
+		return AspectStateEndBlock
+	case artela.ON_TX_COMMIT_METHOD:
+	case artela.PRE_TX_EXECUTE_METHOD:
+	case artela.POST_TX_EXECUTE_METHOD:
+	case artela.PRE_CONTRACT_CALL_METHOD:
+	case artela.POST_CONTRACT_CALL_METHOD:
+		return AspectStateDeliverTxState
+	}
+	return ""
+}
 
 func AspectArrayKey(keys ...[]byte) []byte {
 	var key []byte
