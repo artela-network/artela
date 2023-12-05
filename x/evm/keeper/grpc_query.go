@@ -428,6 +428,8 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		if err != nil {
 			continue
 		}
+		// commit state and clean state object, Aspect State set @ApplyMessageWithConfig(..)
+		k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 		txConfig.LogIndex += uint(len(rsp.Logs))
 	}
 
@@ -602,6 +604,8 @@ func (k *Keeper) traceTx(
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}
+	// commit state and clean state object, Aspect State set @ApplyMessageWithConfig(..)
+	k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 	var result interface{}
 	result, err = tracer.GetResult()

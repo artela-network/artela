@@ -285,6 +285,9 @@ func (c *ExtBlockContext) RpcClient() client.Context {
 }
 
 type AspectState struct {
+	//int64 block height
+	//string  group
+	//  AspectStateObject
 	stateCache map[int64]map[string]*AspectStateObject
 }
 
