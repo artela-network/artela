@@ -998,7 +998,9 @@ func SubmitTransaction(ctx context.Context, logger log.Logger, b Backend, tx *ty
 	if err := checkTxFee(tx.GasPrice(), tx.Gas(), b.RPCTxFeeCap()); err != nil {
 		return common.Hash{}, err
 	}
-	if !isCustomizedVerificationRequired(tx) && !b.UnprotectedAllowed() && !tx.Protected() {
+
+	customizedVerification := isCustomizedVerificationRequired(tx)
+	if !customizedVerification && !b.UnprotectedAllowed() && !tx.Protected() {
 		// Ensure only eip155 signed transactions are submitted if EIP155Required is set.
 		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
 	}
@@ -1006,7 +1008,7 @@ func SubmitTransaction(ctx context.Context, logger log.Logger, b Backend, tx *ty
 		return common.Hash{}, err
 	}
 	// Print a log with full tx details for manual investigations and interventions
-	if isCustomizedVerificationRequired(tx) {
+	if customizedVerification {
 		// no need to check customized verification tx
 		return tx.Hash(), nil
 	}
