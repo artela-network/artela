@@ -1,6 +1,9 @@
 package datactx
 
 import (
+	"fmt"
+	"strconv"
+
 	artelatypes "github.com/artela-network/aspect-core/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -100,10 +103,14 @@ func (c EthBlockId) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, 
 	return response
 }
 
-type EthBlockHeader struct{}
+type EthBlockHeader struct {
+	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
+}
 
-func NewEthBlockHeader() *EthBlockHeader {
-	return &EthBlockHeader{}
+func NewEthBlockHeader(getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *EthBlockHeader {
+	return &EthBlockHeader{
+		getCtxByHeight: getCtxByHeight,
+	}
 }
 
 // getAspectContext data
@@ -111,7 +118,34 @@ func (c EthBlockHeader) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerConte
 	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
 		return nil
 	}
+
 	header := sdkCtx.BlockHeader()
+
+	if len(keys) > 0 {
+		// block^header^0
+		strHeight := keys[0]
+		blockHigh, err := strconv.ParseInt(strHeight, 10, 64)
+		if err != nil {
+			return artelatypes.NewContextQueryResponse(false, "The incoming block height cannot be recognized.")
+		}
+		getHeight := int64(0)
+		if blockHigh > 0 {
+			getHeight = blockHigh
+		}
+		lastCtx, getErr := c.getCtxByHeight(getHeight, true)
+		if getErr != nil {
+			return artelatypes.NewContextQueryResponse(false, fmt.Sprintf("The incoming block height %d cannot be recognized.", getHeight))
+		}
+		header = lastCtx.BlockHeader()
+	}
+
+	if header.Height == 0 {
+		lastCtx, getErr := c.getCtxByHeight(0, true)
+		if getErr != nil {
+			return artelatypes.NewContextQueryResponse(false, "The incoming block height cannot be recognized.")
+		}
+		header = lastCtx.BlockHeader()
+	}
 
 	if len(header.GetAppHash()) == 0 {
 		return artelatypes.NewContextQueryResponse(false, "get empty.")

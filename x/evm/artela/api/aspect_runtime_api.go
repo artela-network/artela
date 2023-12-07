@@ -64,7 +64,7 @@ func (k *aspectRuntimeHostApi) Register() {
 	k.execMap[asptypes.EnvChainConfig] = datactx.NewEnvChainConfig(k.getEthTxContext)
 	k.execMap[asptypes.EnvEvmParams] = datactx.NewEnvEvmParams(k.getEthTxContext)
 	k.execMap[asptypes.EnvBaseInfo] = datactx.NewEnvBaseInfo(k.getEthTxContext)
-	k.execMap[asptypes.BlockHeader] = datactx.NewEthBlockHeader()
+	k.execMap[asptypes.BlockHeader] = datactx.NewEthBlockHeader(k.getCtxByHeight)
 	k.execMap[asptypes.BlockGasMeter] = datactx.NewEthBlockGasMeter()
 	k.execMap[asptypes.BlockMinGasPrice] = datactx.NewBlockMinGasPrice()
 	k.execMap[asptypes.BlockLastCommit] = datactx.NewBlockLastCommitInfo(k.getExtBlockContext)
