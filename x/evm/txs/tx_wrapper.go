@@ -3,6 +3,7 @@ package txs
 import (
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/ethereum/utils"
 	"math/big"
 
 	"github.com/artela-network/aspect-core/djpm"
@@ -338,14 +339,8 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err 
 		}
 	} else {
 		tx := msg.AsTransaction()
-		v, r, s := tx.RawSignatureValues()
-
 		// retrieve sender info from aspect if tx is not signed
-		// FIXME: currently we cannot verify whether the destination account is a contract or not
-		//        in a ethereum transaction, need to find out a way later
-		zero := big.NewInt(0)
-		if (v == nil || r == nil || s == nil || (v.Cmp(zero) == 0 && r.Cmp(zero) == 0 && s.Cmp(zero) == 0)) &&
-			(tx.To() != nil && *tx.To() != common.Address{}) {
+		if utils.IsCustomizedVerification(tx) {
 			sender, _, err := djpm.AspectInstance().GetSenderAndCallData(-1, tx)
 			if err != nil {
 				return common.Address{}, err
