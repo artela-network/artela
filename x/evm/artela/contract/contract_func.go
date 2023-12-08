@@ -202,19 +202,6 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	return result
 }
 
-func (k *AspectNativeContract) checkContractBinding(ctx sdk.Context, aspectId common.Address, contract common.Address, commit bool) (bool, error) {
-	bHeight := ctx.BlockHeight()
-	code, _ := k.aspectService.GetAspectCode(ctx, aspectId, nil, commit)
-	runner, newErr := run.NewRunner(aspectId.String(), code)
-	if newErr != nil {
-		return false, newErr
-	}
-	defer runner.Return()
-
-	binding, runErr := runner.OnContractBinding(bHeight, 0, &contract, contract.String())
-	return binding, runErr
-}
-
 func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, commit bool) (bool, error) {
 	bHeight := ctx.BlockHeight()
 	code, _ := k.aspectService.GetAspectCode(ctx, aspectId, nil, commit)
