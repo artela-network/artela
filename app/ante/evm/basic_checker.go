@@ -289,6 +289,7 @@ func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, sim
 
 		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
 		ctd.evmKeeper.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+		ctd.evmKeeper.GetAspectRuntimeContext().WithCosmosContext(ctx)
 
 		signer := ctd.evmKeeper.MakeSigner(ctx, msgEthTx.AsTransaction(),
 			ethCfg, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))

@@ -38,6 +38,7 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx cosmos.Context, tx cosmos
 
 		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
 		esvd.evmKeeper.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+		esvd.evmKeeper.GetAspectRuntimeContext().WithCosmosContext(ctx)
 
 		ethTx := msgEthTx.AsTransaction()
 		sender, _, err := esvd.evmKeeper.VerifySig(ctx, ethTx)

@@ -109,7 +109,7 @@ func NewKeeper(
 	// init aspect
 	aspect := provider.NewArtelaProvider(storeKey, app.CreateQueryContext, app.LastBlockHeight)
 	// new Aspect Runtime Context
-	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
+	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext(storeKey)
 
 	// init host api instance
 	// new AspectStateHostApi instance
@@ -136,12 +136,7 @@ func NewKeeper(
 		aspect:               aspect,
 	}
 
-	api.NewAspectRuntime(storeKey,
-		aspectRuntimeContext.EthTxContext,
-		aspectRuntimeContext.AspectContext,
-		aspectRuntimeContext.ExtBlockContext,
-		k.GetChainConfig,
-		app)
+	api.NewAspectRuntime(aspectRuntimeContext, app.CreateQueryContext, k.GetChainConfig)
 
 	// init jit inherent
 	newAspectProtocol := provider.NewAspectProtocolProvider(aspectRuntimeContext.EthTxContext)
