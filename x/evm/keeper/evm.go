@@ -330,7 +330,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		WithEvmCfg(cfg).
 		WithStateDB(stateDB).
 		WithVmMonitor(evm.Tracer()).
-		WithFrom(msg.From)
+		WithFrom(msg.From).
+		WithCommit(commit)
 
 	leftoverGas := msg.GasLimit
 

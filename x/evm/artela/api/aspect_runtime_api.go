@@ -45,7 +45,7 @@ func NewAspectRuntime(
 		getCtxByHeight:     app.CreateQueryContext,
 		getEthereumConfig:  getEthereumConfig,
 		execMap:            make(map[string]datactx.Executor),
-		aspectStateHostApi: newAspectState(app, storeKey),
+		aspectStateHostApi: newAspectState(app, storeKey, getEthTxContext),
 	}
 	aspectRuntimeInstance.Register()
 }

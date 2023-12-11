@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-
 	ethlog "github.com/ethereum/go-ethereum/log"
 
 	artelatypes "github.com/artela-network/aspect-core/types"
@@ -19,23 +18,42 @@ import (
 type aspectStateHostApi struct {
 	storeKey           storetypes.StoreKey
 	getDeliverStateCtx func() (sdk.Context, error)
+	getCheckStateCtx   func() (sdk.Context, error)
 	getCtxByHeight     func(height int64, prove bool) (sdk.Context, error)
+	getEthTxContext    func() *types.EthTxContext
 }
 
-func newAspectState(app *baseapp.BaseApp, storeKey storetypes.StoreKey) *aspectStateHostApi {
+func newAspectState(app *baseapp.BaseApp, storeKey storetypes.StoreKey, getEthTxContext func() *types.EthTxContext) *aspectStateHostApi {
 	return &aspectStateHostApi{
 		storeKey:           storeKey,
 		getDeliverStateCtx: app.DeliverStateCtx,
+		getCheckStateCtx:   app.CheckStateCtx,
 		getCtxByHeight:     app.CreateQueryContext,
+		getEthTxContext:    getEthTxContext,
 	}
 }
 
-func (k *aspectStateHostApi) newPrefixStore(fixKey string) prefix.Store {
-	sdkCtx, err := k.getDeliverStateCtx()
+func (k *aspectStateHostApi) newPrefixStore(fixKey string) *prefix.Store {
+	ethTxCtx := k.getEthTxContext()
+	if ethTxCtx == nil {
+		// FIXME: need to print some logs here instead of panic
+		panic("ethTxCtx is nil")
+	}
+
+	var sdkCtx sdk.Context
+	var err error
+
+	if ethTxCtx.Commit() {
+		sdkCtx, err = k.getDeliverStateCtx()
+	} else {
+		sdkCtx, err = k.getCheckStateCtx()
+	}
+
 	if err != nil {
 		sdkCtx, _ = k.getCtxByHeight(0, false)
 	}
-	return prefix.NewStore(sdkCtx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
+	store := prefix.NewStore(sdkCtx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
+	return &store
 }
 
 // func (k *aspectStateHostApi) newTransientStore(blockHeight int64, fixKey string) prefix.Store {
