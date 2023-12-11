@@ -42,7 +42,7 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeg
 // an empty slice.
 func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	// delete all aspect state objects in the block
-	defer k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), "")
+	defer k.GetAspectRuntimeContext().RefreshState(false, ctx.BlockHeight(), "")
 
 	// Gas costs are handled within msg handler so costs should be ignored
 	infCtx := ctx.WithGasMeter(cosmos.NewInfiniteGasMeter())

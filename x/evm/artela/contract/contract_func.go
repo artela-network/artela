@@ -155,7 +155,7 @@ func (k *AspectNativeContract) changeVersion(ctx sdk.Context, aspectId common.Ad
 func (k *AspectNativeContract) version(ctx sdk.Context, method *abi.Method, aspectId common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
 	version := k.aspectService.aspectStore.GetAspectLastVersion(ctx, aspectId)
 
-	ret, err := method.Outputs.Pack(version)
+	ret, err := method.Outputs.Pack(version.Uint64())
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,19 @@ func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, co
 	if err != nil {
 		return nil, err
 	}
-	ret, pkErr := method.Outputs.Pack(aspects)
+
+	aspectInfo := make([]types.AspectInfo, 0, len(aspects))
+
+	for _, aspect := range aspects {
+		info := types.AspectInfo{
+			AspectId: common.HexToAddress(aspect.AspectId),
+			Version:  aspect.Version,
+			Priority: int8(aspect.Priority),
+		}
+		aspectInfo = append(aspectInfo, info)
+	}
+
+	ret, pkErr := method.Outputs.Pack(aspectInfo)
 	if pkErr != nil {
 		return nil, pkErr
 	}
