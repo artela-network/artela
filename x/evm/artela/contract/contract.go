@@ -46,7 +46,7 @@ func (k *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, 
 		ctx, writeCacheFunc = ctx.CacheContext()
 	}
 	applyMsg, err := k.applyMsg(ctx, msg, commit)
-	if err != nil && writeCacheFunc != nil {
+	if err == nil && writeCacheFunc != nil {
 		writeCacheFunc()
 	}
 	return applyMsg, err
@@ -146,13 +146,6 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				owner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
 				if !owner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
-				}
-				binding, err := k.checkContractBinding(ctx, aspectId, account, commit)
-				if err != nil {
-					return nil, err
-				}
-				if !binding {
-					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check contract binding fail, aspectId: %s , contract: %s", aspectId.String(), account.String())
 				}
 			} else if account != sender.Address() {
 				// For EoA account binding, only the account itself can issue the bind request
