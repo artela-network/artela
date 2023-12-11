@@ -40,45 +40,18 @@ func NewAspectNativeContract(storeKey storetypes.StoreKey,
 		evmState:         evmState,
 	}
 }
-
-func (k *AspectNativeContract) Query(ctx sdk.Context, msg *core.Message) (*evmtxs.MsgEthereumTxResponse, error) {
-	if msg == nil {
-		return nil, errors.Wrapf(evmtypes.ErrCallContract, "msg is nil")
+func (k *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, commit bool) (*evmtxs.MsgEthereumTxResponse, error) {
+	var writeCacheFunc func()
+	if commit {
+		ctx, writeCacheFunc = ctx.CacheContext()
 	}
-	method, params, err := types.ParseInput(msg.Data)
-	if err != nil {
-		return nil, err
+	applyMsg, err := k.applyMsg(ctx, msg, commit)
+	if err == nil && writeCacheFunc != nil {
+		writeCacheFunc()
 	}
-	switch strings.ToLower(method.Name) {
-	case "versionof":
-		{
-			aspectId := params["aspectId"].(common.Address)
-			return k.version(ctx, method, aspectId)
-		}
-
-	case "aspectsof":
-		{
-			contract := params["contract"].(common.Address)
-			return k.aspectsOf(ctx, method, contract)
-		}
-
-	case "contractsof":
-		{
-			aspectId := params["aspectId"].(common.Address)
-			return k.contractsOf(ctx, method, aspectId)
-		}
-	case "entrypoint":
-		{
-			aspectId := params["aspectId"].(common.Address)
-			data := params["optArgs"].([]byte)
-			return k.entrypoint(ctx, msg, method, aspectId, data)
-		}
-	}
-
-	return nil, nil
+	return applyMsg, err
 }
-
-func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*evmtxs.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, commit bool) (*evmtxs.MsgEthereumTxResponse, error) {
 	method, parameters, err := types.ParseMethod(msg.Data)
 	if err != nil {
 		return nil, err
@@ -150,7 +123,7 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 				})
 			}
 			sender := vm.AccountRef(msg.From)
-			aspectOwner, checkErr := k.checkAspectOwner(ctx, aspectId, sender.Address())
+			aspectOwner, checkErr := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 			if checkErr != nil {
 				return nil, checkErr
 			}
@@ -179,7 +152,7 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect binding")
 			}
 
-			return k.bind(ctx, aspectId, account, versionU256, priority, isContract)
+			return k.bind(ctx, aspectId, account, versionU256, priority, isContract, commit)
 		}
 
 	case "unbind":
@@ -188,7 +161,7 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 			contract := parameters["contract"].(common.Address)
 			sender := vm.AccountRef(msg.From)
 			owner := k.checkContractOwner(ctx, &contract, msg.Nonce+1, sender.Address())
-			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address())
+			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 			if err != nil {
 				return nil, err
 			}
@@ -204,7 +177,7 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 			contract := parameters["contract"].(common.Address)
 			version := parameters["version"].(uint64)
 			sender := vm.AccountRef(msg.From)
-			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address())
+			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 			if err != nil {
 				return nil, err
 			}
@@ -222,19 +195,19 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 	case "aspectsof":
 		{
 			contract := parameters["contract"].(common.Address)
-			return k.aspectsOf(ctx, method, contract)
+			return k.aspectsOf(ctx, method, contract, commit)
 		}
 
 	case "contractsof":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
-			return k.contractsOf(ctx, method, aspectId)
+			return k.contractsOf(ctx, method, aspectId, commit)
 		}
 	case "entrypoint":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
 			data := parameters["optArgs"].([]byte)
-			return k.entrypoint(ctx, msg, method, aspectId, data)
+			return k.entrypoint(ctx, msg, method, aspectId, data, commit)
 		}
 	}
 	return nil, nil
