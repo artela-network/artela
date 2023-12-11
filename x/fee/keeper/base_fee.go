@@ -1,12 +1,14 @@
 package keeper
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/artela-network/artela/x/fee/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	ethlog "github.com/ethereum/go-ethereum/log"
 )
 
 // CalculateBaseFee calculates the base fee for the current block. This is only calculated once per
@@ -113,6 +115,7 @@ func (k Keeper) SetParams(ctx cosmos.Context, params types.Params) error {
 		return err
 	}
 
+	ethlog.Info("SetParams, key:", string(types.ParamsKey), "value:", fmt.Sprintf("%+v", params))
 	store.Set(types.ParamsKey, bz)
 
 	return nil

@@ -1,11 +1,14 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
+	ethlog "github.com/ethereum/go-ethereum/log"
 
 	"github.com/artela-network/artela/x/fee/types"
 )
@@ -56,6 +59,7 @@ func (k Keeper) Logger(ctx cosmos.Context) log.Logger {
 func (k Keeper) SetBlockGasWanted(ctx cosmos.Context, gas uint64) {
 	store := ctx.KVStore(k.storeKey)
 	gasBz := cosmos.Uint64ToBigEndian(gas)
+	ethlog.Info("SetBlockGasWanted, key:", "KeyPrefixBlockGasWanted", "value:", fmt.Sprintf("%+v", gas))
 	store.Set(types.KeyPrefixBlockGasWanted, gasBz)
 }
 
@@ -84,6 +88,7 @@ func (k Keeper) GetTransientGasWanted(ctx cosmos.Context) uint64 {
 func (k Keeper) SetTransientBlockGasWanted(ctx cosmos.Context, gasWanted uint64) {
 	store := ctx.TransientStore(k.transientKey)
 	gasBz := cosmos.Uint64ToBigEndian(gasWanted)
+	ethlog.Info("SetBlockGasWanted, key:", "KeyPrefixTransientBlockGasWanted", "value:", fmt.Sprintf("%+v", gasWanted))
 	store.Set(types.KeyPrefixTransientBlockGasWanted, gasBz)
 }
 

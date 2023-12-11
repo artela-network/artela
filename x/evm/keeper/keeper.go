@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
@@ -34,6 +35,7 @@ import (
 
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/types"
+	ethlog "github.com/ethereum/go-ethereum/log"
 )
 
 // Keeper grants access to the EVM module states and implements the go-ethereum StateDB interface.
@@ -245,6 +247,7 @@ func (k Keeper) GetBlockBloomTransient(ctx cosmos.Context) *big.Int {
 func (k Keeper) SetBlockBloomTransient(ctx cosmos.Context, bloom *big.Int) {
 	store := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
 	heightBz := cosmos.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
+	ethlog.Info("SetBlockBloomTransient, key:", (uint64(ctx.BlockHeight())), "value:", bloom.String())
 	store.Set(heightBz, bloom.Bytes())
 }
 
@@ -255,6 +258,7 @@ func (k Keeper) SetBlockBloomTransient(ctx cosmos.Context, bloom *big.Int) {
 // SetTxIndexTransient set the index of processing txs
 func (k Keeper) SetTxIndexTransient(ctx cosmos.Context, index uint64) {
 	store := ctx.TransientStore(k.transientKey)
+	ethlog.Info("SetTxIndexTransient, key:", "KeyPrefixTransientTxIndex", "value:", fmt.Sprintf("%+v", index))
 	store.Set(types.KeyPrefixTransientTxIndex, cosmos.Uint64ToBigEndian(index))
 }
 
@@ -288,6 +292,7 @@ func (k Keeper) GetLogSizeTransient(ctx cosmos.Context) uint64 {
 // value by one and then sets the new index back to the transient store.
 func (k Keeper) SetLogSizeTransient(ctx cosmos.Context, logSize uint64) {
 	store := ctx.TransientStore(k.transientKey)
+	ethlog.Info("SetLogSizeTransient, key:", "KeyPrefixTransientLogSize", "value:", fmt.Sprintf("%+v", logSize))
 	store.Set(types.KeyPrefixTransientLogSize, cosmos.Uint64ToBigEndian(logSize))
 }
 
@@ -412,6 +417,7 @@ func (k Keeper) GetMinGasMultiplier(ctx cosmos.Context) cosmos.Dec {
 // ResetTransientGasUsed reset gas used to prepare for execution of current cosmos txs, called in ante handler.
 func (k Keeper) ResetTransientGasUsed(ctx cosmos.Context) {
 	store := ctx.TransientStore(k.transientKey)
+	ethlog.Info("ResetTransientGasUsed, key:", "KeyPrefixTransientGasUsed")
 	store.Delete(types.KeyPrefixTransientGasUsed)
 }
 
@@ -429,6 +435,7 @@ func (k Keeper) GetTransientGasUsed(ctx cosmos.Context) uint64 {
 func (k Keeper) SetTransientGasUsed(ctx cosmos.Context, gasUsed uint64) {
 	store := ctx.TransientStore(k.transientKey)
 	bz := cosmos.Uint64ToBigEndian(gasUsed)
+	ethlog.Info("SetTransientGasUsed, key:", "KeyPrefixTransientGasUsed", "value:", fmt.Sprintf("%+v", gasUsed))
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 }
 

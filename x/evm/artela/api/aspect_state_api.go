@@ -1,6 +1,10 @@
 package api
 
 import (
+	"fmt"
+
+	ethlog "github.com/ethereum/go-ethereum/log"
+
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -57,6 +61,11 @@ func (k *aspectStateHostApi) SetAspectState(ctx *artelatypes.RunnerContext, key,
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
+	_, err := k.getDeliverStateCtx()
+	if err != nil {
+		return true
+	}
+	ethlog.Info(fmt.Sprintf("SetAspectState, ---aspectID:%s---, ---key:%s---, ---value:%s---, ctx from deliver: %t", ctx.AspectId.String(), key, value, err == nil))
 	codeStore.Set(aspectPropertyKey, []byte(value))
 	return true
 }
@@ -69,6 +78,7 @@ func (k *aspectStateHostApi) RemoveAspectState(ctx *artelatypes.RunnerContext, k
 		[]byte(key),
 	)
 
+	ethlog.Info("RemoveAspectState, key:", key)
 	codeStore.Delete(aspectPropertyKey)
 	return true
 }
