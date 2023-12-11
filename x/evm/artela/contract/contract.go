@@ -98,9 +98,10 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			} else {
 				return nil, errors.New("No proof provided during aspect deploy")
 			}
+			joinPoints := parameters["joinPoints"].(*big.Int)
 
 			aspectId := crypto.CreateAddress(sender.Address(), msg.Nonce)
-			return k.deploy(ctx, aspectId, code, propertyAry)
+			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "upgrade":
 		{
@@ -130,7 +131,8 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			if !aspectOwner {
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to upgrade, sender: %s , aspectId: %s", sender.Address().String(), aspectId.String())
 			}
-			return k.deploy(ctx, aspectId, code, propertyAry)
+			joinPoints := parameters["joinPoints"].(*big.Int)
+			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "bind":
 		{
@@ -147,13 +149,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				if !owner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
-				binding, err := k.checkContractBinding(ctx, aspectId, account, commit)
-				if err != nil {
-					return nil, err
-				}
-				if !binding {
-					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check contract binding fail, aspectId: %s , contract: %s", aspectId.String(), account.String())
-				}
+
 			} else if account != sender.Address() {
 				// For EoA account binding, only the account itself can issue the bind request
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect binding")
@@ -198,7 +194,11 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			aspectId := parameters["aspectId"].(common.Address)
 			return k.version(ctx, method, aspectId)
 		}
-
+	case "getAspect":
+		{
+			aspectId := parameters["aspectId"].(common.Address)
+			return k.getAspect(ctx, method, aspectId)
+		}
 	case "aspectsof":
 		{
 			contract := parameters["contract"].(common.Address)

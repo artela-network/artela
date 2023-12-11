@@ -15,21 +15,23 @@ var _ binary.ByteOrder
 
 const (
 	// AspectCodeKeyPrefix is the prefix to retrieve all AspectCodeStore
-	AspectCodeKeyPrefix        = "AspectStore/Code/"
-	AspectCodeVersionKeyPrefix = "AspectStore/Version/"
-	AspectPropertyKeyPrefix    = "AspectStore/Property/"
-	ContractBindKeyPrefix      = "AspectStore/ContractBind/"
-	VerifierBindingKeyPrefix   = "AspectStore/VerifierBind/"
-	AspectRefKeyPrefix         = "AspectStore/AspectRef/"
-	AspectBlockKeyPrefix       = "AspectStore/Block/"
-	AspectStateKeyPrefix       = "AspectStore/State/"
+	AspectCodeKeyPrefix         = "AspectStore/Code/"
+	AspectCodeVersionKeyPrefix  = "AspectStore/Version/"
+	AspectPropertyKeyPrefix     = "AspectStore/Property/"
+	AspectJoinPointRunKeyPrefix = "AspectStore/JoinPointRun/"
+	ContractBindKeyPrefix       = "AspectStore/ContractBind/"
+	VerifierBindingKeyPrefix    = "AspectStore/VerifierBind/"
+	AspectRefKeyPrefix          = "AspectStore/AspectRef/"
+	AspectBlockKeyPrefix        = "AspectStore/Block/"
+	AspectStateKeyPrefix        = "AspectStore/State/"
 
 	AspectIdMapKey = "aspectId"
 	VersionMapKey  = "version"
 	PriorityMapKey = "priority"
 
-	AspectAccountKey = "Aspect_@Acount@_"
-	AspectProofKey   = "Aspect_@Proof@_"
+	AspectAccountKey      = "Aspect_@Acount@_"
+	AspectProofKey        = "Aspect_@Proof@_"
+	AspectRunJoinPointKey = "Aspect_@Run@JoinPoint@_"
 
 	AspectStateBeginBlock     = "State/BeginBlock"
 	AspectStateDeliverTxState = "State/DeliverTx"

@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
+	"math/big"
 )
 
 func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
@@ -167,7 +168,21 @@ func (k *AspectNativeContract) version(ctx sdk.Context, method *abi.Method, aspe
 		Logs:    nil,
 	}, nil
 }
+func (k *AspectNativeContract) getAspect(ctx sdk.Context, method *abi.Method, aspectId common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
+	version := k.aspectService.aspectStore.GetAspectLastVersion(ctx, aspectId)
 
+	ret, err := method.Outputs.Pack(version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &evmtypes.MsgEthereumTxResponse{
+		GasUsed: 100,
+		VmError: "",
+		Ret:     ret,
+		Logs:    nil,
+	}, nil
+}
 func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, contract common.Address, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	aspects, err := k.aspectService.GetAspectForAddr(ctx, contract, commit)
 	if err != nil {
@@ -229,9 +244,10 @@ func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectI
 	return binding, runErr
 }
 
-func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property, joinPoint *big.Int) (*evmtypes.MsgEthereumTxResponse, error) {
 	k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
 	k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
+	k.aspectService.aspectStore.StoreAspectJP(ctx, aspectId, joinPoint)
 
 	level, err := k.checkBlockLevel(aspectId, code)
 	if err != nil {

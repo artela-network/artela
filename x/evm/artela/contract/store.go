@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"math"
+	"math/big"
 	"sort"
 
 	"cosmossdk.io/errors"
@@ -409,4 +410,38 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 	)
 	aspectRefStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
+}
+
+func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, point *big.Int) bool {
+	if point.BitLen() == 0 {
+		return false
+	}
+	checked, _ := types.CheckIsJoinPoint(point.Int64())
+	if !checked {
+		return false
+	}
+	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
+	// store
+	aspectPropertyKey := types.AspectPropertyKey(
+		aspectId.Bytes(),
+		[]byte(types.AspectRunJoinPointKey),
+	)
+	aspectPropertyStore.Set(aspectPropertyKey, point.Bytes())
+	return true
+}
+
+func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address) *big.Int {
+
+	codeStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
+	aspectPropertyKey := types.AspectPropertyKey(
+		aspectId.Bytes(),
+		[]byte(types.AspectRunJoinPointKey),
+	)
+	get := codeStore.Get(aspectPropertyKey)
+
+	if nil != get && len(get) > 0 {
+		return new(big.Int).SetBytes(get)
+	} else {
+		return new(big.Int)
+	}
 }
