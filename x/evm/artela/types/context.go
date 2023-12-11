@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+	"sync"
+
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -10,7 +12,6 @@ import (
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"sync"
 
 	"github.com/artela-network/artela-evm/vm"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -358,6 +359,7 @@ func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, ke
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
+	fmt.Println(fmt.Sprintf("SetAspectState set, ---aspectID:%s---, ---key:%s---, ---value:%s---", ctx.AspectId.String(), key, value))
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
 		object.Set(aspectPropertyKey, []byte(value))
 		return true
@@ -375,6 +377,7 @@ func (k *AspectRuntimeContext) RemoveAspectState(ctx *artelatypes.RunnerContext,
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
+	fmt.Println(fmt.Sprintf("SetAspectState delete, ---aspectID:%s---, ---key:%s---", ctx.AspectId.String(), key))
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
 		object.Set(aspectPropertyKey, nil)
 		return true
