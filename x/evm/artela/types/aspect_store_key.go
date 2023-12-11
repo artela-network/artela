@@ -42,17 +42,15 @@ var (
 )
 
 func GetAspectStatePoint(point string) string {
-	cut := artela.PointCut(point)
-	switch cut {
-	case artela.ON_BLOCK_INITIALIZE_METHOD:
+	if strings.EqualFold(point, string(artela.ON_BLOCK_INITIALIZE_METHOD)) {
 		return AspectStateBeginBlock
-	case artela.ON_BLOCK_FINALIZE_METHOD:
+	} else if strings.EqualFold(point, string(artela.ON_BLOCK_FINALIZE_METHOD)) {
 		return AspectStateEndBlock
-	case artela.ON_TX_COMMIT_METHOD:
-	case artela.PRE_TX_EXECUTE_METHOD:
-	case artela.POST_TX_EXECUTE_METHOD:
-	case artela.PRE_CONTRACT_CALL_METHOD:
-	case artela.POST_CONTRACT_CALL_METHOD:
+	} else if strings.EqualFold(point, string(artela.ON_TX_COMMIT_METHOD)) ||
+		strings.EqualFold(point, string(artela.PRE_TX_EXECUTE_METHOD)) ||
+		strings.EqualFold(point, string(artela.POST_TX_EXECUTE_METHOD)) ||
+		strings.EqualFold(point, string(artela.PRE_CONTRACT_CALL_METHOD)) ||
+		strings.EqualFold(point, string(artela.POST_CONTRACT_CALL_METHOD)) {
 		return AspectStateDeliverTxState
 	}
 	return ""
