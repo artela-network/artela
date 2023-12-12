@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	artclient "github.com/artela-network/artela/client"
 	server2 "github.com/artela-network/artela/ethereum/server"
 	config2 "github.com/artela-network/artela/ethereum/server/config"
 
@@ -23,7 +24,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -154,7 +154,7 @@ func initRootCmd(
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(app.DefaultNodeHome),
+		artclient.KeyCommands(app.DefaultNodeHome),
 	)
 }
 
@@ -186,7 +186,7 @@ func queryCommand() *cobra.Command {
 // txCommand returns the sub-command to send transactions to the app
 func txCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        "txs",
+		Use:                        "tx",
 		Short:                      "Transactions subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
