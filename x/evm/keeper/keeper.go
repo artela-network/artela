@@ -81,7 +81,7 @@ type Keeper struct {
 
 	clientContext client.Context
 
-	lock sync.Mutex
+	Lock sync.Mutex
 }
 
 // NewKeeper generates new evm module keeper

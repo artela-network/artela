@@ -321,8 +321,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		ret   []byte // return bytes from evm execution
 		vmErr error  // vm errors do not effect consensus and are therefore not assigned to err
 	)
-	k.lock.Lock()
-	defer k.lock.Unlock()
+	k.Lock.Lock()
+	defer k.Lock.Unlock()
 
 	// return error if contract creation or call are disabled through governance
 	if !cfg.Params.EnableCreate && msg.To == nil {
