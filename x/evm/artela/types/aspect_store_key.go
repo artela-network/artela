@@ -50,7 +50,8 @@ func GetAspectStatePoint(point string) string {
 		strings.EqualFold(point, string(artela.PRE_TX_EXECUTE_METHOD)) ||
 		strings.EqualFold(point, string(artela.POST_TX_EXECUTE_METHOD)) ||
 		strings.EqualFold(point, string(artela.PRE_CONTRACT_CALL_METHOD)) ||
-		strings.EqualFold(point, string(artela.POST_CONTRACT_CALL_METHOD)) {
+		strings.EqualFold(point, string(artela.POST_CONTRACT_CALL_METHOD)) ||
+		strings.EqualFold(point, string(artela.OPERATION_METHOD)) {
 		return AspectStateDeliverTxState
 	}
 	return ""
