@@ -156,7 +156,7 @@ func (k *AspectNativeContract) changeVersion(ctx sdk.Context, aspectId common.Ad
 func (k *AspectNativeContract) version(ctx sdk.Context, method *abi.Method, aspectId common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
 	version := k.aspectService.aspectStore.GetAspectLastVersion(ctx, aspectId)
 
-	ret, err := method.Outputs.Pack(version)
+	ret, err := method.Outputs.Pack(version.Uint64())
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,19 @@ func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, co
 	if err != nil {
 		return nil, err
 	}
-	ret, pkErr := method.Outputs.Pack(aspects)
+
+	aspectInfo := make([]types.AspectInfo, 0, len(aspects))
+
+	for _, aspect := range aspects {
+		info := types.AspectInfo{
+			AspectId: common.HexToAddress(aspect.AspectId),
+			Version:  aspect.Version,
+			Priority: int8(aspect.Priority),
+		}
+		aspectInfo = append(aspectInfo, info)
+	}
+
+	ret, pkErr := method.Outputs.Pack(aspectInfo)
 	if pkErr != nil {
 		return nil, pkErr
 	}
@@ -242,6 +254,10 @@ func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectI
 
 	binding, runErr := runner.IsOwner(ctx.BlockHeight(), 0, &sender, sender.String())
 	return binding, runErr
+}
+func (k *AspectNativeContract) upgrade(ctx sdk.Context, id common.Address, code []byte, ary []types.Property, points *big.Int) (*evmtypes.MsgEthereumTxResponse, error) {
+
+	return nil, nil
 }
 
 func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property, joinPoint *big.Int) (*evmtypes.MsgEthereumTxResponse, error) {

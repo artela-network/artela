@@ -219,6 +219,8 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
+	k.Lock.Lock()
+	defer k.Lock.Unlock()
 
 	ctx := cosmos.UnwrapSDKContext(c)
 
@@ -267,6 +269,8 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
+	k.Lock.Lock()
+	defer k.Lock.Unlock()
 
 	ctx := cosmos.UnwrapSDKContext(c)
 	chainID, err := getChainID(ctx, req.ChainId)
@@ -384,6 +388,8 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
+	k.Lock.Lock()
+	defer k.Lock.Unlock()
 
 	if req.TraceConfig != nil && req.TraceConfig.Limit < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "output limit cannot be negative, got %d", req.TraceConfig.Limit)
@@ -534,6 +540,8 @@ func (k *Keeper) traceTx(
 	commitMessage bool,
 	tracerJSONConfig json.RawMessage,
 ) (*interface{}, uint, error) {
+	k.Lock.Lock()
+	defer k.Lock.Unlock()
 	// Assemble the structured logger or the JavaScript tracer
 	var (
 		tracer    tracers.Tracer

@@ -46,7 +46,7 @@ func (k *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, 
 		ctx, writeCacheFunc = ctx.CacheContext()
 	}
 	applyMsg, err := k.applyMsg(ctx, msg, commit)
-	if err != nil && writeCacheFunc != nil {
+	if err == nil && writeCacheFunc != nil {
 		writeCacheFunc()
 	}
 	return applyMsg, err
@@ -132,7 +132,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to upgrade, sender: %s , aspectId: %s", sender.Address().String(), aspectId.String())
 			}
 			joinPoints := parameters["joinPoints"].(*big.Int)
-			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
+			return k.upgrade(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "bind":
 		{
@@ -149,7 +149,6 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				if !owner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
-
 			} else if account != sender.Address() {
 				// For EoA account binding, only the account itself can issue the bind request
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect binding")
@@ -194,11 +193,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			aspectId := parameters["aspectId"].(common.Address)
 			return k.version(ctx, method, aspectId)
 		}
-	case "getAspect":
-		{
-			aspectId := parameters["aspectId"].(common.Address)
-			return k.getAspect(ctx, method, aspectId)
-		}
+
 	case "aspectsof":
 		{
 			contract := parameters["contract"].(common.Address)

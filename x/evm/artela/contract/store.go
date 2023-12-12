@@ -97,7 +97,7 @@ func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context) (map[string]int64, e
 }
 
 // StoreAspectCode aspect code
-func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) {
+func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) *uint256.Int {
 	// get last value
 	version := k.GetAspectLastVersion(ctx, aspectId)
 
@@ -111,6 +111,7 @@ func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, 
 	codeStore.Set(versionKey, code)
 	// update last version
 	k.StoreAspectVersion(ctx, aspectId, newVersion)
+	return newVersion
 }
 
 func (k *AspectStore) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
