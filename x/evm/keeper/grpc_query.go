@@ -219,6 +219,8 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
+	/*k.Lock.Lock()
+	defer k.Lock.Unlock()*/
 
 	ctx := cosmos.UnwrapSDKContext(c)
 

@@ -135,6 +135,8 @@ func (k Keeper) GetHashFn(ctx cosmos.Context) vm.GetHashFunc {
 //
 // For relevant discussion see: https://github.com/cosmos/cosmos-sdk/discussions/9072
 func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) (*txs.MsgEthereumTxResponse, error) {
+	k.Lock.Lock()
+	defer k.Lock.Unlock()
 	var (
 		bloom        *big.Int
 		bloomReceipt ethereum.Bloom
@@ -263,12 +265,16 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
 func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
+	k.Lock.Lock()
+	defer k.Lock.Unlock()
+
 	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+
 	return k.ApplyMessageWithConfig(ctx, msg, tracer, commit, evmConfig, txConfig)
 }
 
@@ -321,8 +327,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		ret   []byte // return bytes from evm execution
 		vmErr error  // vm errors do not effect consensus and are therefore not assigned to err
 	)
-	k.Lock.Lock()
-	defer k.Lock.Unlock()
 
 	// return error if contract creation or call are disabled through governance
 	if !cfg.Params.EnableCreate && msg.To == nil {
