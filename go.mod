@@ -7,7 +7,7 @@ require (
 	cosmossdk.io/errors v1.0.0
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.2.1
-	github.com/artela-network/artela-evm v0.4.4-beta
+	github.com/artela-network/artela-evm v0.4.5-beta
 	github.com/artela-network/aspect-core v0.4.4-beta
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft v0.37.2
