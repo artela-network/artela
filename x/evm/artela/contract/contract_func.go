@@ -61,13 +61,9 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method
 		return nil, err
 	}
 	addressAry := make([]common.Address, 0)
-	iterator := value.Iterator()
-	if iterator.Next() {
-		ct := iterator.Value()
-		if ct != nil {
-			contractAddr := common.HexToAddress(ct.(string))
-			addressAry = append(addressAry, contractAddr)
-		}
+	for _, data := range value.Values() {
+		contractAddr := common.HexToAddress(data.(string))
+		addressAry = append(addressAry, contractAddr)
 	}
 
 	ret, err := method.Outputs.Pack(addressAry)
