@@ -1,8 +1,9 @@
 package api
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/contract"
 	asptypes "github.com/artela-network/aspect-core/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
@@ -17,45 +18,57 @@ var (
 )
 
 type aspectRuntimeHostApi struct {
-	aspectRuntimeContext *types.AspectRuntimeContext
-	getEthereumConfig    func(ctx sdk.Context) *ethparams.ChainConfig
-	getCtxByHeight       types.ContextBuilder
-	execMap              map[string]datactx.Executor
+	getEthTxContext    func() *types.EthTxContext
+	getAspectContext   func() *types.AspectContext
+	getExtBlockContext func() *types.ExtBlockContext
+	getEthereumConfig  func(ctx sdk.Context) *ethparams.ChainConfig
+	getCtxByHeight     func(height int64, prove bool) (sdk.Context, error)
+	execMap            map[string]datactx.Executor
+	aspectStateHostApi *aspectStateHostApi
+	// nolint
+	app *baseapp.BaseApp
 }
 
 func NewAspectRuntime(
-	aspectRuntimeContext *types.AspectRuntimeContext,
-	getCtxByHeight types.ContextBuilder,
+	storeKey storetypes.StoreKey,
+	getEthTxContext func() *types.EthTxContext,
+	getAspectContext func() *types.AspectContext,
+	getExtBlockContext func() *types.ExtBlockContext,
 	getEthereumConfig func(ctx sdk.Context) *ethparams.ChainConfig,
+	app *baseapp.BaseApp,
 ) { //nolint:gofumpt
+
 	aspectRuntimeInstance = &aspectRuntimeHostApi{
-		aspectRuntimeContext: aspectRuntimeContext,
-		getCtxByHeight:       getCtxByHeight,
-		getEthereumConfig:    getEthereumConfig,
-		execMap:              make(map[string]datactx.Executor),
+		getEthTxContext:    getEthTxContext,
+		getAspectContext:   getAspectContext,
+		getExtBlockContext: getExtBlockContext,
+		getCtxByHeight:     app.CreateQueryContext,
+		getEthereumConfig:  getEthereumConfig,
+		execMap:            make(map[string]datactx.Executor),
+		aspectStateHostApi: newAspectState(app, storeKey, getEthTxContext),
 	}
 	aspectRuntimeInstance.Register()
 }
 
 func (k *aspectRuntimeHostApi) Register() {
 	// contexts
-	k.execMap[asptypes.TxAspectContext] = datactx.NewTxAspectContent(k.aspectRuntimeContext.AspectContext)
-	k.execMap[asptypes.TxStateChanges] = datactx.NewStateChanges(k.aspectRuntimeContext.EthTxContext)
-	k.execMap[asptypes.TxExtProperties] = datactx.NewExtProperties(k.aspectRuntimeContext.EthTxContext)
-	k.execMap[asptypes.TxContent] = datactx.NewTxContent(k.aspectRuntimeContext.EthTxContext)
-	k.execMap[asptypes.TxMsgHash] = datactx.NewTxMsgHash(k.aspectRuntimeContext.EthTxContext, k.getEthereumConfig)
-	k.execMap[asptypes.TxCallTree] = datactx.NewTxCallTree(k.aspectRuntimeContext.EthTxContext)
-	k.execMap[asptypes.TxReceipt] = datactx.NewTxReceipt(k.aspectRuntimeContext.EthTxContext)
+	k.execMap[asptypes.TxAspectContext] = datactx.NewTxAspectContent(k.getAspectContext)
+	k.execMap[asptypes.TxStateChanges] = datactx.NewStateChanges(k.getEthTxContext)
+	k.execMap[asptypes.TxExtProperties] = datactx.NewExtProperties(k.getEthTxContext)
+	k.execMap[asptypes.TxContent] = datactx.NewTxContent(k.getEthTxContext)
+	k.execMap[asptypes.TxMsgHash] = datactx.NewTxMsgHash(k.getEthTxContext, k.getEthereumConfig)
+	k.execMap[asptypes.TxCallTree] = datactx.NewTxCallTree(k.getEthTxContext)
+	k.execMap[asptypes.TxReceipt] = datactx.NewTxReceipt(k.getEthTxContext)
 	k.execMap[asptypes.TxGasMeter] = datactx.NewTxGasMeter()
 	k.execMap[asptypes.EnvConsensusParams] = datactx.NewEnvConsParams()
-	k.execMap[asptypes.EnvChainConfig] = datactx.NewEnvChainConfig(k.aspectRuntimeContext.EthTxContext)
-	k.execMap[asptypes.EnvEvmParams] = datactx.NewEnvEvmParams(k.aspectRuntimeContext.EthTxContext)
-	k.execMap[asptypes.EnvBaseInfo] = datactx.NewEnvBaseInfo(k.aspectRuntimeContext.EthTxContext)
+	k.execMap[asptypes.EnvChainConfig] = datactx.NewEnvChainConfig(k.getEthTxContext)
+	k.execMap[asptypes.EnvEvmParams] = datactx.NewEnvEvmParams(k.getEthTxContext)
+	k.execMap[asptypes.EnvBaseInfo] = datactx.NewEnvBaseInfo(k.getEthTxContext)
 	k.execMap[asptypes.BlockHeader] = datactx.NewEthBlockHeader(k.getCtxByHeight)
 	k.execMap[asptypes.BlockGasMeter] = datactx.NewEthBlockGasMeter()
 	k.execMap[asptypes.BlockMinGasPrice] = datactx.NewBlockMinGasPrice()
-	k.execMap[asptypes.BlockLastCommit] = datactx.NewBlockLastCommitInfo(k.aspectRuntimeContext.ExtBlockContext)
-	k.execMap[asptypes.BlockTxs] = datactx.NewEthBlockTxs(k.aspectRuntimeContext.ExtBlockContext)
+	k.execMap[asptypes.BlockLastCommit] = datactx.NewBlockLastCommitInfo(k.getExtBlockContext)
+	k.execMap[asptypes.BlockTxs] = datactx.NewEthBlockTxs(k.getExtBlockContext)
 }
 
 func GetRuntimeInstance() (asptypes.RuntimeHostApi, error) {
@@ -66,7 +79,7 @@ func GetRuntimeInstance() (asptypes.RuntimeHostApi, error) {
 }
 
 func (a aspectRuntimeHostApi) SetAspectContext(ctx *asptypes.RunnerContext, key, value string) bool {
-	a.aspectRuntimeContext.AspectContext().Add(ctx.AspectId.String(), key, value)
+	a.getAspectContext().Add(ctx.AspectId.String(), key, value)
 	return true
 }
 
@@ -93,10 +106,10 @@ func (a *aspectRuntimeHostApi) GetContext(ctx *asptypes.RunnerContext, key strin
 
 func (a *aspectRuntimeHostApi) Set(ctx *asptypes.RunnerContext, set *asptypes.ContextSetRequest) bool {
 	if set.NameSpace == asptypes.SetNameSpace_SetAspectContext {
-		a.aspectRuntimeContext.AspectContext().Add(ctx.AspectId.String(), set.GetKey(), set.GetValue())
+		a.getAspectContext().Add(ctx.AspectId.String(), set.GetKey(), set.GetValue())
 	}
 	if set.NameSpace == asptypes.SetNameSpace_SetAspectState {
-		a.aspectRuntimeContext.SetAspectState(ctx, set.GetKey(), set.GetValue())
+		a.aspectStateHostApi.SetAspectState(ctx, set.GetKey(), set.GetValue())
 	}
 	return true
 }
@@ -110,13 +123,12 @@ func (a *aspectRuntimeHostApi) Query(ctx *asptypes.RunnerContext, query *asptype
 
 	response := asptypes.NewContextQueryResponse(true, "success.")
 	if query.NameSpace == asptypes.QueryNameSpace_QueryAspectProperty {
-		codeStore := contract.NewAspectStore(a.aspectRuntimeContext.StoreKey())
-		property := codeStore.GetAspectPropertyValue(a.aspectRuntimeContext.CosmosContext(), *ctx.AspectId, keyData.Data)
+		property := a.aspectStateHostApi.GetProperty(ctx, keyData.Data)
 		valueData := &asptypes.StringData{Data: property}
 		response.SetData(valueData)
 	}
 	if query.NameSpace == asptypes.QueryNameSpace_QueryAspectState {
-		state := a.aspectRuntimeContext.GetAspectState(ctx, keyData.Data)
+		state := a.aspectStateHostApi.GetAspectState(ctx, keyData.Data)
 		valueData := &asptypes.StringData{Data: state}
 		response.SetData(valueData)
 	}
@@ -130,10 +142,10 @@ func (a *aspectRuntimeHostApi) Remove(ctx *asptypes.RunnerContext, query *asptyp
 		return false
 	}
 	if query.NameSpace == asptypes.RemoveNameSpace_RemoveAspectContext {
-		return a.aspectRuntimeContext.AspectContext().Remove(ctx.AspectId.String(), keyData.Data)
+		return a.getAspectContext().Remove(ctx.AspectId.String(), keyData.Data)
 	}
 	if query.NameSpace == asptypes.RemoveNameSpace_RemoveAspectState {
-		return a.aspectRuntimeContext.RemoveAspectState(ctx, keyData.Data)
+		return a.aspectStateHostApi.RemoveAspectState(ctx, keyData.Data)
 	}
 	return false
 }

@@ -13,7 +13,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"
+	ethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/uint256"
+	"github.com/status-im/keycard-go/hexutils"
 	"golang.org/x/exp/slices"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
@@ -52,6 +54,7 @@ func (k *AspectStore) RemoveBlockLevelAspect(ctx sdk.Context, aspectId common.Ad
 	// store
 	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
+	ethlog.Info("RemoveBlockLevelAspect, key:", string(aspectBlockKey))
 	store.Set(aspectBlockKey, jsonBytes)
 	return nil
 }
@@ -77,6 +80,7 @@ func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, aspectId common.Add
 	// kv
 	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
+	ethlog.Info("StoreBlockLevelAspect, key:", string(aspectBlockKey), string(jsonBytes))
 	store.Set(aspectBlockKey, jsonBytes)
 	return nil
 }
@@ -107,6 +111,7 @@ func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, 
 		aspectId.Bytes(),
 		newVersion.Bytes(),
 	)
+	ethlog.Info("StoreAspectCode, key:", string(versionKey), hexutils.BytesToHex(code))
 	codeStore.Set(versionKey, code)
 	// update last version
 	k.StoreAspectVersion(ctx, aspectId, newVersion)
@@ -131,6 +136,7 @@ func (k *AspectStore) StoreAspectVersion(ctx sdk.Context, aspectId common.Addres
 	versionKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
+	ethlog.Info("StoreAspectVersion, key:", string(versionKey), version)
 	versionStore.Set(versionKey, version.Bytes())
 }
 
@@ -159,6 +165,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 			aspectId.Bytes(),
 			[]byte(key),
 		)
+		ethlog.Info("StoreAspectProperty, key:", string(aspectPropertyKey), value)
 		aspectPropertyStore.Set(aspectPropertyKey, []byte(value))
 	}
 }
@@ -261,6 +268,7 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 	aspectPropertyKey := types.AccountKey(
 		account.Bytes(),
 	)
+	ethlog.Info("saveBindingInfo, key:", string(aspectPropertyKey), string(jsonBytes))
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 
 	return nil
@@ -288,6 +296,7 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 	aspectPropertyKey := types.AccountKey(
 		contract.Bytes(),
 	)
+	ethlog.Info("UnBindContractAspects, key:", string(aspectPropertyKey), string(jsonBytes))
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }
@@ -342,6 +351,7 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.
 	aspectPropertyKey := types.AccountKey(
 		contract.Bytes(),
 	)
+	ethlog.Info("ChangeBoundAspectVersion, key:", string(aspectPropertyKey), string(jsonBytes))
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }
@@ -383,6 +393,7 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Addres
 	aspectIdKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
+	ethlog.Info("StoreAspectRefValue, key:", string(aspectIdKey), string(jsonBytes))
 	aspectRefStore.Set(aspectIdKey, jsonBytes)
 	return nil
 }
@@ -407,6 +418,7 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 	aspectPropertyKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
+	ethlog.Info("UnbindAspectRefValue, key:", string(aspectPropertyKey), string(jsonBytes))
 	aspectRefStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }

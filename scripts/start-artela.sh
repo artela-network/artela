@@ -15,5 +15,10 @@ echo "starting artela node $i in background ..."
 --api.enable \
 &>>$DATA_DIR/node.log & disown
 
+pid=$(ps ax | grep '[a]rtelad' | awk '{print $1}')
+
+nohup dlv attach $pid --listen=:19211 --headless=true --log=true  \
+  --log-output=debugger,debuglineerr,gdbwire,lldbout,rpc --accept-multiclient --api-version=2 --continue &> /dev/null &
+
 echo "started artela node"
 tail -f /dev/null

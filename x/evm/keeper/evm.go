@@ -24,8 +24,6 @@ import (
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
-
-	artelatype "github.com/artela-network/artela/x/evm/artela/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
@@ -135,8 +133,6 @@ func (k Keeper) GetHashFn(ctx cosmos.Context) vm.GetHashFunc {
 //
 // For relevant discussion see: https://github.com/cosmos/cosmos-sdk/discussions/9072
 func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) (*txs.MsgEthereumTxResponse, error) {
-	k.Lock.Lock()
-	defer k.Lock.Unlock()
 	var (
 		bloom        *big.Int
 		bloomReceipt ethereum.Bloom
@@ -213,25 +209,8 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 		TransactionIndex:  txConfig.TxIndex,
 	}
 
-	k.GetAspectRuntimeContext().EthTxContext().WithReceipt(receipt)
-	// commit
-	// aspect OnTxCommit start
-	pointRequest, err := k.aspect.TxToPointRequest(ctx, msg.From, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
-	if err != nil {
-		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
-	} else {
-		pointRequest.GasInfo.Gas = msg.GasLimit - res.GasUsed
-		txCommit := djpm.AspectInstance().PostTxCommit(pointRequest)
-		if hasErr, txCommitErr := txCommit.HasErr(); hasErr {
-			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
-		}
-	}
-
 	if !res.Failed() {
 		receipt.Status = ethereum.ReceiptStatusSuccessful
-		// commit state and clean state object, Aspect State set @ApplyMessageWithConfig(..)
-		k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
-
 		if commit != nil {
 			commit()
 			res.Logs = support.NewLogsFromEth(receipt.Logs)
@@ -260,19 +239,30 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	// reset the gas meter for current cosmos txs
 	k.ResetGasMeterAndConsumeGas(ctx, totalGasUsed)
 
+	k.GetAspectRuntimeContext().EthTxContext().WithReceipt(receipt)
+	// commit
+	// aspect OnTxCommit start
+	pointRequest, err := k.aspect.TxToPointRequest(ctx, msg.From, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
+	if err != nil {
+		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
+	} else {
+		txCommit := djpm.AspectInstance().PostTxCommit(pointRequest)
+		if hasErr, txCommitErr := txCommit.HasErr(); hasErr {
+			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
+		}
+	}
+
 	return res, nil
 }
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
 func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
-
 	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
-
 	return k.ApplyMessageWithConfig(ctx, msg, tracer, commit, evmConfig, txConfig)
 }
 
@@ -340,9 +330,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		WithEvmCfg(cfg).
 		WithStateDB(stateDB).
 		WithVmMonitor(evm.Tracer()).
-		WithFrom(msg.From)
-	// Create a Aspect State Object for OnBlockFinalize
-	k.GetAspectRuntimeContext().CreateStateObject(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
+		WithFrom(msg.From).
+		WithCommit(commit)
 
 	leftoverGas := msg.GasLimit
 
@@ -442,7 +431,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	// The dirty states in `StateDB` is either committed or discarded after return
 	if commit {
-
 		if err := stateDB.Commit(); err != nil {
 			return nil, errorsmod.Wrap(err, "failed to commit stateDB")
 		}

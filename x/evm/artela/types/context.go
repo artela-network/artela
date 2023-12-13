@@ -109,6 +109,7 @@ type EthTxContext struct {
 	lastEvm       *vm.EVM
 	extProperties map[string]interface{}
 	from          common.Address
+	commit        bool
 }
 
 func NewEthTxContext(ethTx *ethtypes.Transaction) *EthTxContext {
@@ -143,6 +144,7 @@ func (c *EthTxContext) VmStateDB() vm.StateDB                 { return c.stateDb
 func (c *EthTxContext) ExtProperties() map[string]interface{} { return c.extProperties }
 func (c *EthTxContext) LastEvm() *vm.EVM                      { return c.lastEvm }
 func (c *EthTxContext) Message() *core.Message                { return c.msg }
+func (c *EthTxContext) Commit() bool                          { return c.commit }
 
 func (c *EthTxContext) WithFrom(from common.Address) *EthTxContext {
 	c.from = from
@@ -176,6 +178,11 @@ func (c *EthTxContext) WithStateDB(db vm.StateDB) *EthTxContext {
 
 func (c *EthTxContext) WithReceipt(receipt *ethtypes.Receipt) *EthTxContext {
 	c.receipt = receipt
+	return c
+}
+
+func (c *EthTxContext) WithCommit(commit bool) *EthTxContext {
+	c.commit = commit
 	return c
 }
 
