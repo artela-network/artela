@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/aspect-core/djpm/contract"
@@ -67,6 +68,7 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method
 			addressAry = append(addressAry, contractAddr)
 		}
 	}
+
 	ret, err := method.Outputs.Pack(addressAry)
 	if err != nil {
 		return nil, err
@@ -122,10 +124,20 @@ func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, ac
 	}, nil
 }
 
-func (k *AspectNativeContract) unbind(ctx sdk.Context, aspectId common.Address, contract common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) unbind(ctx sdk.Context, aspectId common.Address, contract common.Address, isContract bool, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
+
+	// contract=>aspect object
+	// aspectId= [contract,contract]
+	if !isContract {
+		if err := k.aspectService.aspectStore.UnBindVerificationAspect(ctx, contract, aspectId); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := k.aspectService.aspectStore.UnBindContractAspects(ctx, contract, aspectId); err != nil {
 		return nil, err
 	}
+
 	if err := k.aspectService.aspectStore.UnbindAspectRefValue(ctx, contract, aspectId); err != nil {
 		return nil, err
 	}
@@ -202,15 +214,19 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	if err != nil {
 		return false
 	}
-	message, err := k.applyMessageFunc(ctx, msg, nil, false)
+	fromAccount := vm.AccountRef(msg.From)
+	k.evm.CloseAspectCall()
+	defer k.evm.AspectCall()
+	ret, _, err := k.evm.Call(fromAccount, *msg.To, msg.Data, msg.GasLimit, msg.Value)
 	if err != nil {
 		return false
 	}
-	ret := message.Ret
+
 	result, err := contract.UnpackIsOwnerResult(ret)
 	if err != nil {
 		return false
 	}
+
 	return result
 }
 

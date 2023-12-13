@@ -23,21 +23,21 @@ import (
 )
 
 type AspectNativeContract struct {
-	aspectService    *AspectService
-	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)
-	evmState         *states.StateDB
+	aspectService *AspectService
+	evm           *vm.EVM
+	evmState      *states.StateDB
 }
 
 func NewAspectNativeContract(storeKey storetypes.StoreKey,
 	getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
-	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error),
+	evm *vm.EVM,
 	getBlockHeight func() int64,
 	evmState *states.StateDB,
 ) *AspectNativeContract {
 	return &AspectNativeContract{
-		aspectService:    NewAspectService(storeKey, getCtxByHeight, getBlockHeight),
-		applyMessageFunc: applyMessageFunc,
-		evmState:         evmState,
+		aspectService: NewAspectService(storeKey, getCtxByHeight, getBlockHeight),
+		evm:           evm,
+		evmState:      evmState,
 	}
 }
 func (k *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, commit bool) (*evmtxs.MsgEthereumTxResponse, error) {
@@ -168,7 +168,9 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			if !owner || !aspectOwner {
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to unbind, sender: %s , contract: %s", sender.Address().String(), contract.String())
 			}
-			return k.unbind(ctx, aspectId, contract)
+			isContract := len(k.evmState.GetCode(contract)) > 0
+
+			return k.unbind(ctx, aspectId, contract, isContract, commit)
 
 		}
 	case "changeversion":
