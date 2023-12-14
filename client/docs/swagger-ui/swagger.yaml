@@ -45200,7 +45200,7 @@ definitions:
       fields
 
       are derived, i.e. filled in by the nodes, but not secured by consensus.
-  artela.evm.v1.MsgEthereumTx:
+  ethermint.evm.v1.MsgEthereumTx:
     type: object
     properties:
       data:
@@ -45382,7 +45382,7 @@ definitions:
 
           secp256k1 elliptic curve
     description: MsgEthereumTx encapsulates an Ethereum txs as an SDK message.
-  artela.evm.v1.MsgEthereumTxResponse:
+  ethermint.evm.v1.MsgEthereumTxResponse:
     type: object
     properties:
       hash:
