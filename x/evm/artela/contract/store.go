@@ -375,7 +375,7 @@ func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, aspectId common.Address
 }
 
 func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, account)
+	dataSet, err := k.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return err
 	}
