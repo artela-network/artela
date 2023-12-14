@@ -2,9 +2,7 @@ package contract
 
 import (
 	"bytes"
-	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 
 	"github.com/artela-network/artela/x/evm/states"
@@ -25,10 +23,9 @@ import (
 )
 
 type AspectNativeContract struct {
-	aspectService    *AspectService
-	applyMessageFunc func(ctx sdk.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*evmtxs.MsgEthereumTxResponse, error)
-	evmState         *states.StateDB
-	evm              *vm.EVM
+	aspectService *AspectService
+	evmState      *states.StateDB
+	evm           *vm.EVM
 }
 
 func NewAspectNativeContract(storeKey storetypes.StoreKey,
@@ -61,8 +58,9 @@ func (k *AspectNativeContract) Query(ctx sdk.Context, msg *core.Message) (*evmtx
 
 	case "aspectsof":
 		{
-			contract := params["contract"].(common.Address)
-			return k.aspectsOf(ctx, method, contract)
+			account := params["contract"].(common.Address)
+			isContract := len(k.evmState.GetCode(account)) > 0
+			return k.aspectsOf(ctx, method, account, isContract)
 		}
 
 	case "contractsof":
@@ -191,17 +189,14 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 			account := parameters["contract"].(common.Address)
 			sender := vm.AccountRef(msg.From)
 			isContract := len(k.evmState.GetCode(account)) > 0
-			fmt.Println("=unbind==isContract=" + strconv.FormatBool(isContract))
 			if isContract {
 				// Bind with contract account, need to verify contract ownerships first
 				owner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
-				fmt.Println("=unbind==owner=" + strconv.FormatBool(owner))
 
 				if !owner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
 			} else if account != sender.Address() {
-				fmt.Println("=unbind==account=" + account.String())
 				// For EoA account binding, only the account itself can issue the bind request
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect unbinding")
 			}
@@ -232,8 +227,10 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 
 	case "aspectsof":
 		{
-			contract := parameters["contract"].(common.Address)
-			return k.aspectsOf(ctx, method, contract)
+			account := parameters["contract"].(common.Address)
+			isContract := len(k.evmState.GetCode(account)) > 0
+
+			return k.aspectsOf(ctx, method, account, isContract)
 		}
 
 	case "contractsof":

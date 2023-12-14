@@ -428,14 +428,8 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 
 	bindings, err := k.GetVerificationAspects(ctx, account)
 	if err != nil {
-		fmt.Println("=unbind==UnBindVerificationAspect=101")
-
 		return err
 	}
-	marshal, _ := json.Marshal(bindings)
-
-	fmt.Println("=unbind==UnBindVerificationAspect=101-1", string(marshal))
-
 	existing := -1
 	// check duplicates
 	for index, binding := range bindings {
@@ -445,32 +439,23 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 			break
 		}
 	}
-	fmt.Println("=unbind==UnBindVerificationAspect=102  ", existing, len(bindings))
 	if existing == -1 {
-		fmt.Println("=unbind==UnBindVerificationAspect=102-1")
-
 		return nil
 	}
 	// delete existing
 	newBinding := append(bindings[:existing], bindings[existing+1:]...)
-	fmt.Println("=unbind==UnBindVerificationAspect=102-2  ", existing, len(bindings))
 
-	sort.Slice(bindings, types.NewBindingPriorityComparator(newBinding))
-	fmt.Println("=unbind==UnBindVerificationAspect=102-3  ")
-	jsonBytes, err := json.Marshal(newBinding)
+	sort.Slice(newBinding, types.NewBindingPriorityComparator(newBinding))
+	jsonBytes, _ := json.Marshal(newBinding)
 	if err != nil {
-		fmt.Println("=unbind==UnBindVerificationAspect=102-4  ", err.Error())
 		return err
 	}
-	fmt.Println("=unbind==UnBindVerificationAspect=103")
 
 	// save bindings
 	aspectBindingStore := k.newPrefixStore(ctx, types.VerifierBindingKeyPrefix)
 	aspectPropertyKey := types.AccountKey(
 		account.Bytes(),
 	)
-	fmt.Println("=unbind==UnBindVerificationAspect=104")
-
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }
