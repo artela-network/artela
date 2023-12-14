@@ -186,19 +186,21 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 	case "unbind":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
-			contract := parameters["contract"].(common.Address)
+			account := parameters["contract"].(common.Address)
 			sender := vm.AccountRef(msg.From)
-			owner := k.checkContractOwner(ctx, &contract, msg.Nonce+1, sender.Address())
-			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address())
-			if err != nil {
-				return nil, err
+			isContract := len(k.evmState.GetCode(account)) > 0
+			if isContract {
+				// Bind with contract account, need to verify contract ownerships first
+				owner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
+				if !owner {
+					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
+				}
+			} else if account != sender.Address() {
+				// For EoA account binding, only the account itself can issue the bind request
+				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect unbinding")
 			}
-			if !owner || !aspectOwner {
-				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to unbind, sender: %s , contract: %s", sender.Address().String(), contract.String())
-			}
-			isContract := len(k.evmState.GetCode(contract)) > 0
 
-			return k.unbind(ctx, aspectId, contract, isContract)
+			return k.unbind(ctx, aspectId, account, isContract)
 
 		}
 	case "changeversion":
