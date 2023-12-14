@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"fmt"
 	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
@@ -126,19 +127,21 @@ func (k *AspectNativeContract) unbind(ctx sdk.Context, aspectId common.Address, 
 	// contract=>aspect object
 	// aspectId= [contract,contract]
 	if !isContract {
+		fmt.Println("=unbind==UnBindVerificationAspect=1")
 		if err := k.aspectService.aspectStore.UnBindVerificationAspect(ctx, contract, aspectId); err != nil {
 			return nil, err
 		}
 	}
-
+	fmt.Println("=unbind==UnBindContractAspects=1")
 	if err := k.aspectService.aspectStore.UnBindContractAspects(ctx, contract, aspectId); err != nil {
+		fmt.Println("=unbind==UnBindContractAspects=2")
 		return nil, err
 	}
-
+	fmt.Println("=unbind==UnbindAspectRefValue=1")
 	if err := k.aspectService.aspectStore.UnbindAspectRefValue(ctx, contract, aspectId); err != nil {
 		return nil, err
 	}
-
+	fmt.Println("=unbind==UnbindAspectRefValue=2")
 	return &evmtypes.MsgEthereumTxResponse{
 		GasUsed: ctx.GasMeter().GasConsumed(),
 		VmError: "",

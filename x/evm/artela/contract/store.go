@@ -3,6 +3,7 @@ package contract
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"sort"
 
@@ -306,6 +307,7 @@ func (k *AspectStore) GetTxLevelAspects(ctx sdk.Context, contract common.Address
 }
 
 func (k *AspectStore) GetVerificationAspects(ctx sdk.Context, account common.Address) ([]*types.AspectMeta, error) {
+	fmt.Println("=unbind==UnBindVerificationAspect=100")
 	return k.getAccountBondAspects(ctx, account, types.VerifierBindingKeyPrefix)
 }
 
@@ -427,6 +429,8 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 
 	bindings, err := k.GetVerificationAspects(ctx, account)
 	if err != nil {
+		fmt.Println("=unbind==UnBindVerificationAspect=101")
+
 		return err
 	}
 	existing := -1
@@ -438,8 +442,10 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 			break
 		}
 	}
-
+	fmt.Println("=unbind==UnBindVerificationAspect=102")
 	if existing == -1 {
+		fmt.Println("=unbind==UnBindVerificationAspect=1021")
+
 		return nil
 	}
 
@@ -450,11 +456,15 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 	if err != nil {
 		return err
 	}
+	fmt.Println("=unbind==UnBindVerificationAspect=103")
+
 	// save bindings
 	aspectBindingStore := k.newPrefixStore(ctx, types.VerifierBindingKeyPrefix)
 	aspectPropertyKey := types.AccountKey(
 		account.Bytes(),
 	)
+	fmt.Println("=unbind==UnBindVerificationAspect=104")
+
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }
