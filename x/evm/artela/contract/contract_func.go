@@ -130,15 +130,12 @@ func (k *AspectNativeContract) unbind(ctx sdk.Context, aspectId common.Address, 
 			return nil, err
 		}
 	}
-
 	if err := k.aspectService.aspectStore.UnBindContractAspects(ctx, contract, aspectId); err != nil {
 		return nil, err
 	}
-
 	if err := k.aspectService.aspectStore.UnbindAspectRefValue(ctx, contract, aspectId); err != nil {
 		return nil, err
 	}
-
 	return &evmtypes.MsgEthereumTxResponse{
 		GasUsed: ctx.GasMeter().GasConsumed(),
 		VmError: "",
@@ -177,22 +174,35 @@ func (k *AspectNativeContract) version(ctx sdk.Context, method *abi.Method, aspe
 	}, nil
 }
 
-func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, contract common.Address) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, contract common.Address, isContract bool) (*evmtypes.MsgEthereumTxResponse, error) {
 
-	aspects, err := k.aspectService.GetAspectForAddr(ctx.BlockHeight()-1, contract)
-	if err != nil {
-		return nil, err
-	}
-
-	aspectInfo := make([]types.AspectInfo, 0, len(aspects))
-
-	for _, aspect := range aspects {
-		info := types.AspectInfo{
-			AspectId: common.HexToAddress(aspect.AspectId),
-			Version:  aspect.Version,
-			Priority: int8(aspect.Priority),
+	aspectInfo := make([]types.AspectInfo, 0)
+	if isContract {
+		aspects, err := k.aspectService.GetAspectForAddr(ctx.BlockHeight()-1, contract)
+		if err != nil {
+			return nil, err
 		}
-		aspectInfo = append(aspectInfo, info)
+		for _, aspect := range aspects {
+			info := types.AspectInfo{
+				AspectId: common.HexToAddress(aspect.AspectId),
+				Version:  aspect.Version,
+				Priority: int8(aspect.Priority),
+			}
+			aspectInfo = append(aspectInfo, info)
+		}
+	} else {
+		aspectAccounts, verErr := k.aspectService.GetAccountVerifiers(ctx.BlockHeight()-1, contract)
+		if verErr != nil {
+			return nil, verErr
+		}
+		for _, aspect := range aspectAccounts {
+			info := types.AspectInfo{
+				AspectId: common.HexToAddress(aspect.AspectId),
+				Version:  aspect.Version,
+				Priority: int8(aspect.Priority),
+			}
+			aspectInfo = append(aspectInfo, info)
+		}
 	}
 
 	ret, pkErr := method.Outputs.Pack(aspectInfo)

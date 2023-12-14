@@ -2,11 +2,11 @@ package contract
 
 import (
 	"bytes"
+	"cosmossdk.io/errors"
 	"encoding/json"
+	"fmt"
 	"math"
 	"sort"
-
-	"cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -306,6 +306,7 @@ func (k *AspectStore) GetTxLevelAspects(ctx sdk.Context, contract common.Address
 }
 
 func (k *AspectStore) GetVerificationAspects(ctx sdk.Context, account common.Address) ([]*types.AspectMeta, error) {
+	fmt.Println("=unbind==UnBindVerificationAspect=100")
 	return k.getAccountBondAspects(ctx, account, types.VerifierBindingKeyPrefix)
 }
 
@@ -399,7 +400,7 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Addres
 }
 
 func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, contract)
+	dataSet, err := k.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return err
 	}
@@ -438,18 +439,18 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 			break
 		}
 	}
-
 	if existing == -1 {
 		return nil
 	}
-
 	// delete existing
 	newBinding := append(bindings[:existing], bindings[existing+1:]...)
-	sort.Slice(bindings, types.NewBindingPriorityComparator(newBinding))
-	jsonBytes, err := json.Marshal(newBinding)
+
+	sort.Slice(newBinding, types.NewBindingPriorityComparator(newBinding))
+	jsonBytes, _ := json.Marshal(newBinding)
 	if err != nil {
 		return err
 	}
+
 	// save bindings
 	aspectBindingStore := k.newPrefixStore(ctx, types.VerifierBindingKeyPrefix)
 	aspectPropertyKey := types.AccountKey(
