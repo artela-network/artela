@@ -181,7 +181,7 @@ var (
 		feegrantmodule.AppModuleBasic{},
 		groupmodule.AppModuleBasic{},
 		ibc.AppModuleBasic{},
-		ibctm.AppModuleBasic{},
+		ibctm.AppModuleBasic{}, //light client for ibc-go v7
 		solomachine.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
@@ -203,7 +203,8 @@ var (
 		stakingmodule.BondedPoolName:    {authmodule.Burner, authmodule.Staking},
 		stakingmodule.NotBondedPoolName: {authmodule.Burner, authmodule.Staking},
 		govmodule.ModuleName:            {authmodule.Burner},
-		transfermodule.ModuleName:       {authmodule.Minter, authmodule.Burner},
+		// grant Minter and Burner permissions to the ibc-transfer ModuleAccount to mint and burn relayed tokens
+		transfermodule.ModuleName: {authmodule.Minter, authmodule.Burner},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 		evmmoduletypes.ModuleName: {authmodule.Minter, authmodule.Burner},
 	}
