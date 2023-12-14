@@ -2,12 +2,11 @@ package contract
 
 import (
 	"bytes"
+	"cosmossdk.io/errors"
 	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
-
-	"cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -442,18 +441,21 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 			break
 		}
 	}
-	fmt.Println("=unbind==UnBindVerificationAspect=102")
+	fmt.Println("=unbind==UnBindVerificationAspect=102  ", existing, len(bindings))
 	if existing == -1 {
-		fmt.Println("=unbind==UnBindVerificationAspect=1021")
+		fmt.Println("=unbind==UnBindVerificationAspect=102-1")
 
 		return nil
 	}
 
 	// delete existing
 	newBinding := append(bindings[:existing], bindings[existing+1:]...)
+	fmt.Println("=unbind==UnBindVerificationAspect=102-2  ", existing, len(bindings))
 	sort.Slice(bindings, types.NewBindingPriorityComparator(newBinding))
+	fmt.Println("=unbind==UnBindVerificationAspect=102-3  ")
 	jsonBytes, err := json.Marshal(newBinding)
 	if err != nil {
+		fmt.Println("=unbind==UnBindVerificationAspect=102-4  ", err.Error())
 		return err
 	}
 	fmt.Println("=unbind==UnBindVerificationAspect=103")
