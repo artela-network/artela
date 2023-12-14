@@ -399,7 +399,7 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Addres
 }
 
 func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, contract)
+	dataSet, err := k.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return err
 	}
