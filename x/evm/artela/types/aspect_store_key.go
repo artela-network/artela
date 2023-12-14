@@ -101,6 +101,12 @@ func AccountKey(
 	return key
 }
 
+type AspectInfo struct {
+	AspectId common.Address `json:"AspectId"`
+	Version  uint64         `json:"Version"`
+	Priority int8           `json:"Priority"`
+}
+
 type AspectMeta struct {
 	Id       common.Address `json:"id"`
 	Version  *uint256.Int   `json:"version"`

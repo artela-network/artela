@@ -2,11 +2,10 @@ package contract
 
 import (
 	"bytes"
+	"cosmossdk.io/errors"
 	"encoding/json"
 	"math"
 	"sort"
-
-	"cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -375,7 +374,7 @@ func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, aspectId common.Address
 }
 
 func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, account)
+	dataSet, err := k.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return err
 	}
@@ -399,7 +398,7 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Addres
 }
 
 func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, contract)
+	dataSet, err := k.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return err
 	}
@@ -420,5 +419,41 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 	)
 	ethlog.Info("UnbindAspectRefValue, key:", string(aspectPropertyKey), string(jsonBytes))
 	aspectRefStore.Set(aspectPropertyKey, jsonBytes)
+	return nil
+}
+
+func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.Address, aspectId common.Address) error {
+
+	bindings, err := k.GetVerificationAspects(ctx, account)
+	if err != nil {
+		return err
+	}
+	existing := -1
+	// check duplicates
+	for index, binding := range bindings {
+		if bytes.Equal(binding.Id.Bytes(), aspectId.Bytes()) {
+			// delete Aspect id
+			existing = index
+			break
+		}
+	}
+	if existing == -1 {
+		return nil
+	}
+	// delete existing
+	newBinding := append(bindings[:existing], bindings[existing+1:]...)
+
+	sort.Slice(newBinding, types.NewBindingPriorityComparator(newBinding))
+	jsonBytes, _ := json.Marshal(newBinding)
+	if err != nil {
+		return err
+	}
+
+	// save bindings
+	aspectBindingStore := k.newPrefixStore(ctx, types.VerifierBindingKeyPrefix)
+	aspectPropertyKey := types.AccountKey(
+		account.Bytes(),
+	)
+	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }

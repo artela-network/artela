@@ -369,14 +369,14 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	// if transaction is Aspect operational, short the circuit and skip the processes
 	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
-		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, k.ApplyMessage, func() int64 {
+		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, evm, func() int64 {
 			return ctx.BlockHeight()
 		}, stateDB)
-		resp, err := nativeContract.ApplyMsg(ctx, msg)
+		resp, aspectErr := nativeContract.ApplyMsg(ctx, msg)
 		if resp != nil {
 			resp.Hash = txConfig.TxHash.Hex()
 		}
-		return resp, err
+		return resp, aspectErr
 	} else if contractCreation {
 		// take over the nonce management from evm:
 		// - reset sender's nonce to msg.Nonce() before calling evm.
