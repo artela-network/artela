@@ -1,7 +1,11 @@
 package types
 
 import (
+	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -10,7 +14,6 @@ import (
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"sync"
 
 	"github.com/artela-network/artela-evm/vm"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -20,12 +23,21 @@ import (
 	statedb "github.com/artela-network/artela/x/evm/states"
 )
 
+const (
+	AspectContextKey   cosmos.ContextKey = "aspect-ctx"
+	ExtBlockContextKey cosmos.ContextKey = "block-ctx"
+)
+
+var storeKey storetypes.StoreKey
+
 type HistoryStoreBuilder func(height int64, keyPrefix string) (prefix.Store, error)
 type ContextBuilder func(height int64, prove bool) (cosmos.Context, error)
 
 type GetLastBlockHeight func() int64
 
 type AspectRuntimeContext struct {
+	baseCtx context.Context
+
 	ethTxContext    *EthTxContext
 	aspectContext   *AspectContext
 	extBlockContext *ExtBlockContext
@@ -34,15 +46,19 @@ type AspectRuntimeContext struct {
 	storeKey        storetypes.StoreKey
 }
 
-func NewAspectRuntimeContext(storeKey storetypes.StoreKey) *AspectRuntimeContext {
+func NewAspectRuntimeContext() *AspectRuntimeContext {
 	return &AspectRuntimeContext{
-		ethTxContext:    nil,
 		cosmosCtx:       cosmos.Context{},
 		aspectContext:   NewAspectContext(),
 		extBlockContext: NewExtBlockContext(),
 		aspectState:     NewAspectState(),
 		storeKey:        storeKey,
 	}
+}
+
+func (c *AspectRuntimeContext) Init(storeKey storetypes.StoreKey) {
+	storeKey = storeKey
+	c.storeKey = storeKey
 }
 
 func (c *AspectRuntimeContext) WithCosmosContext(newTxCtx cosmos.Context) {
@@ -96,6 +112,22 @@ func (c *AspectRuntimeContext) ClearContext() {
 	contractAddress := c.EthTxContext().TxTo()
 	c.AspectContext().Clear(contractAddress)
 	c.ethTxContext = nil
+}
+
+func (c *AspectRuntimeContext) Deadline() (deadline time.Time, ok bool) {
+	return c.baseCtx.Deadline()
+}
+
+func (c *AspectRuntimeContext) Done() <-chan struct{} {
+	return c.baseCtx.Done()
+}
+
+func (c *AspectRuntimeContext) Err() error {
+	return c.baseCtx.Err()
+}
+
+func (c *AspectRuntimeContext) Value(key interface{}) interface{} {
+	return c.baseCtx.Value(key)
 }
 
 type EthTxContext struct {
@@ -358,6 +390,7 @@ func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, ke
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
+	fmt.Println(fmt.Sprintf("SetAspectState set, ---aspectID:%s---, ---key:%s---, ---value:%s---", ctx.AspectId.String(), key, value))
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
 		object.Set(aspectPropertyKey, []byte(value))
 		return true
@@ -375,6 +408,7 @@ func (k *AspectRuntimeContext) RemoveAspectState(ctx *artelatypes.RunnerContext,
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
+	fmt.Println(fmt.Sprintf("SetAspectState delete, ---aspectID:%s---, ---key:%s---", ctx.AspectId.String(), key))
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
 		object.Set(aspectPropertyKey, nil)
 		return true

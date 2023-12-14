@@ -7,16 +7,16 @@ import (
 
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 
+	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
 // BeginBlock sets the cosmos Context and EIP155 chain id to the Keeper.
 func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeginBlock) {
-	//k.Lock.Lock()
-	//defer k.Lock.Unlock()
+	// k.GetAspectRuntimeContext().WithCosmosContext(ctx)
+	extBlockCtx := artelatypes.NewExtBlockContext().WithEvidenceList(beginBlock.ByzantineValidators).WithLastCommit(beginBlock.LastCommitInfo).WithRpcClient(k.GetClientContext())
+	ctx.WithValue(artelatypes.ExtBlockContextKey, extBlockCtx)
 
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
-	k.GetAspectRuntimeContext().ExtBlockContext().WithEvidenceList(beginBlock.ByzantineValidators).WithLastCommit(beginBlock.LastCommitInfo).WithRpcClient(k.GetClientContext())
 	k.WithChainID(ctx)
 
 	// Create a Aspect State Object for OnBlockInitialize

@@ -1,6 +1,8 @@
 package contract
 
 import (
+	"context"
+
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/aspect-core/djpm/contract"
@@ -17,7 +19,12 @@ import (
 func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	lastHeight := ctx.BlockHeight()
 	code, _ := anc.aspectService.GetAspectCode(ctx, aspectId, nil, commit)
-	runner, newErr := run.NewRunner(aspectId.String(), code)
+
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		panic("wrap artelatype.AspectRuntimeContext failed")
+	}
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
 		return nil, newErr
 	}
@@ -81,11 +88,11 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method
 
 func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, account common.Address, aspectVersion *uint256.Int, priority int8, isContract bool, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	aspectCode, _ := k.aspectService.GetAspectCode(ctx, aspectId, aspectVersion, commit)
-	txAspect, err := k.checkTransactionLevel(aspectId, aspectCode)
+	txAspect, err := k.checkTransactionLevel(ctx, aspectId, aspectCode)
 	if err != nil {
 		return nil, err
 	}
-	txVerifier, err := k.checkIsTxVerifier(aspectId, aspectCode)
+	txVerifier, err := k.checkIsTxVerifier(ctx, aspectId, aspectCode)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +227,12 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	if code == nil {
 		return false, nil
 	}
-	runner, newErr := run.NewRunner(aspectId.String(), code)
+
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		panic("wrap artelatype.AspectRuntimeContext failed")
+	}
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
 		return false, newErr
 	}
@@ -231,7 +243,11 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 }
 
 func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectId common.Address, code []byte, sender common.Address) (bool, error) {
-	runner, newErr := run.NewRunner(aspectId.String(), code)
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		panic("wrap artelatype.AspectRuntimeContext failed")
+	}
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
 		return false, newErr
 	}
@@ -245,7 +261,7 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 	k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
 	k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
 
-	level, err := k.checkBlockLevel(aspectId, code)
+	level, err := k.checkBlockLevel(ctx, aspectId, code)
 	if err != nil {
 		return nil, err
 	}
@@ -270,8 +286,13 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 	}, nil
 }
 
-func (k *AspectNativeContract) checkBlockLevel(aspectId common.Address, code []byte) (bool, error) {
-	runner, newErr := run.NewRunner(aspectId.String(), code)
+func (k *AspectNativeContract) checkBlockLevel(ctx sdk.Context, aspectId common.Address, code []byte) (bool, error) {
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		panic("wrap artelatype.AspectRuntimeContext failed")
+	}
+
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
 		return false, newErr
 	}
@@ -281,11 +302,16 @@ func (k *AspectNativeContract) checkBlockLevel(aspectId common.Address, code []b
 	return binding, runErr
 }
 
-func (k *AspectNativeContract) checkTransactionLevel(aspectId common.Address, code []byte) (bool, error) {
+func (k *AspectNativeContract) checkTransactionLevel(ctx sdk.Context, aspectId common.Address, code []byte) (bool, error) {
 	if len(code) == 0 {
 		return false, errors.New("The Aspect of aspectId could not be found.")
 	}
-	runner, newErr := run.NewRunner(aspectId.String(), code)
+
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		panic("wrap artelatype.AspectRuntimeContext failed")
+	}
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
 		return false, newErr
 	}
@@ -295,11 +321,15 @@ func (k *AspectNativeContract) checkTransactionLevel(aspectId common.Address, co
 	return binding, runErr
 }
 
-func (k *AspectNativeContract) checkIsTxVerifier(aspectId common.Address, code []byte) (bool, error) {
+func (k *AspectNativeContract) checkIsTxVerifier(ctx context.Context, aspectId common.Address, code []byte) (bool, error) {
 	if len(code) == 0 {
 		return false, errors.New("The Aspect of aspectId could not be found.")
 	}
-	runner, newErr := run.NewRunner(aspectId.String(), code)
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		panic("wrap artelatype.AspectRuntimeContext failed")
+	}
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
 		return false, newErr
 	}

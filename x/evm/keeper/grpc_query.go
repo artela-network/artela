@@ -251,8 +251,13 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 	// set aspect tx context
 	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsEthCallTransaction())
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
+	// k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+	// k.GetAspectRuntimeContext().WithCosmosContext(ctx)
+	aspectCtx := artelatypes.NewAspectRuntimeContext()
+	aspectCtx.SetEthTxContext(ethTxContext)
+	aspectCtx.WithCosmosContext(ctx)
+
+	ctx = ctx.WithValue(artelatypes.AspectContextKey, aspectCtx) // store aspect ctx to sdk ctx
 
 	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 
@@ -261,6 +266,7 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	return res, nil
 }
 

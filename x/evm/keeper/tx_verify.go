@@ -2,9 +2,10 @@ package keeper
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/artela-network/artela/ethereum/utils"
 	"github.com/ethereum/go-ethereum/params"
-	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/artela-network/artela/x/evm/states"
@@ -54,7 +55,7 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 }
 
 func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {
-	return djpm.AspectInstance().GetSenderAndCallData(ctx.BlockHeight(), tx)
+	return djpm.AspectInstance().GetSenderAndCallData(nil, ctx.BlockHeight(), tx)
 }
 
 func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer {

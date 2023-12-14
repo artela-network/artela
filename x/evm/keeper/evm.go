@@ -335,14 +335,19 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	stateDB := states.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
-	k.GetAspectRuntimeContext().EthTxContext().
-		WithLastEvm(evm).
+
+	aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
+	if !ok {
+		panic("wrap *artelatype.AspectRuntimeContext failed")
+	}
+	aspectCtx.EthTxContext().
+		WithLastEvm(evm). // todo: withEVM(,,,)
 		WithEvmCfg(cfg).
 		WithStateDB(stateDB).
 		WithVmMonitor(evm.Tracer()).
 		WithFrom(msg.From)
 	// Create a Aspect State Object for OnBlockFinalize
-	k.GetAspectRuntimeContext().CreateStateObject(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
+	aspectCtx.CreateStateObject(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
 
 	leftoverGas := msg.GasLimit
 
@@ -399,7 +404,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		pointRequest := k.aspect.CreateTxPointRequestInEvm(ctx, msg, txConfig, nil)
 		pointRequest.GasInfo.Gas = leftoverGas
 
-		execute := djpm.AspectInstance().PreTxExecute(pointRequest)
+		execute := djpm.AspectInstance().PreTxExecute(aspectCtx, pointRequest)
 		leftoverGas = execute.GasInfo.Gas
 		if hasErr, execErr := execute.HasErr(); hasErr {
 			vmErr = execErr

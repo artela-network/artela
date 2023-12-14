@@ -3,22 +3,20 @@ package txs
 import (
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/ethereum/utils"
 	"math/big"
 
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/ethereum/utils"
+
+	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 	"github.com/artela-network/aspect-core/djpm"
 
-	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/types"
-
-	sdkmath "cosmossdk.io/math"
-
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	codec "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -270,6 +268,7 @@ func (msg *MsgEthereumTx) GetSigners() []cosmos.AccAddress {
 		panic(err)
 	}
 
+	// ctx := rpctypes.ContextWithHeight(blockNum.Int64())
 	sender, err := msg.GetSender(data.GetChainID())
 	if err != nil {
 		panic(err)
@@ -341,7 +340,17 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err 
 		tx := msg.AsTransaction()
 		// retrieve sender info from aspect if tx is not signed
 		if utils.IsCustomizedVerification(tx) {
-			sender, _, err := djpm.AspectInstance().GetSenderAndCallData(-1, tx)
+			// aspectCtx := artelatypes.NewAspectRuntimeContext()
+			// aspectCtx.SetEthTxContext(ethTxContext)
+			// aspectCtx.WithCosmosContext(ctx)
+
+			// // set extBlockContext to aspect runtime context
+			// extBlockCtx, ok := ctx.Value(artelatypes.ExtBlockContextKey).(*artelatypes.ExtBlockContext)
+			// if !ok {
+			// 	panic("wrap artelatype.AspectRuntimeContext failed")
+			// }
+
+			sender, _, err := djpm.AspectInstance().GetSenderAndCallData(nil, -1, tx)
 			if err != nil {
 				return common.Address{}, err
 			}
