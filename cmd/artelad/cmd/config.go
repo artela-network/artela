@@ -8,7 +8,7 @@ import (
 
 const (
 	// Bech32Prefix defines the Bech32 prefix used for EthAccounts
-	Bech32Prefix = "artl"
+	Bech32Prefix = "art"
 
 	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
 	Bech32PrefixAccAddr = Bech32Prefix
@@ -26,7 +26,7 @@ const (
 	// DisplayDenom defines the denomination displayed to users in client applications.
 	DisplayDenom = "art"
 	// BaseDenom defines artelad base denonm
-	BaseDenom = "aart"
+	BaseDenom = "uart"
 )
 
 // SetBech32Prefixes sets the global prefixes to be used when serializing addresses and public keys to Bech32 strings.

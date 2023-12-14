@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 	"github.com/artela-network/artela/ethereum/server/config"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
@@ -96,7 +95,7 @@ func addTestnetFlagsToCmd(cmd *cobra.Command) {
 		fmt.Sprintf("0.000006%s",
 			types2.AttoArtela),
 		"Minimum gas prices to accept for transactions; All fees in a txs must meet this minimum (e.g. 0.01photino,0.001stake)")
-	cmd.Flags().String(ethsecp256k1.FlagKeyAlgorithm, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
+	cmd.Flags().String(flags.FlagKeyType, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
 }
 
 // NewTestnetCmd creates a root testnet command with subcommands to run an in-txs testnet or initialize
@@ -149,7 +148,7 @@ Example:
 			args.nodeDaemonHome, _ = cmd.Flags().GetString(flagNodeDaemonHome)
 			args.startingIPAddress, _ = cmd.Flags().GetString(flagStartingIPAddress)
 			args.numValidators, _ = cmd.Flags().GetInt(flagNumValidators)
-			args.algo, _ = cmd.Flags().GetString(ethsecp256k1.FlagKeyAlgorithm)
+			args.algo, _ = cmd.Flags().GetString(flags.FlagKeyType)
 
 			return initTestnetFiles(clientCtx, cmd, serverCtx.Config, mbm, genBalIterator, args)
 		},
@@ -184,7 +183,7 @@ Example:
 			args.chainID, _ = cmd.Flags().GetString(flags.FlagChainID)
 			args.minGasPrices, _ = cmd.Flags().GetString(sdkserver.FlagMinGasPrices)
 			args.numValidators, _ = cmd.Flags().GetInt(flagNumValidators)
-			args.algo, _ = cmd.Flags().GetString(ethsecp256k1.FlagKeyAlgorithm)
+			args.algo, _ = cmd.Flags().GetString(flags.FlagKeyType)
 			args.enableLogging, _ = cmd.Flags().GetBool(flagEnableLogging)
 			args.rpcAddress, _ = cmd.Flags().GetString(flagRPCAddress)
 			args.apiAddress, _ = cmd.Flags().GetString(flagAPIAddress)

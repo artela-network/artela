@@ -8,7 +8,6 @@ import (
 	"sort"
 
 	"github.com/artela-network/artela/ethereum/crypto/codec"
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	cryptohd "github.com/artela-network/artela/ethereum/crypto/hd"
 
 	"github.com/cosmos/go-bip39"
@@ -62,7 +61,7 @@ func RunAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 	interactive, _ := cmd.Flags().GetBool(flagInteractive)
 	noBackup, _ := cmd.Flags().GetBool(flagNoBackup)
 	useLedger, _ := cmd.Flags().GetBool(flags.FlagUseLedger)
-	algoStr, _ := cmd.Flags().GetString(ethsecp256k1.FlagKeyAlgorithm)
+	algoStr, _ := cmd.Flags().GetString(flags.FlagKeyType)
 
 	showMnemonic := !noBackup
 	kb := ctx.Keyring
