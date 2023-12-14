@@ -8,9 +8,9 @@ import (
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/ethereum/utils"
 
+	// rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/types"
 	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
-	"github.com/artela-network/aspect-core/djpm"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
@@ -340,21 +340,13 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err 
 		tx := msg.AsTransaction()
 		// retrieve sender info from aspect if tx is not signed
 		if utils.IsCustomizedVerification(tx) {
-			// aspectCtx := artelatypes.NewAspectRuntimeContext()
-			// aspectCtx.SetEthTxContext(ethTxContext)
-			// aspectCtx.WithCosmosContext(ctx)
 
-			// // set extBlockContext to aspect runtime context
-			// extBlockCtx, ok := ctx.Value(artelatypes.ExtBlockContextKey).(*artelatypes.ExtBlockContext)
-			// if !ok {
-			// 	panic("wrap artelatype.AspectRuntimeContext failed")
+			panic("GetSender: should never reach here")
+			// sender, _, err := djpm.AspectInstance().GetSenderAndCallData(nil, -1, tx)
+			// if err != nil {
+			// return common.Address{}, err
 			// }
-
-			sender, _, err := djpm.AspectInstance().GetSenderAndCallData(nil, -1, tx)
-			if err != nil {
-				return common.Address{}, err
-			}
-			from = sender
+			// from = sender
 		} else {
 			signer := ethereum.LatestSignerForChainID(chainID)
 			from, err = signer.Sender(tx)

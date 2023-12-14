@@ -28,7 +28,7 @@ const (
 	ExtBlockContextKey cosmos.ContextKey = "block-ctx"
 )
 
-var storeKey storetypes.StoreKey
+var cachedStoreKey storetypes.StoreKey
 
 type HistoryStoreBuilder func(height int64, keyPrefix string) (prefix.Store, error)
 type ContextBuilder func(height int64, prove bool) (cosmos.Context, error)
@@ -52,12 +52,12 @@ func NewAspectRuntimeContext() *AspectRuntimeContext {
 		aspectContext:   NewAspectContext(),
 		extBlockContext: NewExtBlockContext(),
 		aspectState:     NewAspectState(),
-		storeKey:        storeKey,
+		storeKey:        cachedStoreKey,
 	}
 }
 
 func (c *AspectRuntimeContext) Init(storeKey storetypes.StoreKey) {
-	storeKey = storeKey
+	cachedStoreKey = storeKey
 	c.storeKey = storeKey
 }
 
@@ -74,6 +74,10 @@ func (c *AspectRuntimeContext) StoreKey() storetypes.StoreKey {
 func (c *AspectRuntimeContext) SetEthTxContext(newTxCtx *EthTxContext) {
 	c.ethTxContext = newTxCtx
 	c.aspectContext = NewAspectContext()
+}
+
+func (c *AspectRuntimeContext) SetExtBlockContext(newBlockCtx *ExtBlockContext) {
+	c.extBlockContext = newBlockCtx
 }
 
 func (c *AspectRuntimeContext) ExtBlockContext() *ExtBlockContext {

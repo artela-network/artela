@@ -135,8 +135,6 @@ func (k Keeper) GetHashFn(ctx cosmos.Context) vm.GetHashFunc {
 //
 // For relevant discussion see: https://github.com/cosmos/cosmos-sdk/discussions/9072
 func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) (*txs.MsgEthereumTxResponse, error) {
-	k.Lock.Lock()
-	defer k.Lock.Unlock()
 	var (
 		bloom        *big.Int
 		bloomReceipt ethereum.Bloom
@@ -221,7 +219,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
 	} else {
 		pointRequest.GasInfo.Gas = msg.GasLimit - res.GasUsed
-		txCommit := djpm.AspectInstance().PostTxCommit(pointRequest)
+		txCommit := djpm.AspectInstance().PostTxCommit(ctx, pointRequest)
 		if hasErr, txCommitErr := txCommit.HasErr(); hasErr {
 			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
 		}
@@ -409,10 +407,10 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		if hasErr, execErr := execute.HasErr(); hasErr {
 			vmErr = execErr
 		} else {
-			ret, leftoverGas, vmErr = evm.Call(sender, *msg.To, msg.Data, leftoverGas, msg.Value)
+			ret, leftoverGas, vmErr = evm.Call(ctx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
 			// artela aspect PostTxExecute start
 			pointRequest.GasInfo.Gas = leftoverGas
-			txExecute := djpm.AspectInstance().PostTxExecute(pointRequest)
+			txExecute := djpm.AspectInstance().PostTxExecute(ctx, pointRequest)
 			if hasPostErr, postExecErr := txExecute.HasErr(); hasPostErr {
 				vmErr = postExecErr
 			}

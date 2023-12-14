@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"math/big"
-	"sync"
 
 	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -80,8 +79,6 @@ type Keeper struct {
 	aspect *provider.ArtelaProvider
 
 	clientContext client.Context
-
-	Lock sync.Mutex
 }
 
 // NewKeeper generates new evm module keeper

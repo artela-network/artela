@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	types2 "github.com/artela-network/artela/x/evm/artela/types"
 	"strconv"
+
+	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
+	types2 "github.com/artela-network/artela/x/evm/artela/types"
 
 	"github.com/artela-network/artela/x/evm/txs"
 
@@ -46,10 +48,23 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	}
 
 	// set aspect tx context
+	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
+	if !ok {
+		panic("wrap *artelatypes.AspectRuntimeContext failed")
+	}
+
+	// set extBlockContext to aspect runtime context
+	extBlockCtx, ok := ctx.Value(artelatypes.ExtBlockContextKey).(*artelatypes.ExtBlockContext)
+	if !ok {
+		panic("wrap artelatypes.AspectRuntimeContext failed")
+	}
+	aspectCtx.SetExtBlockContext(extBlockCtx)
+
 	ethTxContext := types2.NewEthTxContext(ethCallTx)
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
-	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
+	aspectCtx.SetEthTxContext(ethTxContext)
+	aspectCtx.WithCosmosContext(ctx)
+	// defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
+	ctx.WithValue(artelatypes.ExtBlockContextKey, aspectCtx)
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {
