@@ -5,7 +5,6 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 var (
@@ -75,8 +74,8 @@ var AbiMap = func() map[string]string {
 	return abiIndex
 }
 
-func ParseMethod(tx *ethtypes.Transaction) (*abi.Method, map[string]interface{}, error) {
-	methodId := hex.EncodeToString(tx.Data()[:4])
+func ParseMethod(callData []byte) (*abi.Method, map[string]interface{}, error) {
+	methodId := hex.EncodeToString(callData[:4])
 	methodName, ok := methodsLookup[methodId]
 	if !ok {
 		return nil, nil, errorsmod.Wrapf(nil, "missing expected method %s", methodId)
@@ -88,7 +87,7 @@ func ParseMethod(tx *ethtypes.Transaction) (*abi.Method, map[string]interface{},
 	}
 
 	argsMap := make(map[string]interface{})
-	if err := method.Inputs.UnpackIntoMap(argsMap, tx.Data()[4:]); err != nil {
+	if err := method.Inputs.UnpackIntoMap(argsMap, callData[4:]); err != nil {
 		return nil, nil, err
 	}
 

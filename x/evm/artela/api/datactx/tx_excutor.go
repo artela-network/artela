@@ -2,6 +2,8 @@ package datactx
 
 import (
 	"encoding/hex"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 	"sort"
 	"strconv"
@@ -229,6 +231,32 @@ func (c TxGasMeter) Execute(sdkContext sdk.Context, ctx *artelatypes.RunnerConte
 	return contextQueryResponse
 }
 
+type TxMsgHash struct {
+	getEthTxContext   func() *types.EthTxContext
+	getEthereumConfig func(ctx sdk.Context) *params.ChainConfig
+}
+
+func NewTxMsgHash(getEthTxContext func() *types.EthTxContext,
+	getEthereumConfig func(ctx sdk.Context) *params.ChainConfig) *TxMsgHash {
+	return &TxMsgHash{getEthTxContext, getEthereumConfig}
+}
+
+func (c TxMsgHash) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, keys []string) *artelatypes.ContextQueryResponse {
+	if ctx == nil || ctx.ContractAddr == nil || ctx.AspectId == nil {
+		return nil
+	}
+
+	contextQueryResponse := artelatypes.NewContextQueryResponse(true, "")
+
+	tx := c.getEthTxContext().TxContent()
+
+	signer := ethereum.MakeSigner(c.getEthereumConfig(sdkCtx), big.NewInt(sdkCtx.BlockHeight()), uint64(sdkCtx.BlockTime().Unix()))
+
+	contextQueryResponse.GetResult().Message = "success"
+	contextQueryResponse.SetData(&artelatypes.BytesData{Data: signer.Hash(tx).Bytes()})
+	return contextQueryResponse
+}
+
 type TxContent struct {
 	getEthTxContext func() *types.EthTxContext
 }
@@ -253,8 +281,9 @@ func (c TxContent) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerContext, k
 	index := int64(-1)
 	baseFee := big.NewInt(-1)
 	chainID := sdkCtx.ChainID()
+
 	// set data
-	txMsg, errs := artelatypes.NewEthTransaction(ethTx, blockHash, blockNumber, index, baseFee, chainID)
+	txMsg, errs := artelatypes.NewEthTransaction(txContext.TxFrom(), ethTx, blockHash, blockNumber, index, baseFee, chainID)
 	if errs != nil {
 		contextQueryResponse.GetResult().Message = errs.Error()
 		contextQueryResponse.GetResult().Success = false

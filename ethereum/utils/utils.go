@@ -1,6 +1,12 @@
 package utils
 
 import (
+	"bytes"
+	"github.com/artela-network/aspect-core/djpm"
+	"github.com/ethereum/go-ethereum/common"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"math/big"
 	"strings"
 
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
@@ -81,4 +87,37 @@ func GetArtelaAddressFromBech32(address string) (sdk.AccAddress, error) {
 	}
 
 	return sdk.AccAddress(addressBz), nil
+}
+
+func IsCustomizedVerification(tx *ethereum.Transaction) bool {
+	v, r, s := tx.RawSignatureValues()
+	zero := big.NewInt(0)
+	noSigCallToContract := (v == nil || r == nil || s == nil || (v.Cmp(zero) == 0 && r.Cmp(zero) == 0 && s.Cmp(zero) == 0)) &&
+		(tx.To() != nil && *tx.To() != common.Address{})
+
+	// ignore transactions with signature or contract creation transactions
+	if !noSigCallToContract {
+		return false
+	}
+
+	// check data
+	data := tx.Data()
+
+	// the customized data layout will be [4B Header][4B Checksum][NB ABI.Encode(ValidationData, CallData)]
+	if len(data) < 8 {
+		return false
+	}
+
+	// check prefix
+	if bytes.Compare(data[:4], djpm.CustomVerificationPrefix) != 0 {
+		return false
+	}
+
+	// compute checksum and check
+	dataHash := crypto.Keccak256(data[8:])
+	if bytes.Compare(data[4:8], dataHash[:4]) != 0 {
+		return false
+	}
+
+	return true
 }

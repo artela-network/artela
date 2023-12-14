@@ -40,6 +40,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
+
+	aspecttypes "github.com/artela-network/aspect-core/types"
 )
 
 const (
@@ -228,6 +230,8 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 
 	cmd.Flags().String(artelaflag.TLSCertPath, "", "the cert.pem file path for the server TLS configuration")
 	cmd.Flags().String(artelaflag.TLSKeyPath, "", "the key.pem file path for the server TLS configuration")
+
+	cmd.Flags().Uint64(artelaflag.AspectPoolSize, aspecttypes.DefaultAspectPoolSize, "the cache pool size for runtime instances of the aspect")
 
 	// add support for all Tendermint-specific command line options
 	tcmd.AddNodeFlags(cmd)

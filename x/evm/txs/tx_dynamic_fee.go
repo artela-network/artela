@@ -1,13 +1,16 @@
 package txs
 
 import (
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
+
+	sdkmath "cosmossdk.io/math"
 
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/types"
 
 	errorsmod "cosmossdk.io/errors"
-	sdkmath "cosmossdk.io/math"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -55,7 +58,12 @@ func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {
 		txData.Accesses = NewAccessList(&al)
 	}
 
-	txData.SetSignatureValues(tx.ChainId(), v, r, s)
+	if v != nil && r != nil && s != nil {
+		txData.SetSignatureValues(v, r, s)
+	}
+
+	txData.SetChainId(tx.ChainId())
+
 	return txData, nil
 }
 
@@ -249,9 +257,9 @@ func (tx *DynamicFeeTx) GetTo() *common.Address {
 
 // AsEthereumData returns an DynamicFeeTx txs txs from the proto-formatted
 // TxData defined on the Cosmos EVM.
-func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
+func (tx *DynamicFeeTx) AsEthereumData(stripCallData bool) ethereum.TxData {
 	v, r, s := tx.GetRawSignatureValues()
-	return &ethereum.DynamicFeeTx{
+	txData := &ethereum.DynamicFeeTx{
 		ChainID:    tx.GetChainID(),
 		Nonce:      tx.GetNonce(),
 		GasTipCap:  tx.GetGasTipCap(),
@@ -265,6 +273,12 @@ func (tx *DynamicFeeTx) AsEthereumData() ethereum.TxData {
 		R:          r,
 		S:          s,
 	}
+
+	if stripCallData && utils.IsCustomizedVerification(ethereum.NewTx(txData)) {
+		_, txData.Data, _ = djpm.DecodeValidationAndCallData(tx.Data)
+	}
+
+	return txData
 }
 
 // GetRawSignatureValues returns the V, R, S signature values of the txs.
@@ -274,7 +288,7 @@ func (tx *DynamicFeeTx) GetRawSignatureValues() (v, r, s *big.Int) {
 }
 
 // SetSignatureValues sets the signature values to the txs.
-func (tx *DynamicFeeTx) SetSignatureValues(chainID, v, r, s *big.Int) {
+func (tx *DynamicFeeTx) SetSignatureValues(v, r, s *big.Int) {
 	if v != nil {
 		tx.V = v.Bytes()
 	}
@@ -284,6 +298,9 @@ func (tx *DynamicFeeTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 	if s != nil {
 		tx.S = s.Bytes()
 	}
+}
+
+func (tx *DynamicFeeTx) SetChainId(chainID *big.Int) {
 	if chainID != nil {
 		chainIDInt := sdkmath.NewIntFromBigInt(chainID)
 		tx.ChainID = &chainIDInt

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
@@ -34,6 +35,7 @@ import (
 
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/types"
+	ethlog "github.com/ethereum/go-ethereum/log"
 )
 
 // Keeper grants access to the EVM module states and implements the go-ethereum StateDB interface.
@@ -76,7 +78,7 @@ type Keeper struct {
 	// keep the evm and matched stateDB instance just finished running
 	aspectRuntimeContext *artvmtype.AspectRuntimeContext
 
-	aspectMint *provider.ArtelaProvider
+	aspect *provider.ArtelaProvider
 
 	clientContext client.Context
 }
@@ -104,21 +106,17 @@ func NewKeeper(
 		panic(err)
 	}
 
-	// init aspect mint
-	newAspectMint := provider.NewArtelaProvider(storeKey, app.CreateQueryContext)
-	// new  Aspect Runtime Context
-	newAspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
+	// init aspect
+	aspect := provider.NewArtelaProvider(storeKey, app.CreateQueryContext, app.LastBlockHeight)
+	// new Aspect Runtime Context
+	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
 
 	// init host api instance
 	// new AspectStateHostApi instance
 
-	api.NewStateDbApi(newAspectRuntimeContext.StateDb)
+	api.NewStateDbApi(aspectRuntimeContext.StateDb)
 	artelaType.GetStateDbHook = api.GetStateApiInstance
 
-	api.NewAspectRuntime(storeKey, newAspectRuntimeContext.EthTxContext,
-		newAspectRuntimeContext.AspectContext,
-		newAspectRuntimeContext.ExtBlockContext,
-		app.CreateQueryContext, app)
 	artelaType.GetRuntimeHostHook = api.GetRuntimeInstance
 
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
@@ -134,24 +132,31 @@ func NewKeeper(
 		tracer:               tracer,
 		ss:                   subSpace,
 		getCtxByHeight:       app.CreateQueryContext,
-		aspectRuntimeContext: newAspectRuntimeContext,
-		aspectMint:           newAspectMint,
+		aspectRuntimeContext: aspectRuntimeContext,
+		aspect:               aspect,
 	}
+
+	api.NewAspectRuntime(storeKey,
+		aspectRuntimeContext.EthTxContext,
+		aspectRuntimeContext.AspectContext,
+		aspectRuntimeContext.ExtBlockContext,
+		k.GetChainConfig,
+		app)
+
 	// init jit inherent
-	newAspectProtocol := provider.NewAspectProtocolProvider(newAspectRuntimeContext.EthTxContext)
+	newAspectProtocol := provider.NewAspectProtocolProvider(aspectRuntimeContext.EthTxContext)
 	jit_inherent.Init(newAspectProtocol)
 
 	api.NewEvmHostInstance(app.CreateQueryContext, k.EthCall)
 	artelaType.GetEvmHostHook = api.GetEvmHostInstance
 
-	artelaType.GetAspectContext = newAspectRuntimeContext.AspectContext().Get
-	artelaType.SetAspectContext = newAspectRuntimeContext.AspectContext().Add
+	artelaType.GetAspectContext = aspectRuntimeContext.AspectContext().Get
+	artelaType.SetAspectContext = aspectRuntimeContext.AspectContext().Add
 
-	artelaType.GetAspectPaymaster = newAspectMint.GetAspectAccount
+	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
 	return k
 }
 
-// set rpc client
 func (k *Keeper) SetClientContext(ctx client.Context) {
 	k.clientContext = ctx
 	k.aspectRuntimeContext.ExtBlockContext().WithRpcClient(ctx)
@@ -162,7 +167,7 @@ func (k Keeper) GetClientContext() client.Context {
 }
 
 func (k Keeper) GetAspectCosmosProvider() cosmosAspect.AspectCosmosProvider {
-	return k.aspectMint
+	return k.aspect
 }
 
 func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {
@@ -180,6 +185,10 @@ func (k Keeper) Logger(ctx cosmos.Context) log.Logger {
 
 // WithChainID sets the chain id to the local variable in the keeper
 func (k *Keeper) WithChainID(ctx cosmos.Context) {
+	if k.eip155ChainID != nil {
+		return
+	}
+
 	chainID, err := artela.ParseChainID(ctx.ChainID())
 	if err != nil {
 		panic(err)
@@ -238,6 +247,7 @@ func (k Keeper) GetBlockBloomTransient(ctx cosmos.Context) *big.Int {
 func (k Keeper) SetBlockBloomTransient(ctx cosmos.Context, bloom *big.Int) {
 	store := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
 	heightBz := cosmos.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
+	ethlog.Info("SetBlockBloomTransient, key:", (uint64(ctx.BlockHeight())), "value:", bloom.String())
 	store.Set(heightBz, bloom.Bytes())
 }
 
@@ -248,6 +258,7 @@ func (k Keeper) SetBlockBloomTransient(ctx cosmos.Context, bloom *big.Int) {
 // SetTxIndexTransient set the index of processing txs
 func (k Keeper) SetTxIndexTransient(ctx cosmos.Context, index uint64) {
 	store := ctx.TransientStore(k.transientKey)
+	ethlog.Info("SetTxIndexTransient, key:", "KeyPrefixTransientTxIndex", "value:", fmt.Sprintf("%+v", index))
 	store.Set(types.KeyPrefixTransientTxIndex, cosmos.Uint64ToBigEndian(index))
 }
 
@@ -281,6 +292,7 @@ func (k Keeper) GetLogSizeTransient(ctx cosmos.Context) uint64 {
 // value by one and then sets the new index back to the transient store.
 func (k Keeper) SetLogSizeTransient(ctx cosmos.Context, logSize uint64) {
 	store := ctx.TransientStore(k.transientKey)
+	ethlog.Info("SetLogSizeTransient, key:", "KeyPrefixTransientLogSize", "value:", fmt.Sprintf("%+v", logSize))
 	store.Set(types.KeyPrefixTransientLogSize, cosmos.Uint64ToBigEndian(logSize))
 }
 
@@ -405,6 +417,7 @@ func (k Keeper) GetMinGasMultiplier(ctx cosmos.Context) cosmos.Dec {
 // ResetTransientGasUsed reset gas used to prepare for execution of current cosmos txs, called in ante handler.
 func (k Keeper) ResetTransientGasUsed(ctx cosmos.Context) {
 	store := ctx.TransientStore(k.transientKey)
+	ethlog.Info("ResetTransientGasUsed, key:", "KeyPrefixTransientGasUsed")
 	store.Delete(types.KeyPrefixTransientGasUsed)
 }
 
@@ -422,6 +435,7 @@ func (k Keeper) GetTransientGasUsed(ctx cosmos.Context) uint64 {
 func (k Keeper) SetTransientGasUsed(ctx cosmos.Context, gasUsed uint64) {
 	store := ctx.TransientStore(k.transientKey)
 	bz := cosmos.Uint64ToBigEndian(gasUsed)
+	ethlog.Info("SetTransientGasUsed, key:", "KeyPrefixTransientGasUsed", "value:", fmt.Sprintf("%+v", gasUsed))
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 }
 

@@ -3,6 +3,8 @@ package provider
 import (
 	"math/big"
 
+	"google.golang.org/protobuf/types/known/anypb"
+
 	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/aspect/cosmos"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -10,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela/x/evm/artela/contract"
 	"github.com/artela-network/artela/x/evm/artela/types"
@@ -22,14 +25,17 @@ type ArtelaProvider struct {
 	service *contract.AspectService
 }
 
-func NewArtelaProvider(storeKey storetypes.StoreKey, getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *ArtelaProvider {
-	service := contract.NewAspectService(storeKey, getCtxByHeight)
+func NewArtelaProvider(storeKey storetypes.StoreKey,
+	getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
+	getBlockHeight func() int64,
+) *ArtelaProvider {
+	service := contract.NewAspectService(storeKey, getCtxByHeight, getBlockHeight)
 
 	return &ArtelaProvider{service: service}
 }
 
-func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
-	ethTransaction, err := asptypes.NewEthTransaction(transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
+func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, from common.Address, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
+	ethTransaction, err := asptypes.NewEthTransaction(from, transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
 	if err != nil {
 		return nil, err
 	}
@@ -42,14 +48,43 @@ func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, transaction *ether
 
 func (j *ArtelaProvider) CreateTxPointRequest(sdkCtx sdk.Context, msg sdk.Msg, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
 	ethMsg := types.ConvertMsgEthereumTx(msg)
-	transaction := ethMsg.AsTransaction()
-	ethTransaction, err := asptypes.NewEthTransaction(transaction, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
+	tx := ethMsg.AsTransaction()
+
+	// Determine the signer. For replay-protected transactions, use the most permissive
+	// signer, because we assume that signers are backwards-compatible with old
+	// transactions. For non-protected transactions, the homestead signer signer is used
+	// because the return value of ChainId is zero for those transactions.
+	var signer ethtypes.Signer
+	if tx.Protected() {
+		signer = ethtypes.LatestSignerForChainID(tx.ChainId())
+	} else {
+		signer = ethtypes.HomesteadSigner{}
+	}
+	from, err := ethtypes.Sender(signer, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	ethTransaction, err := asptypes.NewEthTransaction(from, tx, common.BytesToHash(sdkCtx.HeaderHash().Bytes()), sdkCtx.BlockHeight(), txIndex, baseFee, sdkCtx.ChainID())
 	if err != nil {
 		return nil, err
 	}
 	return &asptypes.EthTxAspect{
 		Tx:          ethTransaction,
 		CurrInnerTx: innerTx,
+		GasInfo:     &asptypes.GasInfo{},
+	}, nil
+}
+
+func (j *ArtelaProvider) CreateTxPointRequestWithData(data []byte) (*asptypes.EthTxAspect, error) {
+	anyData, err := anypb.New(&asptypes.BytesData{Data: data})
+	if err != nil {
+		return nil, err
+	}
+	return &asptypes.EthTxAspect{
+		Tx:          nil,
+		CurrInnerTx: nil,
+		CallData:    anyData,
 		GasInfo:     &asptypes.GasInfo{},
 	}, nil
 }
@@ -99,10 +134,18 @@ func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address
 	return j.service.GetAspectForAddr(blockNum, address)
 }
 
+func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
+	return j.service.GetAccountVerifiers(blockNum, address)
+}
+
 func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
 	return j.service.GetAspectForBlock(blockNum)
 }
 
 func (j *ArtelaProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
 	return j.service.GetAspectAccount(blockNum, aspectId)
+}
+
+func (j *ArtelaProvider) GetLatestBlock() int64 {
+	return j.service.GetBlockHeight()
 }

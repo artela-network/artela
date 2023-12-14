@@ -1,6 +1,9 @@
 package api
 
 import (
+	"fmt"
+	ethlog "github.com/ethereum/go-ethereum/log"
+
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -13,25 +16,44 @@ import (
 )
 
 type aspectStateHostApi struct {
-	app            *baseapp.BaseApp
-	storeKey       storetypes.StoreKey
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
+	storeKey           storetypes.StoreKey
+	getDeliverStateCtx func() (sdk.Context, error)
+	getCheckStateCtx   func() (sdk.Context, error)
+	getCtxByHeight     func(height int64, prove bool) (sdk.Context, error)
+	getEthTxContext    func() *types.EthTxContext
 }
 
-func NewAspectState(app *baseapp.BaseApp, storeKey storetypes.StoreKey, getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *aspectStateHostApi {
+func newAspectState(app *baseapp.BaseApp, storeKey storetypes.StoreKey, getEthTxContext func() *types.EthTxContext) *aspectStateHostApi {
 	return &aspectStateHostApi{
-		app:            app,
-		storeKey:       storeKey,
-		getCtxByHeight: getCtxByHeight,
+		storeKey:           storeKey,
+		getDeliverStateCtx: app.DeliverStateCtx,
+		getCheckStateCtx:   app.CheckStateCtx,
+		getCtxByHeight:     app.CreateQueryContext,
+		getEthTxContext:    getEthTxContext,
 	}
 }
 
-func (k *aspectStateHostApi) newPrefixStore(fixKey string) prefix.Store {
-	sdkCtx, err := k.app.DeliverStateCtx()
+func (k *aspectStateHostApi) newPrefixStore(fixKey string) *prefix.Store {
+	ethTxCtx := k.getEthTxContext()
+	if ethTxCtx == nil {
+		// FIXME: need to print some logs here instead of panic
+		panic("ethTxCtx is nil")
+	}
+
+	var sdkCtx sdk.Context
+	var err error
+
+	if ethTxCtx.Commit() {
+		sdkCtx, err = k.getDeliverStateCtx()
+	} else {
+		sdkCtx, err = k.getCheckStateCtx()
+	}
+
 	if err != nil {
 		sdkCtx, _ = k.getCtxByHeight(0, false)
 	}
-	return prefix.NewStore(sdkCtx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
+	store := prefix.NewStore(sdkCtx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
+	return &store
 }
 
 // func (k *aspectStateHostApi) newTransientStore(blockHeight int64, fixKey string) prefix.Store {
@@ -57,6 +79,11 @@ func (k *aspectStateHostApi) SetAspectState(ctx *artelatypes.RunnerContext, key,
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
+	_, err := k.getDeliverStateCtx()
+	if err != nil {
+		return true
+	}
+	ethlog.Info(fmt.Sprintf("SetAspectState, ---aspectID:%s---, ---key:%s---, ---value:%s---, ctx from deliver: %t", ctx.AspectId.String(), key, value, err == nil))
 	codeStore.Set(aspectPropertyKey, []byte(value))
 	return true
 }
@@ -69,6 +96,7 @@ func (k *aspectStateHostApi) RemoveAspectState(ctx *artelatypes.RunnerContext, k
 		[]byte(key),
 	)
 
+	ethlog.Info("RemoveAspectState, key:", key)
 	codeStore.Delete(aspectPropertyKey)
 	return true
 }

@@ -1,9 +1,13 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
+	ethlog "github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // GetParams returns the total set of evm parameters.
@@ -19,6 +23,15 @@ func (k Keeper) GetParams(ctx cosmos.Context) (params support.Params) {
 	return
 }
 
+func (k *Keeper) GetChainConfig(ctx cosmos.Context) *params.ChainConfig {
+	params := k.GetParams(ctx)
+	if k.ChainID() == nil {
+		k.WithChainID(ctx)
+	}
+	ethCfg := params.ChainConfig.EthereumConfig(k.ChainID())
+	return ethCfg
+}
+
 // SetParams sets the EVM params each in their individual key for better get performance
 func (k Keeper) SetParams(ctx cosmos.Context, params support.Params) error {
 	if err := params.Validate(); err != nil {
@@ -31,6 +44,7 @@ func (k Keeper) SetParams(ctx cosmos.Context, params support.Params) error {
 		return err
 	}
 
+	ethlog.Info("SetParams, key:", "KeyPrefixParams", "value:", fmt.Sprintf("%+v", params))
 	store.Set(types.KeyPrefixParams, bz)
 	return nil
 }

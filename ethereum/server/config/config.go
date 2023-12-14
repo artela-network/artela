@@ -16,6 +16,8 @@ import (
 	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+
+	aspecttypes "github.com/artela-network/aspect-core/types"
 )
 
 const (
@@ -82,6 +84,7 @@ type Config struct {
 	EVM     EVMConfig     `mapstructure:"evm"`
 	JSONRPC JSONRPCConfig `mapstructure:"json-rpc"`
 	TLS     TLSConfig     `mapstructure:"tls"`
+	Aspect  AspectConfig  `mapstructure:"aspect"`
 }
 
 // EVMConfig defines the application configuration values for the EVM.
@@ -91,6 +94,12 @@ type EVMConfig struct {
 	Tracer string `mapstructure:"tracer"`
 	// MaxTxGasWanted defines the gas wanted for each eth txs returned in ante handler in check txs mode.
 	MaxTxGasWanted uint64 `mapstructure:"max-txs-gas-wanted"`
+}
+
+// AspectConfig defines the application configuration values for Aspect.
+type AspectConfig struct {
+	// PoolSize defines capacity of aspect runtime instance pool
+	PoolSize int32
 }
 
 // JSONRPCConfig defines configuration for the EVM RPC server.
@@ -185,6 +194,7 @@ func DefaultConfig() *Config {
 		EVM:     *DefaultEVMConfig(),
 		JSONRPC: *DefaultJSONRPCConfig(),
 		TLS:     *DefaultTLSConfig(),
+		Aspect:  *DefaultAspectConfig(),
 	}
 }
 
@@ -238,8 +248,8 @@ func DefaultServerConfig() *config.Config {
 			Address: config.DefaultGRPCWebAddress,
 		},
 		StateSync: config.StateSyncConfig{
-			SnapshotInterval:   0,
-			SnapshotKeepRecent: 2,
+			SnapshotInterval:   2000, // creating snapshot every 1000 blocks
+			SnapshotKeepRecent: 5,
 		},
 		Store: config.StoreConfig{
 			Streamers: []string{},
@@ -273,6 +283,22 @@ func DefaultEVMConfig() *EVMConfig {
 func (c EVMConfig) Validate() error {
 	if c.Tracer != "" && !strings.StringInSlice(c.Tracer, evmTracers) {
 		return fmt.Errorf("invalid tracer type %s, available types: %v", c.Tracer, evmTracers)
+	}
+
+	return nil
+}
+
+// DefaultAspectConfig returns the default Aspect configuration
+func DefaultAspectConfig() *AspectConfig {
+	return &AspectConfig{
+		PoolSize: aspecttypes.DefaultAspectPoolSize,
+	}
+}
+
+// Validate returns an error if the tracer type is invalid.
+func (a AspectConfig) Validate() error {
+	if a.PoolSize < 0 {
+		return errors.New("Aspect pool-size cannot be negative")
 	}
 
 	return nil
@@ -425,6 +451,9 @@ func GetConfig(v *viper.Viper) (Config, error) {
 			CertificatePath: v.GetString("tls.certificate-path"),
 			KeyPath:         v.GetString("tls.key-path"),
 		},
+		Aspect: AspectConfig{
+			PoolSize: v.GetInt32("aspect.pool-size"),
+		},
 	}, nil
 }
 
@@ -449,6 +478,10 @@ func (c Config) ValidateBasic() error {
 
 	if err := c.TLS.Validate(); err != nil {
 		return errorsmod.Wrapf(errortypes.ErrAppConfig, "invalid tls config value: %s", err.Error())
+	}
+
+	if err := c.Aspect.Validate(); err != nil {
+		return errorsmod.Wrapf(errortypes.ErrAppConfig, "invalid aspect config value: %s", err.Error())
 	}
 
 	return c.Config.ValidateBasic()

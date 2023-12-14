@@ -5,6 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
 
 	"github.com/artela-network/artela/x/evm/artela/api/datactx"
@@ -20,6 +21,7 @@ type aspectRuntimeHostApi struct {
 	getEthTxContext    func() *types.EthTxContext
 	getAspectContext   func() *types.AspectContext
 	getExtBlockContext func() *types.ExtBlockContext
+	getEthereumConfig  func(ctx sdk.Context) *ethparams.ChainConfig
 	getCtxByHeight     func(height int64, prove bool) (sdk.Context, error)
 	execMap            map[string]datactx.Executor
 	aspectStateHostApi *aspectStateHostApi
@@ -27,19 +29,23 @@ type aspectRuntimeHostApi struct {
 	app *baseapp.BaseApp
 }
 
-func NewAspectRuntime(storeKey storetypes.StoreKey, getEthTxContext func() *types.EthTxContext,
+func NewAspectRuntime(
+	storeKey storetypes.StoreKey,
+	getEthTxContext func() *types.EthTxContext,
 	getAspectContext func() *types.AspectContext,
 	getExtBlockContext func() *types.ExtBlockContext,
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error), app *baseapp.BaseApp,
+	getEthereumConfig func(ctx sdk.Context) *ethparams.ChainConfig,
+	app *baseapp.BaseApp,
 ) { //nolint:gofumpt
 
 	aspectRuntimeInstance = &aspectRuntimeHostApi{
 		getEthTxContext:    getEthTxContext,
 		getAspectContext:   getAspectContext,
-		getCtxByHeight:     getCtxByHeight,
 		getExtBlockContext: getExtBlockContext,
+		getCtxByHeight:     app.CreateQueryContext,
+		getEthereumConfig:  getEthereumConfig,
 		execMap:            make(map[string]datactx.Executor),
-		aspectStateHostApi: NewAspectState(app, storeKey, getCtxByHeight),
+		aspectStateHostApi: newAspectState(app, storeKey, getEthTxContext),
 	}
 	aspectRuntimeInstance.Register()
 }
@@ -50,6 +56,7 @@ func (k *aspectRuntimeHostApi) Register() {
 	k.execMap[asptypes.TxStateChanges] = datactx.NewStateChanges(k.getEthTxContext)
 	k.execMap[asptypes.TxExtProperties] = datactx.NewExtProperties(k.getEthTxContext)
 	k.execMap[asptypes.TxContent] = datactx.NewTxContent(k.getEthTxContext)
+	k.execMap[asptypes.TxMsgHash] = datactx.NewTxMsgHash(k.getEthTxContext, k.getEthereumConfig)
 	k.execMap[asptypes.TxCallTree] = datactx.NewTxCallTree(k.getEthTxContext)
 	k.execMap[asptypes.TxReceipt] = datactx.NewTxReceipt(k.getEthTxContext)
 	k.execMap[asptypes.TxGasMeter] = datactx.NewTxGasMeter()
@@ -57,7 +64,7 @@ func (k *aspectRuntimeHostApi) Register() {
 	k.execMap[asptypes.EnvChainConfig] = datactx.NewEnvChainConfig(k.getEthTxContext)
 	k.execMap[asptypes.EnvEvmParams] = datactx.NewEnvEvmParams(k.getEthTxContext)
 	k.execMap[asptypes.EnvBaseInfo] = datactx.NewEnvBaseInfo(k.getEthTxContext)
-	k.execMap[asptypes.BlockHeader] = datactx.NewEthBlockHeader()
+	k.execMap[asptypes.BlockHeader] = datactx.NewEthBlockHeader(k.getCtxByHeight)
 	k.execMap[asptypes.BlockGasMeter] = datactx.NewEthBlockGasMeter()
 	k.execMap[asptypes.BlockMinGasPrice] = datactx.NewBlockMinGasPrice()
 	k.execMap[asptypes.BlockLastCommit] = datactx.NewBlockLastCommitInfo(k.getExtBlockContext)
@@ -80,7 +87,13 @@ func (a *aspectRuntimeHostApi) GetContext(ctx *asptypes.RunnerContext, key strin
 	has, ctxKey, params := asptypes.HasContextKey(key)
 	if has {
 		if matcher, ok := a.execMap[ctxKey]; ok {
-			sdkCtx, _ := a.getCtxByHeight(ctx.BlockNumber, true)
+			sdkCtx, err := a.getCtxByHeight(ctx.BlockNumber, true)
+			if err != nil {
+				sdkCtx, err = a.getCtxByHeight(ctx.BlockNumber-1, true)
+				if err != nil {
+					return asptypes.NewContextQueryResponse(false, "Failed to retrieve chain context")
+				}
+			}
 			execute := matcher.Execute(sdkCtx, ctx, params)
 			if execute == nil {
 				return asptypes.NewContextQueryResponse(false, "Get fail.")

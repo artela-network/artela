@@ -91,4 +91,10 @@ certificate-path = "{{ .TLS.CertificatePath }}"
 
 # Key path defines the key.pem file path for the TLS configuration.
 key-path = "{{ .TLS.KeyPath }}"
+
+###############################################################################
+###                            Aspect Configuration                         ###
+###############################################################################
+[aspect]
+pool-size = {{ .Aspect.PoolSize }}
 `

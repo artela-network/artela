@@ -3,7 +3,10 @@ package txs
 import (
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/ethereum/utils"
 	"math/big"
+
+	"github.com/artela-network/aspect-core/djpm"
 
 	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -72,7 +75,16 @@ func (msg MsgEthereumTx) AsTransaction() *ethereum.Transaction {
 		return nil
 	}
 
-	return ethereum.NewTx(txData.AsEthereumData())
+	return ethereum.NewTx(txData.AsEthereumData(false))
+}
+
+func (msg MsgEthereumTx) AsEthCallTransaction() *ethereum.Transaction {
+	txData, err := UnpackTxData(msg.Data)
+	if err != nil {
+		return nil
+	}
+
+	return ethereum.NewTx(txData.AsEthereumData(true))
 }
 
 func ToMessage(tx *ethereum.Transaction, signer ethereum.Signer, baseFee *big.Int) (*core.Message, error) {
@@ -314,9 +326,11 @@ func (msg *MsgEthereumTx) GetFrom() cosmos.AccAddress {
 }
 
 // GetSender extracts the sender address from the signature values using the latest signer for the given chainID.
-func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (common.Address, error) {
-	signer := ethereum.LatestSignerForChainID(chainID)
-	var from common.Address
+func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err error) {
+	if msg.From != "" {
+		return common.HexToAddress(msg.From), nil
+	}
+
 	hash := common.HexToHash(msg.Hash)
 	if scheduler.TaskInstance().IsScheduleTx(hash) {
 		from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
@@ -324,10 +338,20 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (common.Address, error) {
 			return common.Address{}, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
 		}
 	} else {
-		var err error
-		from, err = signer.Sender(msg.AsTransaction())
-		if err != nil {
-			return common.Address{}, err
+		tx := msg.AsTransaction()
+		// retrieve sender info from aspect if tx is not signed
+		if utils.IsCustomizedVerification(tx) {
+			sender, _, err := djpm.AspectInstance().GetSenderAndCallData(-1, tx)
+			if err != nil {
+				return common.Address{}, err
+			}
+			from = sender
+		} else {
+			signer := ethereum.LatestSignerForChainID(chainID)
+			from, err = signer.Sender(tx)
+			if err != nil {
+				return common.Address{}, err
+			}
 		}
 	}
 

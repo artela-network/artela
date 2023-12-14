@@ -131,6 +131,7 @@ import (
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
+	aspecttypes "github.com/artela-network/aspect-core/types"
 )
 
 const (
@@ -351,6 +352,9 @@ func NewArtela(
 		keys[capabilitymodule.StoreKey],
 		memKeys[capabilitymodule.MemStoreKey],
 	)
+
+	// set the runner cache capacity of aspect-runtime
+	aspecttypes.InitRuntimePool(cast.ToInt32(appOpts.Get(srvflags.AspectPoolSize)))
 
 	// grant capabilities for the ibc and ibc-transfer modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)
@@ -854,7 +858,7 @@ func (app *Artela) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64)
 		panic(err)
 	}
 
-	app.SetAnteHandler(ante.NewAnteHandler(options))
+	app.SetAnteHandler(ante.NewAnteHandler(app.BaseApp, options))
 }
 
 // Name returns the name of the App

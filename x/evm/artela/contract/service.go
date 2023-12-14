@@ -14,15 +14,22 @@ import (
 	evmtypes "github.com/artela-network/artela/x/evm/artela/types"
 )
 
+type (
+	contextBuilder  func(height int64, prove bool) (sdk.Context, error)
+	heightRetriever func() int64
+)
+
 type AspectService struct {
 	aspectStore    *AspectStore
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
+	getCtxByHeight contextBuilder
+	getHeight      heightRetriever
 }
 
-func NewAspectService(storeKey storetypes.StoreKey, getCtxByHeight func(height int64, prove bool) (sdk.Context, error)) *AspectService {
+func NewAspectService(storeKey storetypes.StoreKey, getCtxByHeight contextBuilder, getHeight heightRetriever) *AspectService {
 	return &AspectService{
 		aspectStore:    NewAspectStore(storeKey),
 		getCtxByHeight: getCtxByHeight,
+		getHeight:      getHeight,
 	}
 }
 
@@ -54,7 +61,38 @@ func (service *AspectService) GetAspectForAddr(height int64, to common.Address) 
 		return nil, errors.Wrap(getErr, "load context by pre block height failed")
 	}
 
-	aspects, err := service.aspectStore.GetContractBondAspects(sdkCtx, to)
+	aspects, err := service.aspectStore.GetTxLevelAspects(sdkCtx, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "load contract aspect binding failed")
+	}
+	aspectCodes := make([]*artela.AspectCode, 0, len(aspects))
+	if aspects == nil {
+		return aspectCodes, nil
+	}
+	for _, aspect := range aspects {
+		codeBytes, ver := service.aspectStore.GetAspectCode(sdkCtx, aspect.Id, nil)
+		aspectCode := &artela.AspectCode{
+			AspectId: aspect.Id.String(),
+			Priority: uint32(aspect.Priority),
+			Version:  ver.Uint64(),
+			Code:     codeBytes,
+		}
+		aspectCodes = append(aspectCodes, aspectCode)
+	}
+	return aspectCodes, nil
+}
+
+// GetAccountVerifiers gets the bound Aspect verifier for the account
+func (service *AspectService) GetAccountVerifiers(height int64, to common.Address) ([]*artela.AspectCode, error) {
+	sdkCtx, getErr := service.getCtxByHeight(height, true)
+	if getErr != nil {
+		sdkCtx, getErr = service.getCtxByHeight(height-1, true)
+		if getErr != nil {
+			return nil, errors.Wrap(getErr, "load context by pre block height failed")
+		}
+	}
+
+	aspects, err := service.aspectStore.GetVerificationAspects(sdkCtx, to)
 	if err != nil {
 		return nil, errors.Wrap(err, "load contract aspect binding failed")
 	}
@@ -127,4 +165,8 @@ func (service *AspectService) GetAspectProof(height int64, aspectId common.Addre
 	}
 	address := common.Hex2Bytes(value)
 	return address, nil
+}
+
+func (service *AspectService) GetBlockHeight() int64 {
+	return service.getHeight()
 }

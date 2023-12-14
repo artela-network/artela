@@ -53,16 +53,9 @@ func (s *EthereumAPI) MaxPriorityFeePerGas(ctx context.Context) (*hexutil.Big, e
 	return nil, errors.New("MaxPriorityFeePerGas is not implemented")
 }
 
-type feeHistoryResult struct {
-	OldestBlock  *hexutil.Big     `json:"oldestBlock"`
-	Reward       [][]*hexutil.Big `json:"reward,omitempty"`
-	BaseFee      []*hexutil.Big   `json:"baseFeePerGas,omitempty"`
-	GasUsedRatio []float64        `json:"gasUsedRatio"`
-}
-
 // FeeHistory returns the fee market history.
-func (s *EthereumAPI) FeeHistory(ctx context.Context, blockCount math.HexOrDecimal64, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*feeHistoryResult, error) {
-	return nil, errors.New("FeeHistory is not implemented")
+func (s *EthereumAPI) FeeHistory(ctx context.Context, blockCount math.HexOrDecimal64, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*rpctypes.FeeHistoryResult, error) {
+	return s.b.FeeHistory(uint64(blockCount), lastBlock, rewardPercentiles)
 }
 
 // Syncing returns false in case the node is currently not syncing with the network. It can be up-to-date or has not
@@ -1005,7 +998,9 @@ func SubmitTransaction(ctx context.Context, logger log.Logger, b Backend, tx *ty
 	if err := checkTxFee(tx.GasPrice(), tx.Gas(), b.RPCTxFeeCap()); err != nil {
 		return common.Hash{}, err
 	}
-	if !b.UnprotectedAllowed() && !tx.Protected() {
+
+	customizedVerification := isCustomizedVerificationRequired(tx)
+	if !customizedVerification && !b.UnprotectedAllowed() && !tx.Protected() {
 		// Ensure only eip155 signed transactions are submitted if EIP155Required is set.
 		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
 	}
@@ -1013,6 +1008,11 @@ func SubmitTransaction(ctx context.Context, logger log.Logger, b Backend, tx *ty
 		return common.Hash{}, err
 	}
 	// Print a log with full tx details for manual investigations and interventions
+	if customizedVerification {
+		// no need to check customized verification tx
+		return tx.Hash(), nil
+	}
+
 	head := b.CurrentHeader()
 	signer := types.MakeSigner(b.ChainConfig(), head.Number, head.Time)
 	from, err := types.Sender(signer, tx)
@@ -1257,4 +1257,10 @@ func toHexSlice(b [][]byte) []string {
 		r[i] = hexutil.Encode(b[i])
 	}
 	return r
+}
+
+func isCustomizedVerificationRequired(tx *types.Transaction) bool {
+	zero := big.NewInt(0)
+	v, r, s := tx.RawSignatureValues()
+	return (v == nil || r == nil || s == nil) || (v.Cmp(zero) == 0 && r.Cmp(zero) == 0 && s.Cmp(zero) == 0)
 }

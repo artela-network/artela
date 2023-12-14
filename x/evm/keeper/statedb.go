@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/status-im/keycard-go/hexutils"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+	ethlog "github.com/ethereum/go-ethereum/log"
 )
 
 var _ states.Keeper = &Keeper{}
@@ -130,9 +132,11 @@ func (k *Keeper) SetState(ctx cosmos.Context, addr common.Address, key common.Ha
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
 	action := "updated"
 	if len(value) == 0 {
+		ethlog.Info("SetState, delete key:", key.String())
 		store.Delete(key.Bytes())
 		action = "deleted"
 	} else {
+		ethlog.Info("SetState, key:", key.String(), "value:", hexutils.BytesToHex(value))
 		store.Set(key.Bytes(), value)
 	}
 	k.Logger(ctx).Debug(
@@ -149,9 +153,11 @@ func (k *Keeper) SetCode(ctx cosmos.Context, codeHash, code []byte) {
 	// store or delete code
 	action := "updated"
 	if len(code) == 0 {
+		ethlog.Info("SetCode, delete key:", hexutils.BytesToHex(codeHash))
 		store.Delete(codeHash)
 		action = "deleted"
 	} else {
+		ethlog.Info("SetCode, key:", hexutils.BytesToHex(codeHash), "value:", hexutils.BytesToHex(code))
 		store.Set(codeHash, code)
 	}
 	k.Logger(ctx).Debug(

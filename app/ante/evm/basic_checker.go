@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"github.com/artela-network/artela/x/evm/artela/types"
 	"math"
 	"math/big"
 
@@ -22,7 +23,6 @@ import (
 	evmmodule "github.com/artela-network/artela/x/evm/types"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
 // EthAccountVerificationDecorator validates an account balance checks
@@ -278,7 +278,6 @@ func NewCanTransferDecorator(evmKeeper EVMKeeper) CanTransferDecorator {
 func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (cosmos.Context, error) {
 	params := ctd.evmKeeper.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(ctd.evmKeeper.ChainID())
-	signer := ethereum.MakeSigner(ethCfg, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 
 	for _, msg := range tx.GetMsgs() {
 		msgEthTx, ok := msg.(*txs.MsgEthereumTx)
@@ -288,6 +287,11 @@ func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, sim
 
 		baseFee := ctd.evmKeeper.GetBaseFee(ctx, ethCfg)
 
+		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
+		ctd.evmKeeper.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
+
+		signer := ctd.evmKeeper.MakeSigner(ctx, msgEthTx.AsTransaction(),
+			ethCfg, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 		coreMsg, err := msgEthTx.AsMessage(signer, baseFee)
 		if err != nil {
 			return ctx, errorsmod.Wrapf(

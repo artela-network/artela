@@ -4,9 +4,10 @@ services:
   node0:
     container_name: artela0
     image: "artela-network/artela:latest"
-    platform: linux/amd64
     ports:
+      - "8545:8545"
       - "26656-26657:26656-26657"
+      - "19210:19211"
     volumes:
       - ./_testnet/node0/artelad:/root/.artelad:Z
     command:
@@ -18,9 +19,10 @@ services:
   node1:
     container_name: artela1
     image: "artela-network/artela:latest"
-    platform: linux/amd64
     ports:
+      - "8546:8545"
       - "26659-26660:26656-26657"
+      - "19211:19211"
     volumes:
       - ./_testnet/node1/artelad:/root/.artelad:Z
     command:
@@ -32,9 +34,10 @@ services:
   node2:
     container_name: artela2
     image: "artela-network/artela:latest"
-    platform: linux/amd64
     ports:
+      - "8547:8545"
       - "26661-26662:26656-26657"
+      - "19212:19211"
     volumes:
       - ./_testnet/node2/artelad:/root/.artelad:Z
     command:
@@ -46,9 +49,10 @@ services:
   node3:
     container_name: artela3
     image: "artela-network/artela:latest"
-    platform: linux/amd64
     ports:
+      - "8548:8545"
       - "26663-26664:26656-26657"
+      - "19213:19211"
     volumes:
       - ./_testnet/node3/artelad:/root/.artelad:Z
     command:

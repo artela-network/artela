@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/consensus/misc"
 	"math"
 	"math/big"
+	"sort"
 	"strconv"
 
 	"github.com/artela-network/artela-evm/vm"
@@ -468,4 +470,123 @@ func (b *BackendImpl) GetBlockByNumber(blockNum rpc.BlockNumber, fullTx bool) (m
 	}
 
 	return ethapi.RPCMarshalHeader(block.Header(), block.Hash()), nil
+}
+
+func (b *BackendImpl) processBlock(
+	tendermintBlock *tmrpctypes.ResultBlock,
+	ethBlock *map[string]interface{},
+	rewardPercentiles []float64,
+	tendermintBlockResult *tmrpctypes.ResultBlockResults,
+) (*rpctypes.OneFeeHistory, error) {
+	blockHeight := tendermintBlock.Block.Height
+	blockBaseFee, err := b.BaseFee(tendermintBlockResult)
+	if err != nil {
+		return nil, err
+	}
+
+	targetOneFeeHistory := &rpctypes.OneFeeHistory{}
+	targetOneFeeHistory.BaseFee = blockBaseFee
+	cfg := b.ChainConfig()
+	if cfg.IsLondon(big.NewInt(blockHeight + 1)) {
+		header := b.CurrentHeader()
+		if header == nil {
+			return nil, errors.New("header does not exist")
+		}
+		targetOneFeeHistory.NextBaseFee = misc.CalcBaseFee(cfg, header)
+	} else {
+		targetOneFeeHistory.NextBaseFee = new(big.Int)
+	}
+	gasLimitUint64, ok := (*ethBlock)["gasLimit"].(hexutil.Uint64)
+	if !ok {
+		return nil, fmt.Errorf("invalid gas limit type: %T", (*ethBlock)["gasLimit"])
+	}
+
+	gasUsed, ok := (*ethBlock)["gasUsed"].(hexutil.Uint64)
+	if !ok {
+		return nil, fmt.Errorf("invalid gas used type: %T", (*ethBlock)["gasUsed"])
+	}
+
+	gasusedfloat, _ := new(big.Float).SetInt(new(big.Int).SetUint64(uint64(gasUsed))).Float64()
+
+	if gasLimitUint64 <= 0 {
+		return nil, fmt.Errorf("gasLimit of block height %d should be bigger than 0 , current gaslimit %d", blockHeight, gasLimitUint64)
+	}
+
+	gasUsedRatio := gasusedfloat / float64(gasLimitUint64)
+	blockGasUsed := gasusedfloat
+	targetOneFeeHistory.GasUsedRatio = gasUsedRatio
+
+	rewardCount := len(rewardPercentiles)
+	targetOneFeeHistory.Reward = make([]*big.Int, rewardCount)
+	for i := 0; i < rewardCount; i++ {
+		targetOneFeeHistory.Reward[i] = big.NewInt(0)
+	}
+
+	tendermintTxs := tendermintBlock.Block.Txs
+	tendermintTxResults := tendermintBlockResult.TxsResults
+	tendermintTxCount := len(tendermintTxs)
+
+	var sorter sortGasAndReward
+
+	for i := 0; i < tendermintTxCount; i++ {
+		eachTendermintTx := tendermintTxs[i]
+		eachTendermintTxResult := tendermintTxResults[i]
+
+		tx, err := b.clientCtx.TxConfig.TxDecoder()(eachTendermintTx)
+		if err != nil {
+			b.logger.Debug("failed to decode transaction in block", "height", blockHeight, "error", err.Error())
+			continue
+		}
+		txGasUsed := uint64(eachTendermintTxResult.GasUsed) // #nosec G701
+		for _, msg := range tx.GetMsgs() {
+			ethMsg, ok := msg.(*txs.MsgEthereumTx)
+			if !ok {
+				continue
+			}
+			tx := ethMsg.AsTransaction()
+			reward := tx.EffectiveGasTipValue(blockBaseFee)
+			if reward == nil {
+				reward = big.NewInt(0)
+			}
+			sorter = append(sorter, txGasAndReward{gasUsed: txGasUsed, reward: reward})
+		}
+	}
+
+	// return an all zero row if there are no transactions to gather data from
+	ethTxCount := len(sorter)
+	if ethTxCount == 0 {
+		return targetOneFeeHistory, nil
+	}
+
+	sort.Sort(sorter)
+
+	var txIndex int
+	sumGasUsed := sorter[0].gasUsed
+
+	for i, p := range rewardPercentiles {
+		thresholdGasUsed := uint64(blockGasUsed * p / 100) // #nosec G701
+		for sumGasUsed < thresholdGasUsed && txIndex < ethTxCount-1 {
+			txIndex++
+			sumGasUsed += sorter[txIndex].gasUsed
+		}
+		targetOneFeeHistory.Reward[i] = sorter[txIndex].reward
+	}
+
+	return targetOneFeeHistory, nil
+}
+
+type txGasAndReward struct {
+	gasUsed uint64
+	reward  *big.Int
+}
+
+type sortGasAndReward []txGasAndReward
+
+func (s sortGasAndReward) Len() int { return len(s) }
+func (s sortGasAndReward) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s sortGasAndReward) Less(i, j int) bool {
+	return s[i].reward.Cmp(s[j].reward) < 0
 }
