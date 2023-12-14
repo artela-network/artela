@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"cosmossdk.io/errors"
 	"encoding/json"
-	"fmt"
 	"math"
 	"sort"
 
@@ -306,7 +305,6 @@ func (k *AspectStore) GetTxLevelAspects(ctx sdk.Context, contract common.Address
 }
 
 func (k *AspectStore) GetVerificationAspects(ctx sdk.Context, account common.Address) ([]*types.AspectMeta, error) {
-	fmt.Println("=unbind==UnBindVerificationAspect=100")
 	return k.getAccountBondAspects(ctx, account, types.VerifierBindingKeyPrefix)
 }
 
