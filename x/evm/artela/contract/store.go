@@ -432,6 +432,10 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 
 		return err
 	}
+	marshal, _ := json.Marshal(bindings)
+
+	fmt.Println("=unbind==UnBindVerificationAspect=101-1", string(marshal))
+
 	existing := -1
 	// check duplicates
 	for index, binding := range bindings {
@@ -447,10 +451,10 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 
 		return nil
 	}
-
 	// delete existing
 	newBinding := append(bindings[:existing], bindings[existing+1:]...)
 	fmt.Println("=unbind==UnBindVerificationAspect=102-2  ", existing, len(bindings))
+
 	sort.Slice(bindings, types.NewBindingPriorityComparator(newBinding))
 	fmt.Println("=unbind==UnBindVerificationAspect=102-3  ")
 	jsonBytes, err := json.Marshal(newBinding)
