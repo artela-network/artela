@@ -336,7 +336,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
 	if !ok {
-		panic("wrap *artelatype.AspectRuntimeContext failed")
+		panic("ApplyMessageWithConfig: wrap *artelatype.AspectRuntimeContext failed")
 	}
 	aspectCtx.EthTxContext().
 		WithLastEvm(evm). // todo: withEVM(,,,)

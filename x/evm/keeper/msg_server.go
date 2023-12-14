@@ -50,21 +50,18 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	// set aspect tx context
 	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
 	if !ok {
-		panic("wrap *artelatypes.AspectRuntimeContext failed")
+		panic("EthereumTx: wrap *artelatypes.AspectRuntimeContext failed")
 	}
 
-	// set extBlockContext to aspect runtime context
-	extBlockCtx, ok := ctx.Value(artelatypes.ExtBlockContextKey).(*artelatypes.ExtBlockContext)
-	if !ok {
-		panic("wrap artelatypes.AspectRuntimeContext failed")
-	}
+	// restore extBlockContext from keeper and set it to aspect runtime context
+	extBlockCtx := k.ExtBlockContext
 	aspectCtx.SetExtBlockContext(extBlockCtx)
 
 	ethTxContext := types2.NewEthTxContext(ethCallTx)
 	aspectCtx.SetEthTxContext(ethTxContext)
 	aspectCtx.WithCosmosContext(ctx)
 	// defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
-	ctx.WithValue(artelatypes.ExtBlockContextKey, aspectCtx)
+	ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, aspectCtx)
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {

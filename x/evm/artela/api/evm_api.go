@@ -36,7 +36,7 @@ func NewEvmHostInstance(getCtxByHeight func(height int64, prove bool) (sdk.Conte
 	}
 }
 
-func GetEvmHostInstance() (artelatypes.EvmHostApi, error) {
+func GetEvmHostInstance(ctx context.Context) (artelatypes.EvmHostApi, error) {
 	if evmHostInstance == nil {
 		return nil, errors.New("AspectStateHostApi not init")
 	}

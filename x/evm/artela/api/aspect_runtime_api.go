@@ -72,7 +72,7 @@ func (k *aspectRuntimeHostApi) Register() {
 func GetRuntimeInstance(ctx context.Context) (asptypes.RuntimeHostApi, error) {
 	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
 	if !ok {
-		return nil, errors.New("wrap context to AspectRuntimeContext failed")
+		return nil, errors.New("GetRuntimeInstance: wrap context to AspectRuntimeContext failed")
 	}
 	return createAspectRuntime(
 		aspectCtx,

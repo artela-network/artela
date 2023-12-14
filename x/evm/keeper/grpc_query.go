@@ -257,8 +257,6 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 
 	ctx = ctx.WithValue(artelatypes.AspectContextKey, aspectCtx) // store aspect ctx to sdk ctx
 
-	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
-
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
 	if err != nil {

@@ -13,9 +13,15 @@ import (
 
 // BeginBlock sets the cosmos Context and EIP155 chain id to the Keeper.
 func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeginBlock) {
-	// k.GetAspectRuntimeContext().WithCosmosContext(ctx)
-	extBlockCtx := artelatypes.NewExtBlockContext().WithEvidenceList(beginBlock.ByzantineValidators).WithLastCommit(beginBlock.LastCommitInfo).WithRpcClient(k.GetClientContext())
-	ctx.WithValue(artelatypes.ExtBlockContextKey, extBlockCtx)
+
+	extBlockCtx := artelatypes.NewExtBlockContext()
+	extBlockCtx = extBlockCtx.WithEvidenceList(beginBlock.ByzantineValidators).WithLastCommit(beginBlock.LastCommitInfo).WithRpcClient(k.GetClientContext())
+
+	// due to the design of the block context in Cosmos SDK,
+	// the extBlockCtx cannot be saved directly to the context of the deliver state
+	// using code like ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, extBlockCtx).
+	// Instead, it suggests saving it to the keeper.
+	k.ExtBlockContext = extBlockCtx
 
 	k.WithChainID(ctx)
 

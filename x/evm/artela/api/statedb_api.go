@@ -1,32 +1,37 @@
 package api
 
 import (
+	"context"
+
 	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/artela/x/evm/artela/types"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
 
 var (
-	_               artelatypes.StateDbHostApi = (*stateDbHostApi)(nil)
-	stateDbInstance *stateDbHostApi
+	_ artelatypes.StateDbHostApi = (*stateDbHostApi)(nil)
+	// stateDbInstance *stateDbHostApi
 )
 
 type stateDbHostApi struct {
 	getLastStateDB func() vm.StateDB
 }
 
-func NewStateDbApi(getLastStateDB func() vm.StateDB) {
-	stateDbInstance = &stateDbHostApi{
+func NewStateDbApi(getLastStateDB func() vm.StateDB) artelatypes.StateDbHostApi {
+	stateDbInstance := &stateDbHostApi{
 		getLastStateDB: getLastStateDB,
 	}
+	return stateDbInstance
 }
 
-func GetStateApiInstance() (artelatypes.StateDbHostApi, error) {
-	if stateDbInstance == nil {
-		return nil, errors.New("AspectStateHostApi not init")
+func GetStateApiInstance(ctx context.Context) (artelatypes.StateDbHostApi, error) {
+	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
+	if !ok {
+		return nil, errors.New("GetStateApiInstance: wrap context to AspectRuntimeContext failed")
 	}
-	return stateDbInstance, nil
+	return NewStateDbApi(aspectCtx.StateDb), nil
 }
 
 // GetBalance(request AddressQueryRequest) StringDataResponse

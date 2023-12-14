@@ -341,6 +341,7 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err 
 		// retrieve sender info from aspect if tx is not signed
 		if utils.IsCustomizedVerification(tx) {
 
+			// TODO, more checkings
 			panic("GetSender: should never reach here")
 			// sender, _, err := djpm.AspectInstance().GetSenderAndCallData(nil, -1, tx)
 			// if err != nil {

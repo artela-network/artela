@@ -14,8 +14,6 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
-
-	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 )
 
 func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {
@@ -57,11 +55,8 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 }
 
 func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {
-	aspectCtx := artelatypes.NewAspectRuntimeContext()
-	// aspectCtx.SetEthTxContext(ethTxContext)
-	aspectCtx.WithCosmosContext(ctx)
 
-	return djpm.AspectInstance().GetSenderAndCallData(nil, ctx.BlockHeight(), tx)
+	return djpm.AspectInstance().GetSenderAndCallData(ctx, ctx.BlockHeight(), tx)
 }
 
 func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer {

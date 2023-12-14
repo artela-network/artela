@@ -79,6 +79,9 @@ type Keeper struct {
 	aspect *provider.ArtelaProvider
 
 	clientContext client.Context
+
+	// store the block context, this will be fresh every block.
+	ExtBlockContext *artvmtype.ExtBlockContext
 }
 
 // NewKeeper generates new evm module keeper
