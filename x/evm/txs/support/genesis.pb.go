@@ -145,8 +145,8 @@ func (m *GenesisAccount) GetStorage() Storage {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "artela.evm.v1.GenesisState")
-	proto.RegisterType((*GenesisAccount)(nil), "artela.evm.v1.GenesisAccount")
+	proto.RegisterType((*GenesisState)(nil), "ethermint.evm.v1.GenesisState")
+	proto.RegisterType((*GenesisAccount)(nil), "ethermint.evm.v1.GenesisAccount")
 }
 
 func init() { proto.RegisterFile("artela/evm/v1/genesis.proto", fileDescriptor_1bf2439c151f2d46) }

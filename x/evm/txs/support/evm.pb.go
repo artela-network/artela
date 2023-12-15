@@ -676,14 +676,14 @@ func (m *TraceConfig) GetTracerJsonConfig() string {
 }
 
 func init() {
-	proto.RegisterType((*Params)(nil), "artela.evm.v1.Params")
-	proto.RegisterType((*ChainConfig)(nil), "artela.evm.v1.ChainConfig")
-	proto.RegisterType((*State)(nil), "artela.evm.v1.State")
-	proto.RegisterType((*TransactionLogs)(nil), "artela.evm.v1.TransactionLogs")
-	proto.RegisterType((*Log)(nil), "artela.evm.v1.Log")
-	proto.RegisterType((*TxResult)(nil), "artela.evm.v1.TxResult")
-	proto.RegisterType((*AccessTuple)(nil), "artela.evm.v1.AccessTuple")
-	proto.RegisterType((*TraceConfig)(nil), "artela.evm.v1.TraceConfig")
+	proto.RegisterType((*Params)(nil), "ethermint.evm.v1.Params")
+	proto.RegisterType((*ChainConfig)(nil), "ethermint.evm.v1.ChainConfig")
+	proto.RegisterType((*State)(nil), "ethermint.evm.v1.State")
+	proto.RegisterType((*TransactionLogs)(nil), "ethermint.evm.v1.TransactionLogs")
+	proto.RegisterType((*Log)(nil), "ethermint.evm.v1.Log")
+	proto.RegisterType((*TxResult)(nil), "ethermint.evm.v1.TxResult")
+	proto.RegisterType((*AccessTuple)(nil), "ethermint.evm.v1.AccessTuple")
+	proto.RegisterType((*TraceConfig)(nil), "ethermint.evm.v1.TraceConfig")
 }
 
 func init() { proto.RegisterFile("artela/evm/v1/evm.proto", fileDescriptor_c95fb7abfbae4d4d) }

@@ -279,10 +279,10 @@ func (m *EventBlockBloom) GetBloom() string {
 }
 
 func init() {
-	proto.RegisterType((*EventEthereumTx)(nil), "artela.evm.v1.EventEthereumTx")
-	proto.RegisterType((*EventTxLog)(nil), "artela.evm.v1.EventTxLog")
-	proto.RegisterType((*EventMessage)(nil), "artela.evm.v1.EventMessage")
-	proto.RegisterType((*EventBlockBloom)(nil), "artela.evm.v1.EventBlockBloom")
+	proto.RegisterType((*EventEthereumTx)(nil), "ethermint.evm.v1.EventEthereumTx")
+	proto.RegisterType((*EventTxLog)(nil), "ethermint.evm.v1.EventTxLog")
+	proto.RegisterType((*EventMessage)(nil), "ethermint.evm.v1.EventMessage")
+	proto.RegisterType((*EventBlockBloom)(nil), "ethermint.evm.v1.EventBlockBloom")
 }
 
 func init() { proto.RegisterFile("artela/evm/v1/events.proto", fileDescriptor_4f484ef7abe148ad) }

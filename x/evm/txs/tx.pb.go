@@ -552,7 +552,7 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 
 func (c *msgClient) EthereumTx(ctx context.Context, in *MsgEthereumTx, opts ...grpc.CallOption) (*MsgEthereumTxResponse, error) {
 	out := new(MsgEthereumTxResponse)
-	err := c.cc.Invoke(ctx, "/artela.evm.v1.Msg/EthereumTx", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ethermint.evm.v1.Msg/EthereumTx", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -561,7 +561,7 @@ func (c *msgClient) EthereumTx(ctx context.Context, in *MsgEthereumTx, opts ...g
 
 func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error) {
 	out := new(MsgUpdateParamsResponse)
-	err := c.cc.Invoke(ctx, "/artela.evm.v1.Msg/UpdateParams", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ethermint.evm.v1.Msg/UpdateParams", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -602,7 +602,7 @@ func _Msg_EthereumTx_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/artela.evm.v1.Msg/EthereumTx",
+		FullMethod: "/ethermint.evm.v1.Msg/EthereumTx",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).EthereumTx(ctx, req.(*MsgEthereumTx))
@@ -620,7 +620,7 @@ func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/artela.evm.v1.Msg/UpdateParams",
+		FullMethod: "/ethermint.evm.v1.Msg/UpdateParams",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).UpdateParams(ctx, req.(*MsgUpdateParams))
@@ -629,7 +629,7 @@ func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 var _Msg_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "artela.evm.v1.Msg",
+	ServiceName: "ethermint.evm.v1.Msg",
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
