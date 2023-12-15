@@ -2,16 +2,15 @@ package cmd
 
 import (
 	"errors"
+	artclient "github.com/artela-network/artela/client"
+	server2 "github.com/artela-network/artela/ethereum/server"
+	config2 "github.com/artela-network/artela/ethereum/server/config"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	artclient "github.com/artela-network/artela/client"
-	artserver "github.com/artela-network/artela/ethereum/server"
-	artconfig "github.com/artela-network/artela/ethereum/server/config"
-
-	artkr "github.com/artela-network/artela/ethereum/crypto/keyring"
+	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"github.com/artela-network/artela/ethereum/eip712"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -58,11 +57,9 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
-		WithBroadcastMode(flags.FlagBroadcastMode).
 		WithHomeDir(app.DefaultNodeHome).
-		WithKeyringOptions(artkr.Option()).
-		WithViper("ARTELA").
-		WithLedgerHasProtobuf(true)
+		WithKeyringOptions(artelakeyring.Option()).
+		WithViper("")
 
 	eip712.SetEncodingConfig(encodingConfig)
 	rootCmd := &cobra.Command{
@@ -143,7 +140,7 @@ func initRootCmd(
 	}
 
 	// add server commands
-	artserver.AddCommands(
+	server2.AddCommands(
 		rootCmd,
 		app.DefaultNodeHome,
 		a.newApp,
@@ -199,12 +196,11 @@ func txCommand() *cobra.Command {
 		authcmd.GetSignCommand(),
 		authcmd.GetSignBatchCommand(),
 		authcmd.GetMultiSignCommand(),
-		authcmd.GetMultiSignBatchCmd(),
 		authcmd.GetValidateSignaturesCommand(),
+		flags.LineBreak,
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
-		authcmd.GetAuxToFeeCommand(),
 	)
 
 	app.ModuleBasics.AddTxCommands(cmd)
@@ -250,12 +246,12 @@ func (a appCreator) newApp(
 ) servertypes.Application {
 	var cache sdk.MultiStorePersistentCache
 
-	if cast.ToBool(appOpts.Get(artserver.FlagInterBlockCache)) {
+	if cast.ToBool(appOpts.Get(server2.FlagInterBlockCache)) {
 		cache = store.NewCommitKVStoreCacheManager()
 	}
 
 	skipUpgradeHeights := make(map[int64]bool)
-	for _, h := range cast.ToIntSlice(appOpts.Get(artserver.FlagUnsafeSkipUpgrades)) {
+	for _, h := range cast.ToIntSlice(appOpts.Get(server2.FlagUnsafeSkipUpgrades)) {
 		skipUpgradeHeights[int64(h)] = true
 	}
 
@@ -287,8 +283,8 @@ func (a appCreator) newApp(
 	}
 
 	snapshotOptions := snapshottypes.NewSnapshotOptions(
-		cast.ToUint64(appOpts.Get(artserver.FlagStateSyncSnapshotInterval)),
-		cast.ToUint32(appOpts.Get(artserver.FlagStateSyncSnapshotKeepRecent)),
+		cast.ToUint64(appOpts.Get(server2.FlagStateSyncSnapshotInterval)),
+		cast.ToUint32(appOpts.Get(server2.FlagStateSyncSnapshotKeepRecent)),
 	)
 
 	return app.NewArtela(
@@ -298,20 +294,20 @@ func (a appCreator) newApp(
 		true,
 		skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
-		cast.ToUint(appOpts.Get(artserver.FlagInvCheckPeriod)),
+		cast.ToUint(appOpts.Get(server2.FlagInvCheckPeriod)),
 		a.encodingConfig,
 		appOpts,
 		baseapp.SetPruning(pruningOpts),
-		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(artserver.FlagMinGasPrices))),
-		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(artserver.FlagHaltHeight))),
-		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(artserver.FlagHaltTime))),
-		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(artserver.FlagMinRetainBlocks))),
+		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server2.FlagMinGasPrices))),
+		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server2.FlagHaltHeight))),
+		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server2.FlagHaltTime))),
+		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server2.FlagMinRetainBlocks))),
 		baseapp.SetInterBlockCache(cache),
-		baseapp.SetTrace(cast.ToBool(appOpts.Get(artserver.FlagTrace))),
-		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(artserver.FlagIndexEvents))),
+		baseapp.SetTrace(cast.ToBool(appOpts.Get(server2.FlagTrace))),
+		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server2.FlagIndexEvents))),
 		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
-		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(artserver.FlagIAVLCacheSize))),
-		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(artserver.FlagDisableIAVLFastNode))),
+		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server2.FlagIAVLCacheSize))),
+		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server2.FlagDisableIAVLFastNode))),
 		baseapp.SetChainID(chainID),
 	)
 }
@@ -360,10 +356,11 @@ func initAppConfig() (string, interface{}) {
 
 	type CustomAppConfig struct {
 		serverconfig.Config
-		EVM     artconfig.EVMConfig     `mapstructure:"evm"`
-		JSONRPC artconfig.JSONRPCConfig `mapstructure:"json-rpc"`
-		TLS     artconfig.TLSConfig     `mapstructure:"tls"`
-		Aspect  artconfig.AspectConfig  `mapstructure:"aspect"`
+
+		EVM     config2.EVMConfig     `mapstructure:"evm"`
+		JSONRPC config2.JSONRPCConfig `mapstructure:"json-rpc"`
+		TLS     config2.TLSConfig     `mapstructure:"tls"`
+		Aspect  config2.AspectConfig  `mapstructure:"aspect"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -385,12 +382,12 @@ func initAppConfig() (string, interface{}) {
 
 	customAppConfig := CustomAppConfig{
 		Config:  *srvCfg,
-		EVM:     *artconfig.DefaultEVMConfig(),
-		JSONRPC: *artconfig.DefaultJSONRPCConfig(),
-		TLS:     *artconfig.DefaultTLSConfig(),
-		Aspect:  *artconfig.DefaultAspectConfig(),
+		EVM:     *config2.DefaultEVMConfig(),
+		JSONRPC: *config2.DefaultJSONRPCConfig(),
+		TLS:     *config2.DefaultTLSConfig(),
+		Aspect:  *config2.DefaultAspectConfig(),
 	}
-	customAppTemplate := serverconfig.DefaultConfigTemplate + artconfig.DefaultConfigTemplate
+	customAppTemplate := serverconfig.DefaultConfigTemplate + config2.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }
