@@ -78,7 +78,7 @@ func (m *TxResult) XXX_DiscardUnknown() {
 var xxx_messageInfo_TxResult proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*TxResult)(nil), "artela.types.v1.TxResult")
+	proto.RegisterType((*TxResult)(nil), "ethermint.types.v1.TxResult")
 }
 
 func init() { proto.RegisterFile("artela/types/v1/indexer.proto", fileDescriptor_ee5a8796d27044a7) }

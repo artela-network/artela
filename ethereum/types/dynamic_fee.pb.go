@@ -64,7 +64,7 @@ func (m *ExtensionOptionDynamicFeeTx) XXX_DiscardUnknown() {
 var xxx_messageInfo_ExtensionOptionDynamicFeeTx proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*ExtensionOptionDynamicFeeTx)(nil), "artela.types.v1.ExtensionOptionDynamicFeeTx")
+	proto.RegisterType((*ExtensionOptionDynamicFeeTx)(nil), "ethermint.types.v1.ExtensionOptionDynamicFeeTx")
 }
 
 func init() { proto.RegisterFile("artela/types/v1/dynamic_fee.proto", fileDescriptor_cfd40f81b1d1654b) }

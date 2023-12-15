@@ -23,13 +23,13 @@ func NewAnteHandler(app *baseapp.BaseApp, options AnteDecorators) cosmos.AnteHan
 			opts := txWithExtensions.GetExtensionOptions()
 			if len(opts) > 0 {
 				switch typeURL := opts[0].GetTypeUrl(); typeURL {
-				case "/artela.evm.v1.ExtensionOptionsEthereumTx":
+				case "/ethermint.evm.v1.ExtensionOptionsEthereumTx":
 					// handle as *evmtypes.MsgEthereumTx
 					anteHandler = newEVMAnteHandler(app, options)
-				case "/artela.types.v1.ExtensionOptionsWeb3Tx":
+				case "/ethermint.types.v1.ExtensionOptionsWeb3Tx":
 					// handle as normal Cosmos SDK tx, except signature is checked for EIP712 representation
 					anteHandler = newLegacyCosmosAnteHandlerEip712(options)
-				case "/artela.types.v1.ExtensionOptionDynamicFeeTx":
+				case "/ethermint.types.v1.ExtensionOptionDynamicFeeTx":
 					// cosmos-cosmos tx with dynamic fee extension
 					anteHandler = newCosmosAnteHandler(options)
 				default:

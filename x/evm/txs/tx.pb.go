@@ -444,14 +444,14 @@ func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgEthereumTx)(nil), "artela.evm.v1.MsgEthereumTx")
-	proto.RegisterType((*LegacyTx)(nil), "artela.evm.v1.LegacyTx")
-	proto.RegisterType((*AccessListTx)(nil), "artela.evm.v1.AccessListTx")
-	proto.RegisterType((*DynamicFeeTx)(nil), "artela.evm.v1.DynamicFeeTx")
-	proto.RegisterType((*ExtensionOptionsEthereumTx)(nil), "artela.evm.v1.ExtensionOptionsEthereumTx")
-	proto.RegisterType((*MsgEthereumTxResponse)(nil), "artela.evm.v1.MsgEthereumTxResponse")
-	proto.RegisterType((*MsgUpdateParams)(nil), "artela.evm.v1.MsgUpdateParams")
-	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "artela.evm.v1.MsgUpdateParamsResponse")
+	proto.RegisterType((*MsgEthereumTx)(nil), "ethermint.evm.v1.MsgEthereumTx")
+	proto.RegisterType((*LegacyTx)(nil), "ethermint.evm.v1.LegacyTx")
+	proto.RegisterType((*AccessListTx)(nil), "ethermint.evm.v1.AccessListTx")
+	proto.RegisterType((*DynamicFeeTx)(nil), "ethermint.evm.v1.DynamicFeeTx")
+	proto.RegisterType((*ExtensionOptionsEthereumTx)(nil), "ethermint.evm.v1.ExtensionOptionsEthereumTx")
+	proto.RegisterType((*MsgEthereumTxResponse)(nil), "ethermint.evm.v1.MsgEthereumTxResponse")
+	proto.RegisterType((*MsgUpdateParams)(nil), "ethermint.evm.v1.MsgUpdateParams")
+	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "ethermint.evm.v1.MsgUpdateParamsResponse")
 }
 
 func init() { proto.RegisterFile("artela/evm/v1/txs.proto", fileDescriptor_3c43c0836c37bbe6) }
