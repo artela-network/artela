@@ -135,18 +135,18 @@ func (e evmHostApi) JITCall(ctx *artelatypes.RunnerContext, request *artelatypes
 	aspect := *ctx.AspectId
 
 	// FIXME: get leftover gas from last evm
-	resp, err := inherent.Get().Submit(aspect, ctx.Gas, stage, request)
+	resp, gas, err := inherent.Get().Submit(aspect, ctx.Gas, stage, request)
 	if err != nil {
 		if resp == nil {
 			resp = &artelatypes.JitInherentResponse{}
 		}
 
 		resp.Success = false
-		resp.Ret = []byte(err.Error())
+		resp.ErrorMsg = err.Error()
 		log.Error("jit inherent submit fail", "err", err)
 	}
 
-	ctx.Gas = resp.LeftoverGas
+	ctx.Gas = gas
 
 	return resp
 }
