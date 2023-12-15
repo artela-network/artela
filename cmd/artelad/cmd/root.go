@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"errors"
-	artclient "github.com/artela-network/artela/client"
-	server2 "github.com/artela-network/artela/ethereum/server"
-	config2 "github.com/artela-network/artela/ethereum/server/config"
 	"io"
 	"os"
 	"path/filepath"
