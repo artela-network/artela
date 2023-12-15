@@ -1,5 +1,5 @@
 syntax = "proto3";
-package ethermint.evm.v1;
+package artela.evm.v1;
 
 import "artela/evm/v1/evm.proto";
 import "gogoproto/gogo.proto";
