@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"math/big"
 	"sort"
 
 	artela "github.com/artela-network/aspect-core/types"
@@ -169,4 +170,18 @@ func (service *AspectService) GetAspectProof(height int64, aspectId common.Addre
 
 func (service *AspectService) GetBlockHeight() int64 {
 	return service.getHeight()
+}
+
+func (service *AspectService) GetAspectJoinPoint(ctx sdk.Context, aspectId common.Address, version *uint256.Int, commit bool) *big.Int {
+	if commit {
+		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
+		if getErr != nil {
+			return nil
+		}
+		ctx = sdkCtx
+	}
+	if version == nil {
+		version = service.aspectStore.GetAspectLastVersion(ctx, aspectId)
+	}
+	return service.aspectStore.GetAspectJP(ctx, aspectId, version)
 }

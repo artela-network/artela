@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"cosmossdk.io/errors"
 	"encoding/json"
-	"fmt"
 	"math"
+	"math/big"
 	"sort"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -100,7 +101,7 @@ func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context) (map[string]int64, e
 }
 
 // StoreAspectCode aspect code
-func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) {
+func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) *uint256.Int {
 	// get last value
 	version := k.GetAspectLastVersion(ctx, aspectId)
 
@@ -115,6 +116,7 @@ func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, 
 	codeStore.Set(versionKey, code)
 	// update last version
 	k.StoreAspectVersion(ctx, aspectId, newVersion)
+	return newVersion
 }
 
 func (k *AspectStore) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
@@ -153,13 +155,46 @@ func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Addr
 	return version
 }
 
-// StoreAspectProperty Property
-func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property) {
+// StoreAspectProperty
+//
+//	@Description:  property storage format
+//	 1. {aspectid,key}=>{prperty value}
+//	 2. {aspectid,"AspectPropertyAllKeyPrefix"}=>"key1,key2,key3..."
+//	@receiver k
+//	@param ctx
+//	@param aspectId
+//	@param prop
+//	@return error
+func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property) error {
+
 	// get treemap value
 	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
+	//get all property key
+	propertyAllKey := k.GetAspectPropertyValue(ctx, aspectId, types.AspectPropertyAllKeyPrefix)
+
+	keySet := treeset.NewWithStringComparator()
+	// add propertyAllKey to keySet
+	if len(propertyAllKey) > 0 {
+		splitData := strings.Split(propertyAllKey, types.AspectPropertyAllKeySplit)
+		for _, datum := range splitData {
+			keySet.Add(datum)
+		}
+	}
+
+	for i := range prop {
+		key := prop[i].Key
+		//add key and deduplicate
+		keySet.Add(key)
+	}
+	//check key limit
+	if keySet.Size() > types.AspectPropertyLimit {
+		return errors.Wrapf(nil, "The maximum key limit is exceeded, and the maximum allowed is %d now available %d", types.AspectPropertyLimit, keySet.Size())
+	}
+
 	for i := range prop {
 		key := prop[i].Key
 		value := prop[i].Value
+
 		// store
 		aspectPropertyKey := types.AspectPropertyKey(
 			aspectId.Bytes(),
@@ -168,6 +203,20 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 		ethlog.Info("StoreAspectProperty, key:", string(aspectPropertyKey), value)
 		aspectPropertyStore.Set(aspectPropertyKey, []byte(value))
 	}
+
+	// store AspectPropertyAllKey
+	keyAry := make([]string, keySet.Size())
+	for i, key := range keySet.Values() {
+		keyAry[i] = key.(string)
+	}
+	join := strings.Join(keyAry, types.AspectPropertyAllKeySplit)
+	aspectPropertyKey := types.AspectPropertyKey(
+		aspectId.Bytes(),
+		[]byte(types.AspectPropertyAllKeyPrefix),
+	)
+	aspectPropertyStore.Set(aspectPropertyKey, []byte(join))
+
+	return nil
 }
 
 func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Address, propertyKey string) string {
@@ -306,7 +355,6 @@ func (k *AspectStore) GetTxLevelAspects(ctx sdk.Context, contract common.Address
 }
 
 func (k *AspectStore) GetVerificationAspects(ctx sdk.Context, account common.Address) ([]*types.AspectMeta, error) {
-	fmt.Println("=unbind==UnBindVerificationAspect=100")
 	return k.getAccountBondAspects(ctx, account, types.VerifierBindingKeyPrefix)
 }
 
@@ -458,4 +506,64 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 	)
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
+}
+
+// StoreAspectJP
+//
+//	@Description: Stores the execute conditions of the Aspect Join point. {aspectId,version,'AspectRunJoinPointKey'}==>{value}
+//	@receiver k
+//	@param ctx
+//	@param aspectId
+//	@param version: aspect version ,optional，Default Aspect last version
+//	@param point  JoinPointRunType value, @see join_point_type.go
+//	@return bool Execute Result
+func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int, point *big.Int) error {
+	//check point
+	checked, _ := types.CheckIsJoinPoint(point)
+	if !checked {
+		return errors.Wrap(nil, "invalid point.")
+	}
+
+	//Default last Aspect version
+	if version == nil {
+		version = k.GetAspectLastVersion(ctx, aspectId)
+	}
+
+	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
+	// store
+	aspectPropertyKey := types.AspectArrayKey(
+		aspectId.Bytes(),
+		version.Bytes(),
+		[]byte(types.AspectRunJoinPointKey),
+	)
+	aspectPropertyStore.Set(aspectPropertyKey, point.Bytes())
+	return nil
+}
+
+// GetAspectJP
+//
+//	@Description: get Aspect Join point run
+//	@receiver k
+//	@param ctx
+//	@param aspectId
+//	@param version
+//	@return *big.Int
+func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int) *big.Int {
+	//Default last Aspect version
+	if version == nil {
+		version = k.GetAspectLastVersion(ctx, aspectId)
+	}
+	codeStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
+	aspectPropertyKey := types.AspectArrayKey(
+		aspectId.Bytes(),
+		version.Bytes(),
+		[]byte(types.AspectRunJoinPointKey),
+	)
+	get := codeStore.Get(aspectPropertyKey)
+
+	if nil != get && len(get) > 0 {
+		return new(big.Int).SetBytes(get)
+	} else {
+		return new(big.Int)
+	}
 }
