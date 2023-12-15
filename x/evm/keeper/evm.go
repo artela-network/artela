@@ -219,7 +219,13 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
 	} else {
 		pointRequest.GasInfo.Gas = msg.GasLimit - res.GasUsed
-		txCommit := djpm.AspectInstance().PostTxCommit(ctx, pointRequest)
+
+		// retrieve aspectCtx from sdk.Context
+		aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
+		if !ok {
+			panic("ApplyMessageWithConfig: wrap *artelatype.AspectRuntimeContext failed")
+		}
+		txCommit := djpm.AspectInstance().PostTxCommit(aspectCtx, pointRequest)
 		if hasErr, txCommitErr := txCommit.HasErr(); hasErr {
 			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
 		}
@@ -407,10 +413,10 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		if hasErr, execErr := execute.HasErr(); hasErr {
 			vmErr = execErr
 		} else {
-			ret, leftoverGas, vmErr = evm.Call(ctx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
+			ret, leftoverGas, vmErr = evm.Call(aspectCtx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
 			// artela aspect PostTxExecute start
 			pointRequest.GasInfo.Gas = leftoverGas
-			txExecute := djpm.AspectInstance().PostTxExecute(ctx, pointRequest)
+			txExecute := djpm.AspectInstance().PostTxExecute(aspectCtx, pointRequest)
 			if hasPostErr, postExecErr := txExecute.HasErr(); hasPostErr {
 				vmErr = postExecErr
 			}

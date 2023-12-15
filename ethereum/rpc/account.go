@@ -39,7 +39,7 @@ func (b *BackendImpl) Accounts() []common.Address {
 
 	infos, err := b.clientCtx.Keyring.List()
 	if err != nil {
-		b.logger.Error("keying list failed", "error", err)
+		b.logger.Info("keying list failed", "error", err)
 		return nil
 	}
 
@@ -64,7 +64,7 @@ func (b *BackendImpl) NewAccount(password string) (common.AddressEIP55, error) {
 
 	hdPathIter, err := types2.NewHDPathIterator(basePath, true)
 	if err != nil {
-		b.logger.Error("NewHDPathIterator failed", "error", err)
+		b.logger.Info("NewHDPathIterator failed", "error", err)
 		return common.AddressEIP55{}, err
 	}
 	// create the mnemonic and save the account
@@ -72,13 +72,13 @@ func (b *BackendImpl) NewAccount(password string) (common.AddressEIP55, error) {
 
 	info, _, err := b.clientCtx.Keyring.NewMnemonic(name, keyring.English, hdPath.String(), password, hd.EthSecp256k1)
 	if err != nil {
-		b.logger.Error("NewMnemonic failed", "error", err)
+		b.logger.Info("NewMnemonic failed", "error", err)
 		return common.AddressEIP55{}, err
 	}
 
 	pubKey, err := info.GetPubKey()
 	if err != nil {
-		b.logger.Error("GetPubKey failed", "error", err)
+		b.logger.Info("GetPubKey failed", "error", err)
 		return common.AddressEIP55{}, err
 	}
 	addr := common.BytesToAddress(pubKey.Address().Bytes())
@@ -182,7 +182,7 @@ func (b *BackendImpl) GetTransactionCount(address common.Address, blockNrOrHash 
 	err = accRet.EnsureExists(b.clientCtx, from)
 	if err != nil {
 		// account doesn't exist yet, return 0
-		b.logger.Error("GetTransactionCount faild, return 0. Account doesn't exist yet", "account", address.Hex(), "error", err)
+		b.logger.Info("GetTransactionCount faild, return 0. Account doesn't exist yet", "account", address.Hex(), "error", err)
 		return &n, nil
 	}
 
@@ -205,7 +205,7 @@ func (b *BackendImpl) getAccountNonce(accAddr common.Address, pending bool, heig
 		st, ok := status.FromError(err)
 		// treat as account doesn't exist yet
 		if ok && st.Code() == codes.NotFound {
-			b.logger.Error("getAccountNonce faild, account not found", "error", err)
+			b.logger.Info("getAccountNonce faild, account not found", "error", err)
 			return 0, nil
 		}
 		return 0, err
