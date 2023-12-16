@@ -56,7 +56,7 @@ func (service *AspectService) GetAspectCode(blockNumber int64, aspectId common.A
 }
 
 // GetAspectForAddr BoundAspects get bound Aspects on previous block
-func (service *AspectService) GetAspectForAddr(height int64, to common.Address) ([]*artela.AspectCode, error) {
+func (service *AspectService) GetAspectForAddr(height int64, to common.Address, cut artela.PointCut) ([]*artela.AspectCode, error) {
 	sdkCtx, getErr := service.getCtxByHeight(height, true)
 	if getErr != nil {
 		return nil, errors.Wrap(getErr, "load context by pre block height failed")
@@ -71,6 +71,12 @@ func (service *AspectService) GetAspectForAddr(height int64, to common.Address) 
 		return aspectCodes, nil
 	}
 	for _, aspect := range aspects {
+		// check if the Join point has run permissions
+		jp := service.aspectStore.GetAspectJP(sdkCtx, aspect.Id, nil)
+		if !artela.CanExecPoint(jp.Int64(), cut) {
+			continue
+		}
+
 		codeBytes, ver := service.aspectStore.GetAspectCode(sdkCtx, aspect.Id, nil)
 		aspectCode := &artela.AspectCode{
 			AspectId: aspect.Id.String(),
@@ -102,6 +108,12 @@ func (service *AspectService) GetAccountVerifiers(height int64, to common.Addres
 		return aspectCodes, nil
 	}
 	for _, aspect := range aspects {
+		// check if the verify point has run permissions
+		jp := service.aspectStore.GetAspectJP(sdkCtx, aspect.Id, nil)
+		if !artela.CanExecPoint(jp.Int64(), artela.VERIFY_TX) {
+			continue
+		}
+
 		codeBytes, ver := service.aspectStore.GetAspectCode(sdkCtx, aspect.Id, nil)
 		aspectCode := &artela.AspectCode{
 			AspectId: aspect.Id.String(),
@@ -129,6 +141,15 @@ func (service *AspectService) GetAspectForBlock(height int64) ([]*artela.AspectC
 	}
 	for aspectId, number := range aspectMap {
 		aspectAddr := common.HexToAddress(aspectId)
+
+		// check if the join point has run permissions
+		jp := service.aspectStore.GetAspectJP(sdkCtx, aspectAddr, nil)
+		blockInitCheck := artela.CanExecPoint(jp.Int64(), artela.ON_BLOCK_INITIALIZE_METHOD)
+		blockFinalCheck := artela.CanExecPoint(jp.Int64(), artela.ON_BLOCK_FINALIZE_METHOD)
+		if !(blockInitCheck || blockFinalCheck) {
+			continue
+		}
+
 		codeBytes, ver := service.aspectStore.GetAspectCode(sdkCtx, aspectAddr, nil)
 		aspectCode := &artela.AspectCode{
 			AspectId: aspectAddr.String(),

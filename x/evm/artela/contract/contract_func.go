@@ -82,8 +82,8 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method
 func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, account common.Address, aspectVersion *uint256.Int, priority int8, isContract bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	// check aspect types
 	aspectJP := k.aspectService.aspectStore.GetAspectJP(ctx, aspectId, nil)
-	txAspect := types.CheckIsTransactionLevel(aspectJP.Int64())
-	txVerifier := types.CheckIsTxVerifier(aspectJP.Int64())
+	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
+	txVerifier := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
 	// EoA can only bind with tx verifier
 	if !txVerifier && !isContract {
 		return nil, errors.New("unable to bind non-tx-verifier Aspect to an EoA account")
@@ -268,7 +268,7 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 		return nil, propErr
 	}
 
-	level := types.CheckIsBlockLevel(joinPoint.Int64())
+	level := artelasdkType.CheckIsBlockLevel(joinPoint.Int64())
 	if level {
 		storeErr := k.aspectService.aspectStore.StoreBlockLevelAspect(ctx, aspectId)
 		if storeErr != nil {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"cosmossdk.io/errors"
 	"encoding/json"
+	artelasdkType "github.com/artela-network/aspect-core/types"
 	"math"
 	"math/big"
 	"sort"
@@ -519,7 +520,7 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 //	@return bool Execute Result
 func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int, point *big.Int) error {
 	//check point
-	checked, _ := types.CheckIsJoinPoint(point)
+	checked, _ := artelasdkType.CheckIsJoinPoint(point)
 	if !checked {
 		return errors.Wrap(nil, "invalid point.")
 	}
