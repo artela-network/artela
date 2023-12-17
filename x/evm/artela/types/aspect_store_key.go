@@ -34,7 +34,7 @@ const (
 	AspectProofKey             = "Aspect_@Proof@_"
 	AspectRunJoinPointKey      = "Aspect_@Run@JoinPoint@_"
 	AspectPropertyAllKeyPrefix = "Aspect_@Property@AllKey@_"
-	AspectPropertyAllKeySplit  = "@_@"
+	AspectPropertyAllKeySplit  = "^^^"
 	AspectPropertyLimit        = 256
 )
 

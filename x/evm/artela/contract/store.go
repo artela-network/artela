@@ -522,7 +522,8 @@ func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, ve
 	//check point
 	checked, _ := artelasdkType.CheckIsJoinPoint(point)
 	if !checked {
-		return errors.Wrap(nil, "invalid point.")
+		// Default store 0
+		point = big.NewInt(0)
 	}
 
 	//Default last Aspect version

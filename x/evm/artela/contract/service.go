@@ -54,9 +54,35 @@ func (service *AspectService) GetAspectCode(blockNumber int64, aspectId common.A
 	version := service.aspectStore.GetAspectLastVersion(sdkCtx, aspectId)
 	return service.aspectStore.GetAspectCode(sdkCtx, aspectId, version)
 }
+func (service *AspectService) GetBoundAspectForAddr(height int64, to common.Address) ([]*artela.AspectCode, error) {
+	sdkCtx, getErr := service.getCtxByHeight(height, true)
+	if getErr != nil {
+		return nil, errors.Wrap(getErr, "load context by pre block height failed")
+	}
 
-// GetAspectForAddr BoundAspects get bound Aspects on previous block
-func (service *AspectService) GetAspectForAddr(height int64, to common.Address, cut artela.PointCut) ([]*artela.AspectCode, error) {
+	aspects, err := service.aspectStore.GetTxLevelAspects(sdkCtx, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "load contract aspect binding failed")
+	}
+	aspectCodes := make([]*artela.AspectCode, 0, len(aspects))
+	if aspects == nil {
+		return aspectCodes, nil
+	}
+	for _, aspect := range aspects {
+		codeBytes, ver := service.aspectStore.GetAspectCode(sdkCtx, aspect.Id, nil)
+		aspectCode := &artela.AspectCode{
+			AspectId: aspect.Id.String(),
+			Priority: uint32(aspect.Priority),
+			Version:  ver.Uint64(),
+			Code:     codeBytes,
+		}
+		aspectCodes = append(aspectCodes, aspectCode)
+	}
+	return aspectCodes, nil
+}
+
+// GetPointsAspect BoundAspects get bound Aspects on previous block
+func (service *AspectService) GetPointsAspect(height int64, to common.Address, cut artela.PointCut) ([]*artela.AspectCode, error) {
 	sdkCtx, getErr := service.getCtxByHeight(height, true)
 	if getErr != nil {
 		return nil, errors.Wrap(getErr, "load context by pre block height failed")

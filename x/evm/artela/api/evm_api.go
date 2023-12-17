@@ -118,9 +118,9 @@ func (e evmHostApi) JITCall(ctx *artelatypes.RunnerContext, request *artelatypes
 	case artelatypes.PRE_TX_EXECUTE_METHOD, artelatypes.POST_TX_EXECUTE_METHOD,
 		artelatypes.PRE_CONTRACT_CALL_METHOD, artelatypes.POST_CONTRACT_CALL_METHOD:
 		stage = integration.TransactionExecution
-	case artelatypes.ON_TX_VERIFY_METHOD, artelatypes.ON_ACCOUNT_VERIFY_METHOD:
+	case artelatypes.VERIFY_TX, artelatypes.ON_ACCOUNT_VERIFY_METHOD:
 		stage = integration.PreTransactionExecution
-	case artelatypes.ON_TX_COMMIT_METHOD:
+	case artelatypes.POST_TX_COMMIT:
 		stage = integration.PostTransactionExecution
 	case artelatypes.ON_BLOCK_INITIALIZE_METHOD:
 		stage = integration.BlockInitialization

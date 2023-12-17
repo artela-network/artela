@@ -89,11 +89,13 @@ func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, ac
 		return nil, errors.New("unable to bind non-tx-verifier Aspect to an EoA account")
 	}
 
+	storeLeastOne := false
 	// bind tx processing aspect if account is a contract
 	if txAspect && isContract {
 		if err := k.aspectService.aspectStore.BindTxAspect(ctx, account, aspectId, aspectVersion, priority); err != nil {
 			return nil, err
 		}
+		storeLeastOne = true
 	}
 
 	// bind tx verifier aspect
@@ -101,11 +103,14 @@ func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, ac
 		if err := k.aspectService.aspectStore.BindVerificationAspect(ctx, account, aspectId, aspectVersion, priority, isContract); err != nil {
 			return nil, err
 		}
+		storeLeastOne = true
 	}
 
-	// save reverse index
-	if err := k.aspectService.aspectStore.StoreAspectRefValue(ctx, account, aspectId); err != nil {
-		return nil, err
+	if storeLeastOne {
+		// save reverse index
+		if err := k.aspectService.aspectStore.StoreAspectRefValue(ctx, account, aspectId); err != nil {
+			return nil, err
+		}
 	}
 
 	return &evmtypes.MsgEthereumTxResponse{
@@ -172,7 +177,7 @@ func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, co
 
 	aspectInfo := make([]types.AspectInfo, 0)
 	if isContract {
-		aspects, err := k.aspectService.GetAspectForAddr(ctx.BlockHeight()-1, contract)
+		aspects, err := k.aspectService.GetBoundAspectForAddr(ctx.BlockHeight()-1, contract)
 		if err != nil {
 			return nil, err
 		}
