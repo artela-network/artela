@@ -49,9 +49,7 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeg
 // KVStore. The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
 func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-
-	// delete all aspect state objects in the block
-	defer k.GetAspectRuntimeContext().RefreshState(false, ctx.BlockHeight(), "")
+	k.ExtBlockContext = nil
 
 	// Gas costs are handled within msg handler so costs should be ignored
 	infCtx := ctx.WithGasMeter(cosmos.NewInfiniteGasMeter())
@@ -59,7 +57,6 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	bloom := ethereum.BytesToBloom(k.GetBlockBloomTransient(infCtx).Bytes())
 	k.EmitBlockBloomEvent(infCtx, bloom)
 
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
 	// Create a Aspect State Object for OnBlockFinalize
 	//	k.GetAspectRuntimeContext().CreateStateObject(true, ctx.BlockHeight(), types.AspectStateEndBlock)
 
@@ -81,7 +78,6 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 
 	// clear aspect  block context
 	//	k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), types.AspectStateEndBlock)
-	k.GetAspectRuntimeContext().ClearBlockContext()
 
 	return []abci.ValidatorUpdate{}
 }

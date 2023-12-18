@@ -60,8 +60,16 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	ethTxContext := types2.NewEthTxContext(ethCallTx)
 	aspectCtx.SetEthTxContext(ethTxContext)
 	aspectCtx.WithCosmosContext(ctx)
-	// defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
 	ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, aspectCtx)
+
+	// reset links of aspect context after running transaction
+	defer func() {
+		// TODO
+		// ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
+		// aspectCtx.ClearBlockContext()
+		// aspectCtx.ClearContext()
+		// aspectCtx.EthTxContext().ClearEvmObject()
+	}()
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {

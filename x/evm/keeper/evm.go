@@ -4,6 +4,9 @@ import (
 	"math/big"
 
 	"github.com/artela-network/artela/x/evm/artela/contract"
+	"github.com/artela-network/artela/x/evm/artela/provider"
+	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	asptypes "github.com/artela-network/aspect-core/types"
 
 	"github.com/artela-network/aspect-core/djpm"
@@ -24,8 +27,6 @@ import (
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
-
-	artelatype "github.com/artela-network/artela/x/evm/artela/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
@@ -165,8 +166,14 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 		return nil, errorsmod.Wrap(err, "unable to process msg data")
 	}
 
+	// retrieve aspectCtx from sdk.Context
+	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
+	if !ok {
+		panic("ApplyMessageWithConfig: wrap *artelatypes.AspectRuntimeContext failed")
+	}
+
 	// pass true to commit the StateDB
-	res, err := k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, evmConfig, txConfig)
+	res, err := k.ApplyMessageWithConfig(tmpCtx, aspectCtx, msg, nil, true, evmConfig, txConfig)
 	if err != nil {
 		ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
@@ -211,7 +218,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 		TransactionIndex:  txConfig.TxIndex,
 	}
 
-	k.GetAspectRuntimeContext().EthTxContext().WithReceipt(receipt)
+	aspectCtx.EthTxContext().WithReceipt(receipt)
 	// commit
 	// aspect OnTxCommit start
 	pointRequest, err := k.aspect.TxToPointRequest(ctx, msg.From, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
@@ -220,11 +227,6 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	} else {
 		pointRequest.GasInfo.Gas = msg.GasLimit - res.GasUsed
 
-		// retrieve aspectCtx from sdk.Context
-		aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
-		if !ok {
-			panic("ApplyMessageWithConfig: wrap *artelatype.AspectRuntimeContext failed")
-		}
 		txCommit := djpm.AspectInstance().PostTxCommit(aspectCtx, pointRequest)
 		if hasErr, txCommitErr := txCommit.HasErr(); hasErr {
 			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
@@ -234,7 +236,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	if !res.Failed() {
 		receipt.Status = ethereum.ReceiptStatusSuccessful
 		// commit state and clean state object, Aspect State set @ApplyMessageWithConfig(..)
-		k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
+		aspectCtx.RefreshState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 		if commit != nil {
 			commit()
@@ -277,7 +279,13 @@ func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.E
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 
-	return k.ApplyMessageWithConfig(ctx, msg, tracer, commit, evmConfig, txConfig)
+	// retrieve aspectCtx from sdk.Context
+	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
+	if !ok {
+		panic("ApplyMessageWithConfig: wrap *artelatypes.AspectRuntimeContext failed")
+	}
+
+	return k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commit, evmConfig, txConfig)
 }
 
 // ApplyMessageWithConfig computes the new states by applying the given message against the existing states.
@@ -319,6 +327,7 @@ func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.E
 //
 // If commit is true, the `StateDB` will be committed, otherwise discarded.
 func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
+	aspectCtx *artelatypes.AspectRuntimeContext,
 	msg *core.Message,
 	tracer vm.EVMLogger,
 	commit bool,
@@ -340,10 +349,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	stateDB := states.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
 
-	aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
-	if !ok {
-		panic("ApplyMessageWithConfig: wrap *artelatype.AspectRuntimeContext failed")
-	}
 	aspectCtx.EthTxContext().
 		WithLastEvm(evm). // todo: withEVM(,,,)
 		WithEvmCfg(cfg).
@@ -351,7 +356,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		WithVmMonitor(evm.Tracer()).
 		WithFrom(msg.From)
 	// Create a Aspect State Object for OnBlockFinalize
-	aspectCtx.CreateStateObject(true, ctx.BlockHeight(), artelatype.AspectStateDeliverTxState)
+	aspectCtx.CreateStateObject(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 	leftoverGas := msg.GasLimit
 
@@ -402,7 +407,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		// - reset sender's nonce to msg.Nonce() before calling evm.
 		// - increase sender's nonce by one no matter the result.
 		stateDB.SetNonce(sender.Address(), msg.Nonce)
-		ret, _, leftoverGas, vmErr = evm.Create(sender, msg.Data, leftoverGas, msg.Value)
+		ret, _, leftoverGas, vmErr = evm.Create(aspectCtx, sender, msg.Data, leftoverGas, msg.Value)
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
 		pointRequest := k.aspect.CreateTxPointRequestInEvm(ctx, msg, txConfig, nil)
@@ -413,6 +418,13 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		if hasErr, execErr := execute.HasErr(); hasErr {
 			vmErr = execErr
 		} else {
+			// When handling joinpoints such as PreContractCall and PostContractCall, it is possible that a JIT (Just-In-Time) call may occur.
+			// In such cases, it is essential to set the jit manager for the EVM call.
+			// TODO: It is important to note that the manager of the JIT should not rely on a global instance.
+			// TODO： Consider revising this implementation for better design and modularity.
+			newAspectProtocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
+			jit_inherent.Update(newAspectProtocol)
+
 			ret, leftoverGas, vmErr = evm.Call(aspectCtx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
 			// artela aspect PostTxExecute start
 			pointRequest.GasInfo.Gas = leftoverGas

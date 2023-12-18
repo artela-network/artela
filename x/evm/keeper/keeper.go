@@ -3,7 +3,6 @@ package keeper
 import (
 	"math/big"
 
-	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 
@@ -29,6 +28,7 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
+	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	artelaType "github.com/artela-network/aspect-core/types"
 	cosmosAspect "github.com/cosmos/cosmos-sdk/aspect/cosmos"
 

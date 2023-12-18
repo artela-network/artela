@@ -248,17 +248,18 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 	// set aspect tx context
-	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsEthCallTransaction())
-	// k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-	// k.GetAspectRuntimeContext().WithCosmosContext(ctx)
-	aspectCtx := artelatypes.NewAspectRuntimeContext()
-	aspectCtx.SetEthTxContext(ethTxContext)
-	aspectCtx.WithCosmosContext(ctx)
+	ctx, aspectCtx := k.WithAspectContext(ctx, args.ToTransaction().AsEthCallTransaction())
 
-	ctx = ctx.WithValue(artelatypes.AspectContextKey, aspectCtx) // store aspect ctx to sdk ctx
+	defer func() {
+		// TODO
+		// ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
+		// aspectCtx.ClearBlockContext()
+		// aspectCtx.ClearContext()
+		// aspectCtx.EthTxContext().ClearEvmObject()
+	}()
 
 	// pass false to not commit StateDB
-	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
+	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -314,9 +315,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	}
 	txMsg := args.ToTransaction()
 	// set aspect tx context
-	ethTxContext := artelatypes.NewEthTxContext(txMsg.AsTransaction())
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
+	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction())
 
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
@@ -344,7 +343,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 		// update the message with the new gas value
 		msg.GasLimit = gas
 		// pass false to not commit StateDB
-		rsp, err = k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
+		rsp, err = k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) {
 				return true, nil, nil // Special case, raise gas limit
@@ -424,11 +423,9 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
 		// set aspect tx context
-		ethTxContext := artelatypes.NewEthTxContext(ethTx)
-		k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-		k.GetAspectRuntimeContext().WithCosmosContext(ctx)
+		ctx, aspectCtx := k.WithAspectContext(ctx, ethTx)
 
-		rsp, err := k.ApplyMessageWithConfig(ctx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
+		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
 		}
@@ -600,11 +597,9 @@ func (k *Keeper) traceTx(
 		}
 	}()
 	// set aspect tx context
-	ethTxContext := artelatypes.NewEthTxContext(tx)
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
+	ctx, aspectCtx := k.WithAspectContext(ctx, tx)
 
-	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
+	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}
@@ -646,6 +641,14 @@ func (k Keeper) GetSender(c context.Context, in *txs.MsgEthereumTx) (*txs.GetSen
 		return nil, err
 	}
 	return &txs.GetSenderResponse{Sender: sender.String()}, nil
+}
+
+func (k Keeper) WithAspectContext(ctx cosmos.Context, tx *ethereum.Transaction) (cosmos.Context, *artelatypes.AspectRuntimeContext) {
+	ethTxContext := artelatypes.NewEthTxContext(tx)
+	aspectCtx := artelatypes.NewAspectRuntimeContext()
+	aspectCtx.SetEthTxContext(ethTxContext)
+	aspectCtx.WithCosmosContext(ctx)
+	return ctx.WithValue(artelatypes.AspectContextKey, aspectCtx), aspectCtx // store aspect ctx to sdk ctx
 }
 
 // getChainID parse chainID from current context if not provided
