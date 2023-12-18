@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
+	"math/big"
 )
 
 func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte) (*evmtypes.MsgEthereumTxResponse, error) {
@@ -80,16 +81,13 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method
 
 func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, account common.Address, aspectVersion *uint256.Int, priority int8, isContract bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	// check aspect types
-	txAspect, err := k.checkIsTransactionLevel(ctx, aspectId)
-	if err != nil {
-		return nil, err
-	}
+	aspectJP := k.aspectService.aspectStore.GetAspectJP(ctx, aspectId, nil)
+	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
+	txVerifier := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
 
-	txVerifier, err := k.checkIsTxVerifier(ctx, aspectId)
-	if err != nil {
-		return nil, err
+	if !(txAspect || txVerifier) {
+		return nil, errors.New("check aspect join point fail, An aspect which can be bound, must be a transactional or Verifier")
 	}
-
 	// EoA can only bind with tx verifier
 	if !txVerifier && !isContract {
 		return nil, errors.New("unable to bind non-tx-verifier Aspect to an EoA account")
@@ -178,7 +176,7 @@ func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, co
 
 	aspectInfo := make([]types.AspectInfo, 0)
 	if isContract {
-		aspects, err := k.aspectService.GetAspectForAddr(ctx.BlockHeight()-1, contract)
+		aspects, err := k.aspectService.GetBoundAspectForAddr(ctx.BlockHeight()-1, contract)
 		if err != nil {
 			return nil, err
 		}
@@ -263,14 +261,18 @@ func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectI
 	return binding, runErr
 }
 
-func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property) (*evmtypes.MsgEthereumTxResponse, error) {
-	k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
-	k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
-
-	level, err := k.checkBlockLevel(aspectId, code)
+func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property, joinPoint *big.Int) (*evmtypes.MsgEthereumTxResponse, error) {
+	aspectVersion := k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
+	err := k.aspectService.aspectStore.StoreAspectJP(ctx, aspectId, aspectVersion, joinPoint)
 	if err != nil {
 		return nil, err
 	}
+	err = k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
+	if err != nil {
+		return nil, err
+	}
+
+	level := artelasdkType.CheckIsBlockLevel(joinPoint.Int64())
 	if level {
 		storeErr := k.aspectService.aspectStore.StoreBlockLevelAspect(ctx, aspectId)
 		if storeErr != nil {
@@ -290,45 +292,4 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 		Ret:     nil,
 		Logs:    nil,
 	}, nil
-}
-
-func (k *AspectNativeContract) checkBlockLevel(aspectId common.Address, code []byte) (bool, error) {
-	runner, newErr := run.NewRunner(aspectId.String(), code)
-	if newErr != nil {
-		return false, newErr
-	}
-	defer runner.Return()
-
-	binding, runErr := runner.IsBlockLevel()
-	return binding, runErr
-}
-
-func (k *AspectNativeContract) checkIsTransactionLevel(ctx sdk.Context, aspectId common.Address) (bool, error) {
-	code, _ := k.aspectService.GetAspectCode(ctx.BlockHeight()-1, aspectId)
-	if code == nil {
-		return false, nil
-	}
-	runner, newErr := run.NewRunner(aspectId.String(), code)
-	if newErr != nil {
-		return false, newErr
-	}
-	defer runner.Return()
-
-	binding, runErr := runner.IsTransactionLevel()
-	return binding, runErr
-}
-
-func (k *AspectNativeContract) checkIsTxVerifier(ctx sdk.Context, aspectId common.Address) (bool, error) {
-	code, _ := k.aspectService.GetAspectCode(ctx.BlockHeight()-1, aspectId)
-	if code == nil {
-		return false, nil
-	}
-	runner, newErr := run.NewRunner(aspectId.String(), code)
-	if newErr != nil {
-		return false, newErr
-	}
-	defer runner.Return()
-
-	binding, runErr := runner.IsTxVerifier()
-	return binding, runErr
 }

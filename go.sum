@@ -261,6 +261,8 @@ github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-beta-5 h1:DRMLMqm4JOH
 github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-beta-5/go.mod h1:d7ySEVnEeWnydWZpEg2j0C1lsbrvk+FKGhnjilj5BRY=
 github.com/artela-network/artela-evm v0.4.5-beta h1:tpLwQ3rU24XiuEtWm47LXThYsw+/g7FK6pzb7gHqV34=
 github.com/artela-network/artela-evm v0.4.5-beta/go.mod h1:bmNlmOobBenn0qzSTlVQt3zwhqhXk27g3Z3bPQc4LPQ=
+github.com/artela-network/aspect-core v0.4.4-beta h1:aHsD3dkCM5uClrrkBCyZ2/cvKCwC2FsKGopx7qxTT7w=
+github.com/artela-network/aspect-core v0.4.4-beta/go.mod h1:nsGS6rs2kaLrl+o5b4VOgeFt5KxNuK1B3n8v5XkZdSA=
 github.com/artela-network/aspect-runtime v0.4.2-beta h1:oS+/2xybOXQDFPeuzRV1Hi3bQpQnwiFq8PpZAxAJBWk=
 github.com/artela-network/aspect-runtime v0.4.2-beta/go.mod h1:UWmkBhpNyDf3Pis5AfOxcnftgXVH1/ChTG/OZtmRvd4=
 github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6lCRdSC2Tm3DSWRPvIPr6xNKyeHdqDQSQT+A=

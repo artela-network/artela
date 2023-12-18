@@ -130,8 +130,8 @@ func (ArtelaProvider) FilterAspectTx(tx sdk.Msg) bool {
 	return true
 }
 
-func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
-	return j.service.GetAspectForAddr(blockNum, address)
+func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address, point asptypes.PointCut) ([]*asptypes.AspectCode, error) {
+	return j.service.GetPointsAspect(blockNum, address, point)
 }
 
 func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
