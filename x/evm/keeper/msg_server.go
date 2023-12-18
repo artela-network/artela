@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -50,7 +51,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	// set aspect tx context
 	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
 	if !ok {
-		panic("EthereumTx: wrap *artelatypes.AspectRuntimeContext failed")
+		return nil, errors.New("EthereumTx: wrap *artelatypes.AspectRuntimeContext failed")
 	}
 
 	// restore extBlockContext from keeper and set it to aspect runtime context
@@ -61,15 +62,6 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	aspectCtx.SetEthTxContext(ethTxContext)
 	aspectCtx.WithCosmosContext(ctx)
 	ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, aspectCtx)
-
-	// reset links of aspect context after running transaction
-	defer func() {
-		// TODO
-		// ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
-		// aspectCtx.ClearBlockContext()
-		// aspectCtx.ClearContext()
-		// aspectCtx.EthTxContext().ClearEvmObject()
-	}()
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {

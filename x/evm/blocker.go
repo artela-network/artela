@@ -14,20 +14,17 @@ import (
 // BeginBlock sets the cosmos Context and EIP155 chain id to the Keeper.
 func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeginBlock) {
 
-	extBlockCtx := artelatypes.NewExtBlockContext()
-	extBlockCtx = extBlockCtx.WithEvidenceList(beginBlock.ByzantineValidators).WithLastCommit(beginBlock.LastCommitInfo).WithRpcClient(k.GetClientContext())
-
+	// Aspect Runtime Context Lifecycle: create and store ExtBlockContext
 	// due to the design of the block context in Cosmos SDK,
 	// the extBlockCtx cannot be saved directly to the context of the deliver state
 	// using code like ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, extBlockCtx).
 	// Instead, it suggests saving it to the keeper.
+	extBlockCtx := artelatypes.NewExtBlockContext()
+	rpcContext := k.GetClientContext()
+	extBlockCtx = extBlockCtx.WithBlockConfig(beginBlock.ByzantineValidators, &beginBlock.LastCommitInfo, &rpcContext)
 	k.ExtBlockContext = extBlockCtx
 
 	k.WithChainID(ctx)
-
-	// Create a Aspect State Object for OnBlockInitialize
-	//k.GetAspectRuntimeContext().CreateStateObject(true, ctx.BlockHeight(), types.AspectStateBeginBlock)
-	//defer k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), types.AspectStateBeginBlock)
 
 	// --------aspect OnBlockInitialize start ---  //
 	/*header := types.ConvertEthBlockHeader(ctx.BlockHeader())
@@ -49,6 +46,7 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeg
 // KVStore. The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
 func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+	// Aspect Runtime Context Lifecycle: destory ExtBlockContext
 	k.ExtBlockContext = nil
 
 	// Gas costs are handled within msg handler so costs should be ignored
@@ -56,9 +54,6 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 
 	bloom := ethereum.BytesToBloom(k.GetBlockBloomTransient(infCtx).Bytes())
 	k.EmitBlockBloomEvent(infCtx, bloom)
-
-	// Create a Aspect State Object for OnBlockFinalize
-	//	k.GetAspectRuntimeContext().CreateStateObject(true, ctx.BlockHeight(), types.AspectStateEndBlock)
 
 	// --------aspect OnBlockFinalize start ---  //
 	/*header := types.ConvertEthBlockHeader(ctx.BlockHeader())
@@ -75,9 +70,6 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	}
 	*/
 	// --------aspect OnBlockFinalize end ---  //
-
-	// clear aspect  block context
-	//	k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), types.AspectStateEndBlock)
 
 	return []abci.ValidatorUpdate{}
 }

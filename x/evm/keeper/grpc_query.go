@@ -247,15 +247,13 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	}
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
-	// set aspect tx context
+	// Aspect Runtime Context Lifecycle: create aspect context.
+	// This marks the beginning of running an aspect of EthCall, creating the aspect context,
+	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, args.ToTransaction().AsEthCallTransaction())
-
 	defer func() {
-		// TODO
-		// ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
-		// aspectCtx.ClearBlockContext()
-		// aspectCtx.ClearContext()
-		// aspectCtx.EthTxContext().ClearEvmObject()
+		ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
+		aspectCtx.Destory()
 	}()
 
 	// pass false to not commit StateDB
@@ -314,8 +312,15 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 		hi = req.GasCap
 	}
 	txMsg := args.ToTransaction()
-	// set aspect tx context
+
+	// Aspect Runtime Context Lifecycle: create aspect context.
+	// This marks the beginning of running an aspect of EstimateGas, creating the aspect context,
+	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction())
+	defer func() {
+		ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
+		aspectCtx.Destory()
+	}()
 
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
@@ -422,8 +427,15 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		}
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
-		// set aspect tx context
+
+		// Aspect Runtime Context Lifecycle: create aspect context.
+		// This marks the beginning of running an aspect of TraceTx, creating the aspect context,
+		// and establishing the link with the SDK context.
 		ctx, aspectCtx := k.WithAspectContext(ctx, ethTx)
+		defer func() {
+			ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
+			aspectCtx.Destory()
+		}()
 
 		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
@@ -596,8 +608,15 @@ func (k *Keeper) traceTx(
 			tracer.Stop(errors.New("execution timeout"))
 		}
 	}()
-	// set aspect tx context
+
+	// Aspect Runtime Context Lifecycle: create aspect context.
+	// This marks the beginning of running an aspect of TraceBlock or TraceTx, creating the aspect context,
+	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, tx)
+	defer func() {
+		ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
+		aspectCtx.Destory()
+	}()
 
 	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
@@ -643,12 +662,13 @@ func (k Keeper) GetSender(c context.Context, in *txs.MsgEthereumTx) (*txs.GetSen
 	return &txs.GetSenderResponse{Sender: sender.String()}, nil
 }
 
+// WithAspectContext creates the Aspect Context and establishes the link to the SDK context.
 func (k Keeper) WithAspectContext(ctx cosmos.Context, tx *ethereum.Transaction) (cosmos.Context, *artelatypes.AspectRuntimeContext) {
 	ethTxContext := artelatypes.NewEthTxContext(tx)
 	aspectCtx := artelatypes.NewAspectRuntimeContext()
 	aspectCtx.SetEthTxContext(ethTxContext)
 	aspectCtx.WithCosmosContext(ctx)
-	return ctx.WithValue(artelatypes.AspectContextKey, aspectCtx), aspectCtx // store aspect ctx to sdk ctx
+	return ctx.WithValue(artelatypes.AspectContextKey, aspectCtx), aspectCtx
 }
 
 // getChainID parse chainID from current context if not provided

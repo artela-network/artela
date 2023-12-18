@@ -156,7 +156,7 @@ func NewKeeper(
 
 func (k *Keeper) SetClientContext(ctx client.Context) {
 	k.clientContext = ctx
-	k.aspectRuntimeContext.ExtBlockContext().WithRpcClient(ctx)
+	k.aspectRuntimeContext.ExtBlockContext().WithBlockConfig(nil, nil, &ctx)
 }
 
 func (k Keeper) GetClientContext() client.Context {

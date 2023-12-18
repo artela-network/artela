@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/artela-network/artela/x/evm/artela/contract"
@@ -169,7 +170,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	// retrieve aspectCtx from sdk.Context
 	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
 	if !ok {
-		panic("ApplyMessageWithConfig: wrap *artelatypes.AspectRuntimeContext failed")
+		return nil, errors.New("ApplyMessageWithConfig: wrap *artelatypes.AspectRuntimeContext failed")
 	}
 
 	// pass true to commit the StateDB
@@ -218,7 +219,10 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 		TransactionIndex:  txConfig.TxIndex,
 	}
 
+	// Aspect Runtime Context Lifecycle: store receipt to extTxContext.
+	// The WithReceipt function stores the receipt in the ethTxContext of the Aspect Runtime Context for use by aspects.
 	aspectCtx.EthTxContext().WithReceipt(receipt)
+
 	// commit
 	// aspect OnTxCommit start
 	pointRequest, err := k.aspect.TxToPointRequest(ctx, msg.From, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
@@ -235,7 +239,9 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 
 	if !res.Failed() {
 		receipt.Status = ethereum.ReceiptStatusSuccessful
-		// commit state and clean state object, Aspect State set @ApplyMessageWithConfig(..)
+
+		// Aspect Runtime Context Lifecycle: commit state changes.
+		// The RefreshState function commits all state changes made by the aspect to the block state.
 		aspectCtx.RefreshState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 		if commit != nil {
@@ -282,7 +288,7 @@ func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.E
 	// retrieve aspectCtx from sdk.Context
 	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
 	if !ok {
-		panic("ApplyMessageWithConfig: wrap *artelatypes.AspectRuntimeContext failed")
+		return nil, errors.New("ApplyMessageWithConfig: wrap *artelatypes.AspectRuntimeContext failed")
 	}
 
 	return k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commit, evmConfig, txConfig)
@@ -349,12 +355,13 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	stateDB := states.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
 
-	aspectCtx.EthTxContext().
-		WithLastEvm(evm). // todo: withEVM(,,,)
-		WithEvmCfg(cfg).
-		WithStateDB(stateDB).
-		WithVmMonitor(evm.Tracer()).
-		WithFrom(msg.From)
+	// Aspect Runtime Context Lifecycle: set EVM params.
+	// Before the pre-transaction execution, establish the EVM context, encompassing details such as
+	// the sender of the transaction (from), transaction message, the EVM responsible for executing
+	// the transaction, EVM tracer, and the stateDB associated with running the EVM transaction.
+	aspectCtx.EthTxContext().WithEVM(msg.From, msg, evm, cfg, evm.Tracer(), stateDB)
+
+	// Aspect Runtime Context Lifecycle: create state object.
 	// Create a Aspect State Object for OnBlockFinalize
 	aspectCtx.CreateStateObject(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 

@@ -22,7 +22,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, 
 
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
-		panic("AspectNativeContract.entrypoint: wrap artelatype.AspectRuntimeContext failed")
+		return nil, errors.New("AspectNativeContract.entrypoint: wrap artelatype.AspectRuntimeContext failed")
 	}
 	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
@@ -230,7 +230,7 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
-		panic("checkAspectOwner: wrap artelatype.AspectRuntimeContext failed")
+		return false, errors.New("checkAspectOwner: wrap artelatype.AspectRuntimeContext failed")
 	}
 	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
@@ -245,7 +245,7 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectId common.Address, code []byte, sender common.Address) (bool, error) {
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
-		panic("CheckIsAspectOwnerByCode: wrap artelatype.AspectRuntimeContext failed")
+		return false, errors.New("CheckIsAspectOwnerByCode: wrap artelatype.AspectRuntimeContext failed")
 	}
 	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
@@ -289,7 +289,7 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 func (k *AspectNativeContract) checkBlockLevel(ctx sdk.Context, aspectId common.Address, code []byte) (bool, error) {
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
-		panic("checkBlockLevel: wrap artelatype.AspectRuntimeContext failed")
+		return false, errors.New("checkBlockLevel: wrap artelatype.AspectRuntimeContext failed")
 	}
 
 	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
@@ -309,7 +309,7 @@ func (k *AspectNativeContract) checkTransactionLevel(ctx sdk.Context, aspectId c
 
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
-		panic("checkTransactionLevel: wrap artelatype.AspectRuntimeContext failed")
+		return false, errors.New("checkTransactionLevel: wrap artelatype.AspectRuntimeContext failed")
 	}
 	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
@@ -327,7 +327,7 @@ func (k *AspectNativeContract) checkIsTxVerifier(ctx context.Context, aspectId c
 	}
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
-		panic("checkIsTxVerifier: wrap artelatype.AspectRuntimeContext failed")
+		return false, errors.New("checkIsTxVerifier: wrap artelatype.AspectRuntimeContext failed")
 	}
 	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
 	if newErr != nil {
