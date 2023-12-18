@@ -24,12 +24,18 @@ const (
 	AspectBlockKeyPrefix       = "AspectStore/Block/"
 	AspectStateKeyPrefix       = "AspectStore/State/"
 
+	AspectJoinPointRunKeyPrefix = "AspectStore/JoinPointRun/"
+
 	AspectIdMapKey = "aspectId"
 	VersionMapKey  = "version"
 	PriorityMapKey = "priority"
 
-	AspectAccountKey = "Aspect_@Acount@_"
-	AspectProofKey   = "Aspect_@Proof@_"
+	AspectAccountKey           = "Aspect_@Acount@_"
+	AspectProofKey             = "Aspect_@Proof@_"
+	AspectRunJoinPointKey      = "Aspect_@Run@JoinPoint@_"
+	AspectPropertyAllKeyPrefix = "Aspect_@Property@AllKey@_"
+	AspectPropertyAllKeySplit  = "^^^"
+	AspectPropertyLimit        = 256
 )
 
 var (
