@@ -1,19 +1,18 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/types"
 	"math"
 	"math/big"
 
-	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
-
+	"github.com/artela-network/artela/app/interfaces"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
+	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -28,11 +27,11 @@ import (
 // EthAccountVerificationDecorator validates an account balance checks
 type EthAccountVerificationDecorator struct {
 	ak        evmmodule.AccountKeeper
-	evmKeeper EVMKeeper
+	evmKeeper interfaces.EVMKeeper
 }
 
 // NewEthAccountVerificationDecorator creates a new EthAccountVerificationDecorator
-func NewEthAccountVerificationDecorator(ak evmmodule.AccountKeeper, ek EVMKeeper) EthAccountVerificationDecorator {
+func NewEthAccountVerificationDecorator(ak evmmodule.AccountKeeper, ek interfaces.EVMKeeper) EthAccountVerificationDecorator {
 	return EthAccountVerificationDecorator{
 		ak:        ak,
 		evmKeeper: ek,
@@ -101,7 +100,7 @@ func (avd EthAccountVerificationDecorator) AnteHandle(
 type EthGasConsumeDecorator struct {
 	bankKeeper         anteutils.BankKeeper
 	distributionKeeper anteutils.DistributionKeeper
-	evmKeeper          EVMKeeper
+	evmKeeper          interfaces.EVMKeeper
 	stakingKeeper      anteutils.StakingKeeper
 	maxGasWanted       uint64
 }
@@ -110,7 +109,7 @@ type EthGasConsumeDecorator struct {
 func NewEthGasConsumeDecorator(
 	bankKeeper anteutils.BankKeeper,
 	distributionKeeper anteutils.DistributionKeeper,
-	evmKeeper EVMKeeper,
+	evmKeeper interfaces.EVMKeeper,
 	stakingKeeper anteutils.StakingKeeper,
 	maxGasWanted uint64,
 ) EthGasConsumeDecorator {
@@ -263,11 +262,11 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, 
 // CanTransferDecorator checks if the sender is allowed to transfer funds according to the EVM block
 // context rules.
 type CanTransferDecorator struct {
-	evmKeeper EVMKeeper
+	evmKeeper interfaces.EVMKeeper
 }
 
 // NewCanTransferDecorator creates a new CanTransferDecorator instance.
-func NewCanTransferDecorator(evmKeeper EVMKeeper) CanTransferDecorator {
+func NewCanTransferDecorator(evmKeeper interfaces.EVMKeeper) CanTransferDecorator {
 	return CanTransferDecorator{
 		evmKeeper: evmKeeper,
 	}
