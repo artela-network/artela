@@ -235,7 +235,7 @@ func (k *AspectNativeContract) ApplyMsg(ctx sdk.Context, msg *core.Message) (*ev
 			return k.aspectsOf(ctx, method, account, isContract)
 		}
 
-	case "contractsof":
+	case "boundaddressesof":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
 			return k.contractsOf(ctx, method, aspectId)

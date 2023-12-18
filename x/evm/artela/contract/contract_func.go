@@ -84,18 +84,20 @@ func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, ac
 	aspectJP := k.aspectService.aspectStore.GetAspectJP(ctx, aspectId, nil)
 	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
 	txVerifier := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
+
+	if !(txAspect || txVerifier) {
+		return nil, errors.New("check aspect join point fail, An aspect which can be bound, must be a transactional or Verifier")
+	}
 	// EoA can only bind with tx verifier
 	if !txVerifier && !isContract {
 		return nil, errors.New("unable to bind non-tx-verifier Aspect to an EoA account")
 	}
 
-	storeLeastOne := false
 	// bind tx processing aspect if account is a contract
 	if txAspect && isContract {
 		if err := k.aspectService.aspectStore.BindTxAspect(ctx, account, aspectId, aspectVersion, priority); err != nil {
 			return nil, err
 		}
-		storeLeastOne = true
 	}
 
 	// bind tx verifier aspect
@@ -103,14 +105,11 @@ func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, ac
 		if err := k.aspectService.aspectStore.BindVerificationAspect(ctx, account, aspectId, aspectVersion, priority, isContract); err != nil {
 			return nil, err
 		}
-		storeLeastOne = true
 	}
 
-	if storeLeastOne {
-		// save reverse index
-		if err := k.aspectService.aspectStore.StoreAspectRefValue(ctx, account, aspectId); err != nil {
-			return nil, err
-		}
+	// save reverse index
+	if err := k.aspectService.aspectStore.StoreAspectRefValue(ctx, account, aspectId); err != nil {
+		return nil, err
 	}
 
 	return &evmtypes.MsgEthereumTxResponse{
@@ -268,9 +267,9 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 	if err != nil {
 		return nil, err
 	}
-	propErr := k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
-	if propErr != nil {
-		return nil, propErr
+	err = k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
+	if err != nil {
+		return nil, err
 	}
 
 	level := artelasdkType.CheckIsBlockLevel(joinPoint.Int64())

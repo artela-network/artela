@@ -48,15 +48,15 @@ var (
 
 // nolint
 var methods = map[string]abi.Method{
-	"deploy":        abi.NewMethod("deploy", "deploy", abi.Function, "", false, false, []abi.Argument{{"code", Bytes, false}, {"properties", KvPairArr, false}, {"account", Address, false}, {"proof", Bytes, false}, {"joinPoints", Uint256, false}}, nil),
-	"upgrade":       abi.NewMethod("upgrade", "upgrade", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"code", Bytes, false}, {"properties", KvPairArr, false}, {"joinPoints", Uint256, false}}, nil),
-	"bind":          abi.NewMethod("bind", "bind", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"aspectVersion", Uint256, false}, {"contract", Address, false}, {"priority", Int8, false}}, nil),
-	"unbind":        abi.NewMethod("unbind", "unbind", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"contract", Address, false}}, nil),
-	"changeVersion": abi.NewMethod("changeVersion", "changeVersion", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"contract", Address, false}, {"version", Uint64, false}}, nil),
-	"versionOf":     abi.NewMethod("versionOf", "versionOf", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}}, []abi.Argument{{"version", Uint64, false}}),
-	"aspectsOf":     abi.NewMethod("aspectsOf", "aspectsOf", abi.Function, "", false, false, []abi.Argument{{"contract", Address, false}}, []abi.Argument{{"aspectBoundInfo", AspectBoundInfoArr, false}}),
-	"contractsOf":   abi.NewMethod("contractsOf", "contractsOf", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}}, []abi.Argument{{"contracts", AddressArr, false}}),
-	"entrypoint":    abi.NewMethod("entrypoint", "entrypoint", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"optArgs", Bytes, false}}, []abi.Argument{{"resultMap", Bytes, false}}),
+	"deploy":           abi.NewMethod("deploy", "deploy", abi.Function, "", false, false, []abi.Argument{{"code", Bytes, false}, {"properties", KvPairArr, false}, {"account", Address, false}, {"proof", Bytes, false}, {"joinPoints", Uint256, false}}, nil),
+	"upgrade":          abi.NewMethod("upgrade", "upgrade", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"code", Bytes, false}, {"properties", KvPairArr, false}, {"joinPoints", Uint256, false}}, nil),
+	"bind":             abi.NewMethod("bind", "bind", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"aspectVersion", Uint256, false}, {"contract", Address, false}, {"priority", Int8, false}}, nil),
+	"unbind":           abi.NewMethod("unbind", "unbind", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"contract", Address, false}}, nil),
+	"changeVersion":    abi.NewMethod("changeVersion", "changeVersion", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"contract", Address, false}, {"version", Uint64, false}}, nil),
+	"versionOf":        abi.NewMethod("versionOf", "versionOf", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}}, []abi.Argument{{"version", Uint64, false}}),
+	"aspectsOf":        abi.NewMethod("aspectsOf", "aspectsOf", abi.Function, "", false, false, []abi.Argument{{"contract", Address, false}}, []abi.Argument{{"aspectBoundInfo", AspectBoundInfoArr, false}}),
+	"boundAddressesOf": abi.NewMethod("boundAddressesOf", "boundAddressesOf", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}}, []abi.Argument{{"account", AddressArr, false}}),
+	"entrypoint":       abi.NewMethod("entrypoint", "entrypoint", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"optArgs", Bytes, false}}, []abi.Argument{{"resultMap", Bytes, false}}),
 }
 
 // nolint

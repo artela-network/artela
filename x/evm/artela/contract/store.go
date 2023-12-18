@@ -181,7 +181,6 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 			keySet.Add(datum)
 		}
 	}
-
 	for i := range prop {
 		key := prop[i].Key
 		//add key and deduplicate
@@ -192,6 +191,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 		return errors.Wrapf(nil, "The maximum key limit is exceeded, and the maximum allowed is %d now available %d", types.AspectPropertyLimit, keySet.Size())
 	}
 
+	// store property key
 	for i := range prop {
 		key := prop[i].Key
 		value := prop[i].Value
@@ -520,8 +520,8 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 //	@return bool Execute Result
 func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int, point *big.Int) error {
 	//check point
-	checked, _ := artelasdkType.CheckIsJoinPoint(point)
-	if !checked {
+	_, ok := artelasdkType.CheckIsJoinPoint(point)
+	if !ok {
 		// Default store 0
 		point = big.NewInt(0)
 	}
