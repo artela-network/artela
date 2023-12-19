@@ -21,6 +21,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	statedb "github.com/artela-network/artela/x/evm/states"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 )
 
 const (
@@ -70,6 +71,8 @@ type AspectRuntimeContext struct {
 	aspectState     *AspectState
 	cosmosCtx       cosmos.Context
 	storeKey        storetypes.StoreKey
+
+	jitManager *inherent.Manager
 }
 
 func NewAspectRuntimeContext() *AspectRuntimeContext {
@@ -97,9 +100,10 @@ func (c *AspectRuntimeContext) StoreKey() storetypes.StoreKey {
 	return c.storeKey
 }
 
-func (c *AspectRuntimeContext) SetEthTxContext(newTxCtx *EthTxContext) {
+func (c *AspectRuntimeContext) SetEthTxContext(newTxCtx *EthTxContext, jitManager *inherent.Manager) {
 	c.ethTxContext = newTxCtx
 	c.aspectContext = NewAspectContext()
+	c.jitManager = jitManager
 }
 
 func (c *AspectRuntimeContext) SetExtBlockContext(newBlockCtx *ExtBlockContext) {
@@ -117,8 +121,13 @@ func (c *AspectRuntimeContext) EthTxContext() *EthTxContext {
 func (c *AspectRuntimeContext) AspectContext() *AspectContext {
 	return c.aspectContext
 }
+
 func (c *AspectRuntimeContext) AspectState() *AspectState {
 	return c.aspectState
+}
+
+func (c *AspectRuntimeContext) JITManager() *inherent.Manager {
+	return c.jitManager
 }
 
 func (c *AspectRuntimeContext) StateDb() vm.StateDB {

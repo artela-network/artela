@@ -29,7 +29,7 @@ func NewStateDbApi(getLastStateDB func() vm.StateDB) artelatypes.StateDbHostApi 
 func GetStateApiInstance(ctx context.Context) (artelatypes.StateDbHostApi, error) {
 	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
 	if !ok {
-		return nil, errors.New("GetStateApiInstance: wrap context to AspectRuntimeContext failed")
+		return nil, errors.New("GetStateApiInstance: unwrap AspectRuntimeContext failed")
 	}
 	return NewStateDbApi(aspectCtx.StateDb), nil
 }

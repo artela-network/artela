@@ -29,9 +29,11 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
+	"github.com/artela-network/artela/x/evm/artela/provider"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 )
 
 var _ txs.QueryServer = Keeper{}
@@ -216,6 +218,11 @@ func (k Keeper) Params(c context.Context, _ *txs.QueryParamsRequest) (*txs.Query
 
 // EthCall implements eth_call rpc api.
 func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEthereumTxResponse, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
+	}()
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -251,10 +258,7 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	// This marks the beginning of running an aspect of EthCall, creating the aspect context,
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, args.ToTransaction().AsEthCallTransaction())
-	defer func() {
-		ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
-		aspectCtx.Destory()
-	}()
+	defer aspectCtx.Destory()
 
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
@@ -317,10 +321,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	// This marks the beginning of running an aspect of EstimateGas, creating the aspect context,
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction())
-	defer func() {
-		ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
-		aspectCtx.Destory()
-	}()
+	defer aspectCtx.Destory()
 
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
@@ -432,10 +433,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		// This marks the beginning of running an aspect of TraceTx, creating the aspect context,
 		// and establishing the link with the SDK context.
 		ctx, aspectCtx := k.WithAspectContext(ctx, ethTx)
-		defer func() {
-			ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
-			aspectCtx.Destory()
-		}()
+		defer aspectCtx.Destory()
 
 		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
@@ -613,10 +611,7 @@ func (k *Keeper) traceTx(
 	// This marks the beginning of running an aspect of TraceBlock or TraceTx, creating the aspect context,
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, tx)
-	defer func() {
-		ctx = ctx.WithValue(artelatypes.AspectContextKey, nil)
-		aspectCtx.Destory()
-	}()
+	defer aspectCtx.Destory()
 
 	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
@@ -665,8 +660,12 @@ func (k Keeper) GetSender(c context.Context, in *txs.MsgEthereumTx) (*txs.GetSen
 // WithAspectContext creates the Aspect Context and establishes the link to the SDK context.
 func (k Keeper) WithAspectContext(ctx cosmos.Context, tx *ethereum.Transaction) (cosmos.Context, *artelatypes.AspectRuntimeContext) {
 	ethTxContext := artelatypes.NewEthTxContext(tx)
+
 	aspectCtx := artelatypes.NewAspectRuntimeContext()
-	aspectCtx.SetEthTxContext(ethTxContext)
+	protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
+	jitManager := inherent.NewManager(protocol)
+
+	aspectCtx.SetEthTxContext(ethTxContext, jitManager)
 	aspectCtx.WithCosmosContext(ctx)
 	return ctx.WithValue(artelatypes.AspectContextKey, aspectCtx), aspectCtx
 }

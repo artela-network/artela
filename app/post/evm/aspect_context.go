@@ -28,9 +28,9 @@ func (aspd AspectRuntimeContextDecorator) PostHandle(ctx cosmos.Context, tx cosm
 	// Aspect Runtime Context Lifecycle: destory AspectRuntimeContext
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
-		return ctx, errors.New("EthereumTx: wrap *artelatypes.AspectRuntimeContext failed")
+		return ctx, errors.New("EthereumTx: unwrap AspectRuntimeContext failed")
 	}
-	ctx = ctx.WithValue(types.AspectContextKey, nil)
+
 	aspectCtx.Destory()
 
 	return next(ctx, tx, simulate, success)

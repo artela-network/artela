@@ -5,9 +5,7 @@ import (
 	"math/big"
 
 	"github.com/artela-network/artela/x/evm/artela/contract"
-	"github.com/artela-network/artela/x/evm/artela/provider"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
-	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	asptypes "github.com/artela-network/aspect-core/types"
 
 	"github.com/artela-network/aspect-core/djpm"
@@ -170,7 +168,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	// retrieve aspectCtx from sdk.Context
 	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
 	if !ok {
-		return nil, errors.New("ApplyMessageWithConfig: wrap *artelatypes.AspectRuntimeContext failed")
+		return nil, errors.New("ApplyMessageWithConfig: unwrap AspectRuntimeContext failed")
 	}
 
 	// pass true to commit the StateDB
@@ -288,7 +286,7 @@ func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.E
 	// retrieve aspectCtx from sdk.Context
 	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
 	if !ok {
-		return nil, errors.New("ApplyMessageWithConfig: wrap *artelatypes.AspectRuntimeContext failed")
+		return nil, errors.New("ApplyMessageWithConfig: unwrap AspectRuntimeContext failed")
 	}
 
 	return k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commit, evmConfig, txConfig)
@@ -425,13 +423,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		if hasErr, execErr := execute.HasErr(); hasErr {
 			vmErr = execErr
 		} else {
-			// When handling joinpoints such as PreContractCall and PostContractCall, it is possible that a JIT (Just-In-Time) call may occur.
-			// In such cases, it is essential to set the jit manager for the EVM call.
-			// TODO: It is important to note that the manager of the JIT should not rely on a global instance.
-			// TODO： Consider revising this implementation for better design and modularity.
-			newAspectProtocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
-			jit_inherent.Update(newAspectProtocol)
-
 			ret, leftoverGas, vmErr = evm.Call(aspectCtx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
 			// artela aspect PostTxExecute start
 			pointRequest.GasInfo.Gas = leftoverGas

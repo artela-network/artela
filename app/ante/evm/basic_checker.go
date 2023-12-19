@@ -1,14 +1,17 @@
 package evm
 
 import (
+	"errors"
 	"math"
 	"math/big"
 
 	"github.com/artela-network/artela/app/interfaces"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/artela/provider"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 
 	errorsmod "cosmossdk.io/errors"
@@ -266,6 +269,7 @@ type CanTransferDecorator struct {
 }
 
 // NewCanTransferDecorator creates a new CanTransferDecorator instance.
+// NOTE: If this decorator is enabled, place it after the AspectRuntimeContextDecorator.
 func NewCanTransferDecorator(evmKeeper interfaces.EVMKeeper) CanTransferDecorator {
 	return CanTransferDecorator{
 		evmKeeper: evmKeeper,
@@ -286,9 +290,17 @@ func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, sim
 
 		baseFee := ctd.evmKeeper.GetBaseFee(ctx, ethCfg)
 
+		// NOTE: This decorator is not enabled, If it is enabled, place it after the AspectRuntimeContextDecorator.
+		aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+		if !ok {
+			return ctx, errors.New("CanTransferDecorator: unwrap AspectRuntimeContext failed")
+		}
 		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
-		ctd.evmKeeper.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-		ctd.evmKeeper.GetAspectRuntimeContext().WithCosmosContext(ctx)
+		protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
+		jitManager := inherent.NewManager(protocol)
+
+		// update EthTxContext and JIT manager
+		aspectCtx.SetEthTxContext(ethTxContext, jitManager)
 
 		signer := ctd.evmKeeper.MakeSigner(ctx, msgEthTx.AsTransaction(),
 			ethCfg, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))

@@ -1,14 +1,16 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/app/interfaces"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/cosmos/cosmos-sdk/baseapp"
-
 	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/artela-network/artela/app/interfaces"
+	"github.com/artela-network/artela/x/evm/artela/provider"
+	"github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/txs"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 )
 
 // CreateAspectRuntimeContextDecorator prepare the aspect runtime context
@@ -41,7 +43,11 @@ func (aspd AspectRuntimeContextDecorator) AnteHandle(ctx cosmos.Context, tx cosm
 		// this handler is for eth transaction only, should be 1 message for eth transaction.
 		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
 		aspectCtx := types.NewAspectRuntimeContext()
-		aspectCtx.SetEthTxContext(ethTxContext)
+		protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
+		jitManager := inherent.NewManager(protocol)
+
+		// update EthTxContext and JIT manager
+		aspectCtx.SetEthTxContext(ethTxContext, jitManager)
 		aspectCtx.WithCosmosContext(ctx)
 
 		ctx = ctx.WithValue(types.AspectContextKey, aspectCtx)

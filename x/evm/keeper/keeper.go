@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -28,7 +29,6 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	artelaType "github.com/artela-network/aspect-core/types"
 	cosmosAspect "github.com/cosmos/cosmos-sdk/aspect/cosmos"
 
@@ -140,10 +140,6 @@ func NewKeeper(
 
 	api.NewAspectRuntime(aspectRuntimeContext, app.CreateQueryContext, k.GetChainConfig)
 
-	// init jit inherent
-	newAspectProtocol := provider.NewAspectProtocolProvider(aspectRuntimeContext.EthTxContext)
-	jit_inherent.Init(newAspectProtocol)
-
 	api.NewEvmHostInstance(app.CreateQueryContext, k.EthCall)
 	artelaType.GetEvmHostHook = api.GetEvmHostInstance
 
@@ -151,6 +147,7 @@ func NewKeeper(
 	artelaType.SetAspectContext = aspectRuntimeContext.AspectContext().Add
 
 	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
+	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	return k
 }
 
@@ -169,6 +166,16 @@ func (k Keeper) GetAspectCosmosProvider() cosmosAspect.AspectCosmosProvider {
 
 func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {
 	return k.aspectRuntimeContext
+}
+
+func (k Keeper) JITSenderAspectByContext(ctx context.Context, userOpHash common.Hash) common.Address {
+	aspectCtx, ok := ctx.(*artvmtype.AspectRuntimeContext)
+	if !ok {
+		// TODO add log
+		// logger.Debug("JITSenderAspectByContext: unwrap AspectRuntimeContext failed")
+		return common.Address{}
+	}
+	return aspectCtx.JITManager().SenderAspect(userOpHash)
 }
 
 // ----------------------------------------------------------------------------
