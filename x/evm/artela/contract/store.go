@@ -105,6 +105,9 @@ func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context) (map[string]int64, e
 func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) *uint256.Int {
 	// get last value
 	version := k.GetAspectLastVersion(ctx, aspectId)
+	if len(code) == 0 {
+		return version
+	}
 
 	// store code
 	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
@@ -167,6 +170,10 @@ func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Addr
 //	@param prop
 //	@return error
 func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property) error {
+
+	if len(prop) == 0 {
+		return nil
+	}
 
 	// get treemap value
 	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
@@ -519,6 +526,9 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 //	@param point  JoinPointRunType value, @see join_point_type.go
 //	@return bool Execute Result
 func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int, point *big.Int) error {
+	if version.Uint64() == 0 || point.Int64() == 0 {
+		return nil
+	}
 	//check point
 	_, ok := artelasdkType.CheckIsJoinPoint(point)
 	if !ok {
