@@ -175,12 +175,22 @@ func (k *AspectNativeContract) version(ctx sdk.Context, method *abi.Method, aspe
 func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, contract common.Address, isContract bool) (*evmtypes.MsgEthereumTxResponse, error) {
 
 	aspectInfo := make([]types.AspectInfo, 0)
+	deduplicationMap := make(map[string]uint64, 0)
 	if isContract {
-		aspects, err := k.aspectService.GetBoundAspectForAddr(ctx.BlockHeight()-1, contract)
+		aspects, err := k.aspectService.GetBoundAspectForAddr(ctx.BlockHeight(), contract)
 		if err != nil {
 			return nil, err
 		}
+		aspectAccounts, verErr := k.aspectService.GetAccountVerifiers(ctx.BlockHeight(), contract)
+		if verErr != nil {
+			return nil, verErr
+		}
+
 		for _, aspect := range aspects {
+			if _, exist := deduplicationMap[aspect.AspectId]; exist {
+				continue
+			}
+			deduplicationMap[aspect.AspectId] = aspect.Version
 			info := types.AspectInfo{
 				AspectId: common.HexToAddress(aspect.AspectId),
 				Version:  aspect.Version,
@@ -188,12 +198,30 @@ func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, co
 			}
 			aspectInfo = append(aspectInfo, info)
 		}
+
+		for _, aspect := range aspectAccounts {
+			if _, exist := deduplicationMap[aspect.AspectId]; exist {
+				continue
+			}
+			deduplicationMap[aspect.AspectId] = aspect.Version
+			info := types.AspectInfo{
+				AspectId: common.HexToAddress(aspect.AspectId),
+				Version:  aspect.Version,
+				Priority: int8(aspect.Priority),
+			}
+			aspectInfo = append(aspectInfo, info)
+		}
+
 	} else {
-		aspectAccounts, verErr := k.aspectService.GetAccountVerifiers(ctx.BlockHeight()-1, contract)
+		aspectAccounts, verErr := k.aspectService.GetAccountVerifiers(ctx.BlockHeight(), contract)
 		if verErr != nil {
 			return nil, verErr
 		}
 		for _, aspect := range aspectAccounts {
+			if _, exist := deduplicationMap[aspect.AspectId]; exist {
+				continue
+			}
+			deduplicationMap[aspect.AspectId] = aspect.Version
 			info := types.AspectInfo{
 				AspectId: common.HexToAddress(aspect.AspectId),
 				Version:  aspect.Version,
@@ -262,7 +290,17 @@ func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectI
 }
 
 func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property, joinPoint *big.Int) (*evmtypes.MsgEthereumTxResponse, error) {
+	if len(code) == 0 && len(properties) == 0 && joinPoint == nil {
+		return &evmtypes.MsgEthereumTxResponse{
+			GasUsed: ctx.GasMeter().GasConsumed(),
+			VmError: "",
+			Ret:     nil,
+			Logs:    nil,
+		}, nil
+	}
+
 	aspectVersion := k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
+
 	err := k.aspectService.aspectStore.StoreAspectJP(ctx, aspectId, aspectVersion, joinPoint)
 	if err != nil {
 		return nil, err
