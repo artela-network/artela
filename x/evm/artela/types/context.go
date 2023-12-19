@@ -325,12 +325,12 @@ func NewExtBlockContext() *ExtBlockContext {
 
 func (c *ExtBlockContext) WithBlockConfig(
 	evidenceList []abci.Misbehavior,
-	lastCommitInfo *abci.CommitInfo,
-	rpcClient *client.Context,
+	lastCommitInfo abci.CommitInfo,
+	rpcClient client.Context,
 ) *ExtBlockContext {
 	c.evidenceList = evidenceList
-	c.lastCommitInfo = *lastCommitInfo
-	c.getRpcClient = *rpcClient
+	c.lastCommitInfo = lastCommitInfo
+	c.getRpcClient = rpcClient
 	return c
 }
 

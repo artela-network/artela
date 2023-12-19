@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -30,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	artelaType "github.com/artela-network/aspect-core/types"
-	cosmosAspect "github.com/cosmos/cosmos-sdk/aspect/cosmos"
 
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/types"
@@ -143,8 +141,8 @@ func NewKeeper(
 	api.NewEvmHostInstance(app.CreateQueryContext, k.EthCall)
 	artelaType.GetEvmHostHook = api.GetEvmHostInstance
 
-	artelaType.GetAspectContext = aspectRuntimeContext.AspectContext().Get
-	artelaType.SetAspectContext = aspectRuntimeContext.AspectContext().Add
+	artelaType.GetAspectContext = k.GetAspectContext
+	artelaType.SetAspectContext = k.SetAspectContext
 
 	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
@@ -153,29 +151,11 @@ func NewKeeper(
 
 func (k *Keeper) SetClientContext(ctx client.Context) {
 	k.clientContext = ctx
-	k.aspectRuntimeContext.ExtBlockContext().WithBlockConfig(nil, nil, &ctx)
+	// k.aspectRuntimeContext.ExtBlockContext().WithBlockConfig(nil, nil, &ctx)
 }
 
 func (k Keeper) GetClientContext() client.Context {
 	return k.clientContext
-}
-
-func (k Keeper) GetAspectCosmosProvider() cosmosAspect.AspectCosmosProvider {
-	return k.aspect
-}
-
-func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {
-	return k.aspectRuntimeContext
-}
-
-func (k Keeper) JITSenderAspectByContext(ctx context.Context, userOpHash common.Hash) common.Address {
-	aspectCtx, ok := ctx.(*artvmtype.AspectRuntimeContext)
-	if !ok {
-		// TODO add log
-		// logger.Debug("JITSenderAspectByContext: unwrap AspectRuntimeContext failed")
-		return common.Address{}
-	}
-	return aspectCtx.JITManager().SenderAspect(userOpHash)
 }
 
 // ----------------------------------------------------------------------------

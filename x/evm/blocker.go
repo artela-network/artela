@@ -21,7 +21,7 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeg
 	// Instead, it suggests saving it to the keeper.
 	extBlockCtx := artelatypes.NewExtBlockContext()
 	rpcContext := k.GetClientContext()
-	extBlockCtx = extBlockCtx.WithBlockConfig(beginBlock.ByzantineValidators, &beginBlock.LastCommitInfo, &rpcContext)
+	extBlockCtx = extBlockCtx.WithBlockConfig(beginBlock.ByzantineValidators, beginBlock.LastCommitInfo, rpcContext)
 	k.ExtBlockContext = extBlockCtx
 
 	k.WithChainID(ctx)
