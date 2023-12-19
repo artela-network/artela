@@ -303,7 +303,7 @@ func (b *BackendImpl) GetCode(address common.Address, blockNrOrHash rpc.BlockNum
 
 // GetStorageAt returns the contract storage at the given address, block number, and key.
 func (b *BackendImpl) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	blockNum, err := b.getBlockNumber(blockNrOrHash)
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
 	if err != nil {
 		return nil, err
 	}
@@ -320,23 +320,6 @@ func (b *BackendImpl) GetStorageAt(address common.Address, key string, blockNrOr
 
 	value := common.HexToHash(res.Value)
 	return value.Bytes(), nil
-}
-
-func (b *BackendImpl) getBlockNumber(blockNrOrHash rpc.BlockNumberOrHash) (rpc.BlockNumber, error) {
-	switch {
-	case blockNrOrHash.BlockHash == nil && blockNrOrHash.BlockNumber == nil:
-		return rpc.EarliestBlockNumber, fmt.Errorf("types BlockHash and BlockNumber cannot be both nil")
-	case blockNrOrHash.BlockHash != nil:
-		block, err := b.BlockByHash(b.ctx, *blockNrOrHash.BlockHash)
-		if err != nil {
-			return rpc.EarliestBlockNumber, err
-		}
-		return rpc.BlockNumber(block.Number().Int64()), nil
-	case blockNrOrHash.BlockNumber != nil:
-		return *blockNrOrHash.BlockNumber, nil
-	default:
-		return rpc.EarliestBlockNumber, nil
-	}
 }
 
 // BlockBloom query block bloom filter from block results
