@@ -34,7 +34,7 @@ service Query {
     option (google.api.http).get = "/artela/evm/v1/balances/{address}";
   }
 
-  // Storage queries the balance of all coins for a single account.
+  // Storage queries a single slot of evm state for a single account.
   rpc Storage(QueryStorageRequest) returns (QueryStorageResponse) {
     option (google.api.http).get = "/artela/evm/v1/storage/{address}/{key}";
   }
