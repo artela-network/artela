@@ -32,10 +32,10 @@ func newEVMPostHandler(app *baseapp.BaseApp, options PostDecorators) cosmos.Post
 
 // newCosmosPostHandler creates the default post handler for Cosmos transactions
 func newCosmosPostHandler(options PostDecorators) cosmos.PostHandler {
-	return cosmos.ChainPostDecorators()
+	return cosmos.ChainPostDecorators(cosmos.Terminator{})
 }
 
 // newCosmosPostHandlerEip712 creates the post handler for transactions signed with EIP712
 func newLegacyCosmosPostHandlerEip712(options PostDecorators) cosmos.PostHandler {
-	return cosmos.ChainPostDecorators()
+	return cosmos.ChainPostDecorators(cosmos.Terminator{})
 }
