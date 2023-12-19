@@ -484,7 +484,7 @@ func (s *BlockChainAPI) GetCode(ctx context.Context, address common.Address, blo
 // block number. The rpc.LatestBlockNumber and rpc.PendingBlockNumber meta block
 // numbers are also allowed.
 func (s *BlockChainAPI) GetStorageAt(ctx context.Context, address common.Address, hexKey string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	return hexutil.Bytes{}, errors.New("GetStorageAt is not implemented")
+	return s.b.GetStorageAt(address, hexKey, blockNrOrHash)
 }
 
 // OverrideAccount indicates the overriding fields of account during the execution
