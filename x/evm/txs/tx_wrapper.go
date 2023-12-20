@@ -3,22 +3,20 @@ package txs
 import (
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/ethereum/utils"
 	"math/big"
 
-	"github.com/artela-network/aspect-core/djpm"
-
-	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-
 	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/artela/ethereum/utils"
 
-	sdkmath "cosmossdk.io/math"
+	// rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	codec "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -270,6 +268,7 @@ func (msg *MsgEthereumTx) GetSigners() []cosmos.AccAddress {
 		panic(err)
 	}
 
+	// ctx := rpctypes.ContextWithHeight(blockNum.Int64())
 	sender, err := msg.GetSender(data.GetChainID())
 	if err != nil {
 		panic(err)
@@ -341,11 +340,9 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err 
 		tx := msg.AsTransaction()
 		// retrieve sender info from aspect if tx is not signed
 		if utils.IsCustomizedVerification(tx) {
-			sender, _, err := djpm.AspectInstance().GetSenderAndCallData(-1, tx)
-			if err != nil {
-				return common.Address{}, err
-			}
-			from = sender
+
+			// TODO, more checkings, should never reach here
+			return common.Address{}, errors.New("failed to get sender of customized tx")
 		} else {
 			signer := ethereum.LatestSignerForChainID(chainID)
 			from, err = signer.Sender(tx)

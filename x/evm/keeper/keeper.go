@@ -2,9 +2,7 @@ package keeper
 
 import (
 	"math/big"
-	"sync"
 
-	"github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 
@@ -31,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	artelaType "github.com/artela-network/aspect-core/types"
-	cosmosAspect "github.com/cosmos/cosmos-sdk/aspect/cosmos"
 
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/types"
@@ -81,7 +78,8 @@ type Keeper struct {
 
 	clientContext client.Context
 
-	Lock sync.Mutex
+	// store the block context, this will be fresh every block.
+	ExtBlockContext *artvmtype.ExtBlockContext
 }
 
 // NewKeeper generates new evm module keeper
@@ -110,7 +108,8 @@ func NewKeeper(
 	// init aspect
 	aspect := provider.NewArtelaProvider(storeKey, app.CreateQueryContext, app.LastBlockHeight)
 	// new Aspect Runtime Context
-	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext(storeKey)
+	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
+	aspectRuntimeContext.Init(storeKey)
 
 	// init host api instance
 	// new AspectStateHostApi instance
@@ -139,35 +138,24 @@ func NewKeeper(
 
 	api.NewAspectRuntime(aspectRuntimeContext, app.CreateQueryContext, k.GetChainConfig)
 
-	// init jit inherent
-	newAspectProtocol := provider.NewAspectProtocolProvider(aspectRuntimeContext.EthTxContext)
-	jit_inherent.Init(newAspectProtocol)
-
 	api.NewEvmHostInstance(app.CreateQueryContext, k.EthCall)
 	artelaType.GetEvmHostHook = api.GetEvmHostInstance
 
-	artelaType.GetAspectContext = aspectRuntimeContext.AspectContext().Get
-	artelaType.SetAspectContext = aspectRuntimeContext.AspectContext().Add
+	artelaType.GetAspectContext = k.GetAspectContext
+	artelaType.SetAspectContext = k.SetAspectContext
 
 	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
+	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	return k
 }
 
 func (k *Keeper) SetClientContext(ctx client.Context) {
 	k.clientContext = ctx
-	k.aspectRuntimeContext.ExtBlockContext().WithRpcClient(ctx)
+	// k.aspectRuntimeContext.ExtBlockContext().WithBlockConfig(nil, nil, &ctx)
 }
 
 func (k Keeper) GetClientContext() client.Context {
 	return k.clientContext
-}
-
-func (k Keeper) GetAspectCosmosProvider() cosmosAspect.AspectCosmosProvider {
-	return k.aspect
-}
-
-func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {
-	return k.aspectRuntimeContext
 }
 
 // ----------------------------------------------------------------------------

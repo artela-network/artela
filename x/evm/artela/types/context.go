@@ -1,7 +1,11 @@
 package types
 
 import (
+	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -10,7 +14,6 @@ import (
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"sync"
 
 	"github.com/artela-network/artela-evm/vm"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -18,31 +21,73 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	statedb "github.com/artela-network/artela/x/evm/states"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 )
+
+const (
+	AspectContextKey   cosmos.ContextKey = "aspect-ctx"
+	ExtBlockContextKey cosmos.ContextKey = "block-ctx"
+)
+
+var cachedStoreKey storetypes.StoreKey
 
 type HistoryStoreBuilder func(height int64, keyPrefix string) (prefix.Store, error)
 type ContextBuilder func(height int64, prove bool) (cosmos.Context, error)
 
 type GetLastBlockHeight func() int64
 
+// AspectRuntimeContext is the contextual object required for Aspect execution,
+// containing information related to transactions (tx) and blocks. Aspects at different
+// join points can access this context, and consequently, the context dynamically
+// adjusts its content based on the actual execution of blocks and transactions.
+
+// Here is the execution scenario of this context in the lifecycle of a tx process,
+// listed in the order of tx execution:
+
+// 1. initialization: Before each transaction execution, create the AspectRuntimeContext
+// and establish a bidirectional connection with the sdk context.
+
+// 2. withBlockConfig: Write information before the start of each block and destroy it
+// at the end of each block. Transfer it to the AspectRuntimeContext before the execution
+// of tx in the deliver state through WithExtBlock.
+
+// 3. withEVM: Before Pre-tx-execute, incorporate the EVM context, including evm, stateDB,
+// evm tracer, message, message from, etc., and pass it to the AspectRuntimeContext through
+// WithTxContext.
+
+// 4. withReceipt: After the execution of the EVM, store the result in TxContext, enabling
+// subsequent JoinPoints to access the execution details of the tx.
+
+// 5. commit: Decide whether to commit at the end of each transaction. If committing is
+// necessary, write the result to the sdk context.
+
+// 6. destory: After each transaction execution, destroy the AspectRuntimeContext.
 type AspectRuntimeContext struct {
+	baseCtx context.Context
+
 	ethTxContext    *EthTxContext
 	aspectContext   *AspectContext
 	extBlockContext *ExtBlockContext
 	aspectState     *AspectState
 	cosmosCtx       cosmos.Context
 	storeKey        storetypes.StoreKey
+
+	jitManager *inherent.Manager
 }
 
-func NewAspectRuntimeContext(storeKey storetypes.StoreKey) *AspectRuntimeContext {
+func NewAspectRuntimeContext() *AspectRuntimeContext {
 	return &AspectRuntimeContext{
-		ethTxContext:    nil,
 		cosmosCtx:       cosmos.Context{},
 		aspectContext:   NewAspectContext(),
 		extBlockContext: NewExtBlockContext(),
 		aspectState:     NewAspectState(),
-		storeKey:        storeKey,
+		storeKey:        cachedStoreKey,
 	}
+}
+
+func (c *AspectRuntimeContext) Init(storeKey storetypes.StoreKey) {
+	cachedStoreKey = storeKey
+	c.storeKey = storeKey
 }
 
 func (c *AspectRuntimeContext) WithCosmosContext(newTxCtx cosmos.Context) {
@@ -55,9 +100,14 @@ func (c *AspectRuntimeContext) StoreKey() storetypes.StoreKey {
 	return c.storeKey
 }
 
-func (c *AspectRuntimeContext) SetEthTxContext(newTxCtx *EthTxContext) {
+func (c *AspectRuntimeContext) SetEthTxContext(newTxCtx *EthTxContext, jitManager *inherent.Manager) {
 	c.ethTxContext = newTxCtx
 	c.aspectContext = NewAspectContext()
+	c.jitManager = jitManager
+}
+
+func (c *AspectRuntimeContext) SetExtBlockContext(newBlockCtx *ExtBlockContext) {
+	c.extBlockContext = newBlockCtx
 }
 
 func (c *AspectRuntimeContext) ExtBlockContext() *ExtBlockContext {
@@ -71,8 +121,13 @@ func (c *AspectRuntimeContext) EthTxContext() *EthTxContext {
 func (c *AspectRuntimeContext) AspectContext() *AspectContext {
 	return c.aspectContext
 }
+
 func (c *AspectRuntimeContext) AspectState() *AspectState {
 	return c.aspectState
+}
+
+func (c *AspectRuntimeContext) JITManager() *inherent.Manager {
+	return c.jitManager
 }
 
 func (c *AspectRuntimeContext) StateDb() vm.StateDB {
@@ -96,6 +151,30 @@ func (c *AspectRuntimeContext) ClearContext() {
 	contractAddress := c.EthTxContext().TxTo()
 	c.AspectContext().Clear(contractAddress)
 	c.ethTxContext = nil
+}
+
+func (c *AspectRuntimeContext) Destory() {
+	c.ClearBlockContext()
+	if c.ExtBlockContext() != nil {
+		c.EthTxContext().ClearEvmObject()
+	}
+	c.ClearContext()
+}
+
+func (c *AspectRuntimeContext) Deadline() (deadline time.Time, ok bool) {
+	return c.baseCtx.Deadline()
+}
+
+func (c *AspectRuntimeContext) Done() <-chan struct{} {
+	return c.baseCtx.Done()
+}
+
+func (c *AspectRuntimeContext) Err() error {
+	return c.baseCtx.Err()
+}
+
+func (c *AspectRuntimeContext) Value(key interface{}) interface{} {
+	return c.baseCtx.Value(key)
 }
 
 type EthTxContext struct {
@@ -144,32 +223,19 @@ func (c *EthTxContext) ExtProperties() map[string]interface{} { return c.extProp
 func (c *EthTxContext) LastEvm() *vm.EVM                      { return c.lastEvm }
 func (c *EthTxContext) Message() *core.Message                { return c.msg }
 
-func (c *EthTxContext) WithFrom(from common.Address) *EthTxContext {
+func (c *EthTxContext) WithEVM(
+	from common.Address,
+	msg *core.Message,
+	lastEvm *vm.EVM,
+	cfg *statedb.EVMConfig,
+	monitor *vm.Tracer,
+	db vm.StateDB,
+) *EthTxContext {
 	c.from = from
-	return c
-}
-
-func (c *EthTxContext) WithMessage(msg *core.Message) *EthTxContext {
 	c.msg = msg
-	return c
-}
-
-func (c *EthTxContext) WithLastEvm(lastEvm *vm.EVM) *EthTxContext {
 	c.lastEvm = lastEvm
-	return c
-}
-
-func (c *EthTxContext) WithEvmCfg(cfg *statedb.EVMConfig) *EthTxContext {
 	c.evmCfg = cfg
-	return c
-}
-
-func (c *EthTxContext) WithVmMonitor(monitor *vm.Tracer) *EthTxContext {
 	c.vmTracer = monitor
-	return c
-}
-
-func (c *EthTxContext) WithStateDB(db vm.StateDB) *EthTxContext {
 	c.stateDb = db
 	return c
 }
@@ -257,18 +323,14 @@ func NewExtBlockContext() *ExtBlockContext {
 	return &ExtBlockContext{}
 }
 
-func (c *ExtBlockContext) WithEvidenceList(cfg []abci.Misbehavior) *ExtBlockContext {
-	c.evidenceList = cfg
-	return c
-}
-
-func (c *ExtBlockContext) WithLastCommit(cfg abci.CommitInfo) *ExtBlockContext {
-	c.lastCommitInfo = cfg
-	return c
-}
-
-func (c *ExtBlockContext) WithRpcClient(cfg client.Context) *ExtBlockContext {
-	c.getRpcClient = cfg
+func (c *ExtBlockContext) WithBlockConfig(
+	evidenceList []abci.Misbehavior,
+	lastCommitInfo abci.CommitInfo,
+	rpcClient client.Context,
+) *ExtBlockContext {
+	c.evidenceList = evidenceList
+	c.lastCommitInfo = lastCommitInfo
+	c.getRpcClient = rpcClient
 	return c
 }
 
@@ -358,6 +420,7 @@ func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, ke
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
+	fmt.Println(fmt.Sprintf("SetAspectState set, ---aspectID:%s---, ---key:%s---, ---value:%s---", ctx.AspectId.String(), key, value))
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
 		object.Set(aspectPropertyKey, []byte(value))
 		return true
@@ -367,6 +430,7 @@ func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, ke
 
 // RemoveAspectState RemoveAspectState( key string) bool
 func (k *AspectRuntimeContext) RemoveAspectState(ctx *artelatypes.RunnerContext, key string) bool {
+	fmt.Println("----RemoveAspectState, Key: ", key)
 	point := GetAspectStatePoint(ctx.Point)
 	if len(point) == 0 {
 		return false
@@ -375,6 +439,7 @@ func (k *AspectRuntimeContext) RemoveAspectState(ctx *artelatypes.RunnerContext,
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
+	fmt.Println(fmt.Sprintf("SetAspectState delete, ---aspectID:%s---, ---key:%s---", ctx.AspectId.String(), key))
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
 		object.Set(aspectPropertyKey, nil)
 		return true

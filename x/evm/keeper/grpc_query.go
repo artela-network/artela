@@ -29,9 +29,11 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
+	"github.com/artela-network/artela/x/evm/artela/provider"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 )
 
 var _ txs.QueryServer = Keeper{}
@@ -216,11 +218,14 @@ func (k Keeper) Params(c context.Context, _ *txs.QueryParamsRequest) (*txs.Query
 
 // EthCall implements eth_call rpc api.
 func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEthereumTxResponse, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
+	}()
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
-	k.Lock.Lock()
-	defer k.Lock.Unlock()
 
 	ctx := cosmos.UnwrapSDKContext(c)
 
@@ -249,18 +254,18 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	}
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
-	// set aspect tx context
-	ethTxContext := artelatypes.NewEthTxContext(args.ToTransaction().AsEthCallTransaction())
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
-
-	defer k.GetAspectRuntimeContext().EthTxContext().ClearEvmObject()
+	// Aspect Runtime Context Lifecycle: create aspect context.
+	// This marks the beginning of running an aspect of EthCall, creating the aspect context,
+	// and establishing the link with the SDK context.
+	ctx, aspectCtx := k.WithAspectContext(ctx, args.ToTransaction().AsEthCallTransaction())
+	defer aspectCtx.Destory()
 
 	// pass false to not commit StateDB
-	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
+	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	return res, nil
 }
 
@@ -269,8 +274,6 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
-	k.Lock.Lock()
-	defer k.Lock.Unlock()
 
 	ctx := cosmos.UnwrapSDKContext(c)
 	chainID, err := getChainID(ctx, req.ChainId)
@@ -313,10 +316,12 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 		hi = req.GasCap
 	}
 	txMsg := args.ToTransaction()
-	// set aspect tx context
-	ethTxContext := artelatypes.NewEthTxContext(txMsg.AsTransaction())
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
+
+	// Aspect Runtime Context Lifecycle: create aspect context.
+	// This marks the beginning of running an aspect of EstimateGas, creating the aspect context,
+	// and establishing the link with the SDK context.
+	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction())
+	defer aspectCtx.Destory()
 
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
@@ -344,7 +349,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 		// update the message with the new gas value
 		msg.GasLimit = gas
 		// pass false to not commit StateDB
-		rsp, err = k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
+		rsp, err = k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) {
 				return true, nil, nil // Special case, raise gas limit
@@ -388,8 +393,6 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
-	k.Lock.Lock()
-	defer k.Lock.Unlock()
 
 	if req.TraceConfig != nil && req.TraceConfig.Limit < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "output limit cannot be negative, got %d", req.TraceConfig.Limit)
@@ -425,12 +428,14 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		}
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
-		// set aspect tx context
-		ethTxContext := artelatypes.NewEthTxContext(ethTx)
-		k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-		k.GetAspectRuntimeContext().WithCosmosContext(ctx)
 
-		rsp, err := k.ApplyMessageWithConfig(ctx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
+		// Aspect Runtime Context Lifecycle: create aspect context.
+		// This marks the beginning of running an aspect of TraceTx, creating the aspect context,
+		// and establishing the link with the SDK context.
+		ctx, aspectCtx := k.WithAspectContext(ctx, ethTx)
+		defer aspectCtx.Destory()
+
+		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
 		}
@@ -540,8 +545,6 @@ func (k *Keeper) traceTx(
 	commitMessage bool,
 	tracerJSONConfig json.RawMessage,
 ) (*interface{}, uint, error) {
-	k.Lock.Lock()
-	defer k.Lock.Unlock()
 	// Assemble the structured logger or the JavaScript tracer
 	var (
 		tracer    tracers.Tracer
@@ -603,12 +606,14 @@ func (k *Keeper) traceTx(
 			tracer.Stop(errors.New("execution timeout"))
 		}
 	}()
-	// set aspect tx context
-	ethTxContext := artelatypes.NewEthTxContext(tx)
-	k.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
-	k.GetAspectRuntimeContext().WithCosmosContext(ctx)
 
-	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
+	// Aspect Runtime Context Lifecycle: create aspect context.
+	// This marks the beginning of running an aspect of TraceBlock or TraceTx, creating the aspect context,
+	// and establishing the link with the SDK context.
+	ctx, aspectCtx := k.WithAspectContext(ctx, tx)
+	defer aspectCtx.Destory()
+
+	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}
@@ -639,6 +644,30 @@ func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.Que
 	}
 
 	return res, nil
+}
+
+func (k Keeper) GetSender(c context.Context, in *txs.MsgEthereumTx) (*txs.GetSenderResponse, error) {
+	ctx := cosmos.UnwrapSDKContext(c)
+
+	tx := in.AsTransaction()
+	sender, _, err := k.tryAspectVerifier(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	return &txs.GetSenderResponse{Sender: sender.String()}, nil
+}
+
+// WithAspectContext creates the Aspect Context and establishes the link to the SDK context.
+func (k Keeper) WithAspectContext(ctx cosmos.Context, tx *ethereum.Transaction) (cosmos.Context, *artelatypes.AspectRuntimeContext) {
+	ethTxContext := artelatypes.NewEthTxContext(tx)
+
+	aspectCtx := artelatypes.NewAspectRuntimeContext()
+	protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
+	jitManager := inherent.NewManager(protocol)
+
+	aspectCtx.SetEthTxContext(ethTxContext, jitManager)
+	aspectCtx.WithCosmosContext(ctx)
+	return ctx.WithValue(artelatypes.AspectContextKey, aspectCtx), aspectCtx
 }
 
 // getChainID parse chainID from current context if not provided

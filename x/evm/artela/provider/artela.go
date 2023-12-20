@@ -24,6 +24,7 @@ var _ cosmos.AspectCosmosProvider = (*ArtelaProvider)(nil)
 type ArtelaProvider struct {
 	service        *contract.AspectService
 	getCtxByHeight types.ContextBuilder
+	storeKey       storetypes.StoreKey
 }
 
 func NewArtelaProvider(storeKey storetypes.StoreKey,
@@ -32,7 +33,7 @@ func NewArtelaProvider(storeKey storetypes.StoreKey,
 ) *ArtelaProvider {
 	service := contract.NewAspectService(storeKey, getCtxByHeight, getBlockHeight)
 
-	return &ArtelaProvider{service: service, getCtxByHeight: getCtxByHeight}
+	return &ArtelaProvider{service, getCtxByHeight, storeKey}
 }
 
 func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, from common.Address, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {

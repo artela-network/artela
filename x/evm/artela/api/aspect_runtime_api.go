@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+
 	"github.com/artela-network/artela/x/evm/artela/contract"
 	asptypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -28,13 +30,22 @@ func NewAspectRuntime(
 	getCtxByHeight types.ContextBuilder,
 	getEthereumConfig func(ctx sdk.Context) *ethparams.ChainConfig,
 ) { //nolint:gofumpt
-	aspectRuntimeInstance = &aspectRuntimeHostApi{
+	aspectRuntimeInstance = createAspectRuntime(aspectRuntimeContext, getCtxByHeight, getEthereumConfig)
+}
+
+func createAspectRuntime(aspectRuntimeContext *types.AspectRuntimeContext,
+	getCtxByHeight types.ContextBuilder,
+	getEthereumConfig func(ctx sdk.Context) *ethparams.ChainConfig,
+) *aspectRuntimeHostApi {
+
+	instance := &aspectRuntimeHostApi{
 		aspectRuntimeContext: aspectRuntimeContext,
 		getCtxByHeight:       getCtxByHeight,
 		getEthereumConfig:    getEthereumConfig,
 		execMap:              make(map[string]datactx.Executor),
 	}
-	aspectRuntimeInstance.Register()
+	instance.Register()
+	return instance
 }
 
 func (k *aspectRuntimeHostApi) Register() {
@@ -58,11 +69,16 @@ func (k *aspectRuntimeHostApi) Register() {
 	k.execMap[asptypes.BlockTxs] = datactx.NewEthBlockTxs(k.aspectRuntimeContext.ExtBlockContext)
 }
 
-func GetRuntimeInstance() (asptypes.RuntimeHostApi, error) {
-	if aspectRuntimeInstance == nil {
-		return nil, errors.New("RuntimeHostApi not init")
+func GetRuntimeInstance(ctx context.Context) (asptypes.RuntimeHostApi, error) {
+	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
+	if !ok {
+		return nil, errors.New("GetRuntimeInstance: unwrap AspectRuntimeContext failed")
 	}
-	return aspectRuntimeInstance, nil
+	return createAspectRuntime(
+		aspectCtx,
+		aspectRuntimeInstance.getCtxByHeight,
+		aspectRuntimeInstance.getEthereumConfig,
+	), nil
 }
 
 func (a aspectRuntimeHostApi) SetAspectContext(ctx *asptypes.RunnerContext, key, value string) bool {

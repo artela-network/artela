@@ -7,6 +7,7 @@ import (
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
+	"github.com/artela-network/artela/app/interfaces"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
@@ -17,8 +18,8 @@ import (
 // if London hard fork or fee market params (EIP-1559) are enabled.
 // If fee is high enough, then call next AnteHandler
 type EthMinGasPriceDecorator struct {
-	feesKeeper FeeKeeper
-	evmKeeper  EVMKeeper
+	feesKeeper interfaces.FeeKeeper
+	evmKeeper  interfaces.EVMKeeper
 }
 
 // EthMempoolFeeDecorator will check if the transaction's effective fee is at least as large
@@ -28,18 +29,18 @@ type EthMinGasPriceDecorator struct {
 // If fee is high enough or not CheckTx, then call next AnteHandler
 // CONTRACT: Tx must implement FeeTx to use MempoolFeeDecorator
 type EthMempoolFeeDecorator struct {
-	evmKeeper EVMKeeper
+	evmKeeper interfaces.EVMKeeper
 }
 
 // NewEthMinGasPriceDecorator creates a new MinGasPriceDecorator instance used only for
 // Ethereum transactions.
-func NewEthMinGasPriceDecorator(fk FeeKeeper, ek EVMKeeper) EthMinGasPriceDecorator {
+func NewEthMinGasPriceDecorator(fk interfaces.FeeKeeper, ek interfaces.EVMKeeper) EthMinGasPriceDecorator {
 	return EthMinGasPriceDecorator{feesKeeper: fk, evmKeeper: ek}
 }
 
 // NewEthMempoolFeeDecorator creates a new NewEthMempoolFeeDecorator instance used only for
 // Ethereum transactions.
-func NewEthMempoolFeeDecorator(ek EVMKeeper) EthMempoolFeeDecorator {
+func NewEthMempoolFeeDecorator(ek interfaces.EVMKeeper) EthMempoolFeeDecorator {
 	return EthMempoolFeeDecorator{
 		evmKeeper: ek,
 	}

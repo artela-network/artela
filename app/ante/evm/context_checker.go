@@ -14,16 +14,17 @@ import (
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/artela-network/artela/app/interfaces"
 	evmmodule "github.com/artela-network/artela/x/evm/types"
 )
 
 // EthSetupContextDecorator is adapted from SetUpContextDecorator from cosmos-cosmos, it ignores gas consumption
 // by setting the gas meter to infinite
 type EthSetupContextDecorator struct {
-	evmKeeper EVMKeeper
+	evmKeeper interfaces.EVMKeeper
 }
 
-func NewEthSetUpContextDecorator(evmKeeper EVMKeeper) EthSetupContextDecorator {
+func NewEthSetUpContextDecorator(evmKeeper interfaces.EVMKeeper) EthSetupContextDecorator {
 	return EthSetupContextDecorator{
 		evmKeeper: evmKeeper,
 	}
@@ -49,11 +50,11 @@ func (esc EthSetupContextDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx,
 
 // EthEmitEventDecorator emit events in ante handler in case of tx execution failed (out of block gas limit).
 type EthEmitEventDecorator struct {
-	evmKeeper EVMKeeper
+	evmKeeper interfaces.EVMKeeper
 }
 
 // NewEthEmitEventDecorator creates a new EthEmitEventDecorator
-func NewEthEmitEventDecorator(evmKeeper EVMKeeper) EthEmitEventDecorator {
+func NewEthEmitEventDecorator(evmKeeper interfaces.EVMKeeper) EthEmitEventDecorator {
 	return EthEmitEventDecorator{evmKeeper}
 }
 
@@ -83,11 +84,11 @@ func (eeed EthEmitEventDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, s
 
 // EthValidateBasicDecorator is adapted from ValidateBasicDecorator from cosmos-cosmos, it ignores ErrNoSignatures
 type EthValidateBasicDecorator struct {
-	evmKeeper EVMKeeper
+	evmKeeper interfaces.EVMKeeper
 }
 
 // NewEthValidateBasicDecorator creates a new EthValidateBasicDecorator
-func NewEthValidateBasicDecorator(ek EVMKeeper) EthValidateBasicDecorator {
+func NewEthValidateBasicDecorator(ek interfaces.EVMKeeper) EthValidateBasicDecorator {
 	return EthValidateBasicDecorator{
 		evmKeeper: ek,
 	}
@@ -108,7 +109,7 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx
 
 	// For eth type cosmos tx, some fields should be verified as zero values,
 	// since we will only verify the signature against the hash of the MsgEthereumTx.Data
-	wrapperTx, ok := tx.(protoTxProvider)
+	wrapperTx, ok := tx.(interfaces.ProtoTxProvider)
 	if !ok {
 		return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid tx type %T, didn't implement interface protoTxProvider", tx)
 	}

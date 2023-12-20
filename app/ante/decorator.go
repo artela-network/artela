@@ -16,6 +16,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
+	"github.com/artela-network/artela/app/interfaces"
 
 	cosmosante "github.com/artela-network/artela/app/ante/cosmos"
 	evmante "github.com/artela-network/artela/app/ante/evm"
@@ -34,8 +35,8 @@ type AnteDecorators struct {
 	DistributionKeeper anteutils.DistributionKeeper
 	IBCKeeper          *ibckeeper.Keeper
 	// StakingKeeper          vestingtypes.StakingKeeper
-	FeeKeeper              evmante.FeeKeeper
-	EvmKeeper              evmante.EVMKeeper
+	FeeKeeper              interfaces.FeeKeeper
+	EvmKeeper              interfaces.EVMKeeper
 	FeegrantKeeper         ante.FeegrantKeeper
 	ExtensionOptionChecker ante.ExtensionOptionChecker
 	SignModeHandler        authsigning.SignModeHandler
@@ -92,6 +93,7 @@ func newEVMAnteHandler(app *baseapp.BaseApp, options AnteDecorators) cosmos.Ante
 		// Check eth effective gas price against the global MinGasPrice
 		evmante.NewEthMinGasPriceDecorator(options.FeeKeeper, options.EvmKeeper),
 		evmante.NewEthValidateBasicDecorator(options.EvmKeeper),
+		evmante.NewAspectRuntimeContextDecorator(app, options.EvmKeeper),
 		evmante.NewEthSigVerificationDecorator(app, options.EvmKeeper),
 		evmante.NewEthAccountVerificationDecorator(options.AccountKeeper, options.EvmKeeper),
 		evmante.NewCanTransferDecorator(options.EvmKeeper),
