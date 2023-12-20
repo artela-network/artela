@@ -22,16 +22,18 @@ import (
 var _ cosmos.AspectCosmosProvider = (*ArtelaProvider)(nil)
 
 type ArtelaProvider struct {
-	service *contract.AspectService
+	service        *contract.AspectService
+	getCtxByHeight types.ContextBuilder
+	storeKey       storetypes.StoreKey
 }
 
 func NewArtelaProvider(storeKey storetypes.StoreKey,
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
-	getBlockHeight func() int64,
+	getCtxByHeight types.ContextBuilder,
+	getBlockHeight types.GetLastBlockHeight,
 ) *ArtelaProvider {
 	service := contract.NewAspectService(storeKey, getCtxByHeight, getBlockHeight)
 
-	return &ArtelaProvider{service: service}
+	return &ArtelaProvider{service, getCtxByHeight, storeKey}
 }
 
 func (j *ArtelaProvider) TxToPointRequest(sdkCtx sdk.Context, from common.Address, transaction *ethereum.Transaction, txIndex int64, baseFee *big.Int, innerTx *asptypes.EthStackTransaction) (*asptypes.EthTxAspect, error) {
@@ -131,19 +133,35 @@ func (ArtelaProvider) FilterAspectTx(tx sdk.Msg) bool {
 }
 
 func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
-	return j.service.GetAspectForAddr(blockNum, address)
+	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	if err != nil {
+		return nil, err
+	}
+	return j.service.GetAspectForAddr(heightCtx, address, false)
 }
 
 func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
-	return j.service.GetAccountVerifiers(blockNum, address)
+	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	if err != nil {
+		return nil, err
+	}
+	return j.service.GetAccountVerifiers(heightCtx, address, false)
 }
 
 func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
-	return j.service.GetAspectForBlock(blockNum)
+	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	if err != nil {
+		return nil, err
+	}
+	return j.service.GetAspectForBlock(heightCtx, false)
 }
 
 func (j *ArtelaProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
-	return j.service.GetAspectAccount(blockNum, aspectId)
+	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	if err != nil {
+		return nil, err
+	}
+	return j.service.GetAspectAccount(heightCtx, aspectId, false)
 }
 
 func (j *ArtelaProvider) GetLatestBlock() int64 {

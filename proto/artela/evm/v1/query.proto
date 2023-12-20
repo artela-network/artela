@@ -3,7 +3,7 @@ package artela.evm.v1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "artela/evm/v1/evm.proto";
-import "artela/evm/v1/txs.proto";
+import "artela/evm/v1/tx.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
@@ -34,7 +34,7 @@ service Query {
     option (google.api.http).get = "/artela/evm/v1/balances/{address}";
   }
 
-  // Storage queries the balance of all coins for a single account.
+  // Storage queries a single slot of evm state for a single account.
   rpc Storage(QueryStorageRequest) returns (QueryStorageResponse) {
     option (google.api.http).get = "/artela/evm/v1/storage/{address}/{key}";
   }
@@ -73,6 +73,11 @@ service Query {
   // it's similar to feemarket module's method, but also checks london hardfork status.
   rpc BaseFee(QueryBaseFeeRequest) returns (QueryBaseFeeResponse) {
     option (google.api.http).get = "/artela/evm/v1/base_fee";
+  }
+
+  // GetSender gets sender the tx
+  rpc GetSender(MsgEthereumTx) returns (GetSenderResponse) {
+    option (google.api.http).get = "/artela/evm/v1/get_sender";
   }
 }
 
@@ -295,4 +300,10 @@ message QueryBaseFeeRequest {}
 message QueryBaseFeeResponse {
   // base_fee is the EIP1559 base fee
   string base_fee = 1 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int"];
+}
+
+// GetSenderResponse returns the from address of tx.
+message GetSenderResponse {
+  // sender defines the from address of the tx.
+  string sender = 1;
 }

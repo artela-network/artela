@@ -19,7 +19,7 @@ const (
 	AttoArtela string = "aartela"
 
 	// BaseDenomUnit defines the base denomination unit for Artela.
-	// 1 artela = 1x10^{BaseDenomUnit} aartela
+	// 1 artela = 1x18^{BaseDenomUnit} aartela
 	BaseDenomUnit = 18
 
 	// DefaultGasPrice is default gas price for evm transactions

@@ -226,7 +226,11 @@ require (
 )
 
 replace (
+	github.com/artela-network/artela-evm => ../evm
+	github.com/artela-network/aspect-core => ../aspect-core
+	github.com/artela-network/aspect-runtime => ../aspect-runtime
+
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.3 // TODO artela: btcd/btcec become not valid for 0.23.x, need to dig into it
-	github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-beta-5
+	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

@@ -2,11 +2,13 @@ package keeper
 
 import (
 	"errors"
-	"github.com/artela-network/artela/ethereum/utils"
-	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/ethereum/go-ethereum/params"
+
 	errorsmod "cosmossdk.io/errors"
+	artelatype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/aspect-core/djpm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
@@ -54,7 +56,12 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 }
 
 func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {
-	return djpm.AspectInstance().GetSenderAndCallData(ctx.BlockHeight(), tx)
+	// retrieve aspectCtx from sdk.Context
+	aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
+	if !ok {
+		return common.Address{}, []byte{}, errors.New("ApplyMessageWithConfig: wrap *artelatype.AspectRuntimeContext failed")
+	}
+	return djpm.AspectInstance().GetSenderAndCallData(aspectCtx, ctx.BlockHeight(), tx)
 }
 
 func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer {

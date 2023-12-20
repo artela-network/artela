@@ -301,6 +301,27 @@ func (b *BackendImpl) GetCode(address common.Address, blockNrOrHash rpc.BlockNum
 	return res.Code, nil
 }
 
+// GetStorageAt returns the contract storage at the given address, block number, and key.
+func (b *BackendImpl) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &txs.QueryStorageRequest{
+		Address: address.String(),
+		Key:     key,
+	}
+
+	res, err := b.queryClient.Storage(rpctypes.ContextWithHeight(blockNum.Int64()), req)
+	if err != nil {
+		return nil, err
+	}
+
+	value := common.HexToHash(res.Value)
+	return value.Bytes(), nil
+}
+
 // BlockBloom query block bloom filter from block results
 func (b *BackendImpl) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.Bloom, error) {
 	for _, event := range blockRes.EndBlockEvents {

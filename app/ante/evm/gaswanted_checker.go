@@ -3,6 +3,7 @@ package evm
 import (
 	"math/big"
 
+	"github.com/artela-network/artela/app/interfaces"
 	"github.com/artela-network/artela/ethereum/types"
 
 	errorsmod "cosmossdk.io/errors"
@@ -14,14 +15,14 @@ import (
 // for BaseFee calculation.
 // NOTE: This decorator does not perform any validation
 type GasWantedDecorator struct {
-	evmKeeper       EVMKeeper
-	feeMarketKeeper FeeKeeper
+	evmKeeper       interfaces.EVMKeeper
+	feeMarketKeeper interfaces.FeeKeeper
 }
 
 // NewGasWantedDecorator creates a new NewGasWantedDecorator
 func NewGasWantedDecorator(
-	evmKeeper EVMKeeper,
-	feeKeeper FeeKeeper,
+	evmKeeper interfaces.EVMKeeper,
+	feeKeeper interfaces.FeeKeeper,
 ) GasWantedDecorator {
 	return GasWantedDecorator{
 		evmKeeper,

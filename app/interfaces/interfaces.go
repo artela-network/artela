@@ -1,8 +1,9 @@
-package evm
+package interfaces
 
 import (
-	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"math/big"
+
+	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 
@@ -49,6 +50,6 @@ type DynamicFeeEVMKeeper interface {
 	GetBaseFee(ctx cosmos.Context, ethCfg *params.ChainConfig) *big.Int
 }
 
-type protoTxProvider interface {
+type ProtoTxProvider interface {
 	GetProtoTx() *tx.Tx
 }

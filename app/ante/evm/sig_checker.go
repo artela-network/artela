@@ -1,7 +1,7 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/app/interfaces"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 
@@ -12,12 +12,12 @@ import (
 
 // EthSigVerificationDecorator validates an ethereum signatures
 type EthSigVerificationDecorator struct {
-	evmKeeper EVMKeeper
+	evmKeeper interfaces.EVMKeeper
 	app       *baseapp.BaseApp
 }
 
 // NewEthSigVerificationDecorator creates a new EthSigVerificationDecorator
-func NewEthSigVerificationDecorator(app *baseapp.BaseApp, ek EVMKeeper) EthSigVerificationDecorator {
+func NewEthSigVerificationDecorator(app *baseapp.BaseApp, ek interfaces.EVMKeeper) EthSigVerificationDecorator {
 	return EthSigVerificationDecorator{
 		evmKeeper: ek,
 		app:       app,
@@ -35,9 +35,6 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx cosmos.Context, tx cosmos
 		if !ok {
 			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*txs.MsgEthereumTx)(nil))
 		}
-
-		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
-		esvd.evmKeeper.GetAspectRuntimeContext().SetEthTxContext(ethTxContext)
 
 		ethTx := msgEthTx.AsTransaction()
 		sender, _, err := esvd.evmKeeper.VerifySig(ctx, ethTx)

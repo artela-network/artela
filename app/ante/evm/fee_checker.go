@@ -14,6 +14,7 @@ import (
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
+	"github.com/artela-network/artela/app/interfaces"
 )
 
 // NewDynamicFeeChecker returns a `TxFeeChecker` that applies a dynamic fee to
@@ -24,7 +25,7 @@ import (
 // - when `ExtensionOptionDynamicFeeTx` is omitted, `tipFeeCap` defaults to `MaxInt64`.
 // - when london hardfork is not enabled, it falls back to SDK default behavior (validator min-gas-prices).
 // - Tx priority is set to `effectiveGasPrice / DefaultPriorityReduction`.
-func NewDynamicFeeChecker(k DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
+func NewDynamicFeeChecker(k interfaces.DynamicFeeEVMKeeper) anteutils.TxFeeChecker {
 	return func(ctx cosmos.Context, feeTx cosmos.FeeTx) (cosmos.Coins, int64, error) {
 		if ctx.BlockHeight() == 0 {
 			// genesis transactions: fallback to min-gas-price logic

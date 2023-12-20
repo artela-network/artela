@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	evmante "github.com/artela-network/artela/app/ante/evm"
+	"github.com/artela-network/artela/app/interfaces"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -15,13 +15,13 @@ import (
 // If fee is high enough, then call next AnteHandler
 // CONTRACT: Tx must implement FeeTx to use MinGasPriceDecorator
 type MinGasPriceDecorator struct {
-	feesKeeper evmante.FeeKeeper
-	evmKeeper  evmante.EVMKeeper
+	feesKeeper interfaces.FeeKeeper
+	evmKeeper  interfaces.EVMKeeper
 }
 
 // NewMinGasPriceDecorator creates a new MinGasPriceDecorator instance used only for
 // Cosmos transactions.
-func NewMinGasPriceDecorator(fk evmante.FeeKeeper, ek evmante.EVMKeeper) MinGasPriceDecorator {
+func NewMinGasPriceDecorator(fk interfaces.FeeKeeper, ek interfaces.EVMKeeper) MinGasPriceDecorator {
 	return MinGasPriceDecorator{feesKeeper: fk, evmKeeper: ek}
 }
 

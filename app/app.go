@@ -128,6 +128,7 @@ import (
 	"github.com/artela-network/artela/app/ante"
 	ethante "github.com/artela-network/artela/app/ante/evm"
 	appparams "github.com/artela-network/artela/app/params"
+	"github.com/artela-network/artela/app/post"
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
@@ -751,6 +752,7 @@ func NewArtela(
 	app.SetEndBlocker(app.EndBlocker)
 	// init Aspect
 	bApp.SetAspect(app.EvmKeeper.GetAspectCosmosProvider())
+	app.setPostHandler()
 
 	// // aspect add ProposalHandler
 	// aspectProposalHandler := handle.NewArtelaProposalHandler(bApp.GetMemPool(), bApp)
@@ -859,6 +861,18 @@ func (app *Artela) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64)
 	}
 
 	app.SetAnteHandler(ante.NewAnteHandler(app.BaseApp, options))
+}
+
+func (app *Artela) setPostHandler() {
+	options := post.PostDecorators{
+		EvmKeeper: app.EvmKeeper,
+	}
+
+	if err := options.Validate(); err != nil {
+		panic(err)
+	}
+
+	app.SetPostHandler(post.NewPostHandler(app.BaseApp, options))
 }
 
 // Name returns the name of the App

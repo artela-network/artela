@@ -7,16 +7,26 @@ import (
 
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 
+	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 )
 
 // BeginBlock sets the cosmos Context and EIP155 chain id to the Keeper.
 func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeginBlock) {
-	k.GetAspectRuntimeContext().ExtBlockContext().WithEvidenceList(beginBlock.ByzantineValidators).WithLastCommit(beginBlock.LastCommitInfo).WithRpcClient(k.GetClientContext())
+
+	// Aspect Runtime Context Lifecycle: create and store ExtBlockContext
+	// due to the design of the block context in Cosmos SDK,
+	// the extBlockCtx cannot be saved directly to the context of the deliver state
+	// using code like ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, extBlockCtx).
+	// Instead, it suggests saving it to the keeper.
+	extBlockCtx := artelatypes.NewExtBlockContext()
+	rpcContext := k.GetClientContext()
+	extBlockCtx = extBlockCtx.WithBlockConfig(beginBlock.ByzantineValidators, beginBlock.LastCommitInfo, rpcContext)
+	k.ExtBlockContext = extBlockCtx
+
 	k.WithChainID(ctx)
 
 	// --------aspect OnBlockInitialize start ---  //
-	// TODO block level tx
 	/*header := types.ConvertEthBlockHeader(ctx.BlockHeader())
 	request := &asptypes.EthBlockAspect{Header: header, GasInfo: &asptypes.GasInfo{
 		GasWanted: 0,
@@ -29,7 +39,6 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeg
 	if hasErr {
 		ctx.Logger().Error("Aspect.OnBlockInitialize Return Error ", receiveErr.Error(), "height", request.Header.Number)
 	}*/
-
 	// --------aspect OnBlockInitialize end ---  //
 }
 
@@ -37,6 +46,9 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeg
 // KVStore. The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
 func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+	// Aspect Runtime Context Lifecycle: destory ExtBlockContext
+	k.ExtBlockContext = nil
+
 	// Gas costs are handled within msg handler so costs should be ignored
 	infCtx := ctx.WithGasMeter(cosmos.NewInfiniteGasMeter())
 
@@ -44,7 +56,6 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	k.EmitBlockBloomEvent(infCtx, bloom)
 
 	// --------aspect OnBlockFinalize start ---  //
-	// TODO block level tx
 	/*header := types.ConvertEthBlockHeader(ctx.BlockHeader())
 	request := &asptypes.EthBlockAspect{Header: header, GasInfo: &asptypes.GasInfo{
 		GasWanted: 0,
@@ -56,11 +67,9 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	hasErr, receiveErr := receive.HasErr()
 	if hasErr {
 		ctx.Logger().Error("Aspect.OnBlockFinalize Return Error ", receiveErr.Error(), "height", request.Header.Number)
-	}*/
-
+	}
+	*/
 	// --------aspect OnBlockFinalize end ---  //
 
-	// clear aspect  block context
-	k.GetAspectRuntimeContext().ClearBlockContext()
 	return []abci.ValidatorUpdate{}
 }
