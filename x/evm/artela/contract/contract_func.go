@@ -18,7 +18,7 @@ import (
 
 func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte) (*evmtypes.MsgEthereumTxResponse, error) {
 	lastHeight := ctx.BlockHeight()
-	code, _ := anc.aspectService.GetAspectCode(lastHeight-1, aspectId)
+	code, _ := anc.aspectService.GetAspectCode(lastHeight, aspectId)
 	runner, newErr := run.NewRunner(aspectId.String(), code)
 	if newErr != nil {
 		return nil, newErr
