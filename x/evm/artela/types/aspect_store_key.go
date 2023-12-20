@@ -24,16 +24,21 @@ const (
 	AspectBlockKeyPrefix       = "AspectStore/Block/"
 	AspectStateKeyPrefix       = "AspectStore/State/"
 
+	AspectJoinPointRunKeyPrefix = "AspectStore/JoinPointRun/"
+
 	AspectIdMapKey = "aspectId"
 	VersionMapKey  = "version"
 	PriorityMapKey = "priority"
 
-	AspectAccountKey = "Aspect_@Acount@_"
-	AspectProofKey   = "Aspect_@Proof@_"
-
-	AspectStateBeginBlock     = "State/BeginBlock"
-	AspectStateDeliverTxState = "State/DeliverTx"
-	AspectStateEndBlock       = "State/EndBlock"
+	AspectStateBeginBlock      = "State/BeginBlock"
+	AspectStateDeliverTxState  = "State/DeliverTx"
+	AspectStateEndBlock        = "State/EndBlock"
+	AspectAccountKey           = "Aspect_@Acount@_"
+	AspectProofKey             = "Aspect_@Proof@_"
+	AspectRunJoinPointKey      = "Aspect_@Run@JoinPoint@_"
+	AspectPropertyAllKeyPrefix = "Aspect_@Property@AllKey@_"
+	AspectPropertyAllKeySplit  = "^^^"
+	AspectPropertyLimit        = 256
 )
 
 var (
@@ -46,7 +51,7 @@ func GetAspectStatePoint(point string) string {
 		return AspectStateBeginBlock
 	} else if strings.EqualFold(point, string(artela.ON_BLOCK_FINALIZE_METHOD)) {
 		return AspectStateEndBlock
-	} else if strings.EqualFold(point, string(artela.ON_TX_COMMIT_METHOD)) ||
+	} else if strings.EqualFold(point, string(artela.POST_TX_COMMIT)) ||
 		strings.EqualFold(point, string(artela.PRE_TX_EXECUTE_METHOD)) ||
 		strings.EqualFold(point, string(artela.POST_TX_EXECUTE_METHOD)) ||
 		strings.EqualFold(point, string(artela.PRE_CONTRACT_CALL_METHOD)) ||

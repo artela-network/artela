@@ -314,7 +314,7 @@ func (c TxAspectContent) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerCont
 
 	get := c.getAspectContext().Get(aspId, keys[0])
 	if get == "" {
-		return artelatypes.NewContextQueryResponse(false, "get empty.")
+		return artelatypes.NewContextQueryResponse(true, "get empty.")
 	} else {
 		response := artelatypes.NewContextQueryResponse(true, "success")
 		data := &artelatypes.StringData{Data: get}

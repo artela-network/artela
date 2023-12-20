@@ -2,18 +2,22 @@ package contract
 
 import (
 	"bytes"
-	"encoding/json"
-	"math"
-	"sort"
-
 	"cosmossdk.io/errors"
+	"encoding/json"
+	artelasdkType "github.com/artela-network/aspect-core/types"
+	"math"
+	"math/big"
+	"sort"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"
+	ethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/uint256"
+	"github.com/status-im/keycard-go/hexutils"
 	"golang.org/x/exp/slices"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
@@ -52,6 +56,7 @@ func (k *AspectStore) RemoveBlockLevelAspect(ctx sdk.Context, aspectId common.Ad
 	// store
 	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
+	ethlog.Info("RemoveBlockLevelAspect, key:", string(aspectBlockKey))
 	store.Set(aspectBlockKey, jsonBytes)
 	return nil
 }
@@ -77,6 +82,7 @@ func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, aspectId common.Add
 	// kv
 	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
+	ethlog.Info("StoreBlockLevelAspect, key:", string(aspectBlockKey), string(jsonBytes))
 	store.Set(aspectBlockKey, jsonBytes)
 	return nil
 }
@@ -96,9 +102,12 @@ func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context) (map[string]int64, e
 }
 
 // StoreAspectCode aspect code
-func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) {
+func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) *uint256.Int {
 	// get last value
 	version := k.GetAspectLastVersion(ctx, aspectId)
+	if len(code) == 0 {
+		return version
+	}
 
 	// store code
 	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
@@ -107,9 +116,11 @@ func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, 
 		aspectId.Bytes(),
 		newVersion.Bytes(),
 	)
+	ethlog.Info("StoreAspectCode, key:", string(versionKey), hexutils.BytesToHex(code))
 	codeStore.Set(versionKey, code)
 	// update last version
 	k.StoreAspectVersion(ctx, aspectId, newVersion)
+	return newVersion
 }
 
 func (k *AspectStore) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
@@ -131,6 +142,7 @@ func (k *AspectStore) StoreAspectVersion(ctx sdk.Context, aspectId common.Addres
 	versionKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
+	ethlog.Info("StoreAspectVersion, key:", string(versionKey), version)
 	versionStore.Set(versionKey, version.Bytes())
 }
 
@@ -147,20 +159,72 @@ func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Addr
 	return version
 }
 
-// StoreAspectProperty Property
-func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property) {
+// StoreAspectProperty
+//
+//	@Description:  property storage format
+//	 1. {aspectid,key}=>{prperty value}
+//	 2. {aspectid,"AspectPropertyAllKeyPrefix"}=>"key1,key2,key3..."
+//	@receiver k
+//	@param ctx
+//	@param aspectId
+//	@param prop
+//	@return error
+func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property) error {
+
+	if len(prop) == 0 {
+		return nil
+	}
+
 	// get treemap value
 	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
+	//get all property key
+	propertyAllKey := k.GetAspectPropertyValue(ctx, aspectId, types.AspectPropertyAllKeyPrefix)
+
+	keySet := treeset.NewWithStringComparator()
+	// add propertyAllKey to keySet
+	if len(propertyAllKey) > 0 {
+		splitData := strings.Split(propertyAllKey, types.AspectPropertyAllKeySplit)
+		for _, datum := range splitData {
+			keySet.Add(datum)
+		}
+	}
+	for i := range prop {
+		key := prop[i].Key
+		//add key and deduplicate
+		keySet.Add(key)
+	}
+	//check key limit
+	if keySet.Size() > types.AspectPropertyLimit {
+		return errors.Wrapf(nil, "The maximum key limit is exceeded, and the maximum allowed is %d now available %d", types.AspectPropertyLimit, keySet.Size())
+	}
+
+	// store property key
 	for i := range prop {
 		key := prop[i].Key
 		value := prop[i].Value
+
 		// store
 		aspectPropertyKey := types.AspectPropertyKey(
 			aspectId.Bytes(),
 			[]byte(key),
 		)
+		ethlog.Info("StoreAspectProperty, key:", string(aspectPropertyKey), value)
 		aspectPropertyStore.Set(aspectPropertyKey, []byte(value))
 	}
+
+	// store AspectPropertyAllKey
+	keyAry := make([]string, keySet.Size())
+	for i, key := range keySet.Values() {
+		keyAry[i] = key.(string)
+	}
+	join := strings.Join(keyAry, types.AspectPropertyAllKeySplit)
+	aspectPropertyKey := types.AspectPropertyKey(
+		aspectId.Bytes(),
+		[]byte(types.AspectPropertyAllKeyPrefix),
+	)
+	aspectPropertyStore.Set(aspectPropertyKey, []byte(join))
+
+	return nil
 }
 
 func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Address, propertyKey string) string {
@@ -261,6 +325,7 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 	aspectPropertyKey := types.AccountKey(
 		account.Bytes(),
 	)
+	ethlog.Info("saveBindingInfo, key:", string(aspectPropertyKey), string(jsonBytes))
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 
 	return nil
@@ -288,6 +353,7 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 	aspectPropertyKey := types.AccountKey(
 		contract.Bytes(),
 	)
+	ethlog.Info("UnBindContractAspects, key:", string(aspectPropertyKey), string(jsonBytes))
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }
@@ -342,6 +408,7 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.
 	aspectPropertyKey := types.AccountKey(
 		contract.Bytes(),
 	)
+	ethlog.Info("ChangeBoundAspectVersion, key:", string(aspectPropertyKey), string(jsonBytes))
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
 }
@@ -365,7 +432,7 @@ func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, aspectId common.Address
 }
 
 func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, account)
+	dataSet, err := k.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return err
 	}
@@ -383,12 +450,13 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Addres
 	aspectIdKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
+	ethlog.Info("StoreAspectRefValue, key:", string(aspectIdKey), string(jsonBytes))
 	aspectRefStore.Set(aspectIdKey, jsonBytes)
 	return nil
 }
 
 func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
-	dataSet, err := k.GetAspectRefValue(ctx, contract)
+	dataSet, err := k.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return err
 	}
@@ -407,6 +475,107 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 	aspectPropertyKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
+	ethlog.Info("UnbindAspectRefValue, key:", string(aspectPropertyKey), string(jsonBytes))
 	aspectRefStore.Set(aspectPropertyKey, jsonBytes)
 	return nil
+}
+
+func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.Address, aspectId common.Address) error {
+
+	bindings, err := k.GetVerificationAspects(ctx, account)
+	if err != nil {
+		return err
+	}
+	existing := -1
+	// check duplicates
+	for index, binding := range bindings {
+		if bytes.Equal(binding.Id.Bytes(), aspectId.Bytes()) {
+			// delete Aspect id
+			existing = index
+			break
+		}
+	}
+	if existing == -1 {
+		return nil
+	}
+	// delete existing
+	newBinding := append(bindings[:existing], bindings[existing+1:]...)
+
+	sort.Slice(newBinding, types.NewBindingPriorityComparator(newBinding))
+	jsonBytes, _ := json.Marshal(newBinding)
+	if err != nil {
+		return err
+	}
+
+	// save bindings
+	aspectBindingStore := k.newPrefixStore(ctx, types.VerifierBindingKeyPrefix)
+	aspectPropertyKey := types.AccountKey(
+		account.Bytes(),
+	)
+	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
+	return nil
+}
+
+// StoreAspectJP
+//
+//	@Description: Stores the execute conditions of the Aspect Join point. {aspectId,version,'AspectRunJoinPointKey'}==>{value}
+//	@receiver k
+//	@param ctx
+//	@param aspectId
+//	@param version: aspect version ,optional，Default Aspect last version
+//	@param point  JoinPointRunType value, @see join_point_type.go
+//	@return bool Execute Result
+func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int, point *big.Int) error {
+	if version.Uint64() == 0 || point.Int64() == 0 {
+		return nil
+	}
+	//check point
+	_, ok := artelasdkType.CheckIsJoinPoint(point)
+	if !ok {
+		// Default store 0
+		point = big.NewInt(0)
+	}
+
+	//Default last Aspect version
+	if version == nil {
+		version = k.GetAspectLastVersion(ctx, aspectId)
+	}
+
+	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
+	// store
+	aspectPropertyKey := types.AspectArrayKey(
+		aspectId.Bytes(),
+		version.Bytes(),
+		[]byte(types.AspectRunJoinPointKey),
+	)
+	aspectPropertyStore.Set(aspectPropertyKey, point.Bytes())
+	return nil
+}
+
+// GetAspectJP
+//
+//	@Description: get Aspect Join point run
+//	@receiver k
+//	@param ctx
+//	@param aspectId
+//	@param version
+//	@return *big.Int
+func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int) *big.Int {
+	//Default last Aspect version
+	if version == nil {
+		version = k.GetAspectLastVersion(ctx, aspectId)
+	}
+	codeStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
+	aspectPropertyKey := types.AspectArrayKey(
+		aspectId.Bytes(),
+		version.Bytes(),
+		[]byte(types.AspectRunJoinPointKey),
+	)
+	get := codeStore.Get(aspectPropertyKey)
+
+	if nil != get && len(get) > 0 {
+		return new(big.Int).SetBytes(get)
+	} else {
+		return new(big.Int)
+	}
 }

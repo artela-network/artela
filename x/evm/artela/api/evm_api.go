@@ -125,9 +125,9 @@ func (e evmHostApi) JITCall(ctx *coretypes.RunnerContext, request *coretypes.Jit
 	case coretypes.PRE_TX_EXECUTE_METHOD, coretypes.POST_TX_EXECUTE_METHOD,
 		coretypes.PRE_CONTRACT_CALL_METHOD, coretypes.POST_CONTRACT_CALL_METHOD:
 		stage = integration.TransactionExecution
-	case coretypes.ON_TX_VERIFY_METHOD, coretypes.ON_ACCOUNT_VERIFY_METHOD:
+	case coretypes.VERIFY_TX, coretypes.ON_ACCOUNT_VERIFY_METHOD:
 		stage = integration.PreTransactionExecution
-	case coretypes.ON_TX_COMMIT_METHOD:
+	case coretypes.POST_TX_COMMIT:
 		stage = integration.PostTransactionExecution
 	case coretypes.ON_BLOCK_INITIALIZE_METHOD:
 		stage = integration.BlockInitialization
@@ -142,17 +142,18 @@ func (e evmHostApi) JITCall(ctx *coretypes.RunnerContext, request *coretypes.Jit
 	aspect := *ctx.AspectId
 
 	// FIXME: get leftover gas from last evm
-	resp, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, aspect, ctx.Gas, stage, request)
+	resp, gas, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, aspect, ctx.Gas, stage, request)
 	if err != nil {
-		// if errors.Is(err, vm.ErrOutOfGas) {
+		if resp == nil {
+			resp = &coretypes.JitInherentResponse{}
+		}
+
 		resp.Success = false
 		resp.ErrorMsg = err.Error()
-		//	}
-
 		log.Error("jit inherent submit fail", "err", err)
 	}
 
-	ctx.Gas = resp.LeftoverGas
+	ctx.Gas = gas
 
 	return resp
 }
