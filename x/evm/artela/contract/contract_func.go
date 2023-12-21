@@ -86,7 +86,7 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method
 
 func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, account common.Address, aspectVersion *uint256.Int, priority int8, isContract bool, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	// check aspect types
-	aspectJP := k.aspectService.aspectStore.GetAspectJP(ctx, aspectId, nil)
+	aspectJP := k.aspectService.aspectStore.GetAspectJP(ctx, aspectId, aspectVersion)
 	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
 	txVerifier := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
 
