@@ -133,7 +133,7 @@ func (ArtelaProvider) FilterAspectTx(tx sdk.Msg) bool {
 }
 
 func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
-	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address
 }
 
 func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
-	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Addr
 }
 
 func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
-	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.Aspect
 }
 
 func (j *ArtelaProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
-	heightCtx, err := j.getCtxByHeight(blockNum, true)
+	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
 	if err != nil {
 		return nil, err
 	}
