@@ -401,7 +401,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, evm, func() int64 {
 			return ctx.BlockHeight()
-		}, stateDB)
+		}, stateDB, k.logger)
 		resp, aspectErr := nativeContract.ApplyMessage(ctx, msg, commit)
 		if resp != nil {
 			resp.Hash = txConfig.TxHash.Hex()

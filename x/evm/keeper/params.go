@@ -6,7 +6,6 @@ import (
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-	ethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -44,8 +43,10 @@ func (k Keeper) SetParams(ctx cosmos.Context, params support.Params) error {
 		return err
 	}
 
-	ethlog.Info("SetParams, key:", "KeyPrefixParams", "value:", fmt.Sprintf("%+v", params))
 	store.Set(types.KeyPrefixParams, bz)
+	k.Logger(ctx).Debug("setState: SetParams",
+		"key", "KeyPrefixParams",
+		"value", fmt.Sprintf("%+v", params))
 	return nil
 }
 
