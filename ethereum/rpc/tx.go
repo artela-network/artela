@@ -250,7 +250,7 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 		status = hexutil.Uint(ethtypes.ReceiptStatusSuccessful)
 	}
 
-	from, err := ethMsg.GetSender(b.chainID)
+	from, err := b.GetSender(ethMsg, b.chainID)
 	if err != nil {
 		return nil, err
 	}

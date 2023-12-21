@@ -82,7 +82,6 @@ func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, aspectId common.Add
 	// kv
 	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
-	ethlog.Info("StoreBlockLevelAspect, key:", string(aspectBlockKey), string(jsonBytes))
 	store.Set(aspectBlockKey, jsonBytes)
 	return nil
 }
