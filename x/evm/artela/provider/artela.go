@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	asptypes "github.com/artela-network/aspect-core/types"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/aspect/cosmos"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,8 +31,9 @@ type ArtelaProvider struct {
 func NewArtelaProvider(storeKey storetypes.StoreKey,
 	getCtxByHeight types.ContextBuilder,
 	getBlockHeight types.GetLastBlockHeight,
+	logger log.Logger,
 ) *ArtelaProvider {
-	service := contract.NewAspectService(storeKey, getCtxByHeight, getBlockHeight)
+	service := contract.NewAspectService(storeKey, getCtxByHeight, getBlockHeight, logger)
 
 	return &ArtelaProvider{service, getCtxByHeight, storeKey}
 }

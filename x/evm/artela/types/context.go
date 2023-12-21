@@ -27,14 +27,18 @@ import (
 const (
 	AspectContextKey   cosmos.ContextKey = "aspect-ctx"
 	ExtBlockContextKey cosmos.ContextKey = "block-ctx"
+
+	AspectModuleName = "aspect"
 )
 
 var cachedStoreKey storetypes.StoreKey
 
-type HistoryStoreBuilder func(height int64, keyPrefix string) (prefix.Store, error)
-type ContextBuilder func(height int64, prove bool) (cosmos.Context, error)
+type (
+	HistoryStoreBuilder func(height int64, keyPrefix string) (prefix.Store, error)
+	ContextBuilder      func(height int64, prove bool) (cosmos.Context, error)
 
-type GetLastBlockHeight func() int64
+	GetLastBlockHeight func() int64
+)
 
 // AspectRuntimeContext is the contextual object required for Aspect execution,
 // containing information related to transactions (tx) and blocks. Aspects at different
@@ -72,6 +76,7 @@ type AspectRuntimeContext struct {
 	cosmosCtx       cosmos.Context
 	storeKey        storetypes.StoreKey
 
+	logger     log.Logger
 	jitManager *inherent.Manager
 }
 
@@ -82,6 +87,7 @@ func NewAspectRuntimeContext() *AspectRuntimeContext {
 		extBlockContext: NewExtBlockContext(),
 		aspectState:     NewAspectState(),
 		storeKey:        cachedStoreKey,
+		logger:          log.NewNopLogger(),
 	}
 }
 
@@ -92,10 +98,27 @@ func (c *AspectRuntimeContext) Init(storeKey storetypes.StoreKey) {
 
 func (c *AspectRuntimeContext) WithCosmosContext(newTxCtx cosmos.Context) {
 	c.cosmosCtx = newTxCtx
+	c.logger = newTxCtx.Logger().With("module", fmt.Sprintf("x/%s", AspectModuleName))
 }
+
+func (c *AspectRuntimeContext) Debug(msg string, keyvals ...interface{}) {
+	if c.ethTxContext != nil {
+		keyvals = append(keyvals, "tx-from", fmt.Sprintf("%s", c.ethTxContext.TxFrom().Hex()))
+		if c.ethTxContext.TxContent() != nil {
+			keyvals = append(keyvals, "tx-hash", fmt.Sprintf("%s", c.ethTxContext.TxContent().Hash().Hex()))
+		}
+	}
+	c.logger.Debug(msg, keyvals...)
+}
+
+func (c *AspectRuntimeContext) Logger() log.Logger {
+	return c.logger
+}
+
 func (c *AspectRuntimeContext) CosmosContext() cosmos.Context {
 	return c.cosmosCtx
 }
+
 func (c *AspectRuntimeContext) StoreKey() storetypes.StoreKey {
 	return c.storeKey
 }
@@ -367,7 +390,7 @@ func NewAspectState() *AspectState {
 }
 
 func (k *AspectRuntimeContext) CreateStateObject(temporary bool, blockHeight int64, lockKey string) {
-	object := NewAspectStateObject(k.cosmosCtx, k.storeKey, AspectStateKeyPrefix, temporary)
+	object := NewAspectStateObject(k.cosmosCtx, k.storeKey, AspectStateKeyPrefix, temporary, k.logger)
 	m := k.aspectState.stateCache[blockHeight]
 	if m == nil {
 		k.aspectState.stateCache[blockHeight] = make(map[string]*AspectStateObject)
@@ -377,6 +400,7 @@ func (k *AspectRuntimeContext) CreateStateObject(temporary bool, blockHeight int
 
 func (k *AspectRuntimeContext) RefreshState(needCommit bool, blockHeight int64, lockKey string) {
 	if blockHeight < 0 {
+		k.Debug(fmt.Sprintf("setState: RefreshState, blockHeight %d is less than 0", blockHeight))
 		return
 	}
 	if len(lockKey) == 0 {
@@ -391,6 +415,7 @@ func (k *AspectRuntimeContext) RefreshState(needCommit bool, blockHeight int64, 
 		return
 	}
 	if stateObject, exist := k.aspectState.stateCache[blockHeight][lockKey]; exist {
+		k.Debug(fmt.Sprintf("setState: RefreshState, state cache with block height %d and lock key %s, needCommit %t", blockHeight, lockKey, needCommit))
 		if needCommit {
 			stateObject.commit()
 		}
@@ -421,35 +446,42 @@ func (k *AspectRuntimeContext) GetAspectState(ctx *artelatypes.RunnerContext, ke
 func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, key, value string) bool {
 	point := GetAspectStatePoint(ctx.Point)
 	if len(point) == 0 {
+		k.Debug(fmt.Sprintf("setState: SetAspectState, point %s not found", ctx.Point))
 		return false
 	}
 	aspectPropertyKey := AspectArrayKey(
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
-	fmt.Println(fmt.Sprintf("SetAspectState set, ---aspectID:%s---, ---key:%s---, ---value:%s---", ctx.AspectId.String(), key, value))
+
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
+		k.Debug(fmt.Sprintf("setState: SetAspectState, aspectID %s, key %s, value %s, ", ctx.AspectId.String(), key, value))
 		object.Set(aspectPropertyKey, []byte(value))
 		return true
+	} else {
+		k.Debug(fmt.Sprintf("setState: SetAspectState, block %d point %s not found", ctx.BlockNumber, ctx.Point))
 	}
 	return false
 }
 
 // RemoveAspectState RemoveAspectState( key string) bool
 func (k *AspectRuntimeContext) RemoveAspectState(ctx *artelatypes.RunnerContext, key string) bool {
-	fmt.Println("----RemoveAspectState, Key: ", key)
 	point := GetAspectStatePoint(ctx.Point)
 	if len(point) == 0 {
+		k.Debug(fmt.Sprintf("setState: RemoveAspectState, point %s not found", ctx.Point))
 		return false
 	}
 	aspectPropertyKey := AspectArrayKey(
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
-	fmt.Println(fmt.Sprintf("SetAspectState delete, ---aspectID:%s---, ---key:%s---", ctx.AspectId.String(), key))
+
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
+		k.Debug(fmt.Sprintf("setState: RemoveAspectState, aspectID %s, key %s", ctx.AspectId.String(), key))
 		object.Set(aspectPropertyKey, nil)
 		return true
+	} else {
+		k.Debug(fmt.Sprintf("setState: RemoveAspectState, block %d point %s not found", ctx.BlockNumber, ctx.Point))
 	}
 	return false
 }
@@ -459,16 +491,16 @@ type AspectStateObject struct {
 	commit   func()
 	storeKey storetypes.StoreKey
 
-	log log.Logger
+	logger log.Logger
 }
 
-func NewAspectStateObject(ctx cosmos.Context, storeKey storetypes.StoreKey, fixKey string, temporary bool) *AspectStateObject {
+func NewAspectStateObject(ctx cosmos.Context, storeKey storetypes.StoreKey, fixKey string, temporary bool, logger log.Logger) *AspectStateObject {
 	store := prefix.NewStore(ctx.KVStore(storeKey), evmtypes.KeyPrefix(fixKey))
 	stateObj := &AspectStateObject{
 		preStore: store,
 		commit:   nil,
 		storeKey: storeKey,
-		log:      ctx.Logger(),
+		logger:   logger,
 	}
 	if temporary {
 		cc, writeEvent := ctx.CacheContext()
@@ -487,10 +519,11 @@ func (k *AspectStateObject) Set(key, value []byte) {
 	} else {
 		k.preStore.Set(key, value)
 	}
-	k.log.Info(
-		fmt.Sprintf("states %s", action),
-		"key", common.Bytes2Hex(key),
-		"value", common.Bytes2Hex(key),
+
+	k.logger.Debug("setState: Set",
+		"action", action,
+		"key", string(key), "value", fmt.Sprintf("%v", value),
+		"key hex", common.Bytes2Hex(key), "value hex", common.Bytes2Hex(value),
 	)
 }
 
@@ -501,5 +534,6 @@ func (k *AspectStateObject) Get(key []byte) []byte {
 func (k *AspectStateObject) Commit() {
 	if k.commit != nil {
 		k.commit()
+		k.logger.Debug("setState: Commit, aspect state is committed")
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/consensus/misc"
 	"math"
 	"math/big"
 	"sort"
@@ -17,6 +16,7 @@ import (
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -379,7 +379,7 @@ func (b *BackendImpl) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blo
 	blockHash := common.BytesToHash(block.Hash().Bytes())
 	receipts, err := b.GetReceipts(context.Background(), blockHash)
 	if err != nil {
-		b.logger.Debug("failed to fetch receipts for block number %d", height)
+		b.logger.Debug(fmt.Sprintf("failed to fetch receipts, block hash %s, block number %d", blockHash.Hex(), height))
 	}
 
 	ethBlock := ethtypes.NewBlock(ethHeader, txs, nil, receipts, trie.NewStackTrie(nil))

@@ -553,7 +553,7 @@ func NewArtela(
 	app.EvmKeeper = evmmodulekeeper.NewKeeper(
 		appCodec, keys[evmmoduletypes.StoreKey], tkeys[evmmoduletypes.TransientKey], authmodule.NewModuleAddress(govmodule.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeKeeper,
-		"1", app.GetSubspace(evmmoduletypes.ModuleName), bApp,
+		"1", app.GetSubspace(evmmoduletypes.ModuleName), bApp, logger,
 	)
 	evmModule := evmmodule.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmmoduletypes.ModuleName))
 
