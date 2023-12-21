@@ -7,6 +7,7 @@ GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_COMMIT_DATE=$(shell git log -n1 --pretty='format:%cd' --date=format:'%Y%m%d')
 REPO=github.com/artela-network/artela
 BUILD=./build
+CURRENT_DIR=$(shell pwd)
 
 GOBIN ?= $$(go env GOPATH)/bin
 
@@ -29,7 +30,8 @@ endif
 # check if no optimization option is passed
 # used for remote debugging
 ifneq (,$(findstring nooptimization,$(COSMOS_BUILD_OPTIONS)))
-  BUILD_FLAGS += -gcflags "all=-N -l"
+  BUILD_FLAGS += -gcflags "all=-trimpath=$(CURRENT_DIR) -N -l"
+  BUILD_FLAGS += -asmflags "all=-trimpath=$(CURRENT_DIR)"
 endif
 
 mkbuild:
@@ -47,8 +49,8 @@ install:
 all: build
 
 build-testnet:
-	docker build --platform linux/amd64 --no-cache --tag artela-network/artela ../. -f ./Dockerfile
-	@if ! [ -f _testnet/node0/artelad/config/genesis.json ]; then docker run --platform linux/amd64 --rm -v $(CURDIR)/_testnet:/artela:Z artela-network/artela:latest "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
+	docker build --no-cache --tag artela-network/artela ../. -f ./Dockerfile
+	@if ! [ -f _testnet/node0/artelad/config/genesis.json ]; then docker run --rm -v $(CURDIR)/_testnet:/artela:Z artela-network/artela:latest "./artelad testnet init-files --chain-id artela_11820-1 --v 4 -o /artela --keyring-backend=test --starting-ip-address 172.16.10.2"; fi
 
 create-testnet: remove-testnet build-testnet
 	docker compose up -d
