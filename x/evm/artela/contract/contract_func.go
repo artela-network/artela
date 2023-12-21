@@ -259,7 +259,11 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	fromAccount := vm.AccountRef(msg.From)
 	k.evm.CloseAspectCall()
 	defer k.evm.AspectCall()
-	ret, _, err := k.evm.Call(ctx, fromAccount, *msg.To, msg.Data, msg.GasLimit, msg.Value)
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		return false
+	}
+	ret, _, err := k.evm.Call(aspectCtx, fromAccount, *msg.To, msg.Data, msg.GasLimit, msg.Value)
 	if err != nil {
 		return false
 	}
