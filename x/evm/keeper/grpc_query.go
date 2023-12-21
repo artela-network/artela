@@ -649,6 +649,12 @@ func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.Que
 func (k Keeper) GetSender(c context.Context, in *txs.MsgEthereumTx) (*txs.GetSenderResponse, error) {
 	ctx := cosmos.UnwrapSDKContext(c)
 
+	// Aspect Runtime Context Lifecycle: create aspect context.
+	// This marks the beginning of running an aspect of EthCall, creating the aspect context,
+	// and establishing the link with the SDK context.
+	ctx, aspectCtx := k.WithAspectContext(ctx, in.AsEthCallTransaction())
+	defer aspectCtx.Destory()
+
 	tx := in.AsTransaction()
 	sender, _, err := k.tryAspectVerifier(ctx, tx)
 	if err != nil {
