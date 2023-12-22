@@ -16,7 +16,7 @@ ldflags = -X $(REPO)/version.AppVersion=$(VERSION) \
           -X $(REPO)/version.GitCommitDate=$(GIT_COMMIT_DATE)
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
-  ldflags += -w -s
+#  ldflags += -w -s
 endif
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
