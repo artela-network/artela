@@ -97,16 +97,23 @@ func (service *AspectService) GetPointsAspect(ctx sdk.Context, to common.Address
 		}
 		ctx = sdkCtx
 	}
-
+	deduplicationMap := make(map[string]uint64, 0)
 	aspects, err := service.aspectStore.GetTxLevelAspects(ctx, to)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "load contract aspect binding failed")
 	}
+	aspects2, err := service.aspectStore.GetVerificationAspects(ctx, to)
+
 	aspectCodes := make([]*artela.AspectCode, 0, len(aspects))
-	if aspects == nil {
+	if aspects == nil && aspects2 == nil {
 		return aspectCodes, nil
 	}
 	for _, aspect := range aspects {
+		if _, exist := deduplicationMap[aspect.Id.String()]; exist {
+			continue
+		}
+		deduplicationMap[aspect.Id.String()] = aspect.Version.Uint64()
 		// check if the Join point has run permissions
 		jp := service.aspectStore.GetAspectJP(ctx, aspect.Id, nil)
 		if !artela.CanExecPoint(jp.Int64(), cut) {
@@ -122,6 +129,28 @@ func (service *AspectService) GetPointsAspect(ctx sdk.Context, to common.Address
 		}
 		aspectCodes = append(aspectCodes, aspectCode)
 	}
+	for _, aspect := range aspects2 {
+		if _, exist := deduplicationMap[aspect.Id.String()]; exist {
+			continue
+		}
+		deduplicationMap[aspect.Id.String()] = aspect.Version.Uint64()
+
+		// check if the Join point has run permissions
+		jp := service.aspectStore.GetAspectJP(ctx, aspect.Id, nil)
+		if !artela.CanExecPoint(jp.Int64(), cut) {
+			continue
+		}
+
+		codeBytes, ver := service.aspectStore.GetAspectCode(ctx, aspect.Id, nil)
+		aspectCode := &artela.AspectCode{
+			AspectId: aspect.Id.String(),
+			Priority: uint32(aspect.Priority),
+			Version:  ver.Uint64(),
+			Code:     codeBytes,
+		}
+		aspectCodes = append(aspectCodes, aspectCode)
+	}
+
 	return aspectCodes, nil
 }
 
