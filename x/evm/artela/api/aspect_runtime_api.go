@@ -126,7 +126,7 @@ func (a *aspectRuntimeHostApi) Query(ctx *asptypes.RunnerContext, query *asptype
 
 	response := asptypes.NewContextQueryResponse(true, "success.")
 	if query.NameSpace == asptypes.QueryNameSpace_QueryAspectProperty {
-		codeStore := contract.NewAspectStore(a.aspectRuntimeContext.StoreKey())
+		codeStore := contract.NewAspectStore(a.aspectRuntimeContext.StoreKey(), a.aspectRuntimeContext.Logger())
 		property := codeStore.GetAspectPropertyValue(a.aspectRuntimeContext.CosmosContext(), *ctx.AspectId, keyData.Data)
 		valueData := &asptypes.StringData{Data: property}
 		response.SetData(valueData)

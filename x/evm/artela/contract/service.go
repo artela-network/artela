@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	artela "github.com/artela-network/aspect-core/types"
+	"github.com/cometbft/cometbft/libs/log"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/emirpasic/gods/sets/treeset"
@@ -25,9 +26,9 @@ type AspectService struct {
 	getHeight      evmtypes.GetLastBlockHeight
 }
 
-func NewAspectService(storeKey storetypes.StoreKey, getCtxByHeight evmtypes.ContextBuilder, getHeight evmtypes.GetLastBlockHeight) *AspectService {
+func NewAspectService(storeKey storetypes.StoreKey, getCtxByHeight evmtypes.ContextBuilder, getHeight evmtypes.GetLastBlockHeight, logger log.Logger) *AspectService {
 	return &AspectService{
-		aspectStore:    NewAspectStore(storeKey),
+		aspectStore:    NewAspectStore(storeKey, logger),
 		getCtxByHeight: getCtxByHeight,
 		getHeight:      getHeight,
 	}

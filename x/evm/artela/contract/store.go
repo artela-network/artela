@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"cosmossdk.io/errors"
 	"encoding/json"
+	"fmt"
 	artelasdkType "github.com/artela-network/aspect-core/types"
 	"math"
 	"math/big"
 	"sort"
 	"strings"
 
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"
-	ethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/uint256"
 	"github.com/status-im/keycard-go/hexutils"
 	"golang.org/x/exp/slices"
@@ -26,13 +27,16 @@ import (
 
 type AspectStore struct {
 	storeKey storetypes.StoreKey
+
+	logger log.Logger
 }
 
 type bindingQueryFunc func(sdk.Context, common.Address) ([]*types.AspectMeta, error)
 
-func NewAspectStore(storeKey storetypes.StoreKey) *AspectStore {
+func NewAspectStore(storeKey storetypes.StoreKey, logger log.Logger) *AspectStore {
 	return &AspectStore{
 		storeKey: storeKey,
+		logger:   logger,
 	}
 }
 
@@ -56,8 +60,14 @@ func (k *AspectStore) RemoveBlockLevelAspect(ctx sdk.Context, aspectId common.Ad
 	// store
 	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
-	ethlog.Info("RemoveBlockLevelAspect, key:", string(aspectBlockKey))
 	store.Set(aspectBlockKey, jsonBytes)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: RemoveBlockLevelAspect"),
+		"key", string(aspectBlockKey),
+		"aspect-id", aspectId.Hex(),
+		"data-set", string(jsonBytes),
+	)
 	return nil
 }
 
@@ -83,6 +93,13 @@ func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, aspectId common.Add
 	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
 	aspectBlockKey := types.AspectBlockKey()
 	store.Set(aspectBlockKey, jsonBytes)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: StoreBlockLevelAspect"),
+		"key", string(aspectBlockKey),
+		"aspect-id", aspectId.Hex(),
+		"data-set", string(jsonBytes),
+	)
 	return nil
 }
 
@@ -115,8 +132,15 @@ func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, 
 		aspectId.Bytes(),
 		newVersion.Bytes(),
 	)
-	ethlog.Info("StoreAspectCode, key:", string(versionKey), hexutils.BytesToHex(code))
 	codeStore.Set(versionKey, code)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: StoreAspectCode"),
+		"aspect-id", aspectId.Hex(),
+		"aspect-version", fmt.Sprintf("%d", newVersion),
+		"aspect-code-hex", hexutils.BytesToHex(code),
+	)
+
 	// update last version
 	k.StoreAspectVersion(ctx, aspectId, newVersion)
 	return newVersion
@@ -141,8 +165,13 @@ func (k *AspectStore) StoreAspectVersion(ctx sdk.Context, aspectId common.Addres
 	versionKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
-	ethlog.Info("StoreAspectVersion, key:", string(versionKey), version)
 	versionStore.Set(versionKey, version.Bytes())
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: StoreAspectVersion"),
+		"aspect-id", aspectId.Hex(),
+		"aspect-version", fmt.Sprintf("%d", version),
+	)
 }
 
 func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Address) *uint256.Int {
@@ -207,8 +236,14 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 			aspectId.Bytes(),
 			[]byte(key),
 		)
-		ethlog.Info("StoreAspectProperty, key:", string(aspectPropertyKey), value)
+
 		aspectConfigStore.Set(aspectPropertyKey, []byte(value))
+
+		k.logger.Debug(
+			fmt.Sprintf("setState: StoreAspectProperty"),
+			"aspect-id", aspectId.Hex(),
+			"aspect-property", fmt.Sprintf("%+v", prop),
+		)
 	}
 
 	// store AspectPropertyAllKey
@@ -324,8 +359,14 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 	aspectPropertyKey := types.AccountKey(
 		account.Bytes(),
 	)
-	ethlog.Info("saveBindingInfo, key:", string(aspectPropertyKey), string(jsonBytes))
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: saveBindingInfo"),
+		"aspect-id", aspectId.Hex(),
+		"countract", account.String(),
+		"bindings", string(jsonBytes),
+	)
 
 	return nil
 }
@@ -352,8 +393,14 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 	aspectPropertyKey := types.AccountKey(
 		contract.Bytes(),
 	)
-	ethlog.Info("UnBindContractAspects, key:", string(aspectPropertyKey), string(jsonBytes))
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: UnBindContractAspects"),
+		"aspect-id", aspectId.Hex(),
+		"contract", contract.String(),
+		"txAspectBindings", string(jsonBytes),
+	)
 	return nil
 }
 
@@ -407,8 +454,14 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.
 	aspectPropertyKey := types.AccountKey(
 		contract.Bytes(),
 	)
-	ethlog.Info("ChangeBoundAspectVersion, key:", string(aspectPropertyKey), string(jsonBytes))
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: ChangeBoundAspectVersion"),
+		"aspect-id", aspectId.Hex(),
+		"contract", contract.String(),
+		"aspects", string(jsonBytes),
+	)
 	return nil
 }
 
@@ -449,8 +502,14 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Addres
 	aspectIdKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
-	ethlog.Info("StoreAspectRefValue, key:", string(aspectIdKey), string(jsonBytes))
 	aspectRefStore.Set(aspectIdKey, jsonBytes)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: StoreAspectRefValue"),
+		"aspect-id", aspectId.Hex(),
+		"context", account.Hex(),
+		"aspects", string(jsonBytes),
+	)
 	return nil
 }
 
@@ -474,8 +533,14 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 	aspectPropertyKey := types.AspectIdKey(
 		aspectId.Bytes(),
 	)
-	ethlog.Info("UnbindAspectRefValue, key:", string(aspectPropertyKey), string(jsonBytes))
 	aspectRefStore.Set(aspectPropertyKey, jsonBytes)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: UnbindAspectRefValue"),
+		"aspect-id", aspectId.Hex(),
+		"context", contract.Hex(),
+		"aspect-refvalue", string(jsonBytes),
+	)
 	return nil
 }
 
@@ -512,6 +577,13 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 		account.Bytes(),
 	)
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
+
+	k.logger.Debug(
+		fmt.Sprintf("setState: UnBindVerificationAspect"),
+		"aspect-id", aspectId.Hex(),
+		"contract", account.Hex(),
+		"newBinding", string(jsonBytes),
+	)
 	return nil
 }
 

@@ -8,7 +8,6 @@ import (
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-	ethlog "github.com/ethereum/go-ethereum/log"
 )
 
 // CalculateBaseFee calculates the base fee for the current block. This is only calculated once per
@@ -115,8 +114,10 @@ func (k Keeper) SetParams(ctx cosmos.Context, params types.Params) error {
 		return err
 	}
 
-	ethlog.Info("SetParams, key:", string(types.ParamsKey), "value:", fmt.Sprintf("%+v", params))
 	store.Set(types.ParamsKey, bz)
+	k.Logger(ctx).Debug("setState: SetBlockGasWanted",
+		"key", string(types.ParamsKey),
+		"params", fmt.Sprintf("%+v", params))
 
 	return nil
 }

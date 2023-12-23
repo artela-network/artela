@@ -9,6 +9,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/artela-network/artela-evm/vm"
+	"github.com/cometbft/cometbft/libs/log"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -33,9 +34,10 @@ func NewAspectNativeContract(storeKey storetypes.StoreKey,
 	evm *vm.EVM,
 	getBlockHeight func() int64,
 	evmState *states.StateDB,
+	logger log.Logger,
 ) *AspectNativeContract {
 	return &AspectNativeContract{
-		aspectService: NewAspectService(storeKey, getCtxByHeight, getBlockHeight),
+		aspectService: NewAspectService(storeKey, getCtxByHeight, getBlockHeight, logger),
 		evm:           evm,
 		evmState:      evmState,
 	}
