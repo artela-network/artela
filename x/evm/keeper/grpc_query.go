@@ -220,7 +220,7 @@ func (k Keeper) Params(c context.Context, _ *txs.QueryParamsRequest) (*txs.Query
 func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEthereumTxResponse, error) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println(r)
+			k.logger.Error("EthCall panic", "err", r)
 		}
 	}()
 	if req == nil {
