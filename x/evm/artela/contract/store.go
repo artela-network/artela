@@ -237,7 +237,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 			[]byte(key),
 		)
 
-		aspectConfigStore.Set(aspectPropertyKey, []byte(value))
+		aspectConfigStore.Set(aspectPropertyKey, value)
 
 		k.logger.Debug(
 			fmt.Sprintf("setState: StoreAspectProperty"),

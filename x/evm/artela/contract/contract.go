@@ -66,7 +66,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			code := parameters["code"].([]byte)
 			properties := parameters["properties"].([]struct {
 				Key   string `json:"key"`
-				Value string `json:"value"`
+				Value []byte `json:"value"`
 			})
 			var propertyAry []types.Property
 			for i := range properties {
@@ -82,25 +82,14 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			}
 			sender := vm.AccountRef(msg.From)
 			account := parameters["account"].(common.Address)
-
-			proof := parameters["proof"].([]byte)
 			if bytes.Equal(account.Bytes(), msg.From.Bytes()) {
 				accountProperty := types.Property{
 					Key:   types.AspectAccountKey,
-					Value: account.Hex(),
+					Value: account.Bytes(),
 				}
 				propertyAry = append(propertyAry, accountProperty)
 			} else {
 				return nil, errors.New("Account verification failed during aspect deploy")
-			}
-			if len(proof) > 0 {
-				proofProperty := types.Property{
-					Key:   types.AspectProofKey,
-					Value: common.Bytes2Hex(proof),
-				}
-				propertyAry = append(propertyAry, proofProperty)
-			} else {
-				return nil, errors.New("No proof provided during aspect deploy")
 			}
 			joinPoints := parameters["joinPoints"].(*big.Int)
 
@@ -113,7 +102,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			code := parameters["code"].([]byte)
 			properties := parameters["properties"].([]struct {
 				Key   string `json:"key"`
-				Value string `json:"value"`
+				Value []byte `json:"value"`
 			})
 			var propertyAry []types.Property
 			for i := range properties {
