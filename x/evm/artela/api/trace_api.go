@@ -33,7 +33,7 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 	}
 
 	tracer := txContext.VmTracer()
-	ethAddr := common.HexToAddress(query.Account)
+	ethAddr := common.BytesToAddress(query.Account)
 	stateVar := query.StateVarName
 
 	var storageChanges interface{}
@@ -75,7 +75,7 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 			}
 			for _, state := range changes[callIdx] {
 				ethStateChanges.All = append(ethStateChanges.All, &artelatypes.EthStateChange{
-					Account:   call.From.Hex(),
+					Account:   call.From.Bytes(),
 					Value:     state,
 					CallIndex: call.Index,
 				})
