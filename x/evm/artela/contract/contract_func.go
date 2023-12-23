@@ -296,7 +296,7 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	}
 	defer runner.Return()
 
-	binding, runErr := runner.IsOwner(bHeight, 0, &sender, sender.String())
+	binding, runErr := runner.IsOwner(bHeight, 0, &sender, sender.Bytes())
 	return binding, runErr
 }
 
