@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	asptypes "github.com/artela-network/aspect-core/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -15,8 +16,15 @@ type aspectTransientStorageHostAPI struct {
 	aspectRuntimeContext *types.AspectRuntimeContext
 }
 
-func (a *aspectTransientStorageHostAPI) Get(ctx *asptypes.RunnerContext, key string) []byte {
-	return a.aspectRuntimeContext.AspectContext().Get(ctx.AspectId, key)
+func (a *aspectTransientStorageHostAPI) Get(ctx *asptypes.RunnerContext, aspectId []byte, key string) []byte {
+	var aspectAddr common.Address
+	if len(aspectId) == 0 {
+		aspectAddr = ctx.AspectId
+	} else {
+		aspectAddr = common.BytesToAddress(aspectId)
+	}
+
+	return a.aspectRuntimeContext.AspectContext().Get(aspectAddr, key)
 }
 
 func (a *aspectTransientStorageHostAPI) Set(ctx *asptypes.RunnerContext, key string, value []byte) {
