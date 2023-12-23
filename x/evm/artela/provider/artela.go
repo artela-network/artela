@@ -137,7 +137,7 @@ func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address
 	if err != nil {
 		return nil, err
 	}
-	return j.service.GetPointsAspect(heightCtx, address, point, false)
+	return j.service.GetAspectsForJoinPoint(heightCtx, address, point, false)
 }
 
 func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {

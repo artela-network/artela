@@ -175,7 +175,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 	}
 
 	// get treemap value
-	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
+	aspectConfigStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
 	//get all property key
 	propertyAllKey := k.GetAspectPropertyValue(ctx, aspectId, types.AspectPropertyAllKeyPrefix)
 
@@ -208,7 +208,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 			[]byte(key),
 		)
 		ethlog.Info("StoreAspectProperty, key:", string(aspectPropertyKey), value)
-		aspectPropertyStore.Set(aspectPropertyKey, []byte(value))
+		aspectConfigStore.Set(aspectPropertyKey, []byte(value))
 	}
 
 	// store AspectPropertyAllKey
@@ -217,11 +217,11 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 		keyAry[i] = key.(string)
 	}
 	join := strings.Join(keyAry, types.AspectPropertyAllKeySplit)
-	aspectPropertyKey := types.AspectPropertyKey(
+	allPropertyKeys := types.AspectPropertyKey(
 		aspectId.Bytes(),
 		[]byte(types.AspectPropertyAllKeyPrefix),
 	)
-	aspectPropertyStore.Set(aspectPropertyKey, []byte(join))
+	aspectConfigStore.Set(allPropertyKeys, []byte(join))
 
 	return nil
 }

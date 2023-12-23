@@ -88,8 +88,8 @@ func (service *AspectService) GetBoundAspectForAddr(height int64, to common.Addr
 	return aspectCodes, nil
 }
 
-// GetPointsAspect BoundAspects get bound Aspects on previous block
-func (service *AspectService) GetPointsAspect(ctx sdk.Context, to common.Address, cut artela.PointCut, commit bool) ([]*artela.AspectCode, error) {
+// GetAspectsForJoinPoint BoundAspects get bound Aspects on previous block
+func (service *AspectService) GetAspectsForJoinPoint(ctx sdk.Context, to common.Address, cut artela.PointCut, commit bool) ([]*artela.AspectCode, error) {
 	if commit {
 		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
 		if getErr != nil {

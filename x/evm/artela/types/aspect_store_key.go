@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"encoding/binary"
+	"math"
 	"strings"
 
 	artela "github.com/artela-network/aspect-core/types"
@@ -38,7 +39,7 @@ const (
 	AspectRunJoinPointKey      = "Aspect_@Run@JoinPoint@_"
 	AspectPropertyAllKeyPrefix = "Aspect_@Property@AllKey@_"
 	AspectPropertyAllKeySplit  = "^^^"
-	AspectPropertyLimit        = 256
+	AspectPropertyLimit        = math.MaxUint8
 )
 
 var (
