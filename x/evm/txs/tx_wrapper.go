@@ -10,7 +10,6 @@ import (
 
 	// rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/types"
-	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
@@ -103,13 +102,7 @@ func ToMessage(tx *ethereum.Transaction, signer ethereum.Signer, baseFee *big.In
 		message.GasPrice = cmath.BigMin(message.GasPrice.Add(message.GasTipCap, baseFee), message.GasFeeCap)
 	}
 	var err error
-	hash := tx.Hash()
-	if scheduler.TaskInstance().IsScheduleTx(hash) {
-		from := common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
-		message.From = from
-	} else {
-		message.From, err = ethereum.Sender(signer, tx)
-	}
+	message.From, err = ethereum.Sender(signer, tx)
 	return message, err
 }
 
@@ -330,25 +323,17 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err 
 		return common.HexToAddress(msg.From), nil
 	}
 
-	hash := common.HexToHash(msg.Hash)
-	if scheduler.TaskInstance().IsScheduleTx(hash) {
-		from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
-		if len(from.Bytes()) == 0 {
-			return common.Address{}, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
-		}
-	} else {
-		tx := msg.AsTransaction()
-		// retrieve sender info from aspect if tx is not signed
-		if utils.IsCustomizedVerification(tx) {
+	tx := msg.AsTransaction()
+	// retrieve sender info from aspect if tx is not signed
+	if utils.IsCustomizedVerification(tx) {
 
-			// TODO, more checkings, should never reach here
-			return common.Address{}, errors.New("failed to get sender of customized tx")
-		} else {
-			signer := ethereum.LatestSignerForChainID(chainID)
-			from, err = signer.Sender(tx)
-			if err != nil {
-				return common.Address{}, err
-			}
+		// TODO, more checkings, should never reach here
+		return common.Address{}, errors.New("failed to get sender of customized tx")
+	} else {
+		signer := ethereum.LatestSignerForChainID(chainID)
+		from, err = signer.Sender(tx)
+		if err != nil {
+			return common.Address{}, err
 		}
 	}
 

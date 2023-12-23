@@ -3,6 +3,9 @@ package types
 import (
 	"context"
 	"fmt"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/client"
+	"math/big"
 	"sync"
 	"time"
 
@@ -16,8 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 
 	"github.com/artela-network/artela-evm/vm"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/client"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	statedb "github.com/artela-network/artela/x/evm/states"
@@ -71,7 +72,7 @@ type AspectRuntimeContext struct {
 
 	ethTxContext    *EthTxContext
 	aspectContext   *AspectContext
-	extBlockContext *ExtBlockContext
+	ethBlockContext *EthBlockContext
 	aspectState     *AspectState
 	cosmosCtx       cosmos.Context
 	storeKey        storetypes.StoreKey
@@ -82,12 +83,11 @@ type AspectRuntimeContext struct {
 
 func NewAspectRuntimeContext() *AspectRuntimeContext {
 	return &AspectRuntimeContext{
-		cosmosCtx:       cosmos.Context{},
-		aspectContext:   NewAspectContext(),
-		extBlockContext: NewExtBlockContext(),
-		aspectState:     NewAspectState(),
-		storeKey:        cachedStoreKey,
-		logger:          log.NewNopLogger(),
+		cosmosCtx:     cosmos.Context{},
+		aspectContext: NewAspectContext(),
+		aspectState:   NewAspectState(),
+		storeKey:      cachedStoreKey,
+		logger:        log.NewNopLogger(),
 	}
 }
 
@@ -129,12 +129,12 @@ func (c *AspectRuntimeContext) SetEthTxContext(newTxCtx *EthTxContext, jitManage
 	c.jitManager = jitManager
 }
 
-func (c *AspectRuntimeContext) SetExtBlockContext(newBlockCtx *ExtBlockContext) {
-	c.extBlockContext = newBlockCtx
+func (c *AspectRuntimeContext) SetEthBlockContext(newBlockCtx *EthBlockContext) {
+	c.ethBlockContext = newBlockCtx
 }
 
-func (c *AspectRuntimeContext) ExtBlockContext() *ExtBlockContext {
-	return c.extBlockContext
+func (c *AspectRuntimeContext) EthBlockContext() *EthBlockContext {
+	return c.ethBlockContext
 }
 
 func (c *AspectRuntimeContext) EthTxContext() *EthTxContext {
@@ -161,8 +161,8 @@ func (c *AspectRuntimeContext) StateDb() vm.StateDB {
 }
 
 func (c *AspectRuntimeContext) ClearBlockContext() {
-	if c.extBlockContext != nil {
-		c.extBlockContext = NewExtBlockContext()
+	if c.ethBlockContext != nil {
+		c.ethBlockContext = nil
 	}
 }
 
@@ -172,17 +172,17 @@ func (c *AspectRuntimeContext) ClearContext() {
 		return
 	}
 	contractAddress := c.EthTxContext().TxTo()
-	c.AspectContext().Clear(contractAddress)
+	c.AspectContext().Clear(common.HexToAddress(contractAddress))
 	c.ethTxContext = nil
 }
 
 func (c *AspectRuntimeContext) Destory() {
-	c.ClearBlockContext()
 	if c.EthTxContext() != nil {
 		c.EthTxContext().ClearEvmObject()
 	}
-	c.jitManager = nil
 	c.ClearContext()
+
+	c.jitManager = nil
 	c.aspectContext = nil
 	c.cosmosCtx = cosmos.Context{}
 	c.aspectState = nil
@@ -206,25 +206,24 @@ func (c *AspectRuntimeContext) Value(key interface{}) interface{} {
 
 type EthTxContext struct {
 	// eth Transaction,it is set in
-	txContent     *ethtypes.Transaction
-	msg           *core.Message
-	vmTracer      *vm.Tracer
-	receipt       *ethtypes.Receipt
-	stateDb       vm.StateDB
-	evmCfg        *statedb.EVMConfig
-	lastEvm       *vm.EVM
-	extProperties map[string]interface{}
-	from          common.Address
-	commit        bool
+	txContent *ethtypes.Transaction
+	msg       *core.Message
+	vmTracer  *vm.Tracer
+	receipt   *ethtypes.Receipt
+	stateDb   vm.StateDB
+	evmCfg    *statedb.EVMConfig
+	lastEvm   *vm.EVM
+	from      common.Address
+	index     uint64
+	commit    bool
 }
 
 func NewEthTxContext(ethTx *ethtypes.Transaction) *EthTxContext {
 	return &EthTxContext{
-		txContent:     ethTx,
-		vmTracer:      nil,
-		receipt:       nil,
-		stateDb:       nil,
-		extProperties: make(map[string]interface{}),
+		txContent: ethTx,
+		vmTracer:  nil,
+		receipt:   nil,
+		stateDb:   nil,
 	}
 }
 
@@ -241,16 +240,17 @@ func (c *EthTxContext) TxTo() string {
 func (c *EthTxContext) TxFrom() common.Address {
 	return c.from
 }
-
-func (c *EthTxContext) EvmCfg() *statedb.EVMConfig            { return c.evmCfg }
-func (c *EthTxContext) TxContent() *ethtypes.Transaction      { return c.txContent }
-func (c *EthTxContext) VmTracer() *vm.Tracer                  { return c.vmTracer }
-func (c *EthTxContext) Receipt() *ethtypes.Receipt            { return c.receipt }
-func (c *EthTxContext) VmStateDB() vm.StateDB                 { return c.stateDb }
-func (c *EthTxContext) ExtProperties() map[string]interface{} { return c.extProperties }
-func (c *EthTxContext) LastEvm() *vm.EVM                      { return c.lastEvm }
-func (c *EthTxContext) Message() *core.Message                { return c.msg }
-func (c *EthTxContext) Commit() bool                          { return c.commit }
+func (c *EthTxContext) TxIndex() uint64 {
+	return c.index
+}
+func (c *EthTxContext) EvmCfg() *statedb.EVMConfig       { return c.evmCfg }
+func (c *EthTxContext) TxContent() *ethtypes.Transaction { return c.txContent }
+func (c *EthTxContext) VmTracer() *vm.Tracer             { return c.vmTracer }
+func (c *EthTxContext) Receipt() *ethtypes.Receipt       { return c.receipt }
+func (c *EthTxContext) VmStateDB() vm.StateDB            { return c.stateDb }
+func (c *EthTxContext) LastEvm() *vm.EVM                 { return c.lastEvm }
+func (c *EthTxContext) Message() *core.Message           { return c.msg }
+func (c *EthTxContext) Commit() bool                     { return c.commit }
 
 func (c *EthTxContext) WithEVM(
 	from common.Address,
@@ -269,6 +269,11 @@ func (c *EthTxContext) WithEVM(
 	return c
 }
 
+func (c *EthTxContext) WithTxIndex(index uint64) *EthTxContext {
+	c.index = index
+	return c
+}
+
 func (c *EthTxContext) WithReceipt(receipt *ethtypes.Receipt) *EthTxContext {
 	c.receipt = receipt
 	return c
@@ -276,14 +281,6 @@ func (c *EthTxContext) WithReceipt(receipt *ethtypes.Receipt) *EthTxContext {
 
 func (c *EthTxContext) WithCommit(commit bool) *EthTxContext {
 	c.commit = commit
-	return c
-}
-
-func (c *EthTxContext) AddExtProperties(key string, value interface{}) *EthTxContext {
-	if value == nil || key == "" {
-		return c
-	}
-	c.extProperties[key] = value
 	return c
 }
 
@@ -296,88 +293,98 @@ func (c *EthTxContext) ClearEvmObject() *EthTxContext {
 	return c
 }
 
+type EthBlockContext struct {
+	blockHeader *ethtypes.Header
+}
+
+func NewEthBlockContextFromHeight(height int64) *EthBlockContext {
+	return &EthBlockContext{&ethtypes.Header{Number: big.NewInt(height)}}
+}
+
+func NewEthBlockContextFromABCIBeginBlockReq(req abci.RequestBeginBlock) *EthBlockContext {
+	txHash := ethtypes.EmptyTxsHash
+	if len(req.Header.DataHash) != 0 {
+		txHash = common.BytesToHash(req.Header.DataHash)
+	}
+
+	blockHeader := &ethtypes.Header{
+		ParentHash: common.BytesToHash(req.Header.LastBlockId.Hash),
+		Coinbase:   common.BytesToAddress(req.Header.ProposerAddress),
+		TxHash:     txHash,
+		Number:     big.NewInt(req.Header.Height),
+		Time:       uint64(req.Header.Time.UTC().Unix()),
+	}
+
+	return &EthBlockContext{
+		blockHeader: blockHeader,
+	}
+}
+
+func NewEthBlockContextFromQuery(sdkCtx cosmos.Context, queryCtx client.Context) *EthBlockContext {
+	blockHeight := sdkCtx.BlockHeight()
+	resBlock, err := queryCtx.Client.Block(sdkCtx, &blockHeight)
+	if err != nil || resBlock == nil || resBlock.Block == nil {
+		return nil
+	}
+
+	resBlockHeader := resBlock.Block.Header
+
+	txHash := ethtypes.EmptyTxsHash
+	if len(resBlockHeader.DataHash) != 0 {
+		txHash = common.BytesToHash(resBlockHeader.DataHash)
+	}
+
+	blockHeader := &ethtypes.Header{
+		ParentHash: common.BytesToHash(resBlockHeader.LastBlockID.Hash),
+		Coinbase:   common.BytesToAddress(resBlockHeader.ProposerAddress),
+		TxHash:     txHash,
+		Number:     big.NewInt(resBlockHeader.Height),
+		Time:       uint64(resBlockHeader.Time.UTC().Unix()),
+	}
+
+	return &EthBlockContext{
+		blockHeader: blockHeader,
+	}
+}
+
+func (c *EthBlockContext) BlockHeader() *ethtypes.Header {
+	return c.blockHeader
+}
+
 type AspectContext struct {
-	// 1.string= namespace Default
+	// 1.string=namespace Default
 	// 2.string=key
 	// 3.string=value
-	context map[string]map[string]string
+	context map[common.Address]map[string][]byte
 	mutex   sync.RWMutex
 }
 
 func NewAspectContext() *AspectContext {
 	return &AspectContext{
-		context: make(map[string]map[string]string),
+		context: make(map[common.Address]map[string][]byte),
 	}
 }
 
-func (c *AspectContext) Add(aspectId string, key string, value string) {
+func (c *AspectContext) Add(address common.Address, key string, value []byte) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if c.context[aspectId] == nil {
-		c.context[aspectId] = make(map[string]string, 1)
+	if c.context[address] == nil {
+		c.context[address] = make(map[string][]byte, 1)
 	}
-	c.context[aspectId][key] = value
+	c.context[address][key] = value
 }
 
-func (c *AspectContext) Get(aspectId string, key string) string {
+func (c *AspectContext) Get(address common.Address, key string) []byte {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	if c.context[aspectId] == nil {
-		return ""
+	if c.context[address] == nil {
+		return []byte{}
 	}
-	return c.context[aspectId][key]
+	return c.context[address][key]
 }
 
-func (c *AspectContext) Remove(aspectId string, key string) bool {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	if aspectId == "" && key == "" {
-		return false
-	}
-	if aspectId != "" && key == "" {
-		delete(c.context, aspectId)
-	}
-	if aspectId != "" && key != "" {
-		delete(c.context[aspectId], key)
-	}
-	return true
-}
-
-func (c *AspectContext) Clear(contractAddr string) {
-	delete(c.context, contractAddr)
-}
-
-type ExtBlockContext struct {
-	evidenceList   []abci.Misbehavior
-	lastCommitInfo abci.CommitInfo
-	getRpcClient   client.Context
-}
-
-func NewExtBlockContext() *ExtBlockContext {
-	return &ExtBlockContext{}
-}
-
-func (c *ExtBlockContext) WithBlockConfig(
-	evidenceList []abci.Misbehavior,
-	lastCommitInfo abci.CommitInfo,
-	rpcClient client.Context,
-) *ExtBlockContext {
-	c.evidenceList = evidenceList
-	c.lastCommitInfo = lastCommitInfo
-	c.getRpcClient = rpcClient
-	return c
-}
-
-func (c *ExtBlockContext) EvidenceList() []abci.Misbehavior {
-	return c.evidenceList
-}
-
-func (c *ExtBlockContext) LastCommitInfo() abci.CommitInfo {
-	return c.lastCommitInfo
-}
-
-func (c *ExtBlockContext) RpcClient() client.Context {
-	return c.getRpcClient
+func (c *AspectContext) Clear(address common.Address) {
+	delete(c.context, address)
 }
 
 type AspectState struct {
@@ -427,31 +434,29 @@ func (k *AspectRuntimeContext) RefreshState(needCommit bool, blockHeight int64, 
 	}
 }
 
-func (k *AspectRuntimeContext) GetAspectState(ctx *artelatypes.RunnerContext, key string) string {
+func (k *AspectRuntimeContext) GetAspectState(ctx *artelatypes.RunnerContext, key string) []byte {
 	aspectPropertyKey := AspectArrayKey(
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
 	point := GetAspectStatePoint(ctx.Point)
-	var get []byte
+	var val []byte
 	if len(point) == 0 {
 		// If it's not a cut-point access to the DeliverTx stage, the data is accessed through the store at the previous block height
 		store := prefix.NewStore(k.cosmosCtx.KVStore(k.storeKey), evmtypes.KeyPrefix(AspectStateKeyPrefix))
-		get = store.Get(aspectPropertyKey)
+		val = store.Get(aspectPropertyKey)
 	}
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
-		get = object.Get(aspectPropertyKey)
+		val = object.Get(aspectPropertyKey)
 	}
-	return artelatypes.Ternary(get != nil, func() string {
-		return string(get)
-	}, "")
+	return val
 }
 
-func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, key, value string) bool {
+func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, key string, value []byte) {
 	point := GetAspectStatePoint(ctx.Point)
 	if len(point) == 0 {
 		k.Debug(fmt.Sprintf("setState: SetAspectState, point %s not found", ctx.Point))
-		return false
+		return
 	}
 	aspectPropertyKey := AspectArrayKey(
 		ctx.AspectId.Bytes(),
@@ -460,12 +465,11 @@ func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, ke
 
 	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
 		k.Debug(fmt.Sprintf("setState: SetAspectState, aspectID %s, key %s, value %s, ", ctx.AspectId.String(), key, value))
-		object.Set(aspectPropertyKey, []byte(value))
-		return true
+		object.Set(aspectPropertyKey, value)
 	} else {
 		k.Debug(fmt.Sprintf("setState: SetAspectState, block %d point %s not found", ctx.BlockNumber, ctx.Point))
 	}
-	return false
+	return
 }
 
 // RemoveAspectState RemoveAspectState( key string) bool

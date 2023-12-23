@@ -57,8 +57,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	}
 
 	// restore extBlockContext from keeper and set it to aspect runtime context
-	extBlockCtx := k.ExtBlockContext
-	aspectCtx.SetExtBlockContext(extBlockCtx)
+	aspectCtx.SetEthBlockContext(k.BlockContext)
 
 	ethTxContext := types2.NewEthTxContext(ethCallTx)
 	protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
@@ -66,6 +65,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 
 	aspectCtx.SetEthTxContext(ethTxContext, jitManager)
 	aspectCtx.WithCosmosContext(ctx)
+
 	ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, aspectCtx)
 
 	response, err := k.ApplyTransaction(ctx, tx)

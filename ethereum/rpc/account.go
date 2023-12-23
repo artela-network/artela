@@ -9,12 +9,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	sdkcrypto "github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +29,6 @@ import (
 	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/ethereum/utils"
 	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/aspect-core/chaincoreext/scheduler"
 )
 
 func (b *BackendImpl) Accounts() []common.Address {
@@ -289,34 +286,26 @@ func (b *BackendImpl) GetSender(msg *txs.MsgEthereumTx, chainID *big.Int) (from 
 		return common.HexToAddress(msg.From), nil
 	}
 
-	hash := common.HexToHash(msg.Hash)
-	if scheduler.TaskInstance().IsScheduleTx(hash) {
-		from = common.HexToAddress(scheduler.TaskInstance().GetFromAddr(hash))
-		if len(from.Bytes()) == 0 {
-			return common.Address{}, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
+	tx := msg.AsTransaction()
+	// retrieve sender info from aspect if tx is not signed
+	if utils.IsCustomizedVerification(tx) {
+		bn, err := b.BlockNumber()
+		if err != nil {
+			return common.Address{}, err
 		}
+		ctx := types.ContextWithHeight(int64(bn))
+
+		res, err := b.queryClient.GetSender(ctx, msg)
+		if err != nil {
+			return common.Address{}, err
+		}
+
+		from = common.HexToAddress(res.Sender)
 	} else {
-		tx := msg.AsTransaction()
-		// retrieve sender info from aspect if tx is not signed
-		if utils.IsCustomizedVerification(tx) {
-			bn, err := b.BlockNumber()
-			if err != nil {
-				return common.Address{}, err
-			}
-			ctx := types.ContextWithHeight(int64(bn))
-
-			res, err := b.queryClient.GetSender(ctx, msg)
-			if err != nil {
-				return common.Address{}, err
-			}
-
-			from = common.HexToAddress(res.Sender)
-		} else {
-			signer := ethtypes.LatestSignerForChainID(chainID)
-			from, err = signer.Sender(tx)
-			if err != nil {
-				return common.Address{}, err
-			}
+		signer := ethtypes.LatestSignerForChainID(chainID)
+		from, err = signer.Sender(tx)
+		if err != nil {
+			return common.Address{}, err
 		}
 	}
 

@@ -217,24 +217,6 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 		TransactionIndex:  txConfig.TxIndex,
 	}
 
-	// Aspect Runtime Context Lifecycle: store receipt to extTxContext.
-	// The WithReceipt function stores the receipt in the ethTxContext of the Aspect Runtime Context for use by aspects.
-	aspectCtx.EthTxContext().WithReceipt(receipt)
-
-	// commit
-	// aspect OnTxCommit start
-	pointRequest, err := k.aspect.TxToPointRequest(ctx, msg.From, tx, int64(txConfig.TxIndex), evmConfig.BaseFee, nil)
-	if err != nil {
-		k.Logger(ctx).Error("fail to CreateTxPointRequest aspect OnTxCommit ", err)
-	} else {
-		pointRequest.GasInfo.Gas = msg.GasLimit - res.GasUsed
-
-		txCommit := djpm.AspectInstance().PostTxCommit(aspectCtx, pointRequest)
-		if hasErr, txCommitErr := txCommit.HasErr(); hasErr {
-			k.Logger(ctx).Error("fail to  call aspect OnTxCommit ", txCommitErr)
-		}
-	}
-
 	if !res.Failed() {
 		receipt.Status = ethereum.ReceiptStatusSuccessful
 
@@ -358,6 +340,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	// the sender of the transaction (from), transaction message, the EVM responsible for executing
 	// the transaction, EVM tracer, and the stateDB associated with running the EVM transaction.
 	aspectCtx.EthTxContext().WithEVM(msg.From, msg, evm, cfg, evm.Tracer(), stateDB)
+	aspectCtx.EthTxContext().WithTxIndex(uint64(txConfig.TxIndex))
 
 	// Aspect Runtime Context Lifecycle: create state object.
 	// Create a Aspect State Object for OnBlockFinalize
@@ -399,9 +382,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	// if transaction is Aspect operational, short the circuit and skip the processes
 	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
-		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, evm, func() int64 {
-			return ctx.BlockHeight()
-		}, stateDB, k.logger)
+		nativeContract := contract.NewAspectNativeContract(k.storeKey, k.getCtxByHeight, evm,
+			ctx.BlockHeight, stateDB, k.logger)
 		resp, aspectErr := nativeContract.ApplyMessage(ctx, msg, commit)
 		if resp != nil {
 			resp.Hash = txConfig.TxHash.Hex()
@@ -415,22 +397,75 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		ret, _, leftoverGas, vmErr = evm.Create(aspectCtx, sender, msg.Data, leftoverGas, msg.Value)
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
-		pointRequest := k.aspect.CreateTxPointRequestInEvm(ctx, msg, txConfig, nil)
-		pointRequest.GasInfo.Gas = leftoverGas
+		// begin pre tx aspect execution
+		preTxResult := djpm.AspectInstance().PreTxExecute(aspectCtx, msg.To, ctx.BlockHeight(), leftoverGas, &asptypes.PreTxExecuteInput{
+			Tx: &asptypes.WithFromTxInput{
+				Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
+				To:   msg.To.Bytes(),
+				From: msg.From.Bytes(),
+			},
+			Block: &asptypes.BlockInput{Number: uint64(ctx.BlockHeight())},
+		})
 
-		execute := djpm.AspectInstance().PreTxExecute(aspectCtx, pointRequest)
-		leftoverGas = execute.GasInfo.Gas
-		if hasErr, execErr := execute.HasErr(); hasErr {
-			vmErr = execErr
+		leftoverGas = preTxResult.Gas
+		if preTxResult.Err != nil {
+			// short circuit if pre tx failed
+			vmErr = preTxResult.Err
 		} else {
+			// execute evm call
 			ret, leftoverGas, vmErr = evm.Call(aspectCtx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
-			// artela aspect PostTxExecute start
-			pointRequest.GasInfo.Gas = leftoverGas
-			txExecute := djpm.AspectInstance().PostTxExecute(aspectCtx, pointRequest)
-			if hasPostErr, postExecErr := txExecute.HasErr(); hasPostErr {
-				vmErr = postExecErr
+			status := ethereum.ReceiptStatusSuccessful
+			if vmErr != nil {
+				status = ethereum.ReceiptStatusFailed
 			}
-			leftoverGas = txExecute.GasInfo.Gas
+
+			logs := stateDB.Logs()
+
+			// compute block bloom filter
+			var bloomReceipt ethereum.Bloom
+			if len(logs) > 0 {
+				bloom := k.GetBlockBloomTransient(ctx)
+				bloom.Or(bloom, big.NewInt(0).SetBytes(ethereum.LogsBloom(logs)))
+				bloomReceipt = ethereum.BytesToBloom(bloom.Bytes())
+			}
+
+			// compute gas
+			gasUsed := msg.GasLimit - leftoverGas
+			cumulativeGasUsed := gasUsed
+			if ctx.BlockGasMeter() != nil {
+				limit := ctx.BlockGasMeter().Limit()
+				cumulativeGasUsed += ctx.BlockGasMeter().GasConsumed()
+				if cumulativeGasUsed > limit {
+					cumulativeGasUsed = limit
+				}
+			}
+
+			// set receipt
+			aspectCtx.EthTxContext().WithReceipt(&ethereum.Receipt{
+				Status:            status,
+				Bloom:             bloomReceipt,
+				Logs:              logs,
+				GasUsed:           gasUsed,
+				CumulativeGasUsed: cumulativeGasUsed,
+			})
+
+			// begin post tx aspect execution
+			postTxResult := djpm.AspectInstance().PostTxExecute(aspectCtx, msg.To, ctx.BlockHeight(), leftoverGas,
+				&asptypes.PostTxExecuteInput{
+					Tx: &asptypes.WithFromTxInput{
+						Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
+						To:   msg.To.Bytes(),
+						From: msg.From.Bytes(),
+					},
+					Block:   &asptypes.BlockInput{Number: uint64(ctx.BlockHeight())},
+					Receipt: &asptypes.ReceiptInput{Status: status},
+				})
+			if postTxResult.Err != nil {
+				// overwrite vmErr if post tx reverted
+				vmErr = postTxResult.Err
+				ret = postTxResult.Ret
+			}
+			leftoverGas = postTxResult.Gas
 		}
 	}
 

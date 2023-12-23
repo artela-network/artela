@@ -47,6 +47,7 @@ func (aspd AspectRuntimeContextDecorator) AnteHandle(ctx cosmos.Context, tx cosm
 		jitManager := inherent.NewManager(protocol)
 
 		// update EthTxContext and JIT manager
+		aspectCtx.SetEthBlockContext(types.NewEthBlockContextFromHeight(ctx.BlockHeight()))
 		aspectCtx.SetEthTxContext(ethTxContext, jitManager)
 		aspectCtx.WithCosmosContext(ctx)
 

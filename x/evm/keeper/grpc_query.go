@@ -260,6 +260,8 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	ctx, aspectCtx := k.WithAspectContext(ctx, args.ToTransaction().AsEthCallTransaction())
 	defer aspectCtx.Destory()
 
+	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
+
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
 	if err != nil {
@@ -322,6 +324,8 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction())
 	defer aspectCtx.Destory()
+
+	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
 
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
@@ -434,6 +438,8 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		// and establishing the link with the SDK context.
 		ctx, aspectCtx := k.WithAspectContext(ctx, ethTx)
 		defer aspectCtx.Destory()
+
+		aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
 
 		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
