@@ -94,7 +94,7 @@ func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitI
 	resp, gas, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, ctx.AspectId, ctx.Gas, stage, request)
 	if err != nil {
 		if resp == nil {
-			resp = &coretypes.JitInherentResponse{}
+			resp = &asptypes.JitInherentResponse{}
 		}
 
 		resp.Success = false

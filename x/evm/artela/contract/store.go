@@ -211,7 +211,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 	keySet := treeset.NewWithStringComparator()
 	// add propertyAllKey to keySet
 	if len(propertyAllKey) > 0 {
-		splitData := strings.Split(propertyAllKey, types.AspectPropertyAllKeySplit)
+		splitData := strings.Split(string(propertyAllKey), types.AspectPropertyAllKeySplit)
 		for _, datum := range splitData {
 			keySet.Add(datum)
 		}
