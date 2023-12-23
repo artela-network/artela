@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	aspctx "github.com/artela-network/aspect-core/context"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/emirpasic/gods/sets/hashset"
 
 	"github.com/artela-network/artela/x/evm/artela/api/datactx"
@@ -130,6 +131,11 @@ func (a *aspectRuntimeContextHostAPI) Register() {
 	aspectCtx := datactx.NewAspectContext()
 	a.execMap[aspctx.AspectId] = aspectCtx.ValueLoader(aspctx.AspectId)
 	a.execMap[aspctx.AspectVersion] = aspectCtx.ValueLoader(aspctx.AspectVersion)
+
+	// isCall context
+	a.execMap[aspctx.IsCall] = func(ctx *asptypes.RunnerContext) ([]byte, error) {
+		return proto.Marshal(&asptypes.BoolData{Data: ctx.Commit})
+	}
 }
 
 func (a *aspectRuntimeContextHostAPI) Get(ctx *asptypes.RunnerContext, key string) []byte {
