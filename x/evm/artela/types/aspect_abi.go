@@ -37,7 +37,7 @@ var (
 	})
 	KvPairArr, _ = abi.NewType("tuple[]", "struct Overloader.F", []abi.ArgumentMarshaling{
 		{Name: "key", Type: "string"},
-		{Name: "value", Type: "string"},
+		{Name: "value", Type: "bytes"},
 	})
 	AspectBoundInfoArr, _ = abi.NewType("tuple[]", "struct Overloader.F", []abi.ArgumentMarshaling{
 		{Name: "aspectId", Type: "address"},
