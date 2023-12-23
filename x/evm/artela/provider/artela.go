@@ -134,12 +134,12 @@ func (ArtelaProvider) FilterAspectTx(tx sdk.Msg) bool {
 	return true
 }
 
-func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
+func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address, point asptypes.PointCut) ([]*asptypes.AspectCode, error) {
 	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
 	if err != nil {
 		return nil, err
 	}
-	return j.service.GetAspectForAddr(heightCtx, address, false)
+	return j.service.GetAspectsForJoinPoint(heightCtx, address, point, false)
 }
 
 func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {

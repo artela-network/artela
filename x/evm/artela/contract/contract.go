@@ -102,9 +102,10 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			} else {
 				return nil, errors.New("No proof provided during aspect deploy")
 			}
+			joinPoints := parameters["joinPoints"].(*big.Int)
 
 			aspectId := crypto.CreateAddress(sender.Address(), msg.Nonce)
-			return k.deploy(ctx, aspectId, code, propertyAry)
+			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "upgrade":
 		{
@@ -134,7 +135,8 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			if !aspectOwner {
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to upgrade, sender: %s , aspectId: %s", sender.Address().String(), aspectId.String())
 			}
-			return k.deploy(ctx, aspectId, code, propertyAry)
+			joinPoints := parameters["joinPoints"].(*big.Int)
+			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "bind":
 		{
@@ -210,7 +212,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			return k.aspectsOf(ctx, method, account, isContract, commit)
 		}
 
-	case "contractsof":
+	case "boundaddressesof":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
 			return k.contractsOf(ctx, method, aspectId, commit)

@@ -1,9 +1,9 @@
 package contract
 
 import (
-	"context"
-	"github.com/artela-network/artela-evm/vm"
+	"math/big"
 
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/aspect-core/djpm/contract"
@@ -85,16 +85,14 @@ func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method
 }
 
 func (k *AspectNativeContract) bind(ctx sdk.Context, aspectId common.Address, account common.Address, aspectVersion *uint256.Int, priority int8, isContract bool, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
-	aspectCode, _ := k.aspectService.GetAspectCode(ctx, aspectId, aspectVersion, commit)
-	txAspect, err := k.checkTransactionLevel(ctx, aspectId, aspectCode)
-	if err != nil {
-		return nil, err
-	}
-	txVerifier, err := k.checkIsTxVerifier(ctx, aspectId, aspectCode)
-	if err != nil {
-		return nil, err
-	}
+	// check aspect types
+	aspectJP := k.aspectService.aspectStore.GetAspectJP(ctx, aspectId, aspectVersion)
+	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
+	txVerifier := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
 
+	if !(txAspect || txVerifier) {
+		return nil, errors.New("check aspect join point fail, An aspect which can be bound, must be a transactional or Verifier")
+	}
 	// EoA can only bind with tx verifier
 	if !txVerifier && !isContract {
 		return nil, errors.New("unable to bind non-tx-verifier Aspect to an EoA account")
@@ -183,9 +181,8 @@ func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, co
 
 	aspectInfo := make([]types.AspectInfo, 0)
 	deduplicationMap := make(map[string]uint64, 0)
-
 	if isContract {
-		aspects, err := k.aspectService.GetAspectForAddr(ctx, contract, commit)
+		aspects, err := k.aspectService.GetBoundAspectForAddr(ctx.BlockHeight(), contract)
 		if err != nil {
 			return nil, err
 		}
@@ -259,6 +256,7 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	fromAccount := vm.AccountRef(msg.From)
 	k.evm.CloseAspectCall()
 	defer k.evm.AspectCall()
+
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
 		return false
@@ -310,14 +308,28 @@ func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectI
 	return binding, runErr
 }
 
-func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property) (*evmtypes.MsgEthereumTxResponse, error) {
-	k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
-	k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
+func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, code []byte, properties []types.Property, joinPoint *big.Int) (*evmtypes.MsgEthereumTxResponse, error) {
+	if len(code) == 0 && len(properties) == 0 && joinPoint == nil {
+		return &evmtypes.MsgEthereumTxResponse{
+			GasUsed: ctx.GasMeter().GasConsumed(),
+			VmError: "",
+			Ret:     nil,
+			Logs:    nil,
+		}, nil
+	}
 
-	level, err := k.checkBlockLevel(ctx, aspectId, code)
+	aspectVersion := k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
+
+	err := k.aspectService.aspectStore.StoreAspectJP(ctx, aspectId, aspectVersion, joinPoint)
 	if err != nil {
 		return nil, err
 	}
+	err = k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
+	if err != nil {
+		return nil, err
+	}
+
+	level := artelasdkType.CheckIsBlockLevel(joinPoint.Int64())
 	if level {
 		storeErr := k.aspectService.aspectStore.StoreBlockLevelAspect(ctx, aspectId)
 		if storeErr != nil {
@@ -337,57 +349,4 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 		Ret:     nil,
 		Logs:    nil,
 	}, nil
-}
-
-func (k *AspectNativeContract) checkBlockLevel(ctx sdk.Context, aspectId common.Address, code []byte) (bool, error) {
-	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
-	if !ok {
-		return false, errors.New("checkBlockLevel: unwrap AspectRuntimeContext failed")
-	}
-
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
-	if newErr != nil {
-		return false, newErr
-	}
-	defer runner.Return()
-
-	binding, runErr := runner.IsBlockLevel()
-	return binding, runErr
-}
-
-func (k *AspectNativeContract) checkTransactionLevel(ctx sdk.Context, aspectId common.Address, code []byte) (bool, error) {
-	if len(code) == 0 {
-		return false, errors.New("The Aspect of aspectId could not be found.")
-	}
-
-	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
-	if !ok {
-		return false, errors.New("checkTransactionLevel: unwrap AspectRuntimeContext failed")
-	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
-	if newErr != nil {
-		return false, newErr
-	}
-	defer runner.Return()
-
-	binding, runErr := runner.IsTransactionLevel()
-	return binding, runErr
-}
-
-func (k *AspectNativeContract) checkIsTxVerifier(ctx context.Context, aspectId common.Address, code []byte) (bool, error) {
-	if len(code) == 0 {
-		return false, errors.New("The Aspect of aspectId could not be found.")
-	}
-	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
-	if !ok {
-		return false, errors.New("checkIsTxVerifier: unwrap AspectRuntimeContext failed")
-	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
-	if newErr != nil {
-		return false, newErr
-	}
-	defer runner.Return()
-
-	binding, runErr := runner.IsTxVerifier()
-	return binding, runErr
 }
