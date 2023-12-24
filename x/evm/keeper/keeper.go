@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -135,6 +136,7 @@ func NewKeeper(
 	}
 	k.WithChainID(app.ChainId())
 
+	djpm.NewAspect(aspect)
 	api.InitAspectGlobals(k)
 
 	// init aspect host api factory

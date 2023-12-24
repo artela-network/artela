@@ -261,6 +261,7 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	defer aspectCtx.Destory()
 
 	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
+	aspectCtx.EthTxContext().WithEVMConfig(cfg)
 
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
@@ -325,13 +326,14 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction())
 	defer aspectCtx.Destory()
 
-	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
-
 	gasCap = hi
 	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to load evm config")
 	}
+
+	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
+	aspectCtx.EthTxContext().WithEVMConfig(cfg)
 
 	// ApplyMessageWithConfig expect correct nonce set in msg
 	nonce := k.GetNonce(ctx, args.GetFrom())
@@ -440,6 +442,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		defer aspectCtx.Destory()
 
 		aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
+		aspectCtx.EthTxContext().WithEVMConfig(cfg)
 
 		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
@@ -618,6 +621,9 @@ func (k *Keeper) traceTx(
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, tx)
 	defer aspectCtx.Destory()
+
+	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
+	aspectCtx.EthTxContext().WithEVMConfig(cfg)
 
 	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {

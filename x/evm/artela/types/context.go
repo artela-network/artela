@@ -256,16 +256,19 @@ func (c *EthTxContext) WithEVM(
 	from common.Address,
 	msg *core.Message,
 	lastEvm *vm.EVM,
-	cfg *statedb.EVMConfig,
 	monitor *vm.Tracer,
 	db vm.StateDB,
 ) *EthTxContext {
 	c.from = from
 	c.msg = msg
 	c.lastEvm = lastEvm
-	c.evmCfg = cfg
 	c.vmTracer = monitor
 	c.stateDb = db
+	return c
+}
+
+func (c *EthTxContext) WithEVMConfig(cfg *statedb.EVMConfig) *EthTxContext {
+	c.evmCfg = cfg
 	return c
 }
 

@@ -7,11 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/artela-network/artela/x/evm/artela/provider"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
-	types2 "github.com/artela-network/artela/x/evm/artela/types"
-	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
-
 	"github.com/artela-network/artela/x/evm/txs"
 
 	govmodule "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -38,7 +34,6 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 
 	sender := msg.From
 	tx := msg.AsTransaction()
-	ethCallTx := msg.AsEthCallTransaction()
 	txIndex := k.GetTxIndexTransient(ctx)
 
 	labels := []metrics.Label{
@@ -58,15 +53,6 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 
 	// restore extBlockContext from keeper and set it to aspect runtime context
 	aspectCtx.SetEthBlockContext(k.BlockContext)
-
-	ethTxContext := types2.NewEthTxContext(ethCallTx)
-	protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
-	jitManager := inherent.NewManager(protocol)
-
-	aspectCtx.SetEthTxContext(ethTxContext, jitManager)
-	aspectCtx.WithCosmosContext(ctx)
-
-	ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, aspectCtx)
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {

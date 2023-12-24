@@ -147,6 +147,14 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	}
 	txConfig := k.TxConfig(ctx, tx.Hash(), tx.Type())
 
+	// retrieve aspectCtx from sdk.Context
+	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
+	if !ok {
+		return nil, errors.New("ApplyMessageWithConfig: unwrap AspectRuntimeContext failed")
+	}
+
+	aspectCtx.EthTxContext().WithEVMConfig(evmConfig)
+
 	// snapshot to contain the txs processing and post processing in same scope
 	// var commit func()
 	// tmpCtx := ctx
@@ -163,12 +171,6 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	msg.Data, err = k.processMsgData(tx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "unable to process msg data")
-	}
-
-	// retrieve aspectCtx from sdk.Context
-	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
-	if !ok {
-		return nil, errors.New("ApplyMessageWithConfig: unwrap AspectRuntimeContext failed")
 	}
 
 	// pass true to commit the StateDB
@@ -339,11 +341,10 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	// Before the pre-transaction execution, establish the EVM context, encompassing details such as
 	// the sender of the transaction (from), transaction message, the EVM responsible for executing
 	// the transaction, EVM tracer, and the stateDB associated with running the EVM transaction.
-	aspectCtx.EthTxContext().WithEVM(msg.From, msg, evm, cfg, evm.Tracer(), stateDB)
+	aspectCtx.EthTxContext().WithEVM(msg.From, msg, evm, evm.Tracer(), stateDB)
 	aspectCtx.EthTxContext().WithTxIndex(uint64(txConfig.TxIndex))
 
 	// Aspect Runtime Context Lifecycle: create state object.
-	// Create a Aspect State Object for OnBlockFinalize
 	aspectCtx.CreateStateObject(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 	leftoverGas := msg.GasLimit

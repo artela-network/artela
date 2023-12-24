@@ -39,6 +39,10 @@ func (k *Keeper) EVMConfig(ctx cosmos.Context, proposerAddress cosmos.ConsAddres
 	}, nil
 }
 
+func (k *Keeper) EVMConfigFromCtx(ctx cosmos.Context) (*states.EVMConfig, error) {
+	return k.EVMConfig(ctx, ctx.BlockHeader().ProposerAddress, k.eip155ChainID)
+}
+
 // VMConfig creates an EVM configuration from the debug setting and the extra EIPs enabled on the
 // module parameters. The config support uses the default JumpTable from the EVM.
 func (k Keeper) VMConfig(ctx cosmos.Context, _ *core.Message, cfg *states.EVMConfig, tracer vm.EVMLogger) vm.Config {

@@ -2,6 +2,7 @@ package evm
 
 import (
 	errorsmod "cosmossdk.io/errors"
+	"fmt"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
@@ -41,7 +42,12 @@ func (aspd AspectRuntimeContextDecorator) AnteHandle(ctx cosmos.Context, tx cosm
 
 		// Aspect Runtime Context Lifecycle: create AspectRuntimeContext
 		// this handler is for eth transaction only, should be 1 message for eth transaction.
-		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction())
+		evmConfig, err := aspd.evmKeeper.EVMConfigFromCtx(ctx)
+		if err != nil {
+			return ctx, fmt.Errorf("failed to get evm config from context: %w", err)
+		}
+		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction()).WithEVMConfig(evmConfig)
+
 		aspectCtx := types.NewAspectRuntimeContext()
 		protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
 		jitManager := inherent.NewManager(protocol)
