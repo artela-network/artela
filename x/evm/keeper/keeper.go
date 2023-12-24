@@ -111,7 +111,7 @@ func NewKeeper(
 	}
 
 	// init aspect
-	aspect := provider.NewArtelaProvider(storeKey, app.CreateQueryContext, app.LastBlockHeight, logger)
+	aspect := provider.NewArtelaProvider(storeKey, app.LastBlockHeight, logger)
 	// new Aspect Runtime Context
 	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
 	aspectRuntimeContext.Init(storeKey)

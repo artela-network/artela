@@ -136,6 +136,7 @@ func (c EthBlockHeader) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerConte
 			getHeight = blockHigh
 		}
 		lastCtx, getErr := c.getCtxByHeight(getHeight, true)
+
 		if getErr != nil {
 			return artelatypes.NewContextQueryResponse(false, fmt.Sprintf("The incoming block height %d cannot be recognized.", getHeight))
 		}
@@ -143,6 +144,7 @@ func (c EthBlockHeader) Execute(sdkCtx sdk.Context, ctx *artelatypes.RunnerConte
 	}
 
 	if header.Height == 0 {
+
 		lastCtx, getErr := c.getCtxByHeight(0, true)
 		if getErr != nil {
 			return artelatypes.NewContextQueryResponse(false, "The incoming block height cannot be recognized.")

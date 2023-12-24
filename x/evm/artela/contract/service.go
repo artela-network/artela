@@ -21,27 +21,19 @@ type (
 )
 
 type AspectService struct {
-	aspectStore    *AspectStore
-	getCtxByHeight evmtypes.ContextBuilder
-	getHeight      evmtypes.GetLastBlockHeight
+	aspectStore *AspectStore
+	getHeight   evmtypes.GetLastBlockHeight
 }
 
-func NewAspectService(storeKey storetypes.StoreKey, getCtxByHeight evmtypes.ContextBuilder, getHeight evmtypes.GetLastBlockHeight, logger log.Logger) *AspectService {
+func NewAspectService(storeKey storetypes.StoreKey, getHeight evmtypes.GetLastBlockHeight, logger log.Logger) *AspectService {
 	return &AspectService{
-		aspectStore:    NewAspectStore(storeKey, logger),
-		getCtxByHeight: getCtxByHeight,
-		getHeight:      getHeight,
+		aspectStore: NewAspectStore(storeKey, logger),
+		getHeight:   getHeight,
 	}
 }
 
-func (service *AspectService) GetAspectOf(ctx sdk.Context, aspectId common.Address, commit bool) (*treeset.Set, error) {
-	if commit {
-		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
-		if getErr != nil {
-			return nil, errors.Wrap(getErr, "load context by pre block height failed")
-		}
-		ctx = sdkCtx
-	}
+func (service *AspectService) GetAspectOf(ctx sdk.Context, aspectId common.Address) (*treeset.Set, error) {
+
 	aspects, err := service.aspectStore.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return nil, errors.Wrap(err, "load aspect ref failed")
@@ -49,25 +41,14 @@ func (service *AspectService) GetAspectOf(ctx sdk.Context, aspectId common.Addre
 	return aspects, nil
 }
 
-func (service *AspectService) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int, commit bool) ([]byte, *uint256.Int) {
-	if commit {
-		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
-		if getErr != nil {
-			return nil, nil
-		}
-		ctx = sdkCtx
-	}
+func (service *AspectService) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
+
 	if version == nil {
 		version = service.aspectStore.GetAspectLastVersion(ctx, aspectId)
 	}
 	return service.aspectStore.GetAspectCode(ctx, aspectId, version)
 }
-func (service *AspectService) GetBoundAspectForAddr(height int64, to common.Address) ([]*artela.AspectCode, error) {
-	sdkCtx, getErr := service.getCtxByHeight(height, true)
-	if getErr != nil {
-		return nil, errors.Wrap(getErr, "load context by pre block height failed")
-	}
-
+func (service *AspectService) GetBoundAspectForAddr(sdkCtx sdk.Context, to common.Address) ([]*artela.AspectCode, error) {
 	aspects, err := service.aspectStore.GetTxLevelAspects(sdkCtx, to)
 	if err != nil {
 		return nil, errors.Wrap(err, "load contract aspect binding failed")
@@ -90,14 +71,8 @@ func (service *AspectService) GetBoundAspectForAddr(height int64, to common.Addr
 }
 
 // GetAspectsForJoinPoint BoundAspects get bound Aspects on previous block
-func (service *AspectService) GetAspectsForJoinPoint(ctx sdk.Context, to common.Address, cut artela.PointCut, commit bool) ([]*artela.AspectCode, error) {
-	if commit {
-		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
-		if getErr != nil {
-			return nil, errors.Wrap(getErr, "load context by pre block height failed")
-		}
-		ctx = sdkCtx
-	}
+func (service *AspectService) GetAspectsForJoinPoint(ctx sdk.Context, to common.Address, cut artela.PointCut) ([]*artela.AspectCode, error) {
+
 	aspects, err := service.aspectStore.GetTxLevelAspects(ctx, to)
 
 	if err != nil {
@@ -128,14 +103,8 @@ func (service *AspectService) GetAspectsForJoinPoint(ctx sdk.Context, to common.
 }
 
 // GetAccountVerifiers gets the bound Aspect verifier for the account
-func (service *AspectService) GetAccountVerifiers(ctx sdk.Context, to common.Address, commit bool) ([]*artela.AspectCode, error) {
-	if commit {
-		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
-		if getErr != nil {
-			return nil, errors.Wrap(getErr, "load context by pre block height failed")
-		}
-		ctx = sdkCtx
-	}
+func (service *AspectService) GetAccountVerifiers(ctx sdk.Context, to common.Address) ([]*artela.AspectCode, error) {
+
 	aspects, err := service.aspectStore.GetVerificationAspects(ctx, to)
 	if err != nil {
 		return nil, errors.Wrap(err, "load contract aspect binding failed")
@@ -162,15 +131,8 @@ func (service *AspectService) GetAccountVerifiers(ctx sdk.Context, to common.Add
 	return aspectCodes, nil
 }
 
-func (service *AspectService) GetAspectForBlock(ctx sdk.Context, commit bool) ([]*artela.AspectCode, error) {
+func (service *AspectService) GetAspectForBlock(ctx sdk.Context) ([]*artela.AspectCode, error) {
 
-	if commit {
-		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
-		if getErr != nil {
-			return nil, errors.Wrap(getErr, "load context by block failed GetAspectForBlock")
-		}
-		ctx = sdkCtx
-	}
 	aspectMap, err := service.aspectStore.GetBlockLevelAspects(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "load contract aspect binding failed")
@@ -203,14 +165,8 @@ func (service *AspectService) GetAspectForBlock(ctx sdk.Context, commit bool) ([
 	return aspectCodes, nil
 }
 
-func (service *AspectService) GetAspectAccount(ctx sdk.Context, aspectId common.Address, commit bool) (*common.Address, error) {
-	if commit {
-		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
-		if getErr != nil {
-			return nil, errors.Wrap(getErr, "load context by  block height  failed.")
-		}
-		ctx = sdkCtx
-	}
+func (service *AspectService) GetAspectAccount(ctx sdk.Context, aspectId common.Address) (*common.Address, error) {
+
 	if ctx.ChainID() == "" {
 		return nil, errors.New("chainID is empty.")
 	}
@@ -222,14 +178,8 @@ func (service *AspectService) GetAspectAccount(ctx sdk.Context, aspectId common.
 	return &address, nil
 }
 
-func (service *AspectService) GetAspectProof(ctx sdk.Context, aspectId common.Address, commit bool) ([]byte, error) {
-	if commit {
-		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
-		if getErr != nil {
-			return nil, errors.Wrap(getErr, "load context by  block height  failed.")
-		}
-		ctx = sdkCtx
-	}
+func (service *AspectService) GetAspectProof(ctx sdk.Context, aspectId common.Address) ([]byte, error) {
+
 	if ctx.ChainID() == "" {
 		return nil, errors.New("chainID is empty.")
 	}
@@ -245,14 +195,8 @@ func (service *AspectService) GetBlockHeight() int64 {
 	return service.getHeight()
 }
 
-func (service *AspectService) GetAspectJoinPoint(ctx sdk.Context, aspectId common.Address, version *uint256.Int, commit bool) *big.Int {
-	if commit {
-		sdkCtx, getErr := service.getCtxByHeight(ctx.BlockHeight()-1, true)
-		if getErr != nil {
-			return nil
-		}
-		ctx = sdkCtx
-	}
+func (service *AspectService) GetAspectJoinPoint(ctx sdk.Context, aspectId common.Address, version *uint256.Int) *big.Int {
+
 	if version == nil {
 		version = service.aspectStore.GetAspectLastVersion(ctx, aspectId)
 	}

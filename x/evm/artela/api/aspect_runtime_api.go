@@ -90,14 +90,13 @@ func (a *aspectRuntimeHostApi) GetContext(ctx *asptypes.RunnerContext, key strin
 	has, ctxKey, params := asptypes.HasContextKey(key)
 	if has {
 		if matcher, ok := a.execMap[ctxKey]; ok {
-			sdkCtx, err := a.getCtxByHeight(ctx.BlockNumber, true)
-			if err != nil {
-				sdkCtx, err = a.getCtxByHeight(ctx.BlockNumber-1, true)
-				if err != nil {
-					return asptypes.NewContextQueryResponse(false, "Failed to retrieve chain context")
-				}
+
+			runCtx, ok := ctx.Ctx.(*types.AspectRuntimeContext)
+			if !ok {
+				return asptypes.NewContextQueryResponse(false, "failed to unwrap AspectRuntimeContext from context.Context.")
 			}
-			execute := matcher.Execute(sdkCtx, ctx, params)
+
+			execute := matcher.Execute(runCtx.CosmosContext(), ctx, params)
 			if execute == nil {
 				return asptypes.NewContextQueryResponse(false, "Get fail.")
 			}

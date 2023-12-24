@@ -25,16 +25,14 @@ var (
 type evmHostApi struct {
 	aspectCtx *artelatypes.AspectRuntimeContext
 
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
-	ethCall        func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error)
+	ethCall func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error)
 }
 
 func NewEvmHostInstance(getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
 	ethCall func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error),
 ) {
 	evmHostInstance = &evmHostApi{
-		getCtxByHeight: getCtxByHeight,
-		ethCall:        ethCall,
+		ethCall: ethCall,
 	}
 }
 
@@ -44,17 +42,18 @@ func GetEvmHostInstance(ctx context.Context) (coretypes.EvmHostApi, error) {
 		return nil, errors.New("GetEvmHostInstance: unwrap AspectRuntimeContext failed")
 	}
 	return &evmHostApi{
-		aspectCtx:      aspectCtx,
-		getCtxByHeight: evmHostInstance.getCtxByHeight,
-		ethCall:        evmHostInstance.ethCall,
+		aspectCtx: aspectCtx,
+		ethCall:   evmHostInstance.ethCall,
 	}, nil
 }
 
 func (e evmHostApi) StaticCall(ctx *coretypes.RunnerContext, request *coretypes.EthMessage) *coretypes.EthMessageCallResult {
-	sdkCtx, err := e.getCtxByHeight(ctx.BlockNumber, false)
-	if err != nil {
-		return coretypes.ErrEthMessageCallResult(err)
+
+	aspectCtx, ok := ctx.Ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
+	if !ok {
+		return coretypes.ErrEthMessageCallResult(errors.New("failed to unwrap AspectRuntimeContext from context.Context"))
 	}
+
 	marshal, jsonErr := jsoniter.Marshal(request)
 	if jsonErr != nil {
 		return coretypes.ErrEthMessageCallResult(jsonErr)
@@ -63,7 +62,7 @@ func (e evmHostApi) StaticCall(ctx *coretypes.RunnerContext, request *coretypes.
 	if parseErr != nil {
 		return coretypes.ErrEthMessageCallResult(parseErr)
 	}
-	chainID, chainErr := artela.ParseChainID(sdkCtx.ChainID())
+	chainID, chainErr := artela.ParseChainID(aspectCtx.CosmosContext().ChainID())
 	if chainErr != nil {
 		return coretypes.ErrEthMessageCallResult(chainErr)
 	}
@@ -74,7 +73,7 @@ func (e evmHostApi) StaticCall(ctx *coretypes.RunnerContext, request *coretypes.
 		ProposerAddress: nil,
 		ChainId:         chainID.Int64(),
 	}
-	call, ethErr := e.ethCall(sdkCtx.Context(), ethRequest)
+	call, ethErr := e.ethCall(aspectCtx, ethRequest)
 	if ethErr != nil {
 		return coretypes.ErrEthMessageCallResult(ethErr)
 	}
