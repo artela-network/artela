@@ -202,7 +202,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 	case "boundaddressesof":
 		{
 			aspectId := parameters["aspectId"].(common.Address)
-			return k.contractsOf(ctx, method, aspectId, commit)
+			return k.boundAddressesOf(ctx, method, aspectId, commit)
 		}
 	case "entrypoint":
 		{

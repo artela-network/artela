@@ -68,7 +68,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, 
 	}, nil
 }
 
-func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method, aspectId common.Address, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
+func (anc *AspectNativeContract) boundAddressesOf(ctx sdk.Context, method *abi.Method, aspectId common.Address, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	value, err := anc.aspectService.GetAspectOf(ctx, aspectId, commit)
 	if err != nil {
 		return nil, err
