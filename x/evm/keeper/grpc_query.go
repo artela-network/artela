@@ -254,10 +254,12 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	}
 
 	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+	// use cache ctx and ignore the write function, since we don't need to commit the stateDB
+	cacheCtx, _ := ctx.CacheContext()
 	// Aspect Runtime Context Lifecycle: create aspect context.
 	// This marks the beginning of running an aspect of EthCall, creating the aspect context,
 	// and establishing the link with the SDK context.
-	ctx, aspectCtx := k.WithAspectContext(ctx, args.ToTransaction().AsEthCallTransaction())
+	ctx, aspectCtx := k.WithAspectContext(cacheCtx, args.ToTransaction().AsEthCallTransaction())
 	defer aspectCtx.Destory()
 
 	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
@@ -320,10 +322,12 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	}
 	txMsg := args.ToTransaction()
 
+	// use cache ctx and ignore the write function, since we don't need to commit the stateDB
+	cacheCtx, _ := ctx.CacheContext()
 	// Aspect Runtime Context Lifecycle: create aspect context.
 	// This marks the beginning of running an aspect of EstimateGas, creating the aspect context,
 	// and establishing the link with the SDK context.
-	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction())
+	ctx, aspectCtx := k.WithAspectContext(cacheCtx, txMsg.AsTransaction())
 	defer aspectCtx.Destory()
 
 	gasCap = hi
@@ -448,8 +452,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		if err != nil {
 			continue
 		}
-		// commit state and clean state object, Aspect State set @ApplyMessageWithConfig(..)
-		k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
+
 		txConfig.LogIndex += uint(len(rsp.Logs))
 	}
 
@@ -619,8 +622,14 @@ func (k *Keeper) traceTx(
 	// Aspect Runtime Context Lifecycle: create aspect context.
 	// This marks the beginning of running an aspect of TraceBlock or TraceTx, creating the aspect context,
 	// and establishing the link with the SDK context.
-	ctx, aspectCtx := k.WithAspectContext(ctx, tx)
-	defer aspectCtx.Destory()
+	cacheCtx, commit := ctx.CacheContext()
+	ctx, aspectCtx := k.WithAspectContext(cacheCtx, tx)
+	defer func() {
+		if commitMessage {
+			commit()
+		}
+		aspectCtx.Destory()
+	}()
 
 	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
 	aspectCtx.EthTxContext().WithEVMConfig(cfg)
@@ -629,9 +638,6 @@ func (k *Keeper) traceTx(
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}
-	// commit state and clean state object, Aspect State set @ApplyMessageWithConfig(..)
-	k.GetAspectRuntimeContext().RefreshState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
-
 	var result interface{}
 	result, err = tracer.GetResult()
 	if err != nil {
@@ -666,6 +672,14 @@ func (k Keeper) GetSender(c context.Context, in *txs.MsgEthereumTx) (*txs.GetSen
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, in.AsEthCallTransaction())
 	defer aspectCtx.Destory()
+
+	evmConfig, err := k.EVMConfigFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	aspectCtx.SetEthBlockContext(artelatypes.NewEthBlockContextFromHeight(ctx.BlockHeight()))
+	aspectCtx.EthTxContext().WithEVMConfig(evmConfig)
+	aspectCtx.CreateStateObject()
 
 	tx := in.AsTransaction()
 	sender, _, err := k.tryAspectVerifier(ctx, tx)

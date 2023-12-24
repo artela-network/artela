@@ -45,11 +45,9 @@ func NewAspectNativeContract(storeKey storetypes.StoreKey,
 
 func (k *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, commit bool) (*evmtxs.MsgEthereumTxResponse, error) {
 	var writeCacheFunc func()
-	if commit {
-		ctx, writeCacheFunc = ctx.CacheContext()
-	}
+	ctx, writeCacheFunc = ctx.CacheContext()
 	applyMsg, err := k.applyMsg(ctx, msg, commit)
-	if err == nil && writeCacheFunc != nil {
+	if err == nil && commit {
 		writeCacheFunc()
 	}
 	return applyMsg, err

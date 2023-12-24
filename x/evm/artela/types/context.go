@@ -85,7 +85,6 @@ func NewAspectRuntimeContext() *AspectRuntimeContext {
 	return &AspectRuntimeContext{
 		cosmosCtx:     cosmos.Context{},
 		aspectContext: NewAspectContext(),
-		aspectState:   NewAspectState(),
 		storeKey:      cachedStoreKey,
 		logger:        log.NewNopLogger(),
 	}
@@ -390,161 +389,68 @@ func (c *AspectContext) Clear(address common.Address) {
 	delete(c.context, address)
 }
 
-type AspectState struct {
-	//int64 block height
-	//string  group
-	//  AspectStateObject
-	stateCache map[int64]map[string]*AspectStateObject
-}
-
-func NewAspectState() *AspectState {
-	return &AspectState{
-		stateCache: make(map[int64]map[string]*AspectStateObject),
-	}
-}
-
-func (k *AspectRuntimeContext) CreateStateObject(temporary bool, blockHeight int64, lockKey string) {
-	object := NewAspectStateObject(k.cosmosCtx, k.storeKey, AspectStateKeyPrefix, temporary, k.logger)
-	m := k.aspectState.stateCache[blockHeight]
-	if m == nil {
-		k.aspectState.stateCache[blockHeight] = make(map[string]*AspectStateObject)
-	}
-	k.aspectState.stateCache[blockHeight][lockKey] = object
-}
-
-func (k *AspectRuntimeContext) RefreshState(needCommit bool, blockHeight int64, lockKey string) {
-	if blockHeight < 0 {
-		k.Debug(fmt.Sprintf("setState: RefreshState, blockHeight %d is less than 0", blockHeight))
-		return
-	}
-	if len(lockKey) == 0 {
-		if mapResult, ok := k.aspectState.stateCache[blockHeight]; ok {
-			if needCommit {
-				for _, object := range mapResult {
-					object.commit()
-				}
-			}
-			delete(k.aspectState.stateCache, blockHeight)
-		}
-		return
-	}
-	if stateObject, exist := k.aspectState.stateCache[blockHeight][lockKey]; exist {
-		k.Debug(fmt.Sprintf("setState: RefreshState, state cache with block height %d and lock key %s, needCommit %t", blockHeight, lockKey, needCommit))
-		if needCommit {
-			stateObject.commit()
-		}
-		delete(k.aspectState.stateCache[blockHeight], lockKey)
-	}
+func (k *AspectRuntimeContext) CreateStateObject() {
+	k.aspectState = NewAspectState(k.cosmosCtx, k.storeKey, AspectStateKeyPrefix, k.logger)
 }
 
 func (k *AspectRuntimeContext) GetAspectState(ctx *artelatypes.RunnerContext, key string) []byte {
-	aspectPropertyKey := AspectArrayKey(
+	stateKey := AspectArrayKey(
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
-	point := GetAspectStatePoint(ctx.Point)
-	var val []byte
-	if len(point) == 0 {
-		// If it's not a cut-point access to the DeliverTx stage, the data is accessed through the store at the previous block height
-		store := prefix.NewStore(k.cosmosCtx.KVStore(k.storeKey), evmtypes.KeyPrefix(AspectStateKeyPrefix))
-		val = store.Get(aspectPropertyKey)
-	}
-	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
-		val = object.Get(aspectPropertyKey)
-	}
-	return val
+	return k.aspectState.Get(stateKey)
 }
 
 func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, key string, value []byte) {
-	point := GetAspectStatePoint(ctx.Point)
-	if len(point) == 0 {
-		k.Debug(fmt.Sprintf("setState: SetAspectState, point %s not found", ctx.Point))
-		return
-	}
-	aspectPropertyKey := AspectArrayKey(
+	stateKey := AspectArrayKey(
 		ctx.AspectId.Bytes(),
 		[]byte(key),
 	)
 
-	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
-		k.Debug(fmt.Sprintf("setState: SetAspectState, aspectID %s, key %s, value %s, ", ctx.AspectId.String(), key, value))
-		object.Set(aspectPropertyKey, value)
-	} else {
-		k.Debug(fmt.Sprintf("setState: SetAspectState, block %d point %s not found", ctx.BlockNumber, ctx.Point))
-	}
+	k.aspectState.Set(stateKey, value)
 	return
 }
 
-// RemoveAspectState RemoveAspectState( key string) bool
-func (k *AspectRuntimeContext) RemoveAspectState(ctx *artelatypes.RunnerContext, key string) bool {
-	point := GetAspectStatePoint(ctx.Point)
-	if len(point) == 0 {
-		k.Debug(fmt.Sprintf("setState: RemoveAspectState, point %s not found", ctx.Point))
-		return false
-	}
-	aspectPropertyKey := AspectArrayKey(
-		ctx.AspectId.Bytes(),
-		[]byte(key),
-	)
-
-	if object, exist := k.aspectState.stateCache[ctx.BlockNumber][point]; exist {
-		k.Debug(fmt.Sprintf("setState: RemoveAspectState, aspectID %s, key %s", ctx.AspectId.String(), key))
-		object.Set(aspectPropertyKey, nil)
-		return true
-	} else {
-		k.Debug(fmt.Sprintf("setState: RemoveAspectState, block %d point %s not found", ctx.BlockNumber, ctx.Point))
-	}
-	return false
-}
-
-type AspectStateObject struct {
-	preStore prefix.Store
-	commit   func()
+type AspectState struct {
+	state    prefix.Store
 	storeKey storetypes.StoreKey
 
 	logger log.Logger
 }
 
-func NewAspectStateObject(ctx cosmos.Context, storeKey storetypes.StoreKey, fixKey string, temporary bool, logger log.Logger) *AspectStateObject {
-	store := prefix.NewStore(ctx.KVStore(storeKey), evmtypes.KeyPrefix(fixKey))
-	stateObj := &AspectStateObject{
-		preStore: store,
-		commit:   nil,
+func NewAspectState(ctx cosmos.Context, storeKey storetypes.StoreKey, fixKey string, logger log.Logger) *AspectState {
+	cacheStore := prefix.NewStore(ctx.KVStore(storeKey), evmtypes.KeyPrefix(fixKey))
+	stateObj := &AspectState{
+		state:    cacheStore,
 		storeKey: storeKey,
 		logger:   logger,
-	}
-	if temporary {
-		cc, writeEvent := ctx.CacheContext()
-		cacheStore := prefix.NewStore(cc.KVStore(storeKey), evmtypes.KeyPrefix(fixKey))
-		stateObj.commit = writeEvent
-		stateObj.preStore = cacheStore
 	}
 	return stateObj
 }
 
-func (k *AspectStateObject) Set(key, value []byte) {
+func (k *AspectState) Set(key, value []byte) {
 	action := "updated"
 	if len(value) == 0 {
-		k.preStore.Delete(key)
+		k.state.Delete(key)
 		action = "deleted"
 	} else {
-		k.preStore.Set(key, value)
+		k.state.Set(key, value)
 	}
 
-	k.logger.Debug("setState: Set",
-		"action", action,
-		"key", string(key), "value", fmt.Sprintf("%v", value),
-		"key hex", common.Bytes2Hex(key), "value hex", common.Bytes2Hex(value),
-	)
-}
-
-func (k *AspectStateObject) Get(key []byte) []byte {
-	return k.preStore.Get(key)
-}
-
-func (k *AspectStateObject) Commit() {
-	if k.commit != nil {
-		k.commit()
-		k.logger.Debug("setState: Commit, aspect state is committed")
+	if value == nil {
+		k.logger.Debug("setState:", "action", action, "key", string(key), "value", "nil")
+	} else {
+		k.logger.Debug("setState:", "action", action, "key", string(key), "value", string(value))
 	}
+
+}
+
+func (k *AspectState) Get(key []byte) []byte {
+	val := k.state.Get(key)
+	if val == nil {
+		k.logger.Debug("getState:", "key", string(key), "value", "nil")
+	} else {
+		k.logger.Debug("getState:", "key", string(key), "value", string(val))
+	}
+	return val
 }

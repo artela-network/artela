@@ -160,6 +160,9 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	// tmpCtx := ctx
 	tmpCtx, commit := ctx.CacheContext()
 
+	// use the temp ctx for later tx processing
+	aspectCtx.WithCosmosContext(tmpCtx)
+
 	// get the signer according to the chain rules from the config and block height
 	signer := k.MakeSigner(ctx, tx, evmConfig.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 
@@ -221,10 +224,6 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 
 	if !res.Failed() {
 		receipt.Status = ethereum.ReceiptStatusSuccessful
-
-		// Aspect Runtime Context Lifecycle: commit state changes.
-		// The RefreshState function commits all state changes made by the aspect to the block state.
-		aspectCtx.RefreshState(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
 
 		if commit != nil {
 			commit()
@@ -345,7 +344,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	aspectCtx.EthTxContext().WithTxIndex(uint64(txConfig.TxIndex))
 
 	// Aspect Runtime Context Lifecycle: create state object.
-	aspectCtx.CreateStateObject(true, ctx.BlockHeight(), artelatypes.AspectStateDeliverTxState)
+	aspectCtx.CreateStateObject()
 
 	leftoverGas := msg.GasLimit
 
@@ -497,7 +496,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	// The dirty states in `StateDB` is either committed or discarded after return
 	if commit {
-
 		if err := stateDB.Commit(); err != nil {
 			return nil, errorsmod.Wrap(err, "failed to commit stateDB")
 		}

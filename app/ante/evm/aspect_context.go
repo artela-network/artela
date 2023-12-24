@@ -56,6 +56,7 @@ func (aspd AspectRuntimeContextDecorator) AnteHandle(ctx cosmos.Context, tx cosm
 		aspectCtx.SetEthBlockContext(types.NewEthBlockContextFromHeight(ctx.BlockHeight()))
 		aspectCtx.SetEthTxContext(ethTxContext, jitManager)
 		aspectCtx.WithCosmosContext(ctx)
+		aspectCtx.CreateStateObject()
 
 		ctx = ctx.WithValue(types.AspectContextKey, aspectCtx)
 	}
