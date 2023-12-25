@@ -134,7 +134,7 @@ func (a *aspectRuntimeContextHostAPI) Register() {
 
 	// isCall context
 	a.execMap[aspctx.IsCall] = func(ctx *asptypes.RunnerContext) ([]byte, error) {
-		return proto.Marshal(&asptypes.BoolData{Data: ctx.Commit})
+		return proto.Marshal(&asptypes.BoolData{Data: !ctx.Commit})
 	}
 }
 
