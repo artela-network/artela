@@ -22,7 +22,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
-	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
@@ -46,6 +45,7 @@ import (
 
 	"github.com/artela-network/artela/app"
 	appparams "github.com/artela-network/artela/app/params"
+	"github.com/artela-network/artela/client/debug"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
