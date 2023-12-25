@@ -178,10 +178,14 @@ func (c *AspectRuntimeContext) ClearContext() {
 
 func (c *AspectRuntimeContext) Destory() {
 	c.ClearBlockContext()
-	if c.ExtBlockContext() != nil {
+	if c.EthTxContext() != nil {
 		c.EthTxContext().ClearEvmObject()
 	}
+	c.jitManager = nil
 	c.ClearContext()
+	c.aspectContext = nil
+	c.cosmosCtx = cosmos.Context{}
+	c.aspectState = nil
 }
 
 func (c *AspectRuntimeContext) Deadline() (deadline time.Time, ok bool) {

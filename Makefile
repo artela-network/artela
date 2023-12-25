@@ -2,18 +2,23 @@ default_target: all
 
 .PHONY: default_target
 
-VERSION=$(shell git describe --tags --always)
-GIT_COMMIT=$(shell git rev-parse HEAD)
-GIT_COMMIT_DATE=$(shell git log -n1 --pretty='format:%cd' --date=format:'%Y%m%d')
-REPO=github.com/artela-network/artela
+REPO=github.com/cosmos/cosmos-sdk
 BUILD=./build
 CURRENT_DIR=$(shell pwd)
-
 GOBIN ?= $$(go env GOPATH)/bin
 
-ldflags = -X $(REPO)/version.AppVersion=$(VERSION) \
-          -X $(REPO)/version.GitCommit=$(GIT_COMMIT) \
-          -X $(REPO)/version.GitCommitDate=$(GIT_COMMIT_DATE)
+# version info
+NAME=artela
+APP_NAME=artelad
+VERSION=$(shell git describe --tags --always)
+GIT_COMMIT=$(shell git rev-parse HEAD)
+TAGS=$(shell git describe --tags $(git rev-list --tags --max-count=1))
+
+ldflags = -X $(REPO)/version.Version=$(VERSION) \
+          -X $(REPO)/version.Commit=$(GIT_COMMIT) \
+          -X $(REPO)/version.BuildTags=$(TAGS) \
+		  -X $(REPO)/version.AppName=$(APP_NAME) \
+		  -X $(REPO)/version.Name=$(NAME)
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
   ldflags += -w -s
