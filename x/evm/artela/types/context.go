@@ -286,6 +286,11 @@ func (c *EthTxContext) WithCommit(commit bool) *EthTxContext {
 	return c
 }
 
+func (c *EthTxContext) WithStateDB(stateDb vm.StateDB) *EthTxContext {
+	c.stateDb = stateDb
+	return c
+}
+
 func (c *EthTxContext) ClearEvmObject() *EthTxContext {
 	c.stateDb = nil
 	c.vmTracer = nil
