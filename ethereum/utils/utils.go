@@ -25,7 +25,7 @@ const (
 	// TestnetChainID defines the Artela EIP155 chain ID for testnet
 	TestnetChainID = "artela_11820"
 	// BaseDenom defines the Artela mainnet denomination
-	BaseDenom = "aartela"
+	BaseDenom = "uart"
 )
 
 // IsMainnet returns true if the chain-id has the Artela mainnet EIP155 chain prefix.
