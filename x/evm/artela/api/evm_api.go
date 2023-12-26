@@ -6,7 +6,6 @@ import (
 
 	"github.com/artela-network/aspect-core/integration"
 	coretypes "github.com/artela-network/aspect-core/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/log"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
@@ -28,7 +27,7 @@ type evmHostApi struct {
 	ethCall func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error)
 }
 
-func NewEvmHostInstance(getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
+func NewEvmHostInstance(
 	ethCall func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error),
 ) {
 	evmHostInstance = &evmHostApi{
@@ -49,7 +48,7 @@ func GetEvmHostInstance(ctx context.Context) (coretypes.EvmHostApi, error) {
 
 func (e evmHostApi) StaticCall(ctx *coretypes.RunnerContext, request *coretypes.EthMessage) *coretypes.EthMessageCallResult {
 
-	aspectCtx, ok := ctx.Ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
+	aspectCtx, ok := ctx.Ctx.(*artelatypes.AspectRuntimeContext)
 	if !ok {
 		return coretypes.ErrEthMessageCallResult(errors.New("failed to unwrap AspectRuntimeContext from context.Context"))
 	}
@@ -73,7 +72,8 @@ func (e evmHostApi) StaticCall(ctx *coretypes.RunnerContext, request *coretypes.
 		ProposerAddress: nil,
 		ChainId:         chainID.Int64(),
 	}
-	call, ethErr := e.ethCall(aspectCtx, ethRequest)
+
+	call, ethErr := e.ethCall(aspectCtx.CosmosContext().Context(), ethRequest)
 	if ethErr != nil {
 		return coretypes.ErrEthMessageCallResult(ethErr)
 	}

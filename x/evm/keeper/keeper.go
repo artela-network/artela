@@ -144,7 +144,7 @@ func NewKeeper(
 
 	api.NewAspectRuntime(aspectRuntimeContext, app.CreateQueryContext, k.GetChainConfig)
 
-	api.NewEvmHostInstance(app.CreateQueryContext, k.EthCall)
+	api.NewEvmHostInstance(k.EthCall)
 	artelaType.GetEvmHostHook = api.GetEvmHostInstance
 
 	artelaType.GetAspectContext = k.GetAspectContext
