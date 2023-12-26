@@ -74,7 +74,7 @@ type AspectRuntimeContext struct {
 	aspectContext   *AspectContext
 	ethBlockContext *EthBlockContext
 	aspectState     *AspectState
-	cosmosCtx       cosmos.Context
+	cosmosCtx       *cosmos.Context
 	storeKey        storetypes.StoreKey
 
 	logger     log.Logger
@@ -83,7 +83,6 @@ type AspectRuntimeContext struct {
 
 func NewAspectRuntimeContext() *AspectRuntimeContext {
 	return &AspectRuntimeContext{
-		cosmosCtx:     cosmos.Context{},
 		aspectContext: NewAspectContext(),
 		storeKey:      cachedStoreKey,
 		logger:        log.NewNopLogger(),
@@ -96,7 +95,7 @@ func (c *AspectRuntimeContext) Init(storeKey storetypes.StoreKey) {
 }
 
 func (c *AspectRuntimeContext) WithCosmosContext(newTxCtx cosmos.Context) {
-	c.cosmosCtx = newTxCtx
+	c.cosmosCtx = &newTxCtx
 	c.logger = newTxCtx.Logger().With("module", fmt.Sprintf("x/%s", AspectModuleName))
 }
 
@@ -115,7 +114,7 @@ func (c *AspectRuntimeContext) Logger() log.Logger {
 }
 
 func (c *AspectRuntimeContext) CosmosContext() cosmos.Context {
-	return c.cosmosCtx
+	return *c.cosmosCtx
 }
 
 func (c *AspectRuntimeContext) StoreKey() storetypes.StoreKey {
@@ -165,26 +164,42 @@ func (c *AspectRuntimeContext) ClearBlockContext() {
 	}
 }
 
-func (c *AspectRuntimeContext) ClearContext() {
-	if c.EthTxContext().TxTo() == "" {
-		c.ethTxContext = nil
-		return
-	}
-	contractAddress := c.EthTxContext().TxTo()
-	c.AspectContext().Clear(common.HexToAddress(contractAddress))
-	c.ethTxContext = nil
+func (c *AspectRuntimeContext) CreateStateObject() {
+	c.aspectState = NewAspectState(*c.cosmosCtx, c.storeKey, AspectStateKeyPrefix, c.logger)
 }
 
-func (c *AspectRuntimeContext) Destory() {
-	if c.EthTxContext() != nil {
-		c.EthTxContext().ClearEvmObject()
-	}
-	c.ClearContext()
+func (c *AspectRuntimeContext) GetAspectState(ctx *artelatypes.RunnerContext, key string) []byte {
+	stateKey := AspectArrayKey(
+		ctx.AspectId.Bytes(),
+		[]byte(key),
+	)
+	return c.aspectState.Get(stateKey)
+}
 
+func (c *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, key string, value []byte) {
+	stateKey := AspectArrayKey(
+		ctx.AspectId.Bytes(),
+		[]byte(key),
+	)
+
+	c.aspectState.Set(stateKey, value)
+	return
+}
+
+func (c *AspectRuntimeContext) Destroy() {
+	if c.ethTxContext != nil {
+		c.ethTxContext.ClearEvmObject()
+	}
+	if c.aspectContext != nil {
+		c.aspectContext.Clear()
+	}
+
+	c.ethTxContext = nil
 	c.jitManager = nil
 	c.aspectContext = nil
-	c.cosmosCtx = cosmos.Context{}
+	c.cosmosCtx = nil
 	c.aspectState = nil
+	c.ethBlockContext = nil
 }
 
 func (c *AspectRuntimeContext) Deadline() (deadline time.Time, ok bool) {
@@ -390,30 +405,13 @@ func (c *AspectContext) Get(address common.Address, key string) []byte {
 	return c.context[address][key]
 }
 
-func (c *AspectContext) Clear(address common.Address) {
-	delete(c.context, address)
-}
-
-func (k *AspectRuntimeContext) CreateStateObject() {
-	k.aspectState = NewAspectState(k.cosmosCtx, k.storeKey, AspectStateKeyPrefix, k.logger)
-}
-
-func (k *AspectRuntimeContext) GetAspectState(ctx *artelatypes.RunnerContext, key string) []byte {
-	stateKey := AspectArrayKey(
-		ctx.AspectId.Bytes(),
-		[]byte(key),
-	)
-	return k.aspectState.Get(stateKey)
-}
-
-func (k *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, key string, value []byte) {
-	stateKey := AspectArrayKey(
-		ctx.AspectId.Bytes(),
-		[]byte(key),
-	)
-
-	k.aspectState.Set(stateKey, value)
-	return
+func (c *AspectContext) Clear() {
+	for addr := range c.context {
+		for k := range c.context[addr] {
+			delete(c.context[addr], k)
+		}
+		delete(c.context, addr)
+	}
 }
 
 type AspectState struct {

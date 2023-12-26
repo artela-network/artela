@@ -259,7 +259,7 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, args.ToTransaction().AsEthCallTransaction(), cfg,
 		artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
-	defer aspectCtx.Destory()
+	defer aspectCtx.Destroy()
 
 	// pass false to not commit StateDB
 	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
@@ -329,7 +329,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction(), cfg,
 		artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
-	defer aspectCtx.Destory()
+	defer aspectCtx.Destroy()
 
 	// ApplyMessageWithConfig expect correct nonce set in msg
 	nonce := k.GetNonce(ctx, args.GetFrom())
@@ -430,7 +430,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		// and establishing the link with the SDK context.
 		ctx, aspectCtx := k.WithAspectContext(ctx, ethTx, cfg,
 			artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
-		defer aspectCtx.Destory()
+		defer aspectCtx.Destroy()
 
 		msg, err := txs.ToMessage(ethTx, signer, cfg.BaseFee)
 		if err != nil {
@@ -566,7 +566,7 @@ func (k *Keeper) traceTx(
 		if commitMessage {
 			commit()
 		}
-		aspectCtx.Destory()
+		aspectCtx.Destroy()
 	}()
 
 	msg, err := txs.ToMessage(tx, signer, cfg.BaseFee)
@@ -667,7 +667,7 @@ func (k Keeper) GetSender(c context.Context, in *txs.MsgEthereumTx) (*txs.GetSen
 	// and establishing the link with the SDK context.
 	ctx, aspectCtx := k.WithAspectContext(ctx, in.AsEthCallTransaction(),
 		evmConfig, artelatypes.NewEthBlockContextFromHeight(ctx.BlockHeight()))
-	defer aspectCtx.Destory()
+	defer aspectCtx.Destroy()
 
 	tx := in.AsTransaction()
 	sender, _, err := k.tryAspectVerifier(ctx, tx)
