@@ -5,13 +5,8 @@ import (
 	"errors"
 
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
-	cosmosAspect "github.com/cosmos/cosmos-sdk/aspect/cosmos"
 	"github.com/ethereum/go-ethereum/common"
 )
-
-func (k Keeper) GetAspectCosmosProvider() cosmosAspect.AspectCosmosProvider {
-	return k.aspect
-}
 
 func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {
 	return k.aspectRuntimeContext
@@ -25,19 +20,23 @@ func (k Keeper) JITSenderAspectByContext(ctx context.Context, userOpHash common.
 	return aspectCtx.JITManager().SenderAspect(userOpHash), nil
 }
 
-func (k Keeper) GetAspectContext(ctx context.Context, aspectId string, key string) (string, error) {
+func (k Keeper) GetAspectContext(ctx context.Context, address common.Address, key string) ([]byte, error) {
 	aspectCtx, ok := ctx.(*artvmtype.AspectRuntimeContext)
 	if !ok {
-		return "", errors.New("GetAspectContext: unwrap AspectRuntimeContext failed")
+		return nil, errors.New("GetAspectContext: unwrap AspectRuntimeContext failed")
 	}
-	return aspectCtx.AspectContext().Get(aspectId, key), nil
+	return aspectCtx.AspectContext().Get(address, key), nil
 }
 
-func (k Keeper) SetAspectContext(ctx context.Context, aspectId string, key string, value string) error {
+func (k Keeper) SetAspectContext(ctx context.Context, address common.Address, key string, value []byte) error {
 	aspectCtx, ok := ctx.(*artvmtype.AspectRuntimeContext)
 	if !ok {
 		return errors.New("SetAspectContext: unwrap AspectRuntimeContext failed")
 	}
-	aspectCtx.AspectContext().Add(aspectId, key, value)
+	aspectCtx.AspectContext().Add(address, key, value)
 	return nil
+}
+
+func (k Keeper) GetBlockContext() *artvmtype.EthBlockContext {
+	return k.BlockContext
 }

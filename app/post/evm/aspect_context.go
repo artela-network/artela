@@ -31,7 +31,7 @@ func (aspd AspectRuntimeContextDecorator) PostHandle(ctx cosmos.Context, tx cosm
 		return ctx, errors.New("EthereumTx: unwrap AspectRuntimeContext failed")
 	}
 
-	aspectCtx.Destory()
+	aspectCtx.Destroy()
 
 	return next(ctx, tx, simulate, success)
 }

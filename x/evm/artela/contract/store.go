@@ -211,7 +211,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 	keySet := treeset.NewWithStringComparator()
 	// add propertyAllKey to keySet
 	if len(propertyAllKey) > 0 {
-		splitData := strings.Split(propertyAllKey, types.AspectPropertyAllKeySplit)
+		splitData := strings.Split(string(propertyAllKey), types.AspectPropertyAllKeySplit)
 		for _, datum := range splitData {
 			keySet.Add(datum)
 		}
@@ -237,7 +237,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 			[]byte(key),
 		)
 
-		aspectConfigStore.Set(aspectPropertyKey, []byte(value))
+		aspectConfigStore.Set(aspectPropertyKey, value)
 
 		k.logger.Debug(
 			fmt.Sprintf("setState: StoreAspectProperty"),
@@ -261,22 +261,17 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 	return nil
 }
 
-func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Address, propertyKey string) string {
+func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Address, propertyKey string) []byte {
 	if types.AspectProofKey == propertyKey || types.AspectAccountKey == propertyKey {
 		// Block query of account and Proof
-		return ""
+		return nil
 	}
 	codeStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
 	aspectPropertyKey := types.AspectPropertyKey(
 		aspectId.Bytes(),
 		[]byte(propertyKey),
 	)
-	get := codeStore.Get(aspectPropertyKey)
-	if nil != get && len(get) > 0 {
-		return string(get)
-	} else {
-		return ""
-	}
+	return codeStore.Get(aspectPropertyKey)
 }
 
 func (k *AspectStore) BindTxAspect(ctx sdk.Context, account common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8) error {

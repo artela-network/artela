@@ -24,8 +24,6 @@ func InitGenesis(
 	accountKeeper types.AccountKeeper,
 	genState support.GenesisState,
 ) []abci.ValidatorUpdate {
-	k.WithChainID(ctx)
-
 	if err := k.SetParams(ctx, genState.Params); err != nil {
 		panic(fmt.Errorf("error setting params %s", err))
 	}

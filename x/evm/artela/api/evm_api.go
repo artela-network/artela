@@ -2,158 +2,116 @@ package api
 
 import (
 	"context"
-	"strconv"
-
-	"github.com/artela-network/aspect-core/integration"
-	coretypes "github.com/artela-network/aspect-core/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/log"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/pkg/errors"
-
-	artela "github.com/artela-network/artela/ethereum/types"
+	"errors"
+	"github.com/artela-network/artela-evm/vm"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
 	types "github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
+	"github.com/artela-network/aspect-core/integration"
+	asptypes "github.com/artela-network/aspect-core/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 var (
-	_               coretypes.EvmHostApi = (*evmHostApi)(nil)
-	evmHostInstance *evmHostApi          // only use this to cache the handler of getCtxByHeight, ethCall
+	_ asptypes.EVMHostAPI = (*evmHostApi)(nil)
 )
 
 type evmHostApi struct {
 	aspectCtx *artelatypes.AspectRuntimeContext
-
-	getCtxByHeight func(height int64, prove bool) (sdk.Context, error)
-	ethCall        func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error)
 }
 
-func NewEvmHostInstance(getCtxByHeight func(height int64, prove bool) (sdk.Context, error),
-	ethCall func(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error),
-) {
-	evmHostInstance = &evmHostApi{
-		getCtxByHeight: getCtxByHeight,
-		ethCall:        ethCall,
-	}
-}
+func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.StaticCallRequest) *asptypes.StaticCallResult {
+	from := common.BytesToAddress(request.From)
+	to := common.BytesToAddress(request.To)
 
-func GetEvmHostInstance(ctx context.Context) (coretypes.EvmHostApi, error) {
-	aspectCtx, ok := ctx.(*artelatypes.AspectRuntimeContext)
-	if !ok {
-		return nil, errors.New("GetEvmHostInstance: unwrap AspectRuntimeContext failed")
-	}
-	return &evmHostApi{
-		aspectCtx:      aspectCtx,
-		getCtxByHeight: evmHostInstance.getCtxByHeight,
-		ethCall:        evmHostInstance.ethCall,
-	}, nil
-}
-
-func (e evmHostApi) StaticCall(ctx *coretypes.RunnerContext, request *coretypes.EthMessage) *coretypes.EthMessageCallResult {
-	sdkCtx, err := e.getCtxByHeight(ctx.BlockNumber, false)
-	if err != nil {
-		return coretypes.ErrEthMessageCallResult(err)
-	}
-	marshal, jsonErr := jsoniter.Marshal(request)
-	if jsonErr != nil {
-		return coretypes.ErrEthMessageCallResult(jsonErr)
-	}
-	parseUint, parseErr := strconv.ParseUint(request.GasFeeCap, 10, 64)
-	if parseErr != nil {
-		return coretypes.ErrEthMessageCallResult(parseErr)
-	}
-	chainID, chainErr := artela.ParseChainID(sdkCtx.ChainID())
-	if chainErr != nil {
-		return coretypes.ErrEthMessageCallResult(chainErr)
+	var evm *vm.EVM
+	ethTxCtx := e.aspectCtx.EthTxContext()
+	if ethTxCtx != nil {
+		// if evm is not nil, it means we are already in a tx,
+		// so we can use the last evm to execute the static call
+		evm = ethTxCtx.LastEvm()
 	}
 
-	ethRequest := &types.EthCallRequest{
-		Args:            marshal,
-		GasCap:          parseUint,
-		ProposerAddress: nil,
-		ChainId:         chainID.Int64(),
+	// evm is still nil, we need to create a new one
+	if evm == nil {
+		txConfig := states.NewEmptyTxConfig(common.BytesToHash(e.aspectCtx.CosmosContext().HeaderHash()))
+		stateDB := states.New(e.aspectCtx.CosmosContext(), evmKeeper, txConfig)
+		evmConfig, err := evmKeeper.EVMConfig(e.aspectCtx.CosmosContext(),
+			e.aspectCtx.CosmosContext().BlockHeader().ProposerAddress, evmKeeper.ChainID())
+		if err != nil {
+			return &asptypes.StaticCallResult{VmError: err.Error()}
+		}
+		evm = evmKeeper.NewEVM(e.aspectCtx.CosmosContext(), &core.Message{
+			From: from,
+			To:   &to,
+			Data: request.Data,
+		}, evmConfig, types.NewNoOpTracer(), stateDB)
 	}
-	call, ethErr := e.ethCall(sdkCtx.Context(), ethRequest)
-	if ethErr != nil {
-		return coretypes.ErrEthMessageCallResult(ethErr)
+
+	// we cannot create any evm at this stage, return error
+	if evm == nil {
+		return &asptypes.StaticCallResult{VmError: "unable to initiate evm at current stage"}
 	}
-	return &coretypes.EthMessageCallResult{
-		Hash:    call.Hash,
-		Logs:    ConvertEthLogs(call.Logs),
-		Ret:     call.Ret,
-		VmError: call.VmError,
-		GasUsed: call.GasUsed,
+
+	// set the default request gas to current remaining f not specified or out of limit
+	if request.Gas == 0 || request.Gas > ctx.Gas {
+		request.Gas = ctx.Gas
+	}
+
+	ret, gas, err := evm.StaticCall(ctx.Ctx, vm.AccountRef(from), to, request.Data, request.Gas)
+	// update gas
+	ctx.Gas = gas
+	return &asptypes.StaticCallResult{
+		Ret:     ret,
+		GasLeft: gas,
+		VmError: err.Error(),
 	}
 }
 
-func ConvertEthLogs(logs []*support.Log) []*coretypes.EthLog {
-	if logs == nil {
-		return nil
-	}
-	ethLogs := make([]*coretypes.EthLog, len(logs))
-	for i, log := range logs {
-		ethLogs[i] = ConvertEthLog(log)
-	}
-	return ethLogs
-}
-
-func ConvertEthLog(logs *support.Log) *coretypes.EthLog {
-	if logs == nil {
-		return nil
-	}
-	topicStrArray := make([]string, len(logs.Topics))
-	copy(topicStrArray, logs.Topics)
-
-	return &coretypes.EthLog{
-		Address:     logs.Address,
-		Topics:      topicStrArray,
-		Data:        logs.Data,
-		BlockNumber: logs.BlockNumber,
-		TxHash:      logs.TxHash,
-		TxIndex:     logs.TxIndex,
-		BlockHash:   logs.BlockHash,
-		Index:       logs.Index,
-		Removed:     logs.Removed,
-	}
-}
-
-func (e evmHostApi) JITCall(ctx *coretypes.RunnerContext, request *coretypes.JitInherentRequest) *coretypes.JitInherentResponse {
+func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitInherentRequest) *asptypes.JitInherentResponse {
 	// determine jit call stage
 	var stage integration.JoinPointStage
-	switch coretypes.PointCut(ctx.Point) {
-	case coretypes.PRE_TX_EXECUTE_METHOD, coretypes.POST_TX_EXECUTE_METHOD,
-		coretypes.PRE_CONTRACT_CALL_METHOD, coretypes.POST_CONTRACT_CALL_METHOD:
+	switch asptypes.PointCut(ctx.Point) {
+	case asptypes.PRE_TX_EXECUTE_METHOD, asptypes.POST_TX_EXECUTE_METHOD,
+		asptypes.PRE_CONTRACT_CALL_METHOD, asptypes.POST_CONTRACT_CALL_METHOD:
 		stage = integration.TransactionExecution
-	case coretypes.VERIFY_TX, coretypes.ON_ACCOUNT_VERIFY_METHOD:
+	case asptypes.VERIFY_TX, asptypes.ON_ACCOUNT_VERIFY_METHOD:
 		stage = integration.PreTransactionExecution
-	case coretypes.POST_TX_COMMIT:
+	case asptypes.POST_TX_COMMIT:
 		stage = integration.PostTransactionExecution
-	case coretypes.ON_BLOCK_INITIALIZE_METHOD:
+	case asptypes.ON_BLOCK_INITIALIZE_METHOD:
 		stage = integration.BlockInitialization
-	case coretypes.ON_BLOCK_FINALIZE_METHOD:
+	case asptypes.ON_BLOCK_FINALIZE_METHOD:
 		stage = integration.BlockFinalization
 	default:
 		log.Error("unsupported join point for jit call", "point", ctx.Point)
-		return &coretypes.JitInherentResponse{Success: false}
+		return &asptypes.JitInherentResponse{Success: false}
 	}
 
-	// convert aspect id to address
-	aspect := *ctx.AspectId
-
 	// FIXME: get leftover gas from last evm
-	resp, gas, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, aspect, ctx.Gas, stage, request)
+	resp, gas, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, ctx.AspectId, ctx.Gas, stage, request)
 	if err != nil {
 		if resp == nil {
-			resp = &coretypes.JitInherentResponse{}
+			resp = &asptypes.JitInherentResponse{}
 		}
 
 		resp.Success = false
 		resp.ErrorMsg = err.Error()
+
 		log.Error("jit inherent submit fail", "err", err)
 	}
 
 	ctx.Gas = gas
 
 	return resp
+}
+
+func GetEvmHostInstance(ctx context.Context) (asptypes.EVMHostAPI, error) {
+	aspectCtx, ok := ctx.(*artelatypes.AspectRuntimeContext)
+	if !ok {
+		return nil, errors.New("GetEVMHostInstance: unwrap AspectRuntimeContext failed")
+	}
+	return &evmHostApi{aspectCtx}, nil
 }

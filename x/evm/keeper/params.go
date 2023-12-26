@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
@@ -23,11 +22,8 @@ func (k Keeper) GetParams(ctx cosmos.Context) (params support.Params) {
 }
 
 func (k *Keeper) GetChainConfig(ctx cosmos.Context) *params.ChainConfig {
-	params := k.GetParams(ctx)
-	if k.ChainID() == nil {
-		k.WithChainID(ctx)
-	}
-	ethCfg := params.ChainConfig.EthereumConfig(k.ChainID())
+	chainParams := k.GetParams(ctx)
+	ethCfg := chainParams.ChainConfig.EthereumConfig(k.ChainID())
 	return ethCfg
 }
 

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -83,7 +84,7 @@ type Keeper struct {
 	clientContext client.Context
 
 	// store the block context, this will be fresh every block.
-	ExtBlockContext *artvmtype.ExtBlockContext
+	BlockContext *artvmtype.EthBlockContext
 }
 
 // NewKeeper generates new evm module keeper
@@ -116,14 +117,6 @@ func NewKeeper(
 	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
 	aspectRuntimeContext.Init(storeKey)
 
-	// init host api instance
-	// new AspectStateHostApi instance
-
-	api.NewStateDbApi(aspectRuntimeContext.StateDb)
-	artelaType.GetStateDbHook = api.GetStateApiInstance
-
-	artelaType.GetRuntimeHostHook = api.GetRuntimeInstance
-
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	k := &Keeper{
 		logger:               logger.With("module", fmt.Sprintf("x/%s", types.ModuleName)),
@@ -141,11 +134,19 @@ func NewKeeper(
 		aspectRuntimeContext: aspectRuntimeContext,
 		aspect:               aspect,
 	}
+	k.WithChainID(app.ChainId())
 
-	api.NewAspectRuntime(aspectRuntimeContext, app.CreateQueryContext, k.GetChainConfig)
+	djpm.NewAspect(aspect)
+	api.InitAspectGlobals(k)
 
-	api.NewEvmHostInstance(app.CreateQueryContext, k.EthCall)
+	// init aspect host api factory
 	artelaType.GetEvmHostHook = api.GetEvmHostInstance
+	artelaType.GetStateDbHook = api.GetStateDBHostInstance
+	artelaType.GetAspectRuntimeContextHostHook = api.GetAspectRuntimeContextHostInstance
+	artelaType.GetAspectStateHostHook = api.GetAspectStateHostInstance
+	artelaType.GetAspectPropertyHostHook = api.GetAspectPropertyHostInstance
+	artelaType.GetAspectTransientStorageHostHook = api.GetAspectTransientStorageHostInstance
+	artelaType.GetAspectTraceHostHook = api.GetAspectTraceHostInstance
 
 	artelaType.GetAspectContext = k.GetAspectContext
 	artelaType.SetAspectContext = k.SetAspectContext
@@ -174,22 +175,18 @@ func (k Keeper) Logger(ctx cosmos.Context) log.Logger {
 }
 
 // WithChainID sets the chain id to the local variable in the keeper
-func (k *Keeper) WithChainID(ctx cosmos.Context) {
+func (k *Keeper) WithChainID(chainId string) {
 	if k.eip155ChainID != nil {
 		return
 	}
 
-	chainID, err := artela.ParseChainID(ctx.ChainID())
+	chainID, err := artela.ParseChainID(chainId)
 	if err != nil {
 		panic(err)
 	}
 
 	if k.eip155ChainID != nil && k.eip155ChainID.Cmp(chainID) != 0 {
 		panic("chain id already set")
-	}
-
-	if !(chainID.Cmp(big.NewInt(11820)) == 0 || chainID.Cmp(big.NewInt(11821)) == 0) {
-		panic("EVM only supports Artela chain identifiers (11820 or 11821)")
 	}
 
 	k.eip155ChainID = chainID

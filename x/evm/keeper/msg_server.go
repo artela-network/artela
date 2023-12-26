@@ -3,14 +3,8 @@ package keeper
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
-
-	"github.com/artela-network/artela/x/evm/artela/provider"
-	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
-	types2 "github.com/artela-network/artela/x/evm/artela/types"
-	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 
 	"github.com/artela-network/artela/x/evm/txs"
 
@@ -38,7 +32,6 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 
 	sender := msg.From
 	tx := msg.AsTransaction()
-	ethCallTx := msg.AsEthCallTransaction()
 	txIndex := k.GetTxIndexTransient(ctx)
 
 	labels := []metrics.Label{
@@ -49,24 +42,6 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	} else {
 		labels = append(labels, telemetry.NewLabel("execution", "call"))
 	}
-
-	// set aspect tx context
-	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
-	if !ok {
-		return nil, errors.New("EthereumTx: unwrap AspectRuntimeContext failed")
-	}
-
-	// restore extBlockContext from keeper and set it to aspect runtime context
-	extBlockCtx := k.ExtBlockContext
-	aspectCtx.SetExtBlockContext(extBlockCtx)
-
-	ethTxContext := types2.NewEthTxContext(ethCallTx)
-	protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
-	jitManager := inherent.NewManager(protocol)
-
-	aspectCtx.SetEthTxContext(ethTxContext, jitManager)
-	aspectCtx.WithCosmosContext(ctx)
-	ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, aspectCtx)
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {

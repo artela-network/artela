@@ -26,7 +26,8 @@ type AspectService struct {
 	getHeight      evmtypes.GetLastBlockHeight
 }
 
-func NewAspectService(storeKey storetypes.StoreKey, getCtxByHeight evmtypes.ContextBuilder, getHeight evmtypes.GetLastBlockHeight, logger log.Logger) *AspectService {
+func NewAspectService(storeKey storetypes.StoreKey, getCtxByHeight evmtypes.ContextBuilder,
+	getHeight evmtypes.GetLastBlockHeight, logger log.Logger) *AspectService {
 	return &AspectService{
 		aspectStore:    NewAspectStore(storeKey, logger),
 		getCtxByHeight: getCtxByHeight,
@@ -215,10 +216,10 @@ func (service *AspectService) GetAspectAccount(ctx sdk.Context, aspectId common.
 		return nil, errors.New("chainID is empty.")
 	}
 	value := service.aspectStore.GetAspectPropertyValue(ctx, aspectId, evmtypes.AspectAccountKey)
-	if value == "" {
+	if value == nil {
 		return nil, errors.New("cannot get aspect account.")
 	}
-	address := common.HexToAddress(value)
+	address := common.HexToAddress(string(value))
 	return &address, nil
 }
 
@@ -234,10 +235,10 @@ func (service *AspectService) GetAspectProof(ctx sdk.Context, aspectId common.Ad
 		return nil, errors.New("chainID is empty.")
 	}
 	value := service.aspectStore.GetAspectPropertyValue(ctx, aspectId, evmtypes.AspectProofKey)
-	if value == "" {
+	if value == nil {
 		return nil, errors.New("cannot get aspect proof.")
 	}
-	address := common.Hex2Bytes(value)
+	address := common.Hex2Bytes(string(value))
 	return address, nil
 }
 

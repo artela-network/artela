@@ -140,7 +140,7 @@ type AspectMeta struct {
 }
 type Property struct {
 	Key   string `json:"Key"`
-	Value string `json:"Value"`
+	Value []byte `json:"Value"`
 }
 
 type BoundAspectCode struct {

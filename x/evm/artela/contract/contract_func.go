@@ -19,38 +19,45 @@ import (
 
 func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	lastHeight := ctx.BlockHeight()
-	code, _ := anc.aspectService.GetAspectCode(ctx, aspectId, nil, commit)
+	code, version := anc.aspectService.GetAspectCode(ctx, aspectId, nil, commit)
 
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
 		return nil, errors.New("AspectNativeContract.entrypoint: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), version.Uint64(), code)
 	if newErr != nil {
 		return nil, newErr
 	}
 	defer runner.Return()
 
-	transaction := &artelasdkType.EthTransaction{
-		BlockNumber: ctx.BlockHeight(),
-		From:        artelasdkType.ARTELA_ADDR,
-		Input:       data,
-		To:          aspectId.String(),
-	}
-	ret, runErr := runner.JoinPoint(artelasdkType.OPERATION_METHOD, msg.GasLimit, lastHeight, msg.To, transaction)
-	vmError := ""
-	retByte := make([]byte, 0)
-	if runErr != nil {
-		vmError = runErr.Error()
-	} else {
-		byteData := &artelasdkType.BytesData{}
-		dataUnpackErr := ret.Data.UnmarshalTo(byteData)
-		if dataUnpackErr != nil {
-			vmError = dataUnpackErr.Error()
+	var txHash []byte
+	ethTxCtx := aspectCtx.EthTxContext()
+	if ethTxCtx != nil {
+		ethTxContent := ethTxCtx.TxContent()
+		if ethTxContent != nil {
+			txHash = ethTxContent.Hash().Bytes()
 		}
-		retByte, dataUnpackErr = method.Outputs.Pack(byteData.Data)
-		if dataUnpackErr != nil {
-			vmError = dataUnpackErr.Error()
+	}
+
+	// ignore gas output for now, since we haven't implemented gas metering for aspect for now
+	ret, _, err := runner.JoinPoint(artelasdkType.OPERATION_METHOD, msg.GasLimit, lastHeight, msg.To, &artelasdkType.OperationInput{
+		Tx: &artelasdkType.WithFromTxInput{
+			Hash: txHash,
+			To:   msg.To.Bytes(),
+			From: msg.From.Bytes(),
+		},
+		Block:    &artelasdkType.BlockInput{Number: uint64(lastHeight)},
+		CallData: data,
+	})
+	var vmError string
+	var retByte []byte
+	if err != nil {
+		vmError = err.Error()
+	} else {
+		retByte, err = method.Outputs.Pack(ret)
+		if err != nil {
+			vmError = err.Error()
 		}
 	}
 	return &evmtypes.MsgEthereumTxResponse{
@@ -61,7 +68,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, 
 	}, nil
 }
 
-func (anc *AspectNativeContract) contractsOf(ctx sdk.Context, method *abi.Method, aspectId common.Address, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
+func (anc *AspectNativeContract) boundAddressesOf(ctx sdk.Context, method *abi.Method, aspectId common.Address, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	value, err := anc.aspectService.GetAspectOf(ctx, aspectId, commit)
 	if err != nil {
 		return nil, err
@@ -274,7 +281,7 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 
 func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, commit bool) (bool, error) {
 	bHeight := ctx.BlockHeight()
-	code, _ := k.aspectService.GetAspectCode(ctx, aspectId, nil, commit)
+	code, ver := k.aspectService.GetAspectCode(ctx, aspectId, nil, commit)
 	if code == nil {
 		return false, nil
 	}
@@ -283,28 +290,13 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	if !ok {
 		return false, errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), ver.Uint64(), code)
 	if newErr != nil {
 		return false, newErr
 	}
 	defer runner.Return()
 
-	binding, runErr := runner.IsOwner(bHeight, 0, &sender, sender.String())
-	return binding, runErr
-}
-
-func (k *AspectNativeContract) CheckIsAspectOwnerByCode(ctx sdk.Context, aspectId common.Address, code []byte, sender common.Address) (bool, error) {
-	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
-	if !ok {
-		return false, errors.New("CheckIsAspectOwnerByCode: unwrap AspectRuntimeContext failed")
-	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), code)
-	if newErr != nil {
-		return false, newErr
-	}
-	defer runner.Return()
-
-	binding, runErr := runner.IsOwner(ctx.BlockHeight(), 0, &sender, sender.String())
+	binding, runErr := runner.IsOwner(bHeight, 0, &sender, sender.Bytes())
 	return binding, runErr
 }
 
