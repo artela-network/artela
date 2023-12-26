@@ -69,8 +69,8 @@ const (
 	FlagIAVLLazyLoading     = "iavl-lazy-loading"
 
 	// states sync-related flags
-	FlagStateSyncSnapshotInterval   = "states-sync.snapshot-interval"
-	FlagStateSyncSnapshotKeepRecent = "states-sync.snapshot-keep-recent"
+	FlagStateSyncSnapshotInterval   = "state-sync.snapshot-interval"
+	FlagStateSyncSnapshotKeepRecent = "state-sync.snapshot-keep-recent"
 
 	// api-related flags
 	FlagAPIEnable             = "api.enable"

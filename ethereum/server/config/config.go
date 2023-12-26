@@ -248,7 +248,7 @@ func DefaultServerConfig() *config.Config {
 			Address: config.DefaultGRPCWebAddress,
 		},
 		StateSync: config.StateSyncConfig{
-			SnapshotInterval:   2000, // creating snapshot every 1000 blocks
+			SnapshotInterval:   2000, // creating snapshot every 2000 blocks
 			SnapshotKeepRecent: 5,
 		},
 		Store: config.StoreConfig{
