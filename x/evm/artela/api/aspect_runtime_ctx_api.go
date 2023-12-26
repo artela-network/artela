@@ -18,6 +18,7 @@ var (
 
 var (
 	ctxKeyConstraints = map[asptypes.PointCut]*hashset.Set{
+		asptypes.OPERATION_METHOD:          hashset.New(aspctx.OperationKeys...),
 		asptypes.VERIFY_TX:                 hashset.New(aspctx.VerifyTxCtxKeys...),
 		asptypes.PRE_TX_EXECUTE_METHOD:     hashset.New(aspctx.PreTxCtxKeys...),
 		asptypes.POST_TX_EXECUTE_METHOD:    hashset.New(aspctx.PostTxCtxKeys...),
@@ -134,7 +135,11 @@ func (a *aspectRuntimeContextHostAPI) Register() {
 
 	// isCall context
 	a.execMap[aspctx.IsCall] = func(ctx *asptypes.RunnerContext) ([]byte, error) {
-		return proto.Marshal(&asptypes.BoolData{Data: !ctx.Commit})
+		// verify tx can only be triggered when it is a transaction, so we can safely assume that
+		// if the point is verify-tx, it must be a transaction.
+		// otherwise if the request is not being committed, we can assume that it is a call.
+		return proto.Marshal(&asptypes.BoolData{Data: ctx.Point != string(asptypes.VERIFY_TX) &&
+			!a.aspectRuntimeContext.EthTxContext().Commit()})
 	}
 }
 

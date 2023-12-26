@@ -56,7 +56,10 @@ func (aspd AspectRuntimeContextDecorator) AnteHandle(ctx cosmos.Context, tx cosm
 			// at check tx stage since current block proposal is not prepared,
 			// so we can only initialize the block context with a height.
 			// also that we should not provide jit manager at this stage.
-			aspectCtx.SetEthBlockContext(types.NewEthBlockContextFromHeight(ctx.BlockHeight()))
+			// use the height of next block as the block height is because if it is in check tx,
+			// the state passed to us is still the state from last commit, so we need to increase the block height by one,
+			// to make sure the number is the same as the one in deliver tx.
+			aspectCtx.SetEthBlockContext(types.NewEthBlockContextFromHeight(ctx.BlockHeight() + 1))
 		} else {
 			// at deliver tx stage,
 			// we can initialize the block context with the pending block proposal from
