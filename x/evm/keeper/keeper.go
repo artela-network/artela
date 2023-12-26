@@ -74,8 +74,6 @@ type Keeper struct {
 	// legacy subspace
 	ss paramsmodule.Subspace
 
-	getCtxByHeight func(height int64, prove bool) (cosmos.Context, error)
-
 	// keep the evm and matched stateDB instance just finished running
 	aspectRuntimeContext *artvmtype.AspectRuntimeContext
 
@@ -112,7 +110,7 @@ func NewKeeper(
 	}
 
 	// init aspect
-	aspect := provider.NewArtelaProvider(storeKey, app.CreateQueryContext, app.LastBlockHeight, logger)
+	aspect := provider.NewArtelaProvider(storeKey, app.LastBlockHeight, logger)
 	// new Aspect Runtime Context
 	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
 	aspectRuntimeContext.Init(storeKey)
@@ -130,7 +128,6 @@ func NewKeeper(
 		transientKey:         transientKey,
 		tracer:               tracer,
 		ss:                   subSpace,
-		getCtxByHeight:       app.CreateQueryContext,
 		aspectRuntimeContext: aspectRuntimeContext,
 		aspect:               aspect,
 	}
