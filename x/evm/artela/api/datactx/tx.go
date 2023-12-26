@@ -40,9 +40,13 @@ func (c *TxContext) registerLoaders() {
 		return &artelatypes.UintData{Data: uint64(tx.Type())}
 	}
 	loaders[aspctx.TxChainId] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
-		return &artelatypes.BytesData{Data: tx.ChainId().Bytes()}
+		if tx.ChainId() != nil {
+			return &artelatypes.BytesData{Data: tx.ChainId().Bytes()}
+		} else {
+			return &artelatypes.BytesData{Data: []byte{}}
+		}
 	}
-	loaders[aspctx.TxAccessList] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxAccessList] = func(ehTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		res := &artelatypes.EthAccessList{AccessList: make([]*artelatypes.EthAccessTuple, 0, len(tx.AccessList()))}
 		if len(tx.AccessList()) == 0 {
 			return res
@@ -64,6 +68,9 @@ func (c *TxContext) registerLoaders() {
 	}
 	loaders[aspctx.TxNonce] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.UintData{Data: tx.Nonce()}
+	}
+	loaders[aspctx.TxGas] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+		return &artelatypes.UintData{Data: tx.Gas()}
 	}
 	loaders[aspctx.TxGasPrice] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: tx.GasPrice().Bytes()}

@@ -92,13 +92,25 @@ func (c *EnvContext) registerLoaders() {
 		return &artelatypes.UintData{Data: ethTxCtx.EvmCfg().ChainConfig.MergeNetsplitBlock.Uint64()}
 	}
 	loaders[context.EnvChainShanghaiTime] = func(sdkCtx sdk.Context, ethTxCtx *types.EthTxContext) proto.Message {
-		return &artelatypes.UintData{Data: *ethTxCtx.EvmCfg().ChainConfig.ShanghaiTime}
+		if ethTxCtx.EvmCfg().ChainConfig.ShanghaiTime != nil {
+			return &artelatypes.UintData{Data: *ethTxCtx.EvmCfg().ChainConfig.ShanghaiTime}
+		} else {
+			return &artelatypes.UintData{Data: 0}
+		}
 	}
 	loaders[context.EnvChainCancunTime] = func(sdkCtx sdk.Context, ethTxCtx *types.EthTxContext) proto.Message {
-		return &artelatypes.UintData{Data: *ethTxCtx.EvmCfg().ChainConfig.CancunTime}
+		if ethTxCtx.EvmCfg().ChainConfig.CancunTime != nil {
+			return &artelatypes.UintData{Data: *ethTxCtx.EvmCfg().ChainConfig.CancunTime}
+		} else {
+			return &artelatypes.UintData{Data: 0}
+		}
 	}
 	loaders[context.EnvChainPragueTime] = func(sdkCtx sdk.Context, ethTxCtx *types.EthTxContext) proto.Message {
-		return &artelatypes.UintData{Data: *ethTxCtx.EvmCfg().ChainConfig.PragueTime}
+		if ethTxCtx.EvmCfg().ChainConfig.PragueTime != nil {
+			return &artelatypes.UintData{Data: *ethTxCtx.EvmCfg().ChainConfig.PragueTime}
+		} else {
+			return &artelatypes.UintData{Data: 0}
+		}
 	}
 	loaders[context.EnvConsensusParamsBlockMaxGas] = func(sdkCtx sdk.Context, ethTxCtx *types.EthTxContext) proto.Message {
 		return &artelatypes.IntData{Data: sdkCtx.ConsensusParams().Block.MaxGas}

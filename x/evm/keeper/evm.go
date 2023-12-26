@@ -342,6 +342,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	// the transaction, EVM tracer, and the stateDB associated with running the EVM transaction.
 	aspectCtx.EthTxContext().WithEVM(msg.From, msg, evm, evm.Tracer(), stateDB)
 	aspectCtx.EthTxContext().WithTxIndex(uint64(txConfig.TxIndex))
+	aspectCtx.EthTxContext().WithCommit(commit)
 
 	// Aspect Runtime Context Lifecycle: create state object.
 	aspectCtx.CreateStateObject()
