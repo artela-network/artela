@@ -26,8 +26,7 @@ import (
 )
 
 const (
-	AspectContextKey   cosmos.ContextKey = "aspect-ctx"
-	ExtBlockContextKey cosmos.ContextKey = "block-ctx"
+	AspectContextKey cosmos.ContextKey = "aspect-ctx"
 
 	AspectModuleName = "aspect"
 )
