@@ -37,7 +37,7 @@ func (a *aspectStateHostAPI) Set(ctx *asptypes.RunnerContext, key string, value 
 func GetAspectStateHostInstance(ctx context.Context) (asptypes.AspectStateHostAPI, error) {
 	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
 	if !ok {
-		return nil, errors.New("GetAspectRuntimeContextHostInstance: unwrap AspectRuntimeContext failed")
+		return nil, errors.New("GetAspectStateHostInstance: unwrap AspectRuntimeContext failed")
 	}
 	return &aspectStateHostAPI{aspectCtx}, nil
 }

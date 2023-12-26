@@ -188,7 +188,7 @@ func callToTrace(ethCall *vm.Call) *artelatypes.EthCallMessage {
 func GetAspectTraceHostInstance(ctx context.Context) (artelatypes.AspectTraceHostAPI, error) {
 	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
 	if !ok {
-		return nil, errors.New("GetAspectRuntimeContextHostInstance: unwrap AspectRuntimeContext failed")
+		return nil, errors.New("GetTraceHostInstance: unwrap AspectRuntimeContext failed")
 	}
 	return &aspectTraceHostAPI{aspectCtx}, nil
 }

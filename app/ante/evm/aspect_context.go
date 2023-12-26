@@ -3,15 +3,15 @@ package evm
 import (
 	errorsmod "cosmossdk.io/errors"
 	"fmt"
+	"github.com/artela-network/artela/x/evm/artela/provider"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/artela-network/artela/app/interfaces"
-	"github.com/artela-network/artela/x/evm/artela/provider"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/txs"
-	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 )
 
 // CreateAspectRuntimeContextDecorator prepare the aspect runtime context
@@ -47,14 +47,22 @@ func (aspd AspectRuntimeContextDecorator) AnteHandle(ctx cosmos.Context, tx cosm
 			return ctx, fmt.Errorf("failed to get evm config from context: %w", err)
 		}
 		ethTxContext := types.NewEthTxContext(msgEthTx.AsEthCallTransaction()).WithEVMConfig(evmConfig)
-
 		aspectCtx := types.NewAspectRuntimeContext()
 		protocol := provider.NewAspectProtocolProvider(aspectCtx.EthTxContext)
 		jitManager := inherent.NewManager(protocol)
-
-		// update EthTxContext and JIT manager
-		aspectCtx.SetEthBlockContext(types.NewEthBlockContextFromHeight(ctx.BlockHeight()))
 		aspectCtx.SetEthTxContext(ethTxContext, jitManager)
+
+		if ctx.IsCheckTx() {
+			// at check tx stage since current block proposal is not prepared,
+			// so we can only initialize the block context with a height.
+			// also that we should not provide jit manager at this stage.
+			aspectCtx.SetEthBlockContext(types.NewEthBlockContextFromHeight(ctx.BlockHeight()))
+		} else {
+			// at deliver tx stage,
+			// we can initialize the block context with the pending block proposal from
+			// begin block.
+			aspectCtx.SetEthBlockContext(aspd.evmKeeper.GetBlockContext())
+		}
 		aspectCtx.WithCosmosContext(ctx)
 		aspectCtx.CreateStateObject()
 

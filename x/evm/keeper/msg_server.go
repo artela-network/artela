@@ -3,11 +3,9 @@ package keeper
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 
-	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/txs"
 
 	govmodule "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -44,15 +42,6 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *txs.MsgEthereumTx) (*txs
 	} else {
 		labels = append(labels, telemetry.NewLabel("execution", "call"))
 	}
-
-	// set aspect tx context
-	aspectCtx, ok := ctx.Value(artelatypes.AspectContextKey).(*artelatypes.AspectRuntimeContext)
-	if !ok {
-		return nil, errors.New("EthereumTx: unwrap AspectRuntimeContext failed")
-	}
-
-	// restore extBlockContext from keeper and set it to aspect runtime context
-	aspectCtx.SetEthBlockContext(k.BlockContext)
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {

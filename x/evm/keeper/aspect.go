@@ -36,3 +36,7 @@ func (k Keeper) SetAspectContext(ctx context.Context, address common.Address, ke
 	aspectCtx.AspectContext().Add(address, key, value)
 	return nil
 }
+
+func (k Keeper) GetBlockContext() *artvmtype.EthBlockContext {
+	return k.BlockContext
+}

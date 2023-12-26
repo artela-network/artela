@@ -26,7 +26,7 @@ func (a *aspectPropertyHostAPI) Get(ctx *asptypes.RunnerContext, key string) []b
 func GetAspectPropertyHostInstance(ctx context.Context) (asptypes.AspectPropertyHostAPI, error) {
 	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
 	if !ok {
-		return nil, errors.New("GetAspectRuntimeContextHostInstance: unwrap AspectRuntimeContext failed")
+		return nil, errors.New("GetAspectPropertyHostInstance: unwrap AspectRuntimeContext failed")
 	}
 	return &aspectPropertyHostAPI{aspectCtx}, nil
 }

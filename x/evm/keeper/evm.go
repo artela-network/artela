@@ -153,8 +153,6 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 		return nil, errors.New("ApplyMessageWithConfig: unwrap AspectRuntimeContext failed")
 	}
 
-	aspectCtx.EthTxContext().WithEVMConfig(evmConfig)
-
 	// snapshot to contain the txs processing and post processing in same scope
 	// var commit func()
 	// tmpCtx := ctx

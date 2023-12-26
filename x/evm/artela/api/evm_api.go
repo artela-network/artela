@@ -111,7 +111,7 @@ func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitI
 func GetEvmHostInstance(ctx context.Context) (asptypes.EVMHostAPI, error) {
 	aspectCtx, ok := ctx.(*artelatypes.AspectRuntimeContext)
 	if !ok {
-		return nil, errors.New("GetAspectRuntimeContextHostInstance: unwrap AspectRuntimeContext failed")
+		return nil, errors.New("GetEVMHostInstance: unwrap AspectRuntimeContext failed")
 	}
 	return &evmHostApi{aspectCtx}, nil
 }
