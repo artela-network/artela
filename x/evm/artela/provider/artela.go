@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"context"
+	"errors"
 	"github.com/artela-network/artela/x/evm/artela/contract"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	asptypes "github.com/artela-network/aspect-core/types"
@@ -12,51 +14,64 @@ import (
 var _ asptypes.AspectProvider = (*ArtelaProvider)(nil)
 
 type ArtelaProvider struct {
-	service        *contract.AspectService
-	getCtxByHeight types.ContextBuilder
-	storeKey       storetypes.StoreKey
+	service  *contract.AspectService
+	storeKey storetypes.StoreKey
 }
 
 func NewArtelaProvider(storeKey storetypes.StoreKey,
-	getCtxByHeight types.ContextBuilder,
 	getBlockHeight types.GetLastBlockHeight,
 	logger log.Logger,
 ) *ArtelaProvider {
-	service := contract.NewAspectService(storeKey, getCtxByHeight, getBlockHeight, logger)
+	service := contract.NewAspectService(storeKey, getBlockHeight, logger)
 
-	return &ArtelaProvider{service, getCtxByHeight, storeKey}
+	return &ArtelaProvider{service, storeKey}
 }
 
-func (j *ArtelaProvider) GetTxBondAspects(blockNum int64, address common.Address, point asptypes.PointCut) ([]*asptypes.AspectCode, error) {
-	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
-	if err != nil {
-		return nil, err
+func (j *ArtelaProvider) GetTxBondAspects(ctx context.Context, address common.Address, point asptypes.PointCut) ([]*asptypes.AspectCode, error) {
+	if ctx == nil {
+		return nil, errors.New("invalid Context")
 	}
-	return j.service.GetAspectsForJoinPoint(heightCtx, address, point, false)
+	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
+	if !ok {
+		return nil, errors.New("failed to unwrap AspectRuntimeContext from context.Context")
+	}
+	return j.service.GetAspectsForJoinPoint(aspectCtx.CosmosContext(), address, point)
 }
 
-func (j *ArtelaProvider) GetAccountVerifiers(blockNum int64, address common.Address) ([]*asptypes.AspectCode, error) {
-	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
-	if err != nil {
-		return nil, err
+func (j *ArtelaProvider) GetAccountVerifiers(ctx context.Context, address common.Address) ([]*asptypes.AspectCode, error) {
+	if ctx == nil {
+		return nil, errors.New("invalid Context")
 	}
-	return j.service.GetAccountVerifiers(heightCtx, address, false)
+	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
+	if !ok {
+		return nil, errors.New("failed to unwrap AspectRuntimeContext from context.Context")
+	}
+	return j.service.GetAccountVerifiers(aspectCtx.CosmosContext(), address)
 }
 
-func (j *ArtelaProvider) GetBlockBondAspects(blockNum int64) ([]*asptypes.AspectCode, error) {
-	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
-	if err != nil {
-		return nil, err
+func (j *ArtelaProvider) GetBlockBondAspects(ctx context.Context) ([]*asptypes.AspectCode, error) {
+	if ctx == nil {
+		return nil, errors.New("invalid Context")
 	}
-	return j.service.GetAspectForBlock(heightCtx, false)
+	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
+	if !ok {
+		return nil, errors.New("failed to unwrap AspectRuntimeContext from context.Context")
+	}
+
+	return j.service.GetAspectForBlock(aspectCtx.CosmosContext())
 }
 
-func (j *ArtelaProvider) GetAspectAccount(blockNum int64, aspectId common.Address) (*common.Address, error) {
-	heightCtx, err := j.getCtxByHeight(blockNum-1, true)
-	if err != nil {
-		return nil, err
+func (j *ArtelaProvider) GetAspectAccount(ctx context.Context, aspectId common.Address) (*common.Address, error) {
+
+	if ctx == nil {
+		return nil, errors.New("invalid Context")
 	}
-	return j.service.GetAspectAccount(heightCtx, aspectId, false)
+	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
+	if !ok {
+		return nil, errors.New("failed to unwrap AspectRuntimeContext from context.Context")
+	}
+
+	return j.service.GetAspectAccount(aspectCtx.CosmosContext(), aspectId)
 }
 
 func (j *ArtelaProvider) GetLatestBlock() int64 {
