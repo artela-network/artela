@@ -118,7 +118,7 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 
 	tracer := txContext.VmTracer()
 	callTree := tracer.CallTree()
-	if query.CallIdx == nil {
+	if query.CallIdx == nil || *query.CallIdx < 0 {
 		// for negative numbers we return the entire call tree
 		ethCallTree := &artelatypes.EthCallTree{Calls: make(map[uint64]*artelatypes.EthCallMessage)}
 		traverseEVMCallTree(callTree.Root(), ethCallTree)
