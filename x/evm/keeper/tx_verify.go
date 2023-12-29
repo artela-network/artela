@@ -61,7 +61,7 @@ func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction)
 	if !ok {
 		return common.Address{}, []byte{}, errors.New("ApplyMessageWithConfig: wrap *artelatype.AspectRuntimeContext failed")
 	}
-	return djpm.AspectInstance().GetSenderAndCallData(aspectCtx, ctx.BlockHeight(), tx)
+	return djpm.AspectInstance().GetSenderAndCallData(aspectCtx, aspectCtx.EthBlockContext().BlockHeader().Number.Int64(), tx)
 }
 
 func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer {
