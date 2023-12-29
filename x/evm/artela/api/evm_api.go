@@ -63,10 +63,16 @@ func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.S
 	ret, gas, err := evm.StaticCall(ctx.Ctx, vm.AccountRef(from), to, request.Data, request.Gas)
 	// update gas
 	ctx.Gas = gas
+
+	errStr := ""
+	if err != nil {
+		errStr = err.Error()
+	}
+
 	return &asptypes.StaticCallResult{
 		Ret:     ret,
 		GasLeft: gas,
-		VmError: err.Error(),
+		VmError: errStr,
 	}
 }
 
