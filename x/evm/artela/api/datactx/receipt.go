@@ -34,9 +34,6 @@ func NewReceiptContext(getEthTxContext func() *types.EthTxContext,
 func (c *ReceiptContext) registerLoaders() {
 	loaders := c.receiptContentLoaders
 	loaders[aspctx.ReceiptStatus] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
-		if receipt == nil {
-			return &artelatypes.UintData{}
-		}
 		return &artelatypes.UintData{Data: &receipt.Status}
 	}
 	loaders[aspctx.ReceiptLogs] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
@@ -57,15 +54,11 @@ func (c *ReceiptContext) registerLoaders() {
 		return &artelatypes.EthLogs{Logs: logs}
 	}
 	loaders[aspctx.ReceiptGasUsed] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
-		if receipt == nil {
-			return &artelatypes.UintData{}
-		}
+
 		return &artelatypes.UintData{Data: &receipt.GasUsed}
 	}
 	loaders[aspctx.ReceiptCumulativeGasUsed] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
-		if receipt == nil {
-			return &artelatypes.UintData{}
-		}
+
 		return &artelatypes.UintData{Data: &receipt.CumulativeGasUsed}
 	}
 	loaders[aspctx.ReceiptBloom] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
