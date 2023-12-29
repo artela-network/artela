@@ -2,10 +2,12 @@ package datactx
 
 import (
 	"errors"
-	"github.com/artela-network/artela/x/evm/artela/types"
+
 	"github.com/artela-network/aspect-core/context"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 type BlockContextFieldLoader func(blockCtx *types.EthBlockContext) proto.Message
@@ -36,10 +38,12 @@ func (c *BlockContext) registerLoaders() {
 		return &artelatypes.BytesData{Data: blockCtx.BlockHeader().TxHash.Bytes()}
 	}
 	loaders[context.BlockHeaderNumber] = func(blockCtx *types.EthBlockContext) proto.Message {
-		return &artelatypes.UintData{Data: blockCtx.BlockHeader().Number.Uint64()}
+		number := blockCtx.BlockHeader().Number.Uint64()
+		return &artelatypes.UintData{Data: &number}
 	}
 	loaders[context.BlockHeaderTimestamp] = func(blockCtx *types.EthBlockContext) proto.Message {
-		return &artelatypes.UintData{Data: blockCtx.BlockHeader().Time}
+		time := blockCtx.BlockHeader().Time
+		return &artelatypes.UintData{Data: &time}
 	}
 }
 

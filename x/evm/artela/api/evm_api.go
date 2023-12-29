@@ -3,15 +3,17 @@ package api
 import (
 	"context"
 	"errors"
+
 	"github.com/artela-network/artela-evm/vm"
-	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
-	"github.com/artela-network/artela/x/evm/states"
-	types "github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/aspect-core/integration"
 	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/log"
+
+	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
+	types "github.com/artela-network/artela/x/evm/txs"
 )
 
 var (
@@ -41,7 +43,8 @@ func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.S
 		evmConfig, err := evmKeeper.EVMConfig(e.aspectCtx.CosmosContext(),
 			e.aspectCtx.CosmosContext().BlockHeader().ProposerAddress, evmKeeper.ChainID())
 		if err != nil {
-			return &asptypes.StaticCallResult{VmError: err.Error()}
+			msg := err.Error()
+			return &asptypes.StaticCallResult{VmError: &msg}
 		}
 		evm = evmKeeper.NewEVM(e.aspectCtx.CosmosContext(), &core.Message{
 			From: from,
@@ -52,15 +55,16 @@ func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.S
 
 	// we cannot create any evm at this stage, return error
 	if evm == nil {
-		return &asptypes.StaticCallResult{VmError: "unable to initiate evm at current stage"}
+		stage := "unable to initiate evm at current stage"
+		return &asptypes.StaticCallResult{VmError: &stage}
 	}
 
 	// set the default request gas to current remaining f not specified or out of limit
-	if request.Gas == 0 || request.Gas > ctx.Gas {
-		request.Gas = ctx.Gas
+	if *request.Gas == 0 || *request.Gas > ctx.Gas {
+		request.Gas = &ctx.Gas
 	}
 
-	ret, gas, err := evm.StaticCall(ctx.Ctx, vm.AccountRef(from), to, request.Data, request.Gas)
+	ret, gas, err := evm.StaticCall(ctx.Ctx, vm.AccountRef(from), to, request.Data, *request.Gas)
 	// update gas
 	ctx.Gas = gas
 
@@ -71,13 +75,14 @@ func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.S
 
 	return &asptypes.StaticCallResult{
 		Ret:     ret,
-		GasLeft: gas,
-		VmError: errStr,
+		GasLeft: &gas,
+		VmError: &errStr,
 	}
 }
 
 func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitInherentRequest) *asptypes.JitInherentResponse {
 	// determine jit call stage
+	defBool := false
 	var stage integration.JoinPointStage
 	switch asptypes.PointCut(ctx.Point) {
 	case asptypes.PRE_TX_EXECUTE_METHOD, asptypes.POST_TX_EXECUTE_METHOD,
@@ -93,7 +98,8 @@ func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitI
 		stage = integration.BlockFinalization
 	default:
 		log.Error("unsupported join point for jit call", "point", ctx.Point)
-		return &asptypes.JitInherentResponse{Success: false}
+
+		return &asptypes.JitInherentResponse{Success: &defBool}
 	}
 
 	// FIXME: get leftover gas from last evm
@@ -103,8 +109,9 @@ func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitI
 			resp = &asptypes.JitInherentResponse{}
 		}
 
-		resp.Success = false
-		resp.ErrorMsg = err.Error()
+		resp.Success = &defBool
+		msg := err.Error()
+		resp.ErrorMsg = &msg
 
 		log.Error("jit inherent submit fail", "err", err)
 	}

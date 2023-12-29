@@ -2,6 +2,7 @@ package datactx
 
 import (
 	"errors"
+
 	aspctx "github.com/artela-network/aspect-core/context"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"google.golang.org/protobuf/proto"
@@ -27,7 +28,8 @@ func (c *AspectContext) registerLoaders() {
 		return &artelatypes.BytesData{Data: ctx.AspectId.Bytes()}
 	}
 	loaders[aspctx.AspectVersion] = func(ctx *artelatypes.RunnerContext) proto.Message {
-		return &artelatypes.UintData{Data: ctx.AspectVersion}
+
+		return &artelatypes.UintData{Data: &ctx.AspectVersion}
 	}
 }
 

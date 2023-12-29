@@ -4,9 +4,10 @@ import (
 	"errors"
 	"math/big"
 
+	asptypes "github.com/artela-network/aspect-core/types"
+
 	"github.com/artela-network/artela/x/evm/artela/contract"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
-	asptypes "github.com/artela-network/aspect-core/types"
 
 	"github.com/artela-network/aspect-core/djpm"
 	cometbft "github.com/cometbft/cometbft/types"
@@ -378,7 +379,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	if rules := cfg.ChainConfig.Rules(big.NewInt(ctx.BlockHeight()), cfg.ChainConfig.MergeNetsplitBlock != nil, uint64(ctx.BlockTime().Unix())); rules.IsBerlin {
 		stateDB.PrepareAccessList(msg.From, msg.To, vm.ActivePrecompiles(rules), msg.AccessList)
 	}
-
+	lastHeight := uint64(ctx.BlockHeight())
 	// if transaction is Aspect operational, short the circuit and skip the processes
 	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, evm,
@@ -397,13 +398,14 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
 		// begin pre tx aspect execution
+
 		preTxResult := djpm.AspectInstance().PreTxExecute(aspectCtx, msg.To, ctx.BlockHeight(), leftoverGas, &asptypes.PreTxExecuteInput{
 			Tx: &asptypes.WithFromTxInput{
 				Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
 				To:   msg.To.Bytes(),
 				From: msg.From.Bytes(),
 			},
-			Block: &asptypes.BlockInput{Number: uint64(ctx.BlockHeight())},
+			Block: &asptypes.BlockInput{Number: &lastHeight},
 		})
 
 		leftoverGas = preTxResult.Gas
@@ -456,8 +458,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 						To:   msg.To.Bytes(),
 						From: msg.From.Bytes(),
 					},
-					Block:   &asptypes.BlockInput{Number: uint64(ctx.BlockHeight())},
-					Receipt: &asptypes.ReceiptInput{Status: status},
+					Block:   &asptypes.BlockInput{Number: &lastHeight},
+					Receipt: &asptypes.ReceiptInput{Status: &status},
 				})
 			if postTxResult.Err != nil {
 				// overwrite vmErr if post tx reverted

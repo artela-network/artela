@@ -3,13 +3,14 @@ package datactx
 import (
 	"bytes"
 	"errors"
+	"math/big"
+
 	aspctx "github.com/artela-network/aspect-core/context"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"google.golang.org/protobuf/proto"
-	"math/big"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
 )
@@ -37,7 +38,8 @@ func NewTxContext(getEthTxContext func() *types.EthTxContext,
 func (c *TxContext) registerLoaders() {
 	loaders := c.receiptContentLoaders
 	loaders[aspctx.TxType] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
-		return &artelatypes.UintData{Data: uint64(tx.Type())}
+		txType := uint64(tx.Type())
+		return &artelatypes.UintData{Data: &txType}
 	}
 	loaders[aspctx.TxChainId] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		if tx.ChainId() != nil {
@@ -67,27 +69,37 @@ func (c *TxContext) registerLoaders() {
 		return res
 	}
 	loaders[aspctx.TxNonce] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
-		return &artelatypes.UintData{Data: tx.Nonce()}
+
+		nonce := tx.Nonce()
+		return &artelatypes.UintData{Data: &nonce}
 	}
 	loaders[aspctx.TxGas] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
-		return &artelatypes.UintData{Data: tx.Gas()}
+
+		gas := tx.Gas()
+		return &artelatypes.UintData{Data: &gas}
 	}
 	loaders[aspctx.TxGasPrice] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		return &artelatypes.BytesData{Data: tx.GasPrice().Bytes()}
 	}
 	loaders[aspctx.TxGasTipCap] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		return &artelatypes.BytesData{Data: tx.GasTipCap().Bytes()}
 	}
 	loaders[aspctx.TxGasFeeCap] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		return &artelatypes.BytesData{Data: tx.GasFeeCap().Bytes()}
 	}
 	loaders[aspctx.TxTo] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		return &artelatypes.BytesData{Data: tx.To().Bytes()}
 	}
 	loaders[aspctx.TxValue] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		return &artelatypes.BytesData{Data: tx.Value().Bytes()}
 	}
 	loaders[aspctx.TxData] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		return &artelatypes.BytesData{Data: tx.Data()}
 	}
 	loaders[aspctx.TxBytes] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
@@ -98,6 +110,7 @@ func (c *TxContext) registerLoaders() {
 		return &artelatypes.BytesData{Data: raw}
 	}
 	loaders[aspctx.TxHash] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		return &artelatypes.BytesData{Data: tx.Hash().Bytes()}
 	}
 	loaders[aspctx.TxUnsignedBytes] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
@@ -198,22 +211,28 @@ func (c *TxContext) registerLoaders() {
 		return &artelatypes.BytesData{Data: signer.Hash(tx).Bytes()}
 	}
 	loaders[aspctx.TxSigV] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		v, _, _ := tx.RawSignatureValues()
 		return &artelatypes.BytesData{Data: v.Bytes()}
 	}
 	loaders[aspctx.TxSigS] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		_, r, _ := tx.RawSignatureValues()
 		return &artelatypes.BytesData{Data: r.Bytes()}
 	}
 	loaders[aspctx.TxSigR] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		_, _, s := tx.RawSignatureValues()
 		return &artelatypes.BytesData{Data: s.Bytes()}
 	}
 	loaders[aspctx.TxFrom] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+
 		return &artelatypes.BytesData{Data: ethTxCtx.TxFrom().Bytes()}
 	}
 	loaders[aspctx.TxIndex] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
-		return &artelatypes.UintData{Data: uint64(ethTxCtx.TxIndex())}
+
+		index := ethTxCtx.TxIndex()
+		return &artelatypes.UintData{Data: &index}
 	}
 }
 
