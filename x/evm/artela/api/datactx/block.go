@@ -42,9 +42,6 @@ func (c *BlockContext) registerLoaders() {
 		return &artelatypes.UintData{Data: &number}
 	}
 	loaders[context.BlockHeaderTimestamp] = func(blockCtx *types.EthBlockContext) proto.Message {
-		if blockCtx == nil || blockCtx.BlockHeader() == nil {
-			return &artelatypes.UintData{}
-		}
 		time := blockCtx.BlockHeader().Time
 		return &artelatypes.UintData{Data: &time}
 	}

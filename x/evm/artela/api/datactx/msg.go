@@ -34,9 +34,6 @@ func NewMessageContext(getEthTxContext func() *types.EthTxContext,
 func (c *MessageContext) registerLoaders() {
 	loaders := c.messageContentLoader
 	loaders[aspctx.MsgIndex] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
-		if ethTxCtx == nil || ethTxCtx.VmTracer() == nil {
-			return &artelatypes.UintData{}
-		}
 		index := ethTxCtx.VmTracer().CurrentCallIndex()
 		return &artelatypes.UintData{Data: &index}
 	}
@@ -61,18 +58,14 @@ func (c *MessageContext) registerLoaders() {
 		tracer := ethTxCtx.VmTracer()
 		callIdx := tracer.CurrentCallIndex()
 		currentCall := tracer.CallTree().FindCall(callIdx)
-		if currentCall == nil {
-			return &artelatypes.BytesData{}
-		}
+
 		return &artelatypes.BytesData{Data: currentCall.Ret}
 	}
 	loaders[aspctx.MsgResultGasUsed] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
 		tracer := ethTxCtx.VmTracer()
 		callIdx := tracer.CurrentCallIndex()
 		currentCall := tracer.CallTree().FindCall(callIdx)
-		if currentCall == nil {
-			return &artelatypes.UintData{}
-		}
+
 		result := message.GasLimit - currentCall.RemainingGas
 		return &artelatypes.UintData{Data: &result}
 	}
@@ -80,9 +73,7 @@ func (c *MessageContext) registerLoaders() {
 		tracer := ethTxCtx.VmTracer()
 		callIdx := tracer.CurrentCallIndex()
 		currentCall := tracer.CallTree().FindCall(callIdx)
-		if currentCall == nil || currentCall.Err == nil {
-			return &artelatypes.StringData{}
-		}
+
 		msg := currentCall.Err.Error()
 		return &artelatypes.StringData{Data: &msg}
 	}

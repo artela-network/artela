@@ -188,9 +188,6 @@ func (c *EnvContext) registerLoaders() {
 		return &artelatypes.IntData{Data: &data}
 	}
 	loaders[context.EnvConsensusParamsAppVersion] = func(sdkCtx sdk.Context, ethTxCtx *types.EthTxContext) proto.Message {
-		if sdkCtx.ConsensusParams() == nil || sdkCtx.ConsensusParams().Version == nil {
-			return &artelatypes.IntData{}
-		}
 		return &artelatypes.UintData{Data: &sdkCtx.ConsensusParams().Version.App}
 	}
 }
