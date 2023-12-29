@@ -2,12 +2,14 @@ package datactx
 
 import (
 	"errors"
-	"github.com/artela-network/artela/x/evm/artela/types"
+
 	aspctx "github.com/artela-network/aspect-core/context"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 type ReceiptContextFieldLoader func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message
@@ -32,7 +34,10 @@ func NewReceiptContext(getEthTxContext func() *types.EthTxContext,
 func (c *ReceiptContext) registerLoaders() {
 	loaders := c.receiptContentLoaders
 	loaders[aspctx.ReceiptStatus] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
-		return &artelatypes.UintData{Data: receipt.Status}
+		if receipt == nil {
+			return &artelatypes.UintData{}
+		}
+		return &artelatypes.UintData{Data: &receipt.Status}
 	}
 	loaders[aspctx.ReceiptLogs] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
 		logs := make([]*artelatypes.EthLog, 0, len(receipt.Logs))
@@ -41,21 +46,27 @@ func (c *ReceiptContext) registerLoaders() {
 			for _, topic := range log.Topics {
 				topics = append(topics, topic.Bytes())
 			}
-
+			index := uint64(log.Index)
 			logs = append(logs, &artelatypes.EthLog{
 				Address: log.Address.Bytes(),
 				Topics:  topics,
 				Data:    log.Data,
-				Index:   uint64(log.Index),
+				Index:   &index,
 			})
 		}
 		return &artelatypes.EthLogs{Logs: logs}
 	}
 	loaders[aspctx.ReceiptGasUsed] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
-		return &artelatypes.UintData{Data: receipt.GasUsed}
+		if receipt == nil {
+			return &artelatypes.UintData{}
+		}
+		return &artelatypes.UintData{Data: &receipt.GasUsed}
 	}
 	loaders[aspctx.ReceiptCumulativeGasUsed] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
-		return &artelatypes.UintData{Data: receipt.CumulativeGasUsed}
+		if receipt == nil {
+			return &artelatypes.UintData{}
+		}
+		return &artelatypes.UintData{Data: &receipt.CumulativeGasUsed}
 	}
 	loaders[aspctx.ReceiptBloom] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
 		return &artelatypes.BytesData{Data: receipt.Bloom.Bytes()}

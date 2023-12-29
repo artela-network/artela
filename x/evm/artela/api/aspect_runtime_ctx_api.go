@@ -3,13 +3,15 @@ package api
 import (
 	"context"
 	"errors"
+
 	aspctx "github.com/artela-network/aspect-core/context"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/emirpasic/gods/sets/hashset"
 
+	asptypes "github.com/artela-network/aspect-core/types"
+
 	"github.com/artela-network/artela/x/evm/artela/api/datactx"
 	"github.com/artela-network/artela/x/evm/artela/types"
-	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 var (
@@ -138,8 +140,9 @@ func (a *aspectRuntimeContextHostAPI) Register() {
 		// verify tx can only be triggered when it is a transaction, so we can safely assume that
 		// if the point is verify-tx, it must be a transaction.
 		// otherwise if the request is not being committed, we can assume that it is a call.
-		return proto.Marshal(&asptypes.BoolData{Data: ctx.Point != string(asptypes.VERIFY_TX) &&
-			!a.aspectRuntimeContext.EthTxContext().Commit()})
+		result := ctx.Point != string(asptypes.VERIFY_TX) &&
+			!a.aspectRuntimeContext.EthTxContext().Commit()
+		return proto.Marshal(&asptypes.BoolData{Data: &result})
 	}
 }
 

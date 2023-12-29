@@ -4,8 +4,6 @@ import (
 	"math/big"
 
 	"github.com/artela-network/artela-evm/vm"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	evmtypes "github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/aspect-core/djpm/contract"
 	"github.com/artela-network/aspect-core/djpm/run"
 	artelasdkType "github.com/artela-network/aspect-core/types"
@@ -15,6 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
 )
 
 func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte) (*evmtypes.MsgEthereumTxResponse, error) {
@@ -39,7 +40,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, 
 			txHash = ethTxContent.Hash().Bytes()
 		}
 	}
-
+	height := uint64(lastHeight)
 	// ignore gas output for now, since we haven't implemented gas metering for aspect for now
 	ret, _, err := runner.JoinPoint(artelasdkType.OPERATION_METHOD, msg.GasLimit, lastHeight, msg.To, &artelasdkType.OperationInput{
 		Tx: &artelasdkType.WithFromTxInput{
@@ -47,7 +48,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, 
 			To:   msg.To.Bytes(),
 			From: msg.From.Bytes(),
 		},
-		Block:    &artelasdkType.BlockInput{Number: uint64(lastHeight)},
+		Block:    &artelasdkType.BlockInput{Number: &height},
 		CallData: data,
 	})
 	var vmError string
@@ -285,6 +286,7 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	if code == nil {
 		return false, nil
 	}
+	// StressTesting
 
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {

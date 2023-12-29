@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"errors"
+	"sort"
+
 	"github.com/artela-network/artela-evm/vm"
-	"github.com/artela-network/artela/x/evm/artela/types"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
-	"sort"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 var (
@@ -22,7 +24,7 @@ type aspectTraceHostAPI struct {
 }
 
 func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, query *artelatypes.StateChangeQuery) []byte {
-	if ctx == nil || len(query.Account) == 0 || len(query.StateVarName) == 0 {
+	if ctx == nil || len(query.Account) == 0 || query.StateVarName == nil {
 		return []byte{}
 	}
 
@@ -34,7 +36,7 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 
 	tracer := txContext.VmTracer()
 	ethAddr := common.BytesToAddress(query.Account)
-	stateVar := query.StateVarName
+	stateVar := *query.StateVarName
 
 	var storageChanges interface{}
 	if stateVar == AccountBalanceMagic {
@@ -77,7 +79,7 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 				ethStateChanges.All = append(ethStateChanges.All, &artelatypes.EthStateChange{
 					Account:   call.From.Bytes(),
 					Value:     state,
-					CallIndex: call.Index,
+					CallIndex: &call.Index,
 				})
 			}
 		}
@@ -116,13 +118,13 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 
 	tracer := txContext.VmTracer()
 	callTree := tracer.CallTree()
-	if query.CallIdx < 0 {
+	if query.CallIdx == nil {
 		// for negative numbers we return the entire call tree
 		ethCallTree := &artelatypes.EthCallTree{Calls: make(map[uint64]*artelatypes.EthCallMessage)}
 		traverseEVMCallTree(callTree.Root(), ethCallTree)
 		result = ethCallTree
 	} else {
-		call := tracer.CallTree().FindCall(uint64(query.CallIdx))
+		call := tracer.CallTree().FindCall(uint64(*query.CallIdx))
 		if call != nil {
 			result = callToTrace(call)
 		}
@@ -170,17 +172,21 @@ func callToTrace(ethCall *vm.Call) *artelatypes.EthCallMessage {
 		callErr = ethCall.Err
 	}
 
+	gas := ethCall.Gas.Uint64()
+	gasUsed := ethCall.Gas.Uint64() - ethCall.RemainingGas
+	callErrMsg := callErr.Error()
+	parentIndex := ethCall.ParentIndex()
 	return &artelatypes.EthCallMessage{
 		From:            ethCall.From.Bytes(),
 		To:              to,
 		Data:            ethCall.Data,
 		Value:           value,
-		Gas:             ethCall.Gas.Uint64(),
+		Gas:             &gas,
 		Ret:             ethCall.Ret,
-		GasUsed:         ethCall.Gas.Uint64() - ethCall.RemainingGas,
-		Error:           callErr.Error(),
-		Index:           ethCall.Index,
-		ParentIndex:     ethCall.ParentIndex(),
+		GasUsed:         &gasUsed,
+		Error:           &callErrMsg,
+		Index:           &ethCall.Index,
+		ParentIndex:     &parentIndex,
 		ChildrenIndices: ethCall.ChildrenIndices(),
 	}
 }
