@@ -174,7 +174,11 @@ func callToTrace(ethCall *vm.Call) *artelatypes.EthCallMessage {
 
 	gas := ethCall.Gas.Uint64()
 	gasUsed := ethCall.Gas.Uint64() - ethCall.RemainingGas
-	callErrMsg := callErr.Error()
+
+	callErrMsg := ""
+	if callErr != nil {
+		callErrMsg = callErr.Error()
+	}
 	parentIndex := ethCall.ParentIndex()
 	return &artelatypes.EthCallMessage{
 		From:            ethCall.From.Bytes(),
