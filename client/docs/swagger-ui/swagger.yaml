@@ -20847,7 +20847,7 @@ paths:
                               (e.g. with a base_denom of uart, one can create a
                               DenomUnit of 'art' with
 
-                              exponent = 6, thus: 1 art = 10^6 uart).
+                              exponent = 18, thus: 1 art = 10^18 uart).
                           aliases:
                             type: array
                             items:
@@ -21054,7 +21054,7 @@ paths:
                             (e.g. with a base_denom of uart, one can create a
                             DenomUnit of 'art' with
 
-                            exponent = 6, thus: 1 art = 10^6 uart).
+                            exponent = 18, thus: 1 art = 10^18 uart).
                         aliases:
                           type: array
                           items:
@@ -52613,7 +52613,7 @@ definitions:
           (e.g. with a base_denom of uart, one can create a DenomUnit of 'art'
           with
 
-          exponent = 6, thus: 1 art = 10^6 uart).
+          exponent = 18, thus: 1 art = 10^18 uart).
       aliases:
         type: array
         items:
@@ -52651,7 +52651,7 @@ definitions:
                 (e.g. with a base_denom of uart, one can create a DenomUnit of
                 'art' with
 
-                exponent = 6, thus: 1 art = 10^6 uart).
+                exponent = 18, thus: 1 art = 10^18 uart).
             aliases:
               type: array
               items:
@@ -52830,7 +52830,7 @@ definitions:
                     (e.g. with a base_denom of uart, one can create a DenomUnit
                     of 'art' with
 
-                    exponent = 6, thus: 1 art = 10^6 uart).
+                    exponent = 18, thus: 1 art = 10^18 uart).
                 aliases:
                   type: array
                   items:
@@ -52986,7 +52986,7 @@ definitions:
                       (e.g. with a base_denom of uart, one can create a
                       DenomUnit of 'art' with
 
-                      exponent = 6, thus: 1 art = 10^6 uart).
+                      exponent = 18, thus: 1 art = 10^18 uart).
                   aliases:
                     type: array
                     items:
