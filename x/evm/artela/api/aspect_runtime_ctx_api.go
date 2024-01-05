@@ -25,7 +25,7 @@ var (
 		asptypes.PRE_TX_EXECUTE_METHOD:     hashset.New(aspctx.PreTxCtxKeys...),
 		asptypes.POST_TX_EXECUTE_METHOD:    hashset.New(aspctx.PostTxCtxKeys...),
 		asptypes.PRE_CONTRACT_CALL_METHOD:  hashset.New(aspctx.PreCallCtxKeys...),
-		asptypes.POST_CONTRACT_CALL_METHOD: hashset.New(aspctx.PostTxCtxKeys...),
+		asptypes.POST_CONTRACT_CALL_METHOD: hashset.New(aspctx.PostCallCtxKeys...),
 	}
 )
 
