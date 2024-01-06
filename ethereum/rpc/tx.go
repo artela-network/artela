@@ -285,7 +285,7 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 		// They are stored in the chain database.
 		"transactionHash": hash,
 		"contractAddress": nil,
-		"gasUsed":         txData.GetGas(),
+		"gasUsed":         hexutil.Uint64(txData.GetGas()),
 
 		// Inclusion information: These fields provide information about the inclusion of the
 		// transaction corresponding to this receipt.
