@@ -214,6 +214,10 @@ func init() {
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, "."+ExeName)
+
+	// manually update the power reduction
+	cosmos.DefaultPowerReduction = artela.PowerReduction
+
 }
 
 // Artela extends an ABCI application, but with most of its parameters exported.
