@@ -27,7 +27,7 @@ type CosmosTxArgs struct {
 	TxCfg client.TxConfig
 	// Priv is the private key that will be used to sign the txs
 	Priv cryptotypes.PrivKey
-	// ChainID is the chain's id on cosmos format, e.g. 'artela_11820-1'
+	// ChainID is the chain's id on cosmos format, e.g. 'artela_11822-1'
 	ChainID string
 	// Gas to be used on the txs
 	Gas uint64
