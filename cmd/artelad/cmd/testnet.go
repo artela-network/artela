@@ -106,8 +106,10 @@ func NewTestnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBala
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
-
+	fmt.Println("new test 1")
 	testnetCmd.AddCommand(testnetStartCmd())
+	fmt.Println("new test 2")
+
 	testnetCmd.AddCommand(testnetInitFilesCmd(mbm, genBalIterator))
 
 	return testnetCmd
@@ -195,7 +197,7 @@ Example:
 			return startTestnet(cmd, args)
 		},
 	}
-
+	fmt.Println("new test 1.1")
 	addTestnetFlagsToCmd(cmd)
 	cmd.Flags().Bool(flagEnableLogging, false, "Enable INFO logging of tendermint validator nodes")
 	cmd.Flags().String(flagRPCAddress, "tcp://0.0.0.0:26657", "the RPC address to listen on")
