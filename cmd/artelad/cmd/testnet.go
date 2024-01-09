@@ -115,6 +115,11 @@ func NewTestnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBala
 
 // get cmd to initialize all files for tendermint testnet and application
 func testnetInitFilesCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBalancesIterator) *cobra.Command {
+	// Calling Sleep method
+	// time.Sleep(20 * time.Second)
+	// // Printed after sleep is over
+	// fmt.Println("Sleep Over.....")
+
 	cmd := &cobra.Command{
 		Use:   "init-files",
 		Short: "Initialize config directories & files for a multi-validator testnet running locally via separate processes (e.g. Docker Compose or similar)",
@@ -215,6 +220,7 @@ func initTestnetFiles(
 	if args.chainID == "" {
 		args.chainID = fmt.Sprintf("artelad_%d-1", tmrand.Int63n(9999999999999)+1)
 	}
+	fmt.Println("initTestnetFiles start ", nodeConfig.P2P.Seeds)
 
 	nodeIDs := make([]string, args.numValidators)
 	valPubKeys := make([]cryptotypes.PubKey, args.numValidators)
@@ -298,6 +304,7 @@ func initTestnetFiles(
 		coins := sdk.Coins{
 			sdk.NewCoin(utils.BaseDenom, accStakingTokens),
 		}
+		fmt.Println("initTestnetFiles ", nodeDir, nodeConfig.P2P.Seeds)
 
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
 		genAccounts = append(genAccounts, &artelatypes.EthAccount{
@@ -359,6 +366,7 @@ func initTestnetFiles(
 	if err := initGenFiles(clientCtx, mbm, args.chainID, utils.BaseDenom, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
 		return err
 	}
+	fmt.Println("collectGenFiles before ", nodeConfig.P2P.Seeds)
 
 	err := collectGenFiles(
 		clientCtx, nodeConfig, args.chainID, nodeIDs, valPubKeys, args.numValidators,
@@ -453,6 +461,7 @@ func collectGenFiles(
 ) error {
 	var appState json.RawMessage
 	genTime := tmtime.Now()
+	fmt.Println("collectGenFiles start ", nodeConfig.P2P.Seeds)
 
 	for i := 0; i < numValidators; i++ {
 		nodeDirName := fmt.Sprintf("%s%d", nodeDirPrefix, i)
@@ -469,6 +478,7 @@ func collectGenFiles(
 		if err != nil {
 			return err
 		}
+		fmt.Println("collectGenFiles for ", nodeDir, nodeConfig.P2P.Seeds)
 
 		nodeAppState, err := genutil.GenAppStateFromConfig(
 			clientCtx.Codec, clientCtx.TxConfig,
