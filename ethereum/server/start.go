@@ -386,6 +386,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		return err
 	}
 
+	var grpcClient *grpc.ClientConn
 	var apiSrv *api.Server
 	if config.API.Enable {
 		genDoc, err := genDocProvider()
@@ -414,7 +415,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 			grpcAddress := fmt.Sprintf("127.0.0.1:%s", port)
 
 			// If grpc is enabled, configure grpc client for grpc gateway.
-			grpcClient, err := grpc.Dial(
+			grpcClient, err = grpc.Dial(
 				grpcAddress,
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
 				grpc.WithDefaultCallOptions(
@@ -463,6 +464,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		}
 
 		clientCtx := clientCtx.WithHomeDir(home).WithChainID(genDoc.ChainID)
+		clientCtx = clientCtx.WithGRPCClient(grpcClient)
 
 		tmEndpoint := "/websocket"
 		tmRPCAddr := cfg.RPC.ListenAddress
