@@ -2,12 +2,13 @@ package utils
 
 import (
 	"bytes"
+	"math/big"
+	"strings"
+
 	"github.com/artela-network/aspect-core/djpm"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"math/big"
-	"strings"
 
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 
@@ -24,6 +25,10 @@ const (
 	MainnetChainID = "artela_11821"
 	// TestnetChainID defines the Artela EIP155 chain ID for testnet
 	TestnetChainID = "artela_11822"
+
+	DevnetChainID = "artela_11823"
+
+	LocalChainID = "artela_11820"
 	// BaseDenom defines the Artela mainnet denomination
 	BaseDenom = "uart"
 )
@@ -36,6 +41,15 @@ func IsMainnet(chainID string) bool {
 // IsTestnet returns true if the chain-id has the Artela testnet EIP155 chain prefix.
 func IsTestnet(chainID string) bool {
 	return strings.HasPrefix(chainID, TestnetChainID)
+}
+
+// IsTestnet returns true if the chain-id has the Artela testnet EIP155 chain prefix.
+func IsDevnet(chainID string) bool {
+	return strings.HasPrefix(chainID, DevnetChainID)
+}
+
+func IsLocal(chainID string) bool {
+	return strings.HasPrefix(chainID, LocalChainID)
 }
 
 // IsSupportedKey returns true if the pubkey type is supported by the chain
