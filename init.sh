@@ -5,7 +5,7 @@ KEY2="mykey2"
 KEY3="mykey3"
 KEY4="mykey4"
 
-CHAINID="artela_11820"
+CHAINID="artela_11820-1"
 MONIKER="localtestnet"
 KEYRING="test"
 KEYALGO="eth_secp256k1"
