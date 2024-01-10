@@ -58,7 +58,9 @@ func (c *MessageContext) registerLoaders() {
 		tracer := ethTxCtx.VmTracer()
 		callIdx := tracer.CurrentCallIndex()
 		currentCall := tracer.CallTree().FindCall(callIdx)
-
+		if currentCall.Ret == nil {
+			return &artelatypes.BytesData{Data: []byte{}}
+		}
 		return &artelatypes.BytesData{Data: currentCall.Ret}
 	}
 	loaders[aspctx.MsgResultGasUsed] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
@@ -73,7 +75,9 @@ func (c *MessageContext) registerLoaders() {
 		tracer := ethTxCtx.VmTracer()
 		callIdx := tracer.CurrentCallIndex()
 		currentCall := tracer.CallTree().FindCall(callIdx)
-
+		if currentCall.Err == nil {
+			return &artelatypes.BytesData{Data: []byte{}}
+		}
 		msg := currentCall.Err.Error()
 		return &artelatypes.StringData{Data: &msg}
 	}
