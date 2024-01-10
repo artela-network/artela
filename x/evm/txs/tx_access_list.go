@@ -1,14 +1,17 @@
 package txs
 
 import (
-	"github.com/artela-network/artela/ethereum/utils"
-	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
 
+	"github.com/artela-network/aspect-core/djpm"
+
+	"github.com/artela-network/artela/ethereum/utils"
+
 	errorsmod "cosmossdk.io/errors"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+
 	artela "github.com/artela-network/artela/ethereum/types"
 	evmmodule "github.com/artela-network/artela/x/evm/types"
-	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/ethereum/go-ethereum/common"
@@ -127,10 +130,10 @@ func (tx AccessListTx) Validate() error {
 	}
 
 	// TODO mark
-	if !(chainID.Cmp(big.NewInt(11822)) == 0 || chainID.Cmp(big.NewInt(11821)) == 0) {
+	if !(chainID.Cmp(big.NewInt(11820)) == 0 || chainID.Cmp(big.NewInt(11823)) == 0 || chainID.Cmp(big.NewInt(11822)) == 0 || chainID.Cmp(big.NewInt(11821)) == 0) {
 		return errorsmod.Wrapf(
 			errortypes.ErrInvalidChainID,
-			"chain ID must be 11822 or 11821 on Artela, got %s", chainID,
+			"chain ID must be 11822、11823、11821、11820  on Artela, got %s", chainID,
 		)
 	}
 
