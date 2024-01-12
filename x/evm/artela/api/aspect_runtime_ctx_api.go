@@ -149,7 +149,7 @@ func (a *aspectRuntimeContextHostAPI) Register() {
 func (a *aspectRuntimeContextHostAPI) Get(ctx *asptypes.RunnerContext, key string) []byte {
 	joinPointCtxKeyConstraints, ok := ctxKeyConstraints[asptypes.PointCut(ctx.Point)]
 	if !ok || !joinPointCtxKeyConstraints.Contains(key) {
-		panic("accessing non existent or constrained key")
+		return []byte{}
 	}
 
 	res, err := a.execMap[key](ctx)

@@ -39,6 +39,9 @@ ifneq (,$(findstring nooptimization,$(COSMOS_BUILD_OPTIONS)))
   BUILD_FLAGS += -asmflags "all=-trimpath=$(CURRENT_DIR)"
 endif
 
+debug: clean mkbuild
+	go build -o $(BUILD)/. ./...
+
 mkbuild:
 	mkdir -p $(BUILD)
 
