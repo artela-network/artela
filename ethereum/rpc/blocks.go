@@ -465,18 +465,9 @@ func (b *BackendImpl) DoCall(args ethapi.TransactionArgs, blockNrOrHash rpc.Bloc
 	// this makes sure resources are cleaned up.
 	defer cancel()
 
-	res := &txs.MsgEthereumTxResponse{}
-	if b.clientCtx.GRPCClient != nil {
-		// if grpc(default to 9090) is enabled, use grpc query to improve the call performance
-		if err = b.clientCtx.Invoke(b.ctx, "/artela.evm.v1.Query/EthCall", &req, res); err != nil {
-			return nil, err
-		}
-	} else {
-		// if grpc is not enabled, use abci to execute the call
-		res, err = b.queryClient.EthCall(ctx, &req)
-		if err != nil {
-			return nil, err
-		}
+	res, err := b.queryClient.EthCall(ctx, &req)
+	if err != nil {
+		return nil, err
 	}
 
 	if res.Failed() {
