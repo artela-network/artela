@@ -114,7 +114,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				})
 			}
 			sender := vm.AccountRef(msg.From)
-			aspectOwner, checkErr := k.checkAspectOwner(ctx, aspectId, sender.Address())
+			aspectOwner, checkErr := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 			if checkErr != nil {
 				return nil, checkErr
 			}
@@ -136,7 +136,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			if isContract {
 				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
 				// Bind with contract account, need to verify contract ownerships first
-				owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address())
+				owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 				if !(owner || cOwner) {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
@@ -157,7 +157,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			if isContract {
 				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
 				// Bind with contract account, need to verify contract ownerships first
-				owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address())
+				owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 				if !(owner || cOwner) {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
@@ -175,7 +175,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			contract := parameters["contract"].(common.Address)
 			version := parameters["version"].(uint64)
 			sender := vm.AccountRef(msg.From)
-			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address())
+			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
 			if err != nil {
 				return nil, err
 			}
@@ -207,7 +207,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 		{
 			aspectId := parameters["aspectId"].(common.Address)
 			data := parameters["optArgs"].([]byte)
-			return k.entrypoint(ctx, msg, method, aspectId, data)
+			return k.entrypoint(ctx, msg, method, aspectId, data, commit)
 		}
 	}
 	return nil, nil

@@ -85,7 +85,7 @@ func (b *BackendImpl) HeaderByNumberOrHash(ctx context.Context,
 func (b *BackendImpl) CurrentHeader() *ethtypes.Header {
 	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil || block == nil {
-		b.logger.Error("geet CurrentHeader failed, error or block is nil", "error", err)
+		b.logger.Error("get CurrentHeader failed, error or block is nil", "error", err)
 		return nil
 	}
 	return block.Header()

@@ -18,7 +18,7 @@ import (
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
 )
 
-func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte) (*evmtypes.MsgEthereumTxResponse, error) {
+func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, method *abi.Method, aspectId common.Address, data []byte, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
 	lastHeight := ctx.BlockHeight()
 	code, version := anc.aspectService.GetAspectCode(ctx, aspectId, nil)
 
@@ -26,7 +26,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, 
 	if !ok {
 		return nil, errors.New("AspectNativeContract.entrypoint: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), version.Uint64(), code)
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), version.Uint64(), code, commit)
 	if newErr != nil {
 		return nil, newErr
 	}
@@ -280,7 +280,7 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	return result
 }
 
-func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address) (bool, error) {
+func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, commit bool) (bool, error) {
 	bHeight := ctx.BlockHeight()
 	code, ver := k.aspectService.GetAspectCode(ctx, aspectId, nil)
 	if code == nil {
@@ -292,7 +292,7 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	if !ok {
 		return false, errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), ver.Uint64(), code)
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), ver.Uint64(), code, commit)
 	if newErr != nil {
 		return false, newErr
 	}
