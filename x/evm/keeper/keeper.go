@@ -2,8 +2,9 @@ package keeper
 
 import (
 	"fmt"
-	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
+
+	"github.com/artela-network/aspect-core/djpm"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -150,6 +151,7 @@ func NewKeeper(
 
 	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
+	artelaType.IsCommit = k.IsCommit
 	return k
 }
 

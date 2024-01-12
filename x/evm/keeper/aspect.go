@@ -20,6 +20,15 @@ func (k Keeper) JITSenderAspectByContext(ctx context.Context, userOpHash common.
 	return aspectCtx.JITManager().SenderAspect(userOpHash), nil
 }
 
+func (k Keeper) IsCommit(ctx context.Context) bool {
+	aspectCtx, ok := ctx.(*artvmtype.AspectRuntimeContext)
+	if !ok || aspectCtx.EthTxContext() == nil {
+		return false
+	}
+
+	return aspectCtx.EthTxContext().Commit()
+}
+
 func (k Keeper) GetAspectContext(ctx context.Context, address common.Address, key string) ([]byte, error) {
 	aspectCtx, ok := ctx.(*artvmtype.AspectRuntimeContext)
 	if !ok {
