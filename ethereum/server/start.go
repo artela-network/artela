@@ -231,7 +231,8 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 	cmd.Flags().String(artelaflag.TLSCertPath, "", "the cert.pem file path for the server TLS configuration")
 	cmd.Flags().String(artelaflag.TLSKeyPath, "", "the key.pem file path for the server TLS configuration")
 
-	cmd.Flags().Uint64(artelaflag.AspectPoolSize, aspecttypes.DefaultAspectPoolSize, "the cache pool size for runtime instances of the aspect")
+	cmd.Flags().Uint64(artelaflag.ApplyPoolSize, aspecttypes.DefaultAspectPoolSize, "the cache pool size for runtime instances for applying message")
+	cmd.Flags().Uint64(artelaflag.QueryPoolSize, aspecttypes.DefaultAspectPoolSize, "the cache pool size for runtime instances for querying message")
 
 	// add support for all Tendermint-specific command line options
 	tcmd.AddNodeFlags(cmd)

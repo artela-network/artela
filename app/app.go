@@ -351,7 +351,7 @@ func NewArtela(
 	)
 
 	// set the runner cache capacity of aspect-runtime
-	aspecttypes.InitRuntimePool(cast.ToInt32(appOpts.Get(srvflags.AspectPoolSize)))
+	aspecttypes.InitRuntimePool(cast.ToInt32(appOpts.Get(srvflags.ApplyPoolSize)), cast.ToInt32(appOpts.Get(srvflags.QueryPoolSize)))
 
 	// grant capabilities for the ibc and ibc-transfer modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)

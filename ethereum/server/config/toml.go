@@ -96,5 +96,6 @@ key-path = "{{ .TLS.KeyPath }}"
 ###                            Aspect Configuration                         ###
 ###############################################################################
 [aspect]
-pool-size = {{ .Aspect.PoolSize }}
+apply-pool-size = {{ .Aspect.ApplyPoolSize }}
+query-pool-size = {{ .Aspect.QueryPoolSize }}
 `
