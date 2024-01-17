@@ -98,8 +98,10 @@ type EVMConfig struct {
 
 // AspectConfig defines the application configuration values for Aspect.
 type AspectConfig struct {
-	// PoolSize defines capacity of aspect runtime instance pool
-	PoolSize int32
+	// ApplyPoolSize defines capacity of aspect runtime instance pool for applying txs
+	ApplyPoolSize int32
+	// QueryPoolSize defines capacity of aspect runtime instance pool for querying txs
+	QueryPoolSize int32
 }
 
 // JSONRPCConfig defines configuration for the EVM RPC server.
@@ -291,14 +293,19 @@ func (c EVMConfig) Validate() error {
 // DefaultAspectConfig returns the default Aspect configuration
 func DefaultAspectConfig() *AspectConfig {
 	return &AspectConfig{
-		PoolSize: aspecttypes.DefaultAspectPoolSize,
+		ApplyPoolSize: aspecttypes.DefaultAspectPoolSize,
+		QueryPoolSize: aspecttypes.DefaultAspectPoolSize,
 	}
 }
 
 // Validate returns an error if the tracer type is invalid.
 func (a AspectConfig) Validate() error {
-	if a.PoolSize < 0 {
-		return errors.New("Aspect pool-size cannot be negative")
+	if a.ApplyPoolSize < 0 {
+		return errors.New("Aspect apply-pool-size cannot be negative")
+	}
+
+	if a.QueryPoolSize < 0 {
+		return errors.New("Aspect query-pool-size cannot be negative")
 	}
 
 	return nil
@@ -452,7 +459,8 @@ func GetConfig(v *viper.Viper) (Config, error) {
 			KeyPath:         v.GetString("tls.key-path"),
 		},
 		Aspect: AspectConfig{
-			PoolSize: v.GetInt32("aspect.pool-size"),
+			ApplyPoolSize: v.GetInt32("aspect.apply-pool-size"),
+			QueryPoolSize: v.GetInt32("aspect.query-pool-size"),
 		},
 	}, nil
 }

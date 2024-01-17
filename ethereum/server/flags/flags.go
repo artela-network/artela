@@ -65,7 +65,8 @@ const (
 
 // Aspect flags
 const (
-	AspectPoolSize = "aspect.pool-size"
+	ApplyPoolSize = "aspect.apply-pool-size"
+	QueryPoolSize = "aspect.query-pool-size"
 )
 
 // TLS flags
