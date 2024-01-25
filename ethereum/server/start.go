@@ -458,22 +458,24 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		jsonrpcSrv *rpc.ArtelaService
 		errCh      chan error = make(chan error)
 	)
+
+	genDoc, err := genDocProvider()
+	if err != nil {
+		return err
+	}
+
+	clientCtx = clientCtx.WithHomeDir(home).WithChainID(genDoc.ChainID)
+	clientCtx = clientCtx.WithGRPCClient(grpcClient)
+
+	tmEndpoint := "/websocket"
+	tmRPCAddr := cfg.RPC.ListenAddress
+	// we need the jsonrpcSrv for aspect host apis, so create it whatever.
+	jsonrpcSrv, err = CreateJSONRPC(ctx, clientCtx, tmRPCAddr, tmEndpoint, &config)
+	if err != nil {
+		return err
+	}
+
 	if config.JSONRPC.Enable {
-		genDoc, err := genDocProvider()
-		if err != nil {
-			return err
-		}
-
-		clientCtx := clientCtx.WithHomeDir(home).WithChainID(genDoc.ChainID)
-		clientCtx = clientCtx.WithGRPCClient(grpcClient)
-
-		tmEndpoint := "/websocket"
-		tmRPCAddr := cfg.RPC.ListenAddress
-		jsonrpcSrv, err = CreateJSONRPC(ctx, clientCtx, tmRPCAddr, tmEndpoint, &config)
-		if err != nil {
-			return err
-		}
-
 		go func() {
 			// wait for the start of the RPC server.
 			time.Sleep(8 * time.Second)

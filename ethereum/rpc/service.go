@@ -12,7 +12,9 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/artela-network/artela/ethereum/rpc/aspect"
 	"github.com/artela-network/artela/ethereum/rpc/types"
+	aspectTypes "github.com/artela-network/aspect-core/types"
 )
 
 // nolint:unused
@@ -50,6 +52,8 @@ func NewArtelaService(
 	}
 
 	art.backend = NewBackend(ctx, clientCtx, art, stack.ExtRPCEnabled(), cfg, logger)
+	aspect.SetAspectQuery(art.backend)
+	aspectTypes.GetBlockchainHook = aspect.GetBlockChainAPI
 	return art
 }
 
