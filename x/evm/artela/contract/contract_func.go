@@ -287,7 +287,6 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 		return false, nil
 	}
 	// StressTesting
-
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
 		return false, errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
