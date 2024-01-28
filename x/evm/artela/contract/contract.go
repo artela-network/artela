@@ -143,8 +143,8 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			if isContract {
 				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
 				// Bind with contract account, need to verify contract ownerships first
-				owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
-				if !(owner || cOwner) {
+				// owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
+				if !(cOwner) {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
 			} else if account != sender.Address() {
@@ -164,8 +164,8 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			if isContract {
 				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
 				// Bind with contract account, need to verify contract ownerships first
-				owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
-				if !(owner || cOwner) {
+				// owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
+				if !(cOwner) {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
 			} else if account != sender.Address() {
