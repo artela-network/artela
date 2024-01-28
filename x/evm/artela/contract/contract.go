@@ -49,6 +49,14 @@ func (k *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, 
 	if err == nil && commit {
 		writeCacheFunc()
 	}
+	if err != nil {
+		return &evmtxs.MsgEthereumTxResponse{
+			GasUsed: ctx.GasMeter().GasConsumed(),
+			VmError: err.Error(),
+			Ret:     nil,
+			Logs:    nil,
+		}, nil
+	}
 	return applyMsg, err
 }
 
