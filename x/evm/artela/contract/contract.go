@@ -90,6 +90,13 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			}
 			joinPoints := parameters["joinPoints"].(*big.Int)
 
+			if len(code) == 0 {
+				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "Code verification failed during aspect deploy")
+			}
+			if joinPoints == nil {
+				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "JoinPoints verification failed during aspect deploy")
+			}
+
 			aspectId := crypto.CreateAddress(sender.Address(), msg.Nonce)
 			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
