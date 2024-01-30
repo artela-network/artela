@@ -1,0 +1,35 @@
+name: Aspect Test
+
+on:
+  push:
+    branches: [ ci_test ]
+  pull_request:
+    branches: [ ci_test ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Aspect Test
+      run: |
+        docker run --name testenv -e  -d simonalphafang/aspect-tooling:0.0.3 tail -f /dev/null
+        docker exec -i testenv bash <<EOF
+          source ~/.nvm/nvm.sh
+          set -ex
+          cd /aspect-tooling/packages/testcases
+          sed -i "s|\"node\": \".*\"|\"node\": \"http://47.254.27.97:8545\"|g" project.config.json && cat project.config.json
+          node scripts/create-account.cjs --skfile attack_accounts.txt
+          node scripts/create-account.cjs --skfile privateKey.txt
+          node scripts/create-account.cjs --skfile aspect_accounts.txt
+
+          # node scripts/transfer.cjs --skfile attack_accounts.txt
+          # node scripts/transfer.cjs --skfile privateKey.txt
+          # node scripts/transfer.cjs --skfile aspect_accounts.txt
+          
+          # cd tests
+          # node type-check-aspect.test.js
+        EOF
+
