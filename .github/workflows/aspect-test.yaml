@@ -7,41 +7,20 @@ on:
     branches: [ ci_test ]
 
 jobs:
-  alpha-workflow:
+  type-check:
     uses: ./.github/workflows/reuseable-aspect-test.yaml
     with:
       test_node_addr: "http://47.254.27.97:8545"
       test_script: "type-check-aspect.test.js"
-      key_attack_accounts: "0xc107af871261252e19185507a416efc753b4255f05ff2a2f7e54eee3f68968c7"
       key_privateKey: "0xb4f7eb534165f83025bc30f0add655805d9da066ef2bca04e59fb6f74c38acb8"
-      key_aspect_accounts: "0xa1e399c54e92cc32a19fb10e41467ee5a67c08a922600f8dd3774e375c868c33"
-
-  # type-check:
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #   - uses: actions/checkout@v2
-
-  #   - name: Aspect Test
-  #     run: |
-  #       mkdir -p test_scripts
-  #       cat > test_scripts/init_env.sh <<EOF
-  #         source ~/.nvm/nvm.sh
-  #         set -ex
-  #         cd /aspect-tooling/packages/testcases
-  #         sed -i "s|\"node\": \".*\"|\"node\": \"http://47.254.27.97:8545\"|g" project.config.json && cat project.config.json
-  #         # key1
-  #         echo '0xc107af871261252e19185507a416efc753b4255f05ff2a2f7e54eee3f68968c7' > attack_accounts.txt
-  #         # key2
-  #         echo '0xb4f7eb534165f83025bc30f0add655805d9da066ef2bca04e59fb6f74c38acb8' > privateKey.txt
-  #         # key3
-  #         echo '0xa1e399c54e92cc32a19fb10e41467ee5a67c08a922600f8dd3774e375c868c33' > aspect_accounts.txt
-          
-  #         cd tests
-  #         for test_case in ./*.test.js; do
-  #           node $test_case
-  #         done
-
-  #       EOF
-  #       chmod +x test_scripts/init_env.sh
-  #       docker run --name testenv -v $(pwd)/test_scripts:/test_scripts -id simonalphafang/aspect-tooling:0.0.3 /bin/bash -c /test_scripts/init_env.sh
+      key_attack_accounts: ""
+      key_aspect_accounts: ""
+  
+  cross-phase-property:
+    uses: ./.github/workflows/reuseable-aspect-test.yaml
+    with:
+      test_node_addr: "http://47.254.27.97:8545"
+      test_script: "cross-phase-property.test.js"
+      key_attack_accounts: "0xc107af871261252e19185507a416efc753b4255f05ff2a2f7e54eee3f68968c7"
+      key_privateKey: "0xa1e399c54e92cc32a19fb10e41467ee5a67c08a922600f8dd3774e375c868c33"
+      key_aspect_accounts: "0x4d372700bec7a86e3b5388685f92806234931bc018c02fe4b52d5c56df317f8en"
