@@ -15,8 +15,8 @@ jobs:
 
     - name: Aspect Test
       run: |
-        docker run --name testenv -e  -d simonalphafang/aspect-tooling:0.0.3 tail -f /dev/null
-        docker exec -i testenv bash <<EOF
+        mkdir -p test_scripts
+        cat > test_scripts/init_env.sh <<EOF
           source ~/.nvm/nvm.sh
           set -ex
           cd /aspect-tooling/packages/testcases
@@ -32,4 +32,6 @@ jobs:
           # cd tests
           # node type-check-aspect.test.js
         EOF
+        chmod +x test_scripts/init_env.sh
+        docker run --name testenv -v $(pwd)/test_scripts:/test_scripts -id simonalphafang/aspect-tooling:0.0.3 /bin/bash -c /test_scripts/init_env.sh
 
