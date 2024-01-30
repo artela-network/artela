@@ -44,4 +44,4 @@ jobs:
 
         EOF
         chmod +x test_scripts/init_env.sh
-        docker run --name testenv -v $(pwd)/test_scripts:/test_scripts -it simonalphafang/aspect-tooling:0.0.3 /bin/bash -c /test_scripts/init_env.sh
+        docker run --name testenv -v $(pwd)/test_scripts:/test_scripts -i simonalphafang/aspect-tooling:0.0.3 /bin/bash -c /test_scripts/init_env.sh
