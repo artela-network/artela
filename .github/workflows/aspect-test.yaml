@@ -24,3 +24,14 @@ jobs:
       key_attack_accounts: "0xc107af871261252e19185507a416efc753b4255f05ff2a2f7e54eee3f68968c7"
       key_privateKey: "0xa1e399c54e92cc32a19fb10e41467ee5a67c08a922600f8dd3774e375c868c33"
       key_aspect_accounts: "0x4d372700bec7a86e3b5388685f92806234931bc018c02fe4b52d5c56df317f8en"
+
+  cross-phase-state:
+    uses: ./.github/workflows/reuseable-aspect-test.yaml
+    with:
+      test_node_addr: "http://47.254.27.97:8545"
+      test_script: "cross-phase-state.test.js"
+      key_attack_accounts: "0x37fdcc21797ca54da32a07a81a50750b40be2438c99ba73effe3c5c1c50d7cd9"
+      key_privateKey: ""
+      key_aspect_accounts: ""
+
+# 
