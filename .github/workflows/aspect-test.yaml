@@ -31,7 +31,7 @@ jobs:
       test_node_addr: "http://47.254.27.97:8545"
       test_script: "cross-phase-state.test.js"
       key_attack_accounts: "0x37fdcc21797ca54da32a07a81a50750b40be2438c99ba73effe3c5c1c50d7cd9"
-      key_privateKey: ""
-      key_aspect_accounts: ""
+      key_privateKey: "0x08a144f99aeae08b9582eef04c82f51528d6fc9ac0680ce4f967b872bbb3ab0e"
+      key_aspect_accounts: "0x7e026200e55f7fd162ba0bc8dbb8ae5e37c11ebf808c7981c4eba3aa6fe4c91c"
 
 # 
