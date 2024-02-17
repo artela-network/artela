@@ -49,6 +49,7 @@ Compile the source code and generate the executable using the Go compiler:
 
 ```
 cd artela
+git checkout main
 make clean && make
 ```
 
