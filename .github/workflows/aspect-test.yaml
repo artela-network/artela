@@ -43,11 +43,11 @@ jobs:
       key_privateKey: "0x6b8fdf2fe277f04f2b4b79695cac237e6bfcfa711f8d374404d4fbb1e8891865"
       key_aspect_accounts: ""
 
-  context-key-check:
+  context-perm-check:
     uses: ./.github/workflows/reuseable-aspect-test.yaml
     with:
       test_node_addr: "http://47.254.27.97:8545"
-      test_script: "context-key-check.test.js"
+      test_script: "context-permission-check.test.js"
       key_attack_accounts: ""
       key_privateKey: "0x91f6dc1e7bd0d5c1b2810865825bfaa926062a5d0f8f608019efc051365b8c91"
       key_aspect_accounts: ""
