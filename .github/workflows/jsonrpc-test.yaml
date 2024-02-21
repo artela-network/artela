@@ -1,4 +1,5 @@
 name: JsonRPC Test
+# Test cases for json-rpc
 
 on:
   push:
