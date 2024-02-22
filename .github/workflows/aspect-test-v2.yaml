@@ -1,10 +1,10 @@
 name: Aspect Test V2
 
 env:
-  test_node_addr: "http://47.254.27.97:8545"
-  key_privateKey: "0xb4f7eb534165f83025bc30f0add655805d9da066ef2bca04e59fb6f74c38acb8"
-  key_attack_accounts: "0xc107af871261252e19185507a416efc753b4255f05ff2a2f7e54eee3f68968c7"
-  key_aspect_accounts: "0xa1e399c54e92cc32a19fb10e41467ee5a67c08a922600f8dd3774e375c868c33"
+  test_node_addr: "https://betanet-rpc1.artela.network"
+  key_privateKey: "0xa9e70c59c34171623b5aceba9976288912bd45539d4029188836914e24decdd5"
+  key_attack_accounts: "0xaf919292bab87f4f9b13ce45406023bca55953a34682039298a7048f1c7e99b7"
+  key_aspect_accounts: "0xcf8e42a2dc63d0b38ef004ecd2e2a6478158a84b4772ff244093961cae348ae8"
 
 on:
   push:
