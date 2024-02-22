@@ -28,7 +28,7 @@ jobs:
           node $1
         EOF
         
-        cat > test_scripts/run.sh << EOF
+        cat > ci_scripts/run.sh << EOF
           docker run --name testenv -v $(pwd)/ci_scripts:/ci_scripts -i simonalphafang/artela-jsonrpc-testenv:0.0.1 /bin/bash -c /ci_scripts/init_env.sh $1
         EOF
         chmod +x -R ci_scripts/
