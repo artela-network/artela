@@ -167,6 +167,10 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				// For EoA account binding, only the account itself can issue the bind request
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect binding")
 			}
+			code, _ := k.aspectService.GetAspectCode(ctx, aspectId, versionU256)
+			if len(code) == 0 {
+				return nil, errorsmod.Wrapf(evmtypes.ErrAspectNotFound, "aspect %s ,version %s not found", aspectId.String(), versionU256.String())
+			}
 
 			return k.bind(ctx, aspectId, account, versionU256, priority, isContract)
 		}
