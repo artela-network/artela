@@ -279,19 +279,19 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	}
 	return result
 }
-func (k *AspectNativeContract) checkAspectCode(ctx sdk.Context, aspectId common.Address, aspectCode []byte, commit bool) (bool, error) {
+func (k *AspectNativeContract) checkAspectCode(ctx sdk.Context, aspectId common.Address, aspectCode []byte, commit bool) error {
 
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
-		return false, errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
+		return errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
 	}
 	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), 1, aspectCode, commit)
 	if newErr != nil {
-		return false, newErr
+		return newErr
 	}
 	defer runner.Return()
 
-	return true, nil
+	return nil
 }
 
 func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, commit bool) (bool, error) {
@@ -301,7 +301,6 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 		return false, nil
 	}
 	// StressTesting
-
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
 		return false, errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
@@ -325,21 +324,24 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 			Logs:    nil,
 		}, nil
 	}
-
-	_, checkErr := k.checkAspectCode(ctx, aspectId, code, false)
-	if checkErr != nil {
-		return nil, checkErr
+	_, aspectVersion := k.aspectService.aspectStore.GetAspectCode(ctx, aspectId, nil)
+	if len(code) > 0 {
+		// upgrade here may be 0
+		aspectVersion = k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
 	}
 
-	aspectVersion := k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
-
-	err := k.aspectService.aspectStore.StoreAspectJP(ctx, aspectId, aspectVersion, joinPoint)
-	if err != nil {
-		return nil, err
+	if joinPoint != nil {
+		err := k.aspectService.aspectStore.StoreAspectJP(ctx, aspectId, aspectVersion, joinPoint)
+		if err != nil {
+			return nil, err
+		}
 	}
-	err = k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
-	if err != nil {
-		return nil, err
+
+	if len(properties) > 0 {
+		err := k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	level := artelasdkType.CheckIsBlockLevel(joinPoint.Int64())
