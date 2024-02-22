@@ -106,6 +106,10 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			}
 
 			aspectId := crypto.CreateAddress(sender.Address(), msg.Nonce)
+			checkErr := k.checkAspectCode(ctx, aspectId, code, false)
+			if checkErr != nil {
+				return nil, checkErr
+			}
 			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "upgrade":
@@ -137,6 +141,12 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to upgrade, sender: %s , aspectId: %s", sender.Address().String(), aspectId.String())
 			}
 			joinPoints := parameters["joinPoints"].(*big.Int)
+			if len(code) > 0 {
+				codeErr := k.checkAspectCode(ctx, aspectId, code, false)
+				if codeErr != nil {
+					return nil, codeErr
+				}
+			}
 			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "bind":
