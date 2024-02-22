@@ -279,6 +279,20 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	}
 	return result
 }
+func (k *AspectNativeContract) checkAspectCode(ctx sdk.Context, aspectId common.Address, aspectCode []byte, commit bool) (bool, error) {
+
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		return false, errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
+	}
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), 1, aspectCode, commit)
+	if newErr != nil {
+		return false, newErr
+	}
+	defer runner.Return()
+
+	return true, nil
+}
 
 func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, commit bool) (bool, error) {
 	bHeight := ctx.BlockHeight()
@@ -310,6 +324,11 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 			Ret:     nil,
 			Logs:    nil,
 		}, nil
+	}
+
+	_, checkErr := k.checkAspectCode(ctx, aspectId, code, false)
+	if checkErr != nil {
+		return nil, checkErr
 	}
 
 	aspectVersion := k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
