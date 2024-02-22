@@ -5,6 +5,7 @@ on:
     branches: [ ci_test ]
   pull_request:
     branches: [ ci_test ]
+  workflow_dispatch: {}
 
 jobs:
   type-check:
@@ -51,3 +52,23 @@ jobs:
       key_attack_accounts: ""
       key_privateKey: "0x91f6dc1e7bd0d5c1b2810865825bfaa926062a5d0f8f608019efc051365b8c91"
       key_aspect_accounts: ""
+
+
+# name: Manual workflow
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       logLevel:
+#         description: 'Log level'
+#         required: true
+#         default: 'warning'
+#       tags:
+#         description: 'Test scenario tags'
+#         required: false
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: Run a one-line script
+#       run: echo Hello, world!
