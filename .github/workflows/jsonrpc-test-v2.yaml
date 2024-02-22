@@ -34,4 +34,4 @@ jobs:
         chmod +x -R ci_scripts/
 
     - name: ci_call.js
-      run: bash -c test_scripts/run.sh ci_call.js
+      run: bash -c ci_scripts/run.sh ci_call.js
