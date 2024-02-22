@@ -36,7 +36,7 @@ jobs:
           node $1
         EOF
         cat > test_scripts/run.sh << EOF
-          docker run --name testenv -v $(pwd)/test_scripts:/test_scripts -i simonalphafang/aspect-tooling:0.0.4 /bin/bash -c /test_scripts/init_env.sh $1
+          docker run --rm --name testenv -v $(pwd)/test_scripts:/test_scripts -i simonalphafang/aspect-tooling:0.0.4 /bin/bash -c /test_scripts/init_env.sh $1
         EOF
         chmod +x -R test_scripts/
 
