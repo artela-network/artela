@@ -1,5 +1,8 @@
 name: JsonRPC Test
-# Test cases for json-rpc
+
+env:
+  test_node_addr: "https://betanet-rpc1.artela.network"
+  key_privateKey: "0x4d372700bec7a86e3b5388685f92806234931bc018c02fe4b52d5c56df317f8e"
 
 on:
   push:
@@ -8,9 +11,27 @@ on:
     branches: [ ci_test ]
 
 jobs:
-  jsonrpc-ci-call:
-    uses: ./.github/workflows/reuseable-jsonrpc-test.yaml
-    with:
-      test_node_addr: "http://47.254.27.97:8545"
-      test_script: "ci_call.cjs"
-      key_privateKey: "0x8778bb32408d744cfc2c9da02499783b65d0261895acb3e27e0b4f63c07f9329"
+  test-job:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Preparation
+      run: |
+        mkdir -p ci_scripts
+        
+        cat > ci_scripts/init_env.sh <<EOF
+          source ~/.nvm/nvm.sh
+          set -ex
+          cd /test-scripts/pre_public_testnet/json-rpc
+          sed -i "s|\"node\": \".*\"|\"node\": \"$test_node_addr\"|g" project.config.json && cat project.config.json
+          echo $key_privateKey > privateKey.txt
+          node $1
+        EOF
+        
+        cat > ci_scripts/run.sh << EOF
+          docker run --name testenv -v $(pwd)/ci_scripts:/ci_scripts -i simonalphafang/artela-jsonrpc-testenv:0.0.1 /bin/bash -c /ci_scripts/init_env.sh $1
+        EOF
+        chmod +x -R ci_scripts/
+
+    - name: ci_call.js
+      run: bash -c ci_scripts/run.sh ci_call.js
