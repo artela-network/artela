@@ -1,0 +1,86 @@
+name: Aspect Test V2
+
+env:
+  test_node_addr: "http://47.254.27.97:8545"
+  key_privateKey: "0xb4f7eb534165f83025bc30f0add655805d9da066ef2bca04e59fb6f74c38acb8"
+  key_attack_accounts: "0xc107af871261252e19185507a416efc753b4255f05ff2a2f7e54eee3f68968c7"
+  key_aspect_accounts: "0xa1e399c54e92cc32a19fb10e41467ee5a67c08a922600f8dd3774e375c868c33"
+
+on:
+  push:
+    branches: [ ci_test ]
+  pull_request:
+    branches: [ ci_test ]
+
+jobs:
+  test-job:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Preparation
+      run: |
+        mkdir -p test_scripts
+        cat > test_scripts/init_env.sh <<EOF
+          source ~/.nvm/nvm.sh
+          set -ex
+          cd /aspect-tooling/packages/testcases
+          sed -i "s|\"node\": \".*\"|\"node\": \"$test_node_addr\"|g" project.config.json && cat project.config.json
+          # key1
+          echo $key_attack_accounts > attack_accounts.txt
+          # key2
+          echo $key_privateKey > privateKey.txt
+          # key3
+          echo $key_aspect_accounts > aspect_accounts.txt
+          
+          cd tests
+          node $1
+        EOF
+        cat > test_scripts/run.sh << EOF
+          docker run --name testenv -v $(pwd)/test_scripts:/test_scripts -i simonalphafang/aspect-tooling:0.0.4 /bin/bash -c /test_scripts/init_env.sh $1
+        EOF
+        chmod +x -R test_scripts/
+
+    - name: context-aspect.test.js
+      run: bash -c test_scripts/run.sh context-aspect.test.js
+    - name: context-permission-check.test.js
+      run: bash -c test_scripts/run.sh context-permission-check.test.js
+    - name: contract-aspect.test.js
+      run: bash -c test_scripts/run.sh contract-aspect.test.js
+    - name: cross-phase-property.test.js
+      run: bash -c test_scripts/run.sh cross-phase-property.test.js
+    - name: cross-phase-property.test.js
+      run: bash -c test_scripts/run.sh cross-phase-property.test.js
+    - name: crypto-ecrecover-aspect.test.js
+      run: bash -c test_scripts/run.sh crypto-ecrecover-aspect.test.js
+    - name: crypto-hash-aspect.test.js
+      run: bash -c test_scripts/run.sh crypto-hash-aspect.test.js
+    - name: eoa-test-aspect.test.js
+      run: bash -c test_scripts/run.sh eoa-test-aspect.test.js
+    - name: guard-by-count.test.js
+      run: bash -c test_scripts/run.sh guard-by-count.test.js
+    - name: guard-by-lock.test.js
+      run: bash -c test_scripts/run.sh guard-by-lock.test.js
+    - name: guard-by-trace.test.js
+      run: bash -c test_scripts/run.sh guard-by-trace.test.js
+    - name: invalid-jit-call-aspect.test.js
+      run: bash -c test_scripts/run.sh invalid-jit-call-aspect.test.js
+    - name: invalid-static-call-test-aspect.test.js
+      run: bash -c test_scripts/run.sh invalid-static-call-test-aspect.test.js
+    - name: multi-read-write-check.test.js
+      run: bash -c test_scripts/run.sh multi-read-write-check.test.js
+    - name: operation-aspect.test.js
+      run: bash -c test_scripts/run.sh operation-aspect.test.js
+    - name: state-aspect.test.js
+      run: bash -c test_scripts/run.sh state-aspect.test.js
+    - name: statedb-aspect.test.js
+      run: bash -c test_scripts/run.sh statedb-aspect.test.js
+    - name: static-call-aspect.test.js
+      run: bash -c test_scripts/run.sh static-call-aspect.test.js
+    - name: storage-aspect.test.js
+      run: bash -c test_scripts/run.sh storage-aspect.test.js
+    - name: type-check-aspect.test.js
+      run: bash -c test_scripts/run.sh type-check-aspect.test.js
+    - name: upgrade-test-aspect.test.js
+      run: bash -c test_scripts/run.sh upgrade-test-aspect.test.js
+    - name: verify-aspect.test.js
+      run: bash -c test_scripts/run.sh verify-aspect.test.js
