@@ -5,7 +5,15 @@ on:
     branches: [ ci_test ]
   pull_request:
     branches: [ ci_test ]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+      tags:
+        description: 'Test scenario tags'
+        required: false
 
 jobs:
   type-check:
