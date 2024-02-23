@@ -13,7 +13,9 @@ on:
     branches: [ ci_test ]
   repository_dispatch:
     types: [ trigger-action ]
-  branches: [ main ]
+  branches:
+    - main
+    - ci_test
 
 jobs:
   test-job:
