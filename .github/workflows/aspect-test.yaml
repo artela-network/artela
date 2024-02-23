@@ -1,4 +1,4 @@
-name: Aspect Test V2
+name: Aspect Test
 
 env:
   test_node_addr: "https://betanet-rpc1.artela.network"
@@ -11,6 +11,8 @@ on:
     branches: [ ci_test ]
   pull_request:
     branches: [ ci_test ]
+  repository_dispatch:
+    types: [ trigger-action ]
 
 jobs:
   test-job:
