@@ -2,9 +2,12 @@ name: Aspect Test
 
 env:
   test_node_addr: "https://betanet-rpc1.artela.network"
-  key_privateKey: "0xa9e70c59c34171623b5aceba9976288912bd45539d4029188836914e24decdd5"
-  key_attack_accounts: "0xaf919292bab87f4f9b13ce45406023bca55953a34682039298a7048f1c7e99b7"
-  key_aspect_accounts: "0xcf8e42a2dc63d0b38ef004ecd2e2a6478158a84b4772ff244093961cae348ae8"
+  key_privateKey: "0x9e9f824daa29647814a5a62cedd79b3ad87bbf26869461f4e1b2cbbbb86c099f"
+  key_attack_accounts: "0x1557bde987806eebc8e661b2854269ab069351228bde0a2d59aa3614c8153d11"
+  key_aspect_accounts: "0x628892d57279de9060ae09acd1ea330e2a8c3178ccc636e721112fc48688802f"
+  # key_privateKey: "0xa9e70c59c34171623b5aceba9976288912bd45539d4029188836914e24decdd5"
+  # key_attack_accounts: "0xaf919292bab87f4f9b13ce45406023bca55953a34682039298a7048f1c7e99b7"
+  # key_aspect_accounts: "0xcf8e42a2dc63d0b38ef004ecd2e2a6478158a84b4772ff244093961cae348ae8"
 
 on:
   push:
@@ -13,9 +16,6 @@ on:
     branches: [ ci_test ]
   repository_dispatch:
     types: [ trigger-action ]
-  branches:
-    - main
-    - ci_test
 
 jobs:
   test-job:

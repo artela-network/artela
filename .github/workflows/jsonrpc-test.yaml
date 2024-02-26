@@ -2,7 +2,8 @@ name: JsonRPC Test
 
 env:
   test_node_addr: "https://betanet-rpc1.artela.network"
-  key_privateKey: "0x4d372700bec7a86e3b5388685f92806234931bc018c02fe4b52d5c56df317f8e"
+  key_privateKey: "0xfbcdb11906b3e10c33726d085ae62fed3bb4bccd69fc1085274b651a38708b8a"
+  # key_privateKey: "0x4d372700bec7a86e3b5388685f92806234931bc018c02fe4b52d5c56df317f8e"
 
 on:
   push:
