@@ -65,18 +65,23 @@ func mintAart(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper, bankKeepe
 				return false
 			}
 			logger.Info("MintAart send coins success ", account.GetAddress().String(), "aart: ", mintCoins.String())
-			var burnCoins sdk.Coins
+			// var burnCoins sdk.Coins
+			//
+			// burnCoins = burnCoins.Add(sdk.NewCoin("uart", amount))
+			// if sendErr := bankKeeper.SendCoins(ctx, recipientAddress, moduleAcct, burnCoins); sendErr != nil {
+			// 	logger.Error("MintAart send coins error ", sendErr, "aart: ", mintCoins.String(), " to: ", account.GetAddress().String())
+			// 	return false
+			// }
+			// burnErr := bankKeeper.BurnCoins(ctx, "evm", burnCoins)
+			// if burnErr != nil {
+			// 	logger.Error("MintAart burn coins error ", burnErr, "uart: ", burnCoins.String(), " to: ", account.GetAddress().String())
+			// 	return false
+			// }
 
-			burnCoins = burnCoins.Add(sdk.NewCoin("uart", amount))
-			if sendErr := bankKeeper.SendCoins(ctx, recipientAddress, moduleAcct, burnCoins); sendErr != nil {
-				logger.Error("MintAart send coins error ", sendErr, "aart: ", mintCoins.String(), " to: ", account.GetAddress().String())
-				return false
-			}
-			burnErr := bankKeeper.BurnCoins(ctx, "evm", burnCoins)
-			if burnErr != nil {
-				logger.Error("MintAart burn coins error ", burnErr, "uart: ", burnCoins.String(), " to: ", account.GetAddress().String())
-				return false
-			}
+			// Why cannot burn uart amount？？
+			// The current Genesis.json gov denom is uart.
+			// If uart is burned, proposals to modify gov params cannot be initiated;
+			// After changing gov params to aart, proposals can be initiated using aart
 		}
 
 		return false
