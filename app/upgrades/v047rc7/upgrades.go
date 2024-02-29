@@ -29,14 +29,14 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 	}
 }
 
-func mintAart(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper, keeper bankkeeper.Keeper, logger log.Logger) {
+func mintAart(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper, bankKeeper bankkeeper.Keeper, logger log.Logger) {
 	accountKeeper.IterateAccounts(ctx, func(account authtypes.AccountI) (stop bool) {
 
 		queryBalanceRequest := &banktypes.QueryBalanceRequest{
 			Address: account.GetAddress().String(),
 			Denom:   "uart",
 		}
-		if response, err := keeper.Balance(ctx, queryBalanceRequest); err != nil {
+		if response, err := bankKeeper.Balance(ctx, queryBalanceRequest); err != nil {
 			logger.Error("MintAart get balance error: ", err, " for account: ", account.GetAddress().String())
 			return false
 		} else {
@@ -51,7 +51,7 @@ func mintAart(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper, keeper ba
 
 			var mintCoins sdk.Coins
 			mintCoins = mintCoins.Add(sdk.NewCoin("aart", amount))
-			mintErr := keeper.MintCoins(ctx, "evm", mintCoins)
+			mintErr := bankKeeper.MintCoins(ctx, "evm", mintCoins)
 			if mintErr != nil {
 				logger.Error("MintAart mint coins error ", err, "aart: ", mintCoins.String())
 				return false
@@ -60,11 +60,23 @@ func mintAart(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper, keeper ba
 
 			recipientAddress, _ := sdk.AccAddressFromBech32(account.GetAddress().String())
 
-			if sendErr := keeper.SendCoins(ctx, moduleAcct, recipientAddress, mintCoins); sendErr != nil {
+			if sendErr := bankKeeper.SendCoins(ctx, moduleAcct, recipientAddress, mintCoins); sendErr != nil {
 				logger.Error("MintAart send coins error ", sendErr, "aart: ", mintCoins.String(), " to: ", account.GetAddress().String())
 				return false
 			}
 			logger.Info("MintAart send coins success ", account.GetAddress().String(), "aart: ", mintCoins.String())
+			var burnCoins sdk.Coins
+
+			burnCoins = burnCoins.Add(sdk.NewCoin("uart", amount))
+			if sendErr := bankKeeper.SendCoins(ctx, recipientAddress, moduleAcct, burnCoins); sendErr != nil {
+				logger.Error("MintAart send coins error ", sendErr, "aart: ", mintCoins.String(), " to: ", account.GetAddress().String())
+				return false
+			}
+			burnErr := bankKeeper.BurnCoins(ctx, "evm", burnCoins)
+			if burnErr != nil {
+				logger.Error("MintAart burn coins error ", burnErr, "uart: ", burnCoins.String(), " to: ", account.GetAddress().String())
+				return false
+			}
 		}
 
 		return false
