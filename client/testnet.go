@@ -95,7 +95,7 @@ func addTestnetFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().String(sdkserver.FlagMinGasPrices,
 		fmt.Sprintf("0.000006%s",
 			types2.AttoArtela),
-		"Minimum gas prices to accept for transactions; All fees in a txs must meet this minimum (e.g. 0.001uart)")
+		"Minimum gas prices to accept for transactions; All fees in a txs must meet this minimum (e.g. 0.001aart)")
 	cmd.Flags().String(ethsecp256k1.FlagKeyAlgorithm, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
 }
 

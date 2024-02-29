@@ -30,7 +30,7 @@ const (
 
 	LocalChainID = "artela_11820"
 	// BaseDenom defines the Artela mainnet denomination
-	BaseDenom = "uart"
+	BaseDenom = "aart"
 )
 
 // IsMainnet returns true if the chain-id has the Artela mainnet EIP155 chain prefix.

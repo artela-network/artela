@@ -20831,7 +20831,7 @@ paths:
                             type: string
                             description: >-
                               denom represents the string name of the given
-                              denom unit (e.g uart).
+                              denom unit (e.g aart).
                           exponent:
                             type: integer
                             format: int64
@@ -20844,10 +20844,10 @@ paths:
 
                               1 denom = 10^exponent base_denom
 
-                              (e.g. with a base_denom of uart, one can create a
+                              (e.g. with a base_denom of aart, one can create a
                               DenomUnit of 'art' with
 
-                              exponent = 18, thus: 1 art = 10^18 uart).
+                              exponent = 18, thus: 1 art = 10^18 aart).
                           aliases:
                             type: array
                             items:
@@ -21038,7 +21038,7 @@ paths:
                           type: string
                           description: >-
                             denom represents the string name of the given denom
-                            unit (e.g uart).
+                            unit (e.g aart).
                         exponent:
                           type: integer
                           format: int64
@@ -21051,10 +21051,10 @@ paths:
 
                             1 denom = 10^exponent base_denom
 
-                            (e.g. with a base_denom of uart, one can create a
+                            (e.g. with a base_denom of aart, one can create a
                             DenomUnit of 'art' with
 
-                            exponent = 18, thus: 1 art = 10^18 uart).
+                            exponent = 18, thus: 1 art = 10^18 aart).
                         aliases:
                           type: array
                           items:
@@ -52599,7 +52599,7 @@ definitions:
     properties:
       denom:
         type: string
-        description: denom represents the string name of the given denom unit (e.g uart).
+        description: denom represents the string name of the given denom unit (e.g aart).
       exponent:
         type: integer
         format: int64
@@ -52610,10 +52610,10 @@ definitions:
 
           1 denom = 10^exponent base_denom
 
-          (e.g. with a base_denom of uart, one can create a DenomUnit of 'art'
+          (e.g. with a base_denom of aart, one can create a DenomUnit of 'art'
           with
 
-          exponent = 18, thus: 1 art = 10^18 uart).
+          exponent = 18, thus: 1 art = 10^18 aart).
       aliases:
         type: array
         items:
@@ -52636,7 +52636,7 @@ definitions:
               type: string
               description: >-
                 denom represents the string name of the given denom unit (e.g
-                uart).
+                aart).
             exponent:
               type: integer
               format: int64
@@ -52648,10 +52648,10 @@ definitions:
 
                 1 denom = 10^exponent base_denom
 
-                (e.g. with a base_denom of uart, one can create a DenomUnit of
+                (e.g. with a base_denom of aart, one can create a DenomUnit of
                 'art' with
 
-                exponent = 18, thus: 1 art = 10^18 uart).
+                exponent = 18, thus: 1 art = 10^18 aart).
             aliases:
               type: array
               items:
@@ -52815,7 +52815,7 @@ definitions:
                   type: string
                   description: >-
                     denom represents the string name of the given denom unit
-                    (e.g uart).
+                    (e.g aart).
                 exponent:
                   type: integer
                   format: int64
@@ -52827,10 +52827,10 @@ definitions:
 
                     1 denom = 10^exponent base_denom
 
-                    (e.g. with a base_denom of uart, one can create a DenomUnit
+                    (e.g. with a base_denom of aart, one can create a DenomUnit
                     of 'art' with
 
-                    exponent = 18, thus: 1 art = 10^18 uart).
+                    exponent = 18, thus: 1 art = 10^18 aart).
                 aliases:
                   type: array
                   items:
@@ -52971,7 +52971,7 @@ definitions:
                     type: string
                     description: >-
                       denom represents the string name of the given denom unit
-                      (e.g uart).
+                      (e.g aart).
                   exponent:
                     type: integer
                     format: int64
@@ -52983,10 +52983,10 @@ definitions:
 
                       1 denom = 10^exponent base_denom
 
-                      (e.g. with a base_denom of uart, one can create a
+                      (e.g. with a base_denom of aart, one can create a
                       DenomUnit of 'art' with
 
-                      exponent = 18, thus: 1 art = 10^18 uart).
+                      exponent = 18, thus: 1 art = 10^18 aart).
                   aliases:
                     type: array
                     items:

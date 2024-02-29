@@ -114,7 +114,7 @@ func DefaultConfig() Config {
 		TimeoutCommit:     3 * time.Second,
 		ChainID:           fmt.Sprintf("artela_%d-1", tmrand.Int63n(9999999999999)+1),
 		NumValidators:     4,
-		BondDenom:         "uart",
+		BondDenom:         "aart",
 		MinGasPrices:      fmt.Sprintf("0.000006%s", types.AttoArtela),
 		AccountTokens:     sdk.TokensFromConsensusPower(1000000000000000000, types.PowerReduction),
 		StakingTokens:     sdk.TokensFromConsensusPower(500000000000000000, types.PowerReduction),

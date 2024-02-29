@@ -26,7 +26,7 @@ const (
 	// DisplayDenom defines the denomination displayed to users in client applications.
 	DisplayDenom = "art"
 	// BaseDenom defines artelad base denonm
-	BaseDenom = "uart"
+	BaseDenom = "aart"
 )
 
 // SetBech32Prefixes sets the global prefixes to be used when serializing addresses and public keys to Bech32 strings.
@@ -40,7 +40,7 @@ func setBech32Prefixes(config *sdk.Config) {
 func setBip44CoinType(config *sdk.Config) {
 	config.SetCoinType(artelatypes.Bip44CoinType)
 	config.SetPurpose(sdk.Purpose)                        // Shared
-	config.SetFullFundraiserPath(artelatypes.BIP44HDPath) //nolint: staticcheck
+	config.SetFullFundraiserPath(artelatypes.BIP44HDPath) // nolint: staticcheck
 }
 
 // RegisterDenoms registers the base and display denominations to the SDK.

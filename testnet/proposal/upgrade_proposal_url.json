@@ -1,0 +1,19 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade",
+      "authority": "art10d07y265gmmuvt4z0w9aw880jnsr700jv60jp4",
+      "plan": {
+        "name": "v047rc7",
+        "time": "0001-01-01T00:00:00Z",
+        "height": "100",
+        "info": "{}",
+        "upgraded_client_state": null
+      }
+    }
+  ],
+  "metadata": "ipfs://CID",
+  "deposit": "30000000uart",
+  "title": "upgrade v047rc7",
+  "summary": "upgrade v047rc7"
+}

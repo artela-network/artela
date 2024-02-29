@@ -379,7 +379,7 @@ func initAppConfig() (string, interface{}) {
 	//   own app.toml to override, or use this default value.
 	//
 	// In simapp, we set the min gas prices to 0.
-	srvCfg.MinGasPrices = "0uart"
+	srvCfg.MinGasPrices = "0aart"
 
 	customAppConfig := CustomAppConfig{
 		Config:  *srvCfg,

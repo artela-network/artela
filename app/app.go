@@ -999,7 +999,7 @@ func (app *Artela) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v047rc7.UpgradeName,
 		v047rc7.CreateUpgradeHandler(
-			app.mm, app.configurator,
+			app.mm, app.configurator, app.BankKeeper, app.AccountKeeper,
 		),
 	)
 
