@@ -52,7 +52,7 @@ type Config struct {
 	RPCTxFeeCap float64 `toml:""`
 }
 
-// LoadConfigFromFilePath reads in a Polaris config file from the fileystem.
+// LoadConfigFromFilePath reads in a Polaris config file from the filesystem.
 func LoadConfigFromFilePath(filename string) (*Config, error) {
 	var config Config
 
