@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"strings"
 
-	support "github.com/artela-network/artela/x/evm/txs/support"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/artela-network/artela/x/evm/txs/support"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 func TxLogsFromEvents(events []abci.Event, msgIndex int) ([]*ethtypes.Log, error) {
@@ -104,4 +107,21 @@ func AllTxLogsFromEvents(events []abci.Event) ([][]*ethtypes.Log, error) {
 		allLogs = append(allLogs, logs)
 	}
 	return allLogs, nil
+}
+
+// GetHexProofs returns list of hex data of proof op
+func GetHexProofs(proof *crypto.ProofOps) []string {
+	if proof == nil {
+		return []string{""}
+	}
+	proofs := []string{}
+	// check for proof
+	for _, p := range proof.Ops {
+		proof := ""
+		if len(p.Data) > 0 {
+			proof = hexutil.Encode(p.Data)
+		}
+		proofs = append(proofs, proof)
+	}
+	return proofs
 }
