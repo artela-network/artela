@@ -26,7 +26,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, 
 	if !ok {
 		return nil, errors.New("AspectNativeContract.entrypoint: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), version.Uint64(), code, commit)
+	runner, newErr := run.NewRunner(aspectCtx, ctx.Logger(), aspectId.String(), version.Uint64(), code, commit)
 	if newErr != nil {
 		return nil, newErr
 	}
@@ -292,7 +292,7 @@ func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common
 	if !ok {
 		return false, errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), ver.Uint64(), code, commit)
+	runner, newErr := run.NewRunner(aspectCtx, ctx.Logger(), aspectId.String(), ver.Uint64(), code, commit)
 	if newErr != nil {
 		return false, newErr
 	}

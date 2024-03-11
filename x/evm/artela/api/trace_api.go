@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/emirpasic/gods/sets/hashset"
 	"sort"
 
 	"github.com/artela-network/artela-evm/vm"
@@ -14,7 +15,13 @@ import (
 )
 
 var (
-	_ artelatypes.AspectTraceHostAPI = (*aspectTraceHostAPI)(nil)
+	_                         artelatypes.AspectTraceHostAPI = (*aspectTraceHostAPI)(nil)
+	traceJoinPointConstraints                                = hashset.New(
+		artelatypes.PRE_CONTRACT_CALL_METHOD,
+		artelatypes.POST_CONTRACT_CALL_METHOD,
+		artelatypes.PRE_TX_EXECUTE_METHOD,
+		artelatypes.POST_TX_EXECUTE_METHOD,
+	)
 )
 
 const AccountBalanceMagic = ".balance"
@@ -23,15 +30,19 @@ type aspectTraceHostAPI struct {
 	aspectRuntimeContext *types.AspectRuntimeContext
 }
 
-func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, query *artelatypes.StateChangeQuery) []byte {
+func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, query *artelatypes.StateChangeQuery) ([]byte, error) {
+	if !traceJoinPointConstraints.Contains(artelatypes.PointCut(ctx.Point)) {
+		return []byte{}, errors.New("cannot query state change in current join point")
+	}
+
 	if ctx == nil || len(query.Account) == 0 || query.StateVarName == nil {
-		return []byte{}
+		return []byte{}, nil
 	}
 
 	txContext := a.aspectRuntimeContext.EthTxContext()
 
 	if txContext == nil || txContext.VmTracer() == nil {
-		return []byte{}
+		return []byte{}, nil
 	}
 
 	tracer := txContext.VmTracer()
@@ -73,7 +84,7 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 		for _, callIdx := range callIndices {
 			call := tracer.CallTree().FindCall(callIdx)
 			if call == nil {
-				return nil
+				return nil, nil
 			}
 			for _, state := range changes[callIdx] {
 				ethStateChanges.All = append(ethStateChanges.All, &artelatypes.EthStateChange{
@@ -98,20 +109,24 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 
 	encoded, err := proto.Marshal(result)
 	if err != nil {
-		return []byte{}
+		return []byte{}, nil
 	}
 
-	return encoded
+	return encoded, nil
 }
 
-func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query *artelatypes.CallTreeQuery) []byte {
+func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query *artelatypes.CallTreeQuery) ([]byte, error) {
+	if !traceJoinPointConstraints.Contains(artelatypes.PointCut(ctx.Point)) {
+		return []byte{}, errors.New("cannot query call tree in current join point")
+	}
+
 	if ctx == nil {
-		return []byte{}
+		return []byte{}, nil
 	}
 	txContext := a.aspectRuntimeContext.EthTxContext()
 
 	if txContext == nil || txContext.VmTracer() == nil || txContext.VmTracer().CallTree() == nil {
-		return []byte{}
+		return []byte{}, nil
 	}
 
 	var result proto.Message
@@ -132,9 +147,9 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 
 	encoded, err := proto.Marshal(result)
 	if err != nil {
-		return []byte{}
+		return []byte{}, nil
 	}
-	return encoded
+	return encoded, nil
 }
 
 func traverseEVMCallTree(ethCall *vm.Call, evmCallTree *artelatypes.EthCallTree) {
