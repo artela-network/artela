@@ -24,7 +24,7 @@ var (
 )
 
 // SetEncodingConfig set the encoding config to the singleton codecs (Amino and Protobuf).
-// The txs of unmarshaling SignDoc bytes into a SignDoc object requires having a codec
+// The txs of unmarshalling SignDoc bytes into a SignDoc object requires having a codec
 // populated with all relevant message types. As a result, we must call this method on app
 // initialization with the app's encoding config.
 func SetEncodingConfig(cfg params.EncodingConfig) {

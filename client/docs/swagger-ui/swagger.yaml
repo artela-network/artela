@@ -458,7 +458,7 @@ paths:
                       title: current_epoch_start_height of the epoch
                   description: >-
                     EpochInfo defines the message interface containing the
-                    relevant informations about
+                    relevant information about
 
                     an epoch.
                 title: epochs is a slice of all EpochInfos
@@ -8393,7 +8393,7 @@ paths:
           format: uint64
         - name: latest_height
           description: >-
-            latest_height overrrides the height field and queries the latest
+            latest_height overrides the height field and queries the latest
             stored
 
             ConsensusState.
@@ -9671,7 +9671,7 @@ paths:
                               identifier
                         description: >-
                           Version defines the versioning scheme used to
-                          negotiate the IBC verison in
+                          negotiate the IBC version in
 
                           the connection handshake.
                       title: >-
@@ -10077,7 +10077,7 @@ paths:
                             identifier
                       description: >-
                         Version defines the versioning scheme used to negotiate
-                        the IBC verison in
+                        the IBC version in
 
                         the connection handshake.
                     description: >-
@@ -27348,7 +27348,7 @@ paths:
                       vetoed. Default value: 1/3.
               params:
                 description: |-
-                  params defines all the paramaters of x/gov module.
+                  params defines all the parameters of x/gov module.
 
                   Since: cosmos-sdk 0.47
                 type: object
@@ -31955,7 +31955,7 @@ paths:
                         type: string
                         format: uint64
                       title: >-
-                        list of unbonding ids, each uniquely identifing an
+                        list of unbonding ids, each uniquely identifying an
                         unbonding of this validator
                   description: >-
                     Validator defines a validator, together with the total
@@ -32571,7 +32571,7 @@ paths:
                       type: string
                       format: uint64
                     title: >-
-                      list of unbonding ids, each uniquely identifing an
+                      list of unbonding ids, each uniquely identifying an
                       unbonding of this validator
                 description: >-
                   Validator defines a validator, together with the total amount
@@ -33202,7 +33202,7 @@ paths:
                             type: string
                             format: uint64
                           title: >-
-                            list of unbonding ids, each uniquely identifing an
+                            list of unbonding ids, each uniquely identifying an
                             unbonding of this validator
                       description: >-
                         Validator defines a validator, together with the total
@@ -34202,7 +34202,7 @@ paths:
                         type: string
                         format: uint64
                       title: >-
-                        list of unbonding ids, each uniquely identifing an
+                        list of unbonding ids, each uniquely identifying an
                         unbonding of this validator
                   description: >-
                     Validator defines a validator, together with the total
@@ -34816,7 +34816,7 @@ paths:
                       type: string
                       format: uint64
                     title: >-
-                      list of unbonding ids, each uniquely identifing an
+                      list of unbonding ids, each uniquely identifying an
                       unbonding of this validator
                 description: >-
                   Validator defines a validator, together with the total amount
@@ -39683,7 +39683,7 @@ paths:
                                                       - BLOCK_ID_FLAG_NIL
                                                     default: BLOCK_ID_FLAG_UNKNOWN
                                                     title: >-
-                                                      BlockIdFlag indicates which BlcokID the
+                                                      BlockIdFlag indicates which BlockID the
                                                       signature is for
                                                   validator_address:
                                                     type: string
@@ -39836,7 +39836,7 @@ paths:
                                 - BLOCK_ID_FLAG_NIL
                               default: BLOCK_ID_FLAG_UNKNOWN
                               title: >-
-                                BlockIdFlag indicates which BlcokID the
+                                BlockIdFlag indicates which BlockID the
                                 signature is for
                             validator_address:
                               type: string
@@ -40228,7 +40228,7 @@ paths:
                                                       - BLOCK_ID_FLAG_NIL
                                                     default: BLOCK_ID_FLAG_UNKNOWN
                                                     title: >-
-                                                      BlockIdFlag indicates which BlcokID the
+                                                      BlockIdFlag indicates which BlockID the
                                                       signature is for
                                                   validator_address:
                                                     type: string
@@ -40381,7 +40381,7 @@ paths:
                                 - BLOCK_ID_FLAG_NIL
                               default: BLOCK_ID_FLAG_UNKNOWN
                               title: >-
-                                BlockIdFlag indicates which BlcokID the
+                                BlockIdFlag indicates which BlockID the
                                 signature is for
                             validator_address:
                               type: string
@@ -40994,7 +40994,7 @@ paths:
                                                       - BLOCK_ID_FLAG_NIL
                                                     default: BLOCK_ID_FLAG_UNKNOWN
                                                     title: >-
-                                                      BlockIdFlag indicates which BlcokID the
+                                                      BlockIdFlag indicates which BlockID the
                                                       signature is for
                                                   validator_address:
                                                     type: string
@@ -41147,7 +41147,7 @@ paths:
                                 - BLOCK_ID_FLAG_NIL
                               default: BLOCK_ID_FLAG_UNKNOWN
                               title: >-
-                                BlockIdFlag indicates which BlcokID the
+                                BlockIdFlag indicates which BlockID the
                                 signature is for
                             validator_address:
                               type: string
@@ -41539,7 +41539,7 @@ paths:
                                                       - BLOCK_ID_FLAG_NIL
                                                     default: BLOCK_ID_FLAG_UNKNOWN
                                                     title: >-
-                                                      BlockIdFlag indicates which BlcokID the
+                                                      BlockIdFlag indicates which BlockID the
                                                       signature is for
                                                   validator_address:
                                                     type: string
@@ -41692,7 +41692,7 @@ paths:
                                 - BLOCK_ID_FLAG_NIL
                               default: BLOCK_ID_FLAG_UNKNOWN
                               title: >-
-                                BlockIdFlag indicates which BlcokID the
+                                BlockIdFlag indicates which BlockID the
                                 signature is for
                             validator_address:
                               type: string
@@ -44083,7 +44083,7 @@ definitions:
         title: current_epoch_start_height of the epoch
     description: >-
       EpochInfo defines the message interface containing the relevant
-      informations about
+      information about
 
       an epoch.
   artela.epochs.v1.QueryCurrentEpochResponse:
@@ -44137,7 +44137,7 @@ definitions:
               title: current_epoch_start_height of the epoch
           description: >-
             EpochInfo defines the message interface containing the relevant
-            informations about
+            information about
 
             an epoch.
         title: epochs is a slice of all EpochInfos
@@ -48000,7 +48000,7 @@ definitions:
               title: list of features compatible with the specified identifier
           description: >-
             Version defines the versioning scheme used to negotiate the IBC
-            verison in
+            version in
 
             the connection handshake.
         description: >-
@@ -48122,7 +48122,7 @@ definitions:
               title: list of features compatible with the specified identifier
           description: >-
             Version defines the versioning scheme used to negotiate the IBC
-            verison in
+            version in
 
             the connection handshake.
         title: >-
@@ -48701,7 +48701,7 @@ definitions:
                   title: list of features compatible with the specified identifier
               description: >-
                 Version defines the versioning scheme used to negotiate the IBC
-                verison in
+                version in
 
                 the connection handshake.
             description: >-
@@ -48838,7 +48838,7 @@ definitions:
                     title: list of features compatible with the specified identifier
                 description: >-
                   Version defines the versioning scheme used to negotiate the
-                  IBC verison in
+                  IBC version in
 
                   the connection handshake.
               title: >-
@@ -48984,7 +48984,7 @@ definitions:
           type: string
         title: list of features compatible with the specified identifier
     description: |-
-      Version defines the versioning scheme used to negotiate the IBC verison in
+      Version defines the versioning scheme used to negotiate the IBC version in
       the connection handshake.
   ibc.core.channel.v1.Channel:
     type: object
@@ -56292,7 +56292,7 @@ definitions:
               vetoed. Default value: 1/3.
       params:
         description: |-
-          params defines all the paramaters of x/gov module.
+          params defines all the parameters of x/gov module.
 
           Since: cosmos-sdk 0.47
         type: object
@@ -57917,7 +57917,7 @@ definitions:
                 type: string
                 format: uint64
               title: >-
-                list of unbonding ids, each uniquely identifing an unbonding of
+                list of unbonding ids, each uniquely identifying an unbonding of
                 this validator
           description: >-
             Validator defines a validator, together with the total amount of the
@@ -58485,7 +58485,7 @@ definitions:
               type: string
               format: uint64
             title: >-
-              list of unbonding ids, each uniquely identifing an unbonding of
+              list of unbonding ids, each uniquely identifying an unbonding of
               this validator
         description: >-
           Validator defines a validator, together with the total amount of the
@@ -58803,7 +58803,7 @@ definitions:
                 type: string
                 format: uint64
               title: >-
-                list of unbonding ids, each uniquely identifing an unbonding of
+                list of unbonding ids, each uniquely identifying an unbonding of
                 this validator
           description: >-
             Validator defines a validator, together with the total amount of the
@@ -59228,7 +59228,7 @@ definitions:
                     type: string
                     format: uint64
                   title: >-
-                    list of unbonding ids, each uniquely identifing an unbonding
+                    list of unbonding ids, each uniquely identifying an unbonding
                     of this validator
               description: >-
                 Validator defines a validator, together with the total amount of
@@ -59875,7 +59875,7 @@ definitions:
               type: string
               format: uint64
             title: >-
-              list of unbonding ids, each uniquely identifing an unbonding of
+              list of unbonding ids, each uniquely identifying an unbonding of
               this validator
         description: >-
           Validator defines a validator, together with the total amount of the
@@ -60273,7 +60273,7 @@ definitions:
                 type: string
                 format: uint64
               title: >-
-                list of unbonding ids, each uniquely identifing an unbonding of
+                list of unbonding ids, each uniquely identifying an unbonding of
                 this validator
           description: >-
             Validator defines a validator, together with the total amount of the
@@ -60937,7 +60937,7 @@ definitions:
           type: string
           format: uint64
         title: >-
-          list of unbonding ids, each uniquely identifing an unbonding of this
+          list of unbonding ids, each uniquely identifying an unbonding of this
           validator
     description: >-
       Validator defines a validator, together with the total amount of the
@@ -62669,7 +62669,7 @@ definitions:
                                               - BLOCK_ID_FLAG_NIL
                                             default: BLOCK_ID_FLAG_UNKNOWN
                                             title: >-
-                                              BlockIdFlag indicates which BlcokID the
+                                              BlockIdFlag indicates which BlockID the
                                               signature is for
                                           validator_address:
                                             type: string
@@ -62819,7 +62819,7 @@ definitions:
                         - BLOCK_ID_FLAG_COMMIT
                         - BLOCK_ID_FLAG_NIL
                       default: BLOCK_ID_FLAG_UNKNOWN
-                      title: BlockIdFlag indicates which BlcokID the signature is for
+                      title: BlockIdFlag indicates which BlockID the signature is for
                     validator_address:
                       type: string
                       format: byte
@@ -65854,7 +65854,7 @@ definitions:
                                           - BLOCK_ID_FLAG_NIL
                                         default: BLOCK_ID_FLAG_UNKNOWN
                                         title: >-
-                                          BlockIdFlag indicates which BlcokID the
+                                          BlockIdFlag indicates which BlockID the
                                           signature is for
                                       validator_address:
                                         type: string
@@ -66004,7 +66004,7 @@ definitions:
                     - BLOCK_ID_FLAG_COMMIT
                     - BLOCK_ID_FLAG_NIL
                   default: BLOCK_ID_FLAG_UNKNOWN
-                  title: BlockIdFlag indicates which BlcokID the signature is for
+                  title: BlockIdFlag indicates which BlockID the signature is for
                 validator_address:
                   type: string
                   format: byte
@@ -66026,7 +66026,7 @@ definitions:
       - BLOCK_ID_FLAG_COMMIT
       - BLOCK_ID_FLAG_NIL
     default: BLOCK_ID_FLAG_UNKNOWN
-    title: BlockIdFlag indicates which BlcokID the signature is for
+    title: BlockIdFlag indicates which BlockID the signature is for
   tendermint.types.Commit:
     type: object
     properties:
@@ -66066,7 +66066,7 @@ definitions:
                 - BLOCK_ID_FLAG_COMMIT
                 - BLOCK_ID_FLAG_NIL
               default: BLOCK_ID_FLAG_UNKNOWN
-              title: BlockIdFlag indicates which BlcokID the signature is for
+              title: BlockIdFlag indicates which BlockID the signature is for
             validator_address:
               type: string
               format: byte
@@ -66091,7 +66091,7 @@ definitions:
           - BLOCK_ID_FLAG_COMMIT
           - BLOCK_ID_FLAG_NIL
         default: BLOCK_ID_FLAG_UNKNOWN
-        title: BlockIdFlag indicates which BlcokID the signature is for
+        title: BlockIdFlag indicates which BlockID the signature is for
       validator_address:
         type: string
         format: byte
@@ -66501,7 +66501,7 @@ definitions:
                                 - BLOCK_ID_FLAG_NIL
                               default: BLOCK_ID_FLAG_UNKNOWN
                               title: >-
-                                BlockIdFlag indicates which BlcokID the
+                                BlockIdFlag indicates which BlockID the
                                 signature is for
                             validator_address:
                               type: string
@@ -66877,7 +66877,7 @@ definitions:
                                       - BLOCK_ID_FLAG_NIL
                                     default: BLOCK_ID_FLAG_UNKNOWN
                                     title: >-
-                                      BlockIdFlag indicates which BlcokID the
+                                      BlockIdFlag indicates which BlockID the
                                       signature is for
                                   validator_address:
                                     type: string
@@ -67110,7 +67110,7 @@ definitions:
                         - BLOCK_ID_FLAG_COMMIT
                         - BLOCK_ID_FLAG_NIL
                       default: BLOCK_ID_FLAG_UNKNOWN
-                      title: BlockIdFlag indicates which BlcokID the signature is for
+                      title: BlockIdFlag indicates which BlockID the signature is for
                     validator_address:
                       type: string
                       format: byte
@@ -67306,7 +67306,7 @@ definitions:
                             - BLOCK_ID_FLAG_NIL
                           default: BLOCK_ID_FLAG_UNKNOWN
                           title: >-
-                            BlockIdFlag indicates which BlcokID the signature is
+                            BlockIdFlag indicates which BlockID the signature is
                             for
                         validator_address:
                           type: string
@@ -67534,7 +67534,7 @@ definitions:
                     - BLOCK_ID_FLAG_COMMIT
                     - BLOCK_ID_FLAG_NIL
                   default: BLOCK_ID_FLAG_UNKNOWN
-                  title: BlockIdFlag indicates which BlcokID the signature is for
+                  title: BlockIdFlag indicates which BlockID the signature is for
                 validator_address:
                   type: string
                   format: byte
@@ -68131,7 +68131,7 @@ definitions:
                                           - BLOCK_ID_FLAG_NIL
                                         default: BLOCK_ID_FLAG_UNKNOWN
                                         title: >-
-                                          BlockIdFlag indicates which BlcokID the
+                                          BlockIdFlag indicates which BlockID the
                                           signature is for
                                       validator_address:
                                         type: string
@@ -68281,7 +68281,7 @@ definitions:
                     - BLOCK_ID_FLAG_COMMIT
                     - BLOCK_ID_FLAG_NIL
                   default: BLOCK_ID_FLAG_UNKNOWN
-                  title: BlockIdFlag indicates which BlcokID the signature is for
+                  title: BlockIdFlag indicates which BlockID the signature is for
                 validator_address:
                   type: string
                   format: byte
@@ -68683,7 +68683,7 @@ definitions:
                                               - BLOCK_ID_FLAG_NIL
                                             default: BLOCK_ID_FLAG_UNKNOWN
                                             title: >-
-                                              BlockIdFlag indicates which BlcokID the
+                                              BlockIdFlag indicates which BlockID the
                                               signature is for
                                           validator_address:
                                             type: string
@@ -68833,7 +68833,7 @@ definitions:
                         - BLOCK_ID_FLAG_COMMIT
                         - BLOCK_ID_FLAG_NIL
                       default: BLOCK_ID_FLAG_UNKNOWN
-                      title: BlockIdFlag indicates which BlcokID the signature is for
+                      title: BlockIdFlag indicates which BlockID the signature is for
                     validator_address:
                       type: string
                       format: byte
@@ -69219,7 +69219,7 @@ definitions:
                                               - BLOCK_ID_FLAG_NIL
                                             default: BLOCK_ID_FLAG_UNKNOWN
                                             title: >-
-                                              BlockIdFlag indicates which BlcokID the
+                                              BlockIdFlag indicates which BlockID the
                                               signature is for
                                           validator_address:
                                             type: string
@@ -69369,7 +69369,7 @@ definitions:
                         - BLOCK_ID_FLAG_COMMIT
                         - BLOCK_ID_FLAG_NIL
                       default: BLOCK_ID_FLAG_UNKNOWN
-                      title: BlockIdFlag indicates which BlcokID the signature is for
+                      title: BlockIdFlag indicates which BlockID the signature is for
                     validator_address:
                       type: string
                       format: byte
@@ -69774,7 +69774,7 @@ definitions:
                                               - BLOCK_ID_FLAG_NIL
                                             default: BLOCK_ID_FLAG_UNKNOWN
                                             title: >-
-                                              BlockIdFlag indicates which BlcokID the
+                                              BlockIdFlag indicates which BlockID the
                                               signature is for
                                           validator_address:
                                             type: string
@@ -69924,7 +69924,7 @@ definitions:
                         - BLOCK_ID_FLAG_COMMIT
                         - BLOCK_ID_FLAG_NIL
                       default: BLOCK_ID_FLAG_UNKNOWN
-                      title: BlockIdFlag indicates which BlcokID the signature is for
+                      title: BlockIdFlag indicates which BlockID the signature is for
                     validator_address:
                       type: string
                       format: byte
@@ -70310,7 +70310,7 @@ definitions:
                                               - BLOCK_ID_FLAG_NIL
                                             default: BLOCK_ID_FLAG_UNKNOWN
                                             title: >-
-                                              BlockIdFlag indicates which BlcokID the
+                                              BlockIdFlag indicates which BlockID the
                                               signature is for
                                           validator_address:
                                             type: string
@@ -70460,7 +70460,7 @@ definitions:
                         - BLOCK_ID_FLAG_COMMIT
                         - BLOCK_ID_FLAG_NIL
                       default: BLOCK_ID_FLAG_UNKNOWN
-                      title: BlockIdFlag indicates which BlcokID the signature is for
+                      title: BlockIdFlag indicates which BlockID the signature is for
                     validator_address:
                       type: string
                       format: byte
