@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/artela-network/artela-evm/vm"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -313,6 +314,10 @@ func NewBlockChainAPI(b Backend, logger log.Logger) *BlockChainAPI {
 // in CL clients.
 func (api *BlockChainAPI) ChainId() *hexutil.Big {
 	return (*hexutil.Big)(api.b.ChainConfig().ChainID)
+}
+
+func (api *BlockChainAPI) Coinbase() (sdktypes.AccAddress, error) {
+	return api.b.GetCoinbase()
 }
 
 // BlockNumber returns the block number of the chain head.
@@ -992,14 +997,6 @@ func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash commo
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
 func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
 	return s.b.GetTransactionReceipt(ctx, hash)
-}
-
-// sign is a helper function that signs a transaction with the private key of the given address.
-// nolint:unused
-func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-	// return s.b.AccountManager().SignTransaction()
-	// TODO
-	return nil, nil
 }
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
