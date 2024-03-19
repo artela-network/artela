@@ -339,8 +339,10 @@ func NewArtela(
 		tkeys[paramsmodule.TStoreKey],
 	)
 
+	authorityAddr := authmodule.NewModuleAddress(govmodule.ModuleName)
+
 	// set the BaseApp's parameter store
-	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, keys[upgrademodule.StoreKey], authmodule.NewModuleAddress(govmodule.ModuleName).String())
+	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, keys[consensusmodule.StoreKey], authorityAddr.String())
 	bApp.SetParamStore(&app.ConsensusParamsKeeper)
 
 	// add capability keeper and ScopeToModule for ibc module
@@ -367,7 +369,7 @@ func NewArtela(
 		artela.ProtoAccount,
 		maccPerms,
 		cosmos.Bech32PrefixAccAddr,
-		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authorityAddr.String(),
 	)
 
 	app.AuthzKeeper = authzkeeper.NewKeeper(
@@ -382,7 +384,7 @@ func NewArtela(
 		keys[bankmodule.StoreKey],
 		app.AccountKeeper,
 		app.BlockedModuleAccountAddrs(),
-		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authorityAddr.String(),
 	)
 
 	app.StakingKeeper = stakingkeeper.NewKeeper(
@@ -390,7 +392,7 @@ func NewArtela(
 		keys[stakingmodule.StoreKey],
 		app.AccountKeeper,
 		app.BankKeeper,
-		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authorityAddr.String(),
 	)
 
 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(
@@ -406,7 +408,7 @@ func NewArtela(
 		app.AccountKeeper,
 		app.BankKeeper,
 		authmodule.FeeCollectorName,
-		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authorityAddr.String(),
 	)
 
 	app.DistrKeeper = distrkeeper.NewKeeper(
@@ -416,7 +418,7 @@ func NewArtela(
 		app.BankKeeper,
 		app.StakingKeeper,
 		authmodule.FeeCollectorName,
-		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authorityAddr.String(),
 	)
 
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
@@ -424,7 +426,7 @@ func NewArtela(
 		cdc,
 		keys[slashingmodule.StoreKey],
 		app.StakingKeeper,
-		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authmodule.NewModuleAddress(slashingmodule.ModuleName).String(),
 	)
 
 	app.CrisisKeeper = crisiskeeper.NewKeeper(
@@ -433,7 +435,7 @@ func NewArtela(
 		invCheckPeriod,
 		app.BankKeeper,
 		authmodule.FeeCollectorName,
-		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authmodule.NewModuleAddress(crisismodule.ModuleName).String(),
 	)
 
 	groupConfig := group.DefaultConfig()
@@ -455,7 +457,7 @@ func NewArtela(
 		appCodec,
 		homePath,
 		app.BaseApp,
-		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authorityAddr.String(),
 	)
 
 	// Create IBC Keeper
