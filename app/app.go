@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -87,6 +88,7 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgrademodule "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
 	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
@@ -108,6 +110,7 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
+	"github.com/artela-network/artela/app/upgrades/v047rc7"
 	evmmodule "github.com/artela-network/artela/x/evm"
 	evmmodulekeeper "github.com/artela-network/artela/x/evm/keeper"
 	evmmoduletypes "github.com/artela-network/artela/x/evm/types"
@@ -117,6 +120,8 @@ import (
 
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
+	aspecttypes "github.com/artela-network/aspect-core/types"
+
 	"github.com/artela-network/artela/app/ante"
 	ethante "github.com/artela-network/artela/app/ante/evm"
 	appparams "github.com/artela-network/artela/app/params"
@@ -124,7 +129,6 @@ import (
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
-	aspecttypes "github.com/artela-network/aspect-core/types"
 )
 
 const (
@@ -753,6 +757,10 @@ func NewArtela(
 	// aspectProposalHandler := handle.NewArtelaProposalHandler(bApp.GetMemPool(), bApp)
 	// bApp.SetPrepareProposal(aspectProposalHandler.PrepareProposalHandler())
 	// bApp.SetProcessProposal(aspectProposalHandler.ProcessProposalHandler())
+	// setupUpgradeHandlers should be called before `LoadLatestVersion()`
+	// because StoreLoad is sealed after that
+	// app upgrade
+	app.setupUpgradeHandlers()
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -984,4 +992,40 @@ func (app *Artela) SimulationManager() *module.SimulationManager {
 // ModuleManager returns the app ModuleManager
 func (app *Artela) ModuleManager() *module.Manager {
 	return app.mm
+}
+
+func (app *Artela) setupUpgradeHandlers() {
+	// v16 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v047rc7.UpgradeName,
+		v047rc7.CreateUpgradeHandler(
+			app.mm, app.configurator, app.BankKeeper, app.AccountKeeper,
+		),
+	)
+
+	// When a planned update height is reached, the old binary will panic
+	// writing on disk the height and name of the update that triggered it
+	// This will read that value, and execute the preparations for the upgrade.
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
+	}
+
+	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		return
+	}
+
+	var storeUpgrades *storetypes.StoreUpgrades
+
+	switch upgradeInfo.Name {
+	case v047rc7.UpgradeName:
+		// no store upgrades
+	default:
+		// no-op
+	}
+
+	if storeUpgrades != nil {
+		// configure store loader that checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgrademodule.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
+	}
 }
