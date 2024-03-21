@@ -73,13 +73,43 @@ func (b *BackendImpl) HeaderByNumber(_ context.Context, number rpc.BlockNumber) 
 }
 
 func (b *BackendImpl) HeaderByHash(_ context.Context, hash common.Hash) (*ethtypes.Header, error) {
-	return nil, nil
+	resBlock, err := b.CosmosBlockByHash(hash)
+	if err != nil || resBlock == nil {
+		return nil, fmt.Errorf("failed to get block by hash %s, %w", hash.Hex(), err)
+	}
+
+	blockRes, err := b.CosmosBlockResultByNumber(&resBlock.Block.Height)
+	if err != nil {
+		return nil, fmt.Errorf("block result not found for height %d", resBlock.Block.Height)
+	}
+
+	bloom, err := b.blockBloom(blockRes)
+	if err != nil {
+		b.logger.Debug("HeaderByNumber BlockBloom failed", "height", resBlock.Block.Height)
+	}
+
+	baseFee, err := b.BaseFee(blockRes)
+	if err != nil {
+		// handle the error for pruned node.
+		b.logger.Error("failed to fetch Base Fee from prunned block. Check node prunning configuration", "height", resBlock.Block.Height, "error", err)
+	}
+
+	ethHeader := rpctypes.EthHeaderFromTendermint(resBlock.Block.Header, bloom, baseFee)
+	return ethHeader, nil
 }
 
 func (b *BackendImpl) HeaderByNumberOrHash(ctx context.Context,
 	blockNrOrHash rpc.BlockNumberOrHash,
 ) (*ethtypes.Header, error) {
-	return nil, errors.New("HeaderByNumberOrHash is not implemented")
+	if blockNr, ok := blockNrOrHash.Number(); ok {
+		return b.HeaderByNumber(ctx, blockNr)
+	}
+
+	if hash, ok := blockNrOrHash.Hash(); ok {
+		return b.HeaderByHash(ctx, hash)
+	}
+
+	return nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
 func (b *BackendImpl) CurrentHeader() *ethtypes.Header {
