@@ -65,7 +65,7 @@ type (
 // 5. commit: Decide whether to commit at the end of each transaction. If committing is
 // necessary, write the result to the sdk context.
 
-// 6. destory: After each transaction execution, destroy the AspectRuntimeContext.
+// 6. destroy: After each transaction execution, destroy the AspectRuntimeContext.
 type AspectRuntimeContext struct {
 	baseCtx context.Context
 

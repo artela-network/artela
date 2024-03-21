@@ -82,7 +82,7 @@ func (m *GenesisState) GetParams() Params {
 // Its main difference between with Geth's GenesisAccount is that it uses a
 // custom storage type and that it doesn't contain the private key field.
 type GenesisAccount struct {
-	// address defines an ethereum hex formated address of an account
+	// address defines an ethereum hex formatted address of an account
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// code defines the hex bytes of the account code.
 	Code string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`

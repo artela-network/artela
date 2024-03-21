@@ -26,7 +26,7 @@ type Backend interface {
 	SuggestGasTipCap(baseFee *big.Int) (*big.Int, error)
 	GasPrice(ctx context.Context) (*hexutil.Big, error)
 
-	// Account releated
+	// Account related
 	Accounts() []common.Address
 	NewAccount(password string) (common.AddressEIP55, error)
 	ImportRawKey(privkey, password string) (common.Address, error)

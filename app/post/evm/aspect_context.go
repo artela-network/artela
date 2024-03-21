@@ -25,7 +25,7 @@ func NewAspectRuntimeContextDecorator(app *baseapp.BaseApp, ek interfaces.EVMKee
 }
 
 func (aspd AspectRuntimeContextDecorator) PostHandle(ctx cosmos.Context, tx cosmos.Tx, simulate, success bool, next cosmos.PostHandler) (newCtx cosmos.Context, err error) {
-	// Aspect Runtime Context Lifecycle: destory AspectRuntimeContext
+	// Aspect Runtime Context Lifecycle: destroy AspectRuntimeContext
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
 		return ctx, errors.New("EthereumTx: unwrap AspectRuntimeContext failed")

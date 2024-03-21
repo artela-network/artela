@@ -112,7 +112,7 @@ func (msg MsgEthereumTx) AsMessage(signer ethereum.Signer, baseFee *big.Int) (*c
 	return ToMessage(tx, signer, baseFee)
 }
 
-// UnpackInterfaces implements UnpackInterfacesMesssage.UnPackInterfaces
+// UnpackInterfaces implements UnpackInterfacesMessage.UnPackInterfaces
 func (msg MsgEthereumTx) UnpackInterfaces(unpacker codec.AnyUnpacker) error {
 	return unpacker.UnpackAny(msg.Data, new(TxData))
 }
