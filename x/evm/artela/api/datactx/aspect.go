@@ -28,7 +28,6 @@ func (c *AspectContext) registerLoaders() {
 		return &artelatypes.BytesData{Data: ctx.AspectId.Bytes()}
 	}
 	loaders[aspctx.AspectVersion] = func(ctx *artelatypes.RunnerContext) proto.Message {
-
 		return &artelatypes.UintData{Data: &ctx.AspectVersion}
 	}
 }
