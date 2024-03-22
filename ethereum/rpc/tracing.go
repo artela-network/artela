@@ -135,6 +135,7 @@ func (b *BackendImpl) TraceTransaction(hash common.Hash, config *support.TraceCo
 	}
 
 	return decodedResult, nil
+
 }
 
 // TraceBlock configures a new tracer according to the provided configuration, and
@@ -178,7 +179,6 @@ func (b *BackendImpl) TraceBlock(height rpc.BlockNumber,
 		// 0 is a special value for `ContextWithHeight`.
 		contextHeight = 1
 	}
-	ctxWithHeight := rpctypes.ContextWithHeight(int64(contextHeight))
 
 	nc, ok := b.clientCtx.Client.(tmrpcclient.NetworkClient)
 	if !ok {
@@ -201,7 +201,7 @@ func (b *BackendImpl) TraceBlock(height rpc.BlockNumber,
 		BlockMaxGas:     cp.ConsensusParams.Block.MaxGas,
 	}
 
-	res, err := b.queryClient.TraceBlock(ctxWithHeight, traceBlockRequest)
+	res, err := b.queryClient.TraceBlock(rpctypes.ContextWithHeight(int64(contextHeight)), traceBlockRequest)
 	if err != nil {
 		return nil, err
 	}
