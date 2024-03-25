@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
+
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -25,7 +26,7 @@ import (
 )
 
 // TODO mark ConsensusVersion defines the current x/evm module consensus version.
-const ConsensusVersion = 5
+const ConsensusVersion = 6
 
 var (
 	_ module.AppModule      = AppModule{}
@@ -118,16 +119,12 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	txs.RegisterMsgServer(cfg.MsgServer(), am.keeper)
 	txs.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-	// TODO mark
-	//m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
-	//err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
-	//	panic(err)
-	//}
+	m := keeper.NewMigrator(*am.keeper)
+	err := cfg.RegisterMigration(types.ModuleName, 5, m.Migrate5to6)
+	if err != nil {
+		panic(err)
+	}
+
 }
 
 // NewAppModule creates a new AppModule object
