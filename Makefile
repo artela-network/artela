@@ -21,7 +21,7 @@ ldflags = -X $(REPO)/version.Version=$(VERSION) \
 		  -X $(REPO)/version.Name=$(NAME)
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
-  ldflags += -w -s
+  #ldflags += -w -s
 endif
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
@@ -39,14 +39,16 @@ ifneq (,$(findstring nooptimization,$(COSMOS_BUILD_OPTIONS)))
   BUILD_FLAGS += -asmflags "all=-trimpath=$(CURRENT_DIR)"
 endif
 
+DEBUG_FLAGS := -ldflags '$(ldflags)'
+
 debug: clean mkbuild
-	go build -o $(BUILD)/. ./...
+	go build -o $(BUILD)/. $(DEBUG_FLAGS) ./...
 
 mkbuild:
 	mkdir -p $(BUILD)
 
 build: mkbuild
-	go build -o $(BUILD)/. $(BUILD_FLAGS) ./...
+	go build -x -o $(BUILD)/. $(BUILD_FLAGS) ./...
 
 build-linux: mkbuild
 	GOOS=linux GOARCH=amd64 LEDGER_ENABLED=false $(MAKE) build

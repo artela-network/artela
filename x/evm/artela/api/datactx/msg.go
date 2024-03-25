@@ -50,7 +50,6 @@ func (c *MessageContext) registerLoaders() {
 		return &artelatypes.BytesData{Data: message.Data}
 	}
 	loaders[aspctx.MsgGas] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
-
 		gasLimit := message.GasLimit
 		return &artelatypes.UintData{Data: &gasLimit}
 	}

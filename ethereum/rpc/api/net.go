@@ -5,12 +5,12 @@ import (
 )
 
 // NetBackend is the collection of methods required to satisfy the net
-// RPC API.
+// RPC DebugAPI.
 type NetBackend interface {
 	NetAPI
 }
 
-// NetAPI is the collection of net RPC API methods.
+// NetAPI is the collection of net RPC DebugAPI methods.
 type NetAPI interface {
 	PeerCount() hexutil.Uint
 	Listening() bool
@@ -22,7 +22,7 @@ type netAPI struct {
 	b NetBackend
 }
 
-// NewNetAPI creates a new net API instance.
+// NewNetAPI creates a new net DebugAPI instance.
 func NewNetAPI(b NetBackend) NetAPI {
 	return &netAPI{b}
 }

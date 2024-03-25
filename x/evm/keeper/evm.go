@@ -411,7 +411,11 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		leftoverGas = preTxResult.Gas
 		if preTxResult.Err != nil {
 			// short circuit if pre tx failed
-			vmErr = preTxResult.Err
+			if preTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
+				vmErr = vm.ErrOutOfGas
+			} else {
+				vmErr = preTxResult.Err
+			}
 		} else {
 			// execute evm call
 			ret, leftoverGas, vmErr = evm.Call(aspectCtx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
@@ -463,7 +467,11 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 				})
 			if postTxResult.Err != nil {
 				// overwrite vmErr if post tx reverted
-				vmErr = postTxResult.Err
+				if postTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
+					vmErr = vm.ErrOutOfGas
+				} else {
+					vmErr = postTxResult.Err
+				}
 				ret = postTxResult.Ret
 			}
 			leftoverGas = postTxResult.Gas

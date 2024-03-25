@@ -7,22 +7,18 @@ import (
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
 
+	"github.com/artela-network/artela/ethereum/rpc/api"
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	"github.com/artela-network/artela/ethereum/rpc/filters"
-	"github.com/artela-network/artela/ethereum/types"
 )
 
 func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.Logger, apiBackend *BackendImpl) []rpc.API {
-	chainID, err := types.ParseChainID(clientCtx.ChainID)
-	if err != nil {
-		panic(err)
-	}
 
 	nonceLock := new(ethapi.AddrLocker)
 	return []rpc.API{
 		{
 			Namespace: "eth",
-			Service:   ethapi.NewEthereumAPI(apiBackend),
+			Service:   ethapi.NewEthereumAPI(apiBackend, logger),
 		}, {
 			Namespace: "eth",
 			Service:   ethapi.NewBlockChainAPI(apiBackend, logger),
@@ -36,6 +32,9 @@ func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.
 			Namespace: "debug",
 			Service:   ethapi.NewDebugAPI(apiBackend),
 		}, {
+			Namespace: "debug",
+			Service:   api.NewDebugAPI(apiBackend),
+		}, {
 			Namespace: "eth",
 			Service:   ethapi.NewEthereumAccountAPI(apiBackend),
 		}, {
@@ -43,10 +42,13 @@ func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.
 			Service:   ethapi.NewPersonalAccountAPI(apiBackend, logger, nonceLock),
 		}, {
 			Namespace: "net",
-			Service:   ethapi.NewNetAPI(nil, chainID.Uint64()),
+			Service:   api.NewNetAPI(apiBackend),
 		}, {
 			Namespace: "eth",
 			Service:   filters.NewPublicFilterAPI(logger, clientCtx, wsClient, apiBackend),
+		}, {
+			Namespace: "web3",
+			Service:   api.NewWeb3API(apiBackend),
 		},
 	}
 }

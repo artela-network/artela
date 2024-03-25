@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/artela-network/artela-evm/vm"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -63,5 +64,11 @@ type Backend interface {
 	ChainConfig() *params.ChainConfig
 	Engine() consensus.Engine
 
+	Syncing() (interface{}, error)
 	// This is copied from filters.Backend
+	Sign(address common.Address, data hexutil.Bytes) (hexutil.Bytes, error)
+
+	GetCoinbase() (sdk.AccAddress, error)
+
+	GetProof(address common.Address, storageKeys []string, blockNrOrHash rpctypes.BlockNumberOrHash) (*rpctypes.AccountResult, error)
 }

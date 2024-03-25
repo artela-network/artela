@@ -26,7 +26,7 @@ func (anc *AspectNativeContract) entrypoint(ctx sdk.Context, msg *core.Message, 
 	if !ok {
 		return nil, errors.New("AspectNativeContract.entrypoint: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), version.Uint64(), code, commit)
+	runner, newErr := run.NewRunner(aspectCtx, ctx.Logger(), aspectId.String(), version.Uint64(), code, commit)
 	if newErr != nil {
 		return nil, newErr
 	}
@@ -256,8 +256,8 @@ func (k *AspectNativeContract) aspectsOf(ctx sdk.Context, method *abi.Method, co
 	}, nil
 }
 
-func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Address, nonce uint64, sender common.Address) bool {
-	msg, err := contract.ArtelaOwnerMsg(to, nonce, sender)
+func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Address, nonce uint64, gas uint64, sender common.Address) bool {
+	msg, err := contract.ArtelaOwnerMsg(to, nonce, sender, gas)
 	if err != nil {
 		return false
 	}
@@ -279,26 +279,39 @@ func (k *AspectNativeContract) checkContractOwner(ctx sdk.Context, to *common.Ad
 	}
 	return result
 }
+func (k *AspectNativeContract) checkAspectCode(ctx sdk.Context, aspectId common.Address, aspectCode []byte, commit bool) error {
 
-func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, commit bool) (bool, error) {
+	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
+	if !ok {
+		return errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
+	}
+	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), 1, aspectCode, commit)
+	if newErr != nil {
+		return newErr
+	}
+	defer runner.Return()
+
+	return nil
+}
+
+func (k *AspectNativeContract) checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, gas uint64, commit bool) (bool, error) {
 	bHeight := ctx.BlockHeight()
 	code, ver := k.aspectService.GetAspectCode(ctx, aspectId, nil)
 	if code == nil {
 		return false, nil
 	}
-	// StressTesting
 
 	aspectCtx, ok := ctx.Value(types.AspectContextKey).(*types.AspectRuntimeContext)
 	if !ok {
 		return false, errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), ver.Uint64(), code, commit)
+	runner, newErr := run.NewRunner(aspectCtx, ctx.Logger(), aspectId.String(), ver.Uint64(), code, commit)
 	if newErr != nil {
 		return false, newErr
 	}
 	defer runner.Return()
 
-	binding, runErr := runner.IsOwner(bHeight, 0, &sender, sender.Bytes())
+	binding, runErr := runner.IsOwner(bHeight, gas, &sender, sender.Bytes())
 	return binding, runErr
 }
 
@@ -311,16 +324,24 @@ func (k *AspectNativeContract) deploy(ctx sdk.Context, aspectId common.Address, 
 			Logs:    nil,
 		}, nil
 	}
-
-	aspectVersion := k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
-
-	err := k.aspectService.aspectStore.StoreAspectJP(ctx, aspectId, aspectVersion, joinPoint)
-	if err != nil {
-		return nil, err
+	_, aspectVersion := k.aspectService.aspectStore.GetAspectCode(ctx, aspectId, nil)
+	if len(code) > 0 {
+		// upgrade here may be 0
+		aspectVersion = k.aspectService.aspectStore.StoreAspectCode(ctx, aspectId, code)
 	}
-	err = k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
-	if err != nil {
-		return nil, err
+
+	if joinPoint != nil {
+		err := k.aspectService.aspectStore.StoreAspectJP(ctx, aspectId, aspectVersion, joinPoint)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(properties) > 0 {
+		err := k.aspectService.aspectStore.StoreAspectProperty(ctx, aspectId, properties)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	level := artelasdkType.CheckIsBlockLevel(joinPoint.Int64())
