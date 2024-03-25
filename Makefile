@@ -21,7 +21,7 @@ ldflags = -X $(REPO)/version.Version=$(VERSION) \
 		  -X $(REPO)/version.Name=$(NAME)
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
-  ldflags += -w -s
+  #ldflags += -w -s
 endif
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
@@ -39,8 +39,10 @@ ifneq (,$(findstring nooptimization,$(COSMOS_BUILD_OPTIONS)))
   BUILD_FLAGS += -asmflags "all=-trimpath=$(CURRENT_DIR)"
 endif
 
+DEBUG_FLAGS := -ldflags '$(ldflags)'
+
 debug: clean mkbuild
-	go build -o $(BUILD)/. ./...
+	go build -o $(BUILD)/. $(DEBUG_FLAGS) ./...
 
 mkbuild:
 	mkdir -p $(BUILD)

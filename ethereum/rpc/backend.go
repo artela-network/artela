@@ -4,14 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
+	"runtime"
 	"strconv"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
+	bftclient "github.com/cometbft/cometbft/rpc/client"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/version"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -25,13 +31,16 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/artela-network/artela/ethereum/rpc/api"
 	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
 	"github.com/artela-network/artela/ethereum/rpc/filters"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	"github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/ethereum/server/config"
 	"github.com/artela-network/artela/ethereum/types"
 	ethereumtypes "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 
@@ -39,6 +48,8 @@ var (
 	_ gasprice.OracleBackend = (*BackendImpl)(nil)
 	_ ethapi2.Backend        = (*BackendImpl)(nil)
 	_ filters.Backend        = (*BackendImpl)(nil)
+	_ api.NetBackend         = (*BackendImpl)(nil)
+	_ api.DebugBackend       = (*BackendImpl)(nil)
 )
 
 // backend represents the backend for the JSON-RPC service.
@@ -63,6 +74,11 @@ type BackendImpl struct {
 	ctx         context.Context
 	clientCtx   client.Context
 	queryClient *rpctypes.QueryClient
+}
+
+func (b *BackendImpl) EthBlockByNumber(blockNum rpc.BlockNumber) (*ethtypes.Block, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 // NewBackend create the backend instance
@@ -104,7 +120,7 @@ func NewBackend(
 	return b
 }
 
-// General Ethereum API
+// General Ethereum DebugAPI
 
 func (b *BackendImpl) SyncProgress() ethereum.SyncProgress {
 	return ethereum.SyncProgress{
@@ -304,19 +320,37 @@ func (b *BackendImpl) BloomStatus() (uint64, uint64) {
 func (b *BackendImpl) ServiceFilter(_ context.Context, _ *bloombits.MatcherSession) {
 }
 
-// artela rpc API
+// artela rpc DebugAPI
+
+// artela rpc DebugAPI
 
 func (b *BackendImpl) Listening() bool {
-	return true
+	tmClient := b.clientCtx.Client.(bftclient.Client)
+	netInfo, err := tmClient.NetInfo(b.ctx)
+	if err != nil {
+		return false
+	}
+	return netInfo.Listening
 }
 
 func (b *BackendImpl) PeerCount() hexutil.Uint {
-	return 1
+	tmClient := b.clientCtx.Client.(bftclient.Client)
+	netInfo, err := tmClient.NetInfo(b.ctx)
+	if err != nil {
+		return 0
+	}
+	return hexutil.Uint(len(netInfo.Peers))
 }
 
 // ClientVersion returns the current client version.
 func (b *BackendImpl) ClientVersion() string {
-	return ""
+	return fmt.Sprintf(
+		"%s/%s/%s/%s",
+		version.AppName,
+		version.Version,
+		runtime.GOOS+"-"+runtime.GOARCH,
+		runtime.Version(),
+	)
 }
 
 // func (b *BackendImpl) GetBlockContext(
@@ -423,4 +457,133 @@ func (b *BackendImpl) RPCFilterCap() int32 {
 // RPCLogsCap defines the max number of results can be returned from single `eth_getLogs` query.
 func (b *BackendImpl) RPCLogsCap() int32 {
 	return b.appConf.JSONRPC.LogsCap
+}
+
+func (b *BackendImpl) Syncing() (interface{}, error) {
+	status, err := b.clientCtx.Client.Status(b.ctx)
+	if err != nil {
+		return false, err
+	}
+
+	if !status.SyncInfo.CatchingUp {
+		return false, nil
+	}
+
+	return map[string]interface{}{
+		"startingBlock": hexutil.Uint64(status.SyncInfo.EarliestBlockHeight),
+		"currentBlock":  hexutil.Uint64(status.SyncInfo.LatestBlockHeight),
+		// "highestBlock":  nil, // NA
+		// "pulledStates":  nil, // NA
+		// "knownStates":   nil, // NA
+	}, nil
+}
+func (b *BackendImpl) GetCoinbase() (sdktypes.AccAddress, error) {
+	node, err := b.clientCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := node.Status(b.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &txs.QueryValidatorAccountRequest{
+		ConsAddress: sdktypes.ConsAddress(status.ValidatorInfo.Address).String(),
+	}
+
+	res, err := b.queryClient.ValidatorAccount(b.ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	address, _ := sdktypes.AccAddressFromBech32(res.AccountAddress) // #nosec G703
+	return address, nil
+}
+
+// GetProof returns an account object with proof and any storage proofs
+func (b *BackendImpl) GetProof(address common.Address, storageKeys []string, blockNrOrHash rpctypes.BlockNumberOrHash) (*rpctypes.AccountResult, error) {
+	numberOrHash := rpc.BlockNumberOrHash{
+		BlockNumber:      (*rpc.BlockNumber)(blockNrOrHash.BlockNumber),
+		BlockHash:        blockNrOrHash.BlockHash,
+		RequireCanonical: false,
+	}
+	blockNum, err := b.blockNumberFromCosmos(numberOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	height := blockNum.Int64()
+
+	_, err = b.CosmosBlockByNumber(blockNum)
+	if err != nil {
+		// the error message imitates geth behavior
+		return nil, errors.New("header not found")
+	}
+	ctx := rpctypes.ContextWithHeight(height)
+
+	// if the height is equal to zero, meaning the query condition of the block is either "pending" or "latest"
+	if height == 0 {
+		bn, err := b.BlockNumber()
+		if err != nil {
+			return nil, err
+		}
+
+		if bn > math.MaxInt64 {
+			return nil, fmt.Errorf("not able to query block number greater than MaxInt64")
+		}
+
+		height = int64(bn) // #nosec G701 -- checked for int overflow already
+	}
+
+	clientCtx := b.clientCtx.WithHeight(height)
+
+	// query storage proofs
+	storageProofs := make([]rpctypes.StorageResult, len(storageKeys))
+
+	for i, key := range storageKeys {
+		hexKey := common.HexToHash(key)
+		valueBz, proof, err := b.queryClient.GetProof(clientCtx, evmtypes.StoreKey, evmtypes.StateKey(address, hexKey.Bytes()))
+		if err != nil {
+			return nil, err
+		}
+
+		storageProofs[i] = rpctypes.StorageResult{
+			Key:   key,
+			Value: (*hexutil.Big)(new(big.Int).SetBytes(valueBz)),
+			Proof: utils.GetHexProofs(proof),
+		}
+	}
+
+	// query EVM account
+	req := &txs.QueryAccountRequest{
+		Address: address.String(),
+	}
+
+	res, err := b.queryClient.Account(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// query account proofs
+	accountKey := authtypes.AddressStoreKey(sdktypes.AccAddress(address.Bytes()))
+	_, proof, err := b.queryClient.GetProof(clientCtx, authtypes.StoreKey, accountKey)
+	if err != nil {
+		return nil, err
+	}
+
+	balance, ok := sdkmath.NewIntFromString(res.Balance)
+	if !ok {
+		return nil, errors.New("invalid balance")
+	}
+
+	return &rpctypes.AccountResult{
+		Address:      address,
+		AccountProof: utils.GetHexProofs(proof),
+		Balance:      (*hexutil.Big)(balance.BigInt()),
+		CodeHash:     common.HexToHash(res.CodeHash),
+		Nonce:        hexutil.Uint64(res.Nonce),
+		StorageHash:  common.Hash{}, // NOTE: Evmos doesn't have a storage hash. TODO: implement?
+		StorageProof: storageProofs,
+	}, nil
 }
