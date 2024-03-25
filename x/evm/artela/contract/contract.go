@@ -49,6 +49,14 @@ func (k *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, 
 	if err == nil && commit {
 		writeCacheFunc()
 	}
+	if err != nil {
+		return &evmtxs.MsgEthereumTxResponse{
+			GasUsed: ctx.GasMeter().GasConsumed(),
+			VmError: err.Error(),
+			Ret:     nil,
+			Logs:    nil,
+		}, nil
+	}
 	return applyMsg, err
 }
 
@@ -90,7 +98,18 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			}
 			joinPoints := parameters["joinPoints"].(*big.Int)
 
+			if len(code) == 0 {
+				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "Code verification failed during aspect deploy")
+			}
+			if joinPoints == nil {
+				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "JoinPoints verification failed during aspect deploy")
+			}
+
 			aspectId := crypto.CreateAddress(sender.Address(), msg.Nonce)
+			checkErr := k.checkAspectCode(ctx, aspectId, code, false)
+			if checkErr != nil {
+				return nil, checkErr
+			}
 			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "upgrade":
@@ -122,6 +141,12 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "failed to check if the sender is the owner, unable to upgrade, sender: %s , aspectId: %s", sender.Address().String(), aspectId.String())
 			}
 			joinPoints := parameters["joinPoints"].(*big.Int)
+			if len(code) > 0 {
+				codeErr := k.checkAspectCode(ctx, aspectId, code, false)
+				if codeErr != nil {
+					return nil, codeErr
+				}
+			}
 			return k.deploy(ctx, aspectId, code, propertyAry, joinPoints)
 		}
 	case "bind":
@@ -135,14 +160,16 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			isContract := len(k.evmState.GetCode(account)) > 0
 			if isContract {
 				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, msg.GasLimit, sender.Address())
-				// Bind with contract account, need to verify contract ownerships first
-				owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address(), msg.GasLimit, commit)
-				if !(owner || cOwner) {
+				if !cOwner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
 			} else if account != sender.Address() {
 				// For EoA account binding, only the account itself can issue the bind request
 				return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "unauthorized EoA account aspect binding")
+			}
+			code, _ := k.aspectService.GetAspectCode(ctx, aspectId, versionU256)
+			if len(code) == 0 {
+				return nil, errorsmod.Wrapf(evmtypes.ErrAspectNotFound, "aspect %s ,version %s not found", aspectId.String(), versionU256.String())
 			}
 
 			return k.bind(ctx, aspectId, account, versionU256, priority, isContract)
@@ -157,8 +184,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			if isContract {
 				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, msg.GasLimit, sender.Address())
 				// Bind with contract account, need to verify contract ownerships first
-				owner, _ := k.checkAspectOwner(ctx, aspectId, sender.Address(), msg.GasLimit, commit)
-				if !(owner || cOwner) {
+				if !cOwner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
 			} else if account != sender.Address() {
