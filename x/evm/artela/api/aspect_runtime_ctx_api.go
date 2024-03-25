@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	aspctx "github.com/artela-network/aspect-core/context"
 	"github.com/cosmos/gogoproto/proto"
@@ -146,17 +147,20 @@ func (a *aspectRuntimeContextHostAPI) Register() {
 	}
 }
 
-func (a *aspectRuntimeContextHostAPI) Get(ctx *asptypes.RunnerContext, key string) []byte {
+func (a *aspectRuntimeContextHostAPI) Get(ctx *asptypes.RunnerContext, key string) ([]byte, error) {
 	joinPointCtxKeyConstraints, ok := ctxKeyConstraints[asptypes.PointCut(ctx.Point)]
 	if !ok || !joinPointCtxKeyConstraints.Contains(key) {
-		return []byte{}
+		return nil, fmt.Errorf("key %s is not available at join point %s", key, ctx.Point)
 	}
 
 	res, err := a.execMap[key](ctx)
 	if err != nil {
+		// error returned here usually should not happen, but if it does, it is potentially a bug or
+		// something wrong with the node, we need to panic here to avoid any potential security issues.
 		panic(err)
 	}
-	return res
+
+	return res, nil
 }
 
 func GetAspectRuntimeContextHostInstance(ctx context.Context) (asptypes.RuntimeContextHostAPI, error) {

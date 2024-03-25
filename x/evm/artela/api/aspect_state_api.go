@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	_              asptypes.AspectStateHostAPI = (*aspectStateHostAPI)(nil)
-	setConstraints                             = hashset.New(
+	_                         asptypes.AspectStateHostAPI = (*aspectStateHostAPI)(nil)
+	stateJoinPointConstraints                             = hashset.New(
 		asptypes.PRE_CONTRACT_CALL_METHOD,
 		asptypes.POST_CONTRACT_CALL_METHOD,
 		asptypes.PRE_TX_EXECUTE_METHOD,
@@ -29,11 +29,12 @@ func (a *aspectStateHostAPI) Get(ctx *asptypes.RunnerContext, key string) []byte
 	return a.aspectRuntimeContext.GetAspectState(ctx, key)
 }
 
-func (a *aspectStateHostAPI) Set(ctx *asptypes.RunnerContext, key string, value []byte) {
-	if !setConstraints.Contains(asptypes.PointCut(ctx.Point)) {
-		panic("cannot set aspect state in current join point")
+func (a *aspectStateHostAPI) Set(ctx *asptypes.RunnerContext, key string, value []byte) error {
+	if !stateJoinPointConstraints.Contains(asptypes.PointCut(ctx.Point)) {
+		return errors.New("cannot set aspect state in current join point")
 	}
 	a.aspectRuntimeContext.SetAspectState(ctx, key, value)
+	return nil
 }
 
 func GetAspectStateHostInstance(ctx context.Context) (asptypes.AspectStateHostAPI, error) {

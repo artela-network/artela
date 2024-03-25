@@ -46,7 +46,7 @@ mkbuild:
 	mkdir -p $(BUILD)
 
 build: mkbuild
-	go build -o $(BUILD)/. $(BUILD_FLAGS) ./...
+	go build -x -o $(BUILD)/. $(BUILD_FLAGS) ./...
 
 build-linux: mkbuild
 	GOOS=linux GOARCH=amd64 LEDGER_ENABLED=false $(MAKE) build

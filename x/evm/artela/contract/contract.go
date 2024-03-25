@@ -133,7 +133,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 				})
 			}
 			sender := vm.AccountRef(msg.From)
-			aspectOwner, checkErr := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
+			aspectOwner, checkErr := k.checkAspectOwner(ctx, aspectId, sender.Address(), msg.GasLimit, commit)
 			if checkErr != nil {
 				return nil, checkErr
 			}
@@ -159,7 +159,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			sender := vm.AccountRef(msg.From)
 			isContract := len(k.evmState.GetCode(account)) > 0
 			if isContract {
-				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
+				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, msg.GasLimit, sender.Address())
 				if !cOwner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
 				}
@@ -182,7 +182,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			sender := vm.AccountRef(msg.From)
 			isContract := len(k.evmState.GetCode(account)) > 0
 			if isContract {
-				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, sender.Address())
+				cOwner := k.checkContractOwner(ctx, &account, msg.Nonce+1, msg.GasLimit, sender.Address())
 				// Bind with contract account, need to verify contract ownerships first
 				if !cOwner {
 					return nil, errorsmod.Wrapf(evmtypes.ErrCallContract, "check sender isOwner fail, sender: %s , contract: %s", sender.Address().String(), account.String())
@@ -201,7 +201,7 @@ func (k *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, comm
 			contract := parameters["contract"].(common.Address)
 			version := parameters["version"].(uint64)
 			sender := vm.AccountRef(msg.From)
-			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address(), commit)
+			aspectOwner, err := k.checkAspectOwner(ctx, aspectId, sender.Address(), msg.GasLimit, commit)
 			if err != nil {
 				return nil, err
 			}
