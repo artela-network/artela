@@ -24,6 +24,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -115,6 +116,10 @@ func initRootCmd(
 	// Set config
 	initSDKConfig()
 
+	a := appCreator{
+		encodingConfig,
+	}
+
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, genutiltypes.DefaultMessageValidator),
@@ -134,11 +139,8 @@ func initRootCmd(
 		config.Cmd(),
 		// this line is used by starport scaffolding # root/commands
 		KeyInfoCmd(),
+		snapshot.Cmd(a.newApp),
 	)
-
-	a := appCreator{
-		encodingConfig,
-	}
 
 	// add server commands
 	server2.AddCommands(
