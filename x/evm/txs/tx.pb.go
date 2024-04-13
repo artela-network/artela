@@ -198,7 +198,7 @@ func (m *AccessListTx) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_AccessListTx proto.InternalMessageInfo
 
-// DynamicFeeTx is the data of EIP-1559 dinamic fee transactions.
+// DynamicFeeTx is the data of EIP-1559 dynamic fee transactions.
 type DynamicFeeTx struct {
 	// chain_id of the destination EVM chain
 	ChainID *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"chainID"`

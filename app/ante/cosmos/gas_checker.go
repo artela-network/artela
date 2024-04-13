@@ -65,7 +65,7 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, sim
 	// Fees not provided (or flag "auto"). Then use the base fee to make the check pass
 	if feeCoins == nil {
 		return ctx, errorsmod.Wrapf(errortypes.ErrInsufficientFee,
-			"fee not provided. Please use the --fees flag or the --gas-price flag along with the --gas flag to estimate the fee. The minimun global fee for this tx is: %s",
+			"fee not provided. Please use the --fees flag or the --gas-price flag along with the --gas flag to estimate the fee. The minimum global fee for this tx is: %s",
 			requiredFees)
 	}
 
