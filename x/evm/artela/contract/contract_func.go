@@ -285,7 +285,7 @@ func (k *AspectNativeContract) checkAspectCode(ctx sdk.Context, aspectId common.
 	if !ok {
 		return errors.New("checkAspectOwner: unwrap AspectRuntimeContext failed")
 	}
-	runner, newErr := run.NewRunner(aspectCtx, aspectId.String(), 1, aspectCode, commit)
+	runner, newErr := run.NewRunner(aspectCtx, ctx.Logger(), aspectId.String(), 1, aspectCode, commit)
 	if newErr != nil {
 		return newErr
 	}
