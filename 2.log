@@ -1,0 +1,116 @@
+[90m5:18PM[0m [32mINF[0m starting node with ABCI Tendermint in-txs [36mmodule=[0mserver
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mmultiAppConn [36mmodule=[0mproxy [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mconnection=[0mquery [36mimpl=[0mlocalClient [36mmodule=[0mabci-client [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mconnection=[0msnapshot [36mimpl=[0mlocalClient [36mmodule=[0mabci-client [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mconnection=[0mmempool [36mimpl=[0mlocalClient [36mmodule=[0mabci-client [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mconnection=[0mconsensus [36mimpl=[0mlocalClient [36mmodule=[0mabci-client [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mEventBus [36mmodule=[0mevents [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mPubSub [36mmodule=[0mpubsub [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mIndexerService [36mmodule=[0mtxindex [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m ABCI Handshake App Info [36mhash=[0m"V�\x19��c0^��i$J!��\x16��6*��\x0f�2�\x19!yi�" [36mheight=[0m626339 [36mmodule=[0mconsensus [36mprotocol-version=[0m0 [36msoftware-version=[0mv0.4.7-rc6
+[90m5:18PM[0m [32mINF[0m ABCI Replay Blocks [36mappHeight=[0m626339 [36mmodule=[0mconsensus [36mstateHeight=[0m626339 [36mstoreHeight=[0m626339
+[90m5:18PM[0m [32mINF[0m Completed ABCI Handshake - CometBFT and App are synced [36mappHash=[0m"V�\x19��c0^��i$J!��\x16��6*��\x0f�2�\x19!yi�" [36mappHeight=[0m626339 [36mmodule=[0mconsensus
+[90m5:18PM[0m [32mINF[0m Version info [36mabci=[0m1.0.0 [36mblock=[0m11 [36mcommit_hash=[0m [36mmodule=[0mserver [36mp2p=[0m8 [36mtendermint_version=[0m0.37.2
+[90m5:18PM[0m [32mINF[0m This node is not a validator [36maddr=[0m2F0244C1C3E6FAD1CC33B46F1E03E88A7C0CD7EF [36mmodule=[0mconsensus [36mpubKey=[0mox9v8V2DdNjSM6z2f6i+sxX6L5Ogd4iOUZYTwtFPcr0=
+[90m5:18PM[0m [32mINF[0m P2P Node ID [36mID=[0m35e748bb3a79b7652da748a55bbe407ad9886f7b [36mfile=[0m/home/luke/.artelad/config/node_key.json [36mmodule=[0mp2p
+[90m5:18PM[0m [32mINF[0m Adding persistent peers [36maddrs=[0m["5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22@47.251.14.108:26656","17c071b9815b680e5402158287658cee78114ccf@47.88.58.36:26656"] [36mmodule=[0mp2p
+[90m5:18PM[0m [32mINF[0m Adding unconditional peer ids [36mids=[0m[] [36mmodule=[0mp2p
+[90m5:18PM[0m [32mINF[0m Add our address to book [36maddr=[0m{"id":"35e748bb3a79b7652da748a55bbe407ad9886f7b","ip":"0.0.0.0","port":26656} [36mbook=[0m/home/luke/.artelad/config/addrbook.json [36mmodule=[0mp2p
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mNode [36mmodule=[0mserver [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m Starting pprof server [36mladdr=[0mlocalhost:6060 [36mmodule=[0mserver
+[90m5:18PM[0m [32mINF[0m serve [36mmodule=[0mrpc-server [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0m"P2P Switch" [36mmodule=[0mp2p [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mReactor [36mmodule=[0mblockchain [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mBlockPool [36mmodule=[0mblockchain [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mConsensusReactor [36mmodule=[0mconsensus [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m Reactor  [36mmodule=[0mconsensus [36mwaitSync=[0mtrue
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mEvidence [36mmodule=[0mevidence [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mStateSync [36mmodule=[0mstatesync [36mmsg=[0m{}
+[90m5:18PM[0m [32mINF[0m Saving AddrBook to file [36mbook=[0m/home/luke/.artelad/config/addrbook.json [36mmodule=[0mp2p [36msize=[0m2
+[90m5:18PM[0m [32mINF[0m starting API server... [36mmodule=[0mapi-server
+[90m5:18PM[0m [32mINF[0m serve [36mmodule=[0mapi-server [36mmsg=[0m{}
+[90m5:18PM[0m [1m[31mERR[0m[0m Error dialing peer [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:35856->47.251.14.108:26656: i/o timeout" [36mmodule=[0mp2p
+[90m5:18PM[0m [32mINF[0m Reconnecting to peer [36maddr=[0m{"id":"5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22","ip":"47.251.14.108","port":26656} [36mmodule=[0mp2p
+[90m5:18PM[0m [32mINF[0m New websocket connection [36mmodule=[0mrpc-server [36mprotocol=[0mwebsocket [36mremote=[0m127.0.0.1:33808
+[90m5:18PM[0m [32mINF[0m service start [36mimpl=[0mwsConnection [36mmodule=[0mrpc-server [36mmsg=[0m{} [36mprotocol=[0mwebsocket [36mremote=[0m{"IP":"127.0.0.1","Port":33808,"Zone":""}
+INFO [03-21|17:18:50.105] Gasprice oracle is ignoring threshold set threshold=2
+[90m5:18PM[0m [1m[31mERR[0m[0m Error dialing peer [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:34614->47.88.58.36:26656: i/o timeout" [36mmodule=[0mp2p
+[90m5:18PM[0m [32mINF[0m Reconnecting to peer [36maddr=[0m{"id":"17c071b9815b680e5402158287658cee78114ccf","ip":"47.88.58.36","port":26656} [36mmodule=[0mp2p
+[90m5:18PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22","ip":"47.251.14.108","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:55130->47.251.14.108:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m0
+[90m5:18PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"17c071b9815b680e5402158287658cee78114ccf","ip":"47.88.58.36","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:55044->47.88.58.36:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m0
+[90m5:18PM[0m [32mINF[0m Starting peer-to-peer node [36minstance=[0martela/linux-amd64/go1.21.8 [36mmodule=[0mgeth
+INFO [03-21|17:18:58.142] New local node record                    seq=1,707,114,243,135 id=62bb9e8e1e90e41a ip=127.0.0.1 udp=0 tcp=30303
+[90m5:18PM[0m [32mINF[0m Started P2P networking [36mmodule=[0mgeth [36mself=[0menode://33147e0878265af45589597e0fe021b905a11bc88a738c8134a8066d316d47c3ccc461d7f05a7e52dd6a3aaacbb078cdb234ea3bfbee8227956dbf261bba564a@127.0.0.1:30303?discport=0
+[90m5:18PM[0m [32mINF[0m HTTP server started [36mauth=[0mfalse [36mcors=[0m* [36mendpoint=[0m{"IP":"::","Port":8545,"Zone":""} [36mmodule=[0mgeth [36mprefix=[0m [36mvhosts=[0m*
+[90m5:18PM[0m [32mINF[0m WebSocket enabled [36mmodule=[0mgeth [36murl=[0mws://[::]:8546
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22","ip":"47.251.14.108","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:48300->47.251.14.108:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m1
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"17c071b9815b680e5402158287658cee78114ccf","ip":"47.88.58.36","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:48286->47.88.58.36:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m1
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22","ip":"47.251.14.108","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:53130->47.251.14.108:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m2
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"17c071b9815b680e5402158287658cee78114ccf","ip":"47.88.58.36","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:51496->47.88.58.36:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m2
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22","ip":"47.251.14.108","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:54138->47.251.14.108:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m3
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"17c071b9815b680e5402158287658cee78114ccf","ip":"47.88.58.36","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:55128->47.88.58.36:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m3
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22","ip":"47.251.14.108","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:54920->47.251.14.108:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m4
+ERROR[03-21|17:19:33.476] RPC method eth_call crashed: runtime error: invalid memory address or nil pointer dereference
+goroutine 329 [running]:
+github.com/ethereum/go-ethereum/rpc.(*callback).call.func1()
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/service.go:199 +0x85
+panic({0x33fd780?, 0x6402c60?})
+	runtime/panic.go:914 +0x21f
+github.com/artela-network/artela/ethereum/rpc.(*BackendImpl).DoCall(0xc003b42800, {0x0, 0xc0058046c0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc00640cbb8, ...}, ...)
+	github.com/artela-network/artela/ethereum/rpc/blocks.go:434 +0x10e
+github.com/artela-network/artela/ethereum/rpc/ethapi.(*BlockChainAPI).Call(0xc0058016c0?, {0xc004e65490?, 0x4e7d96?}, {0x0, 0xc0058046c0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...)
+	github.com/artela-network/artela/ethereum/rpc/ethapi/api.go:658 +0x65
+reflect.Value.call({0xc004b9e780?, 0xc00c39af80?, 0x7fe67c6857e8?}, {0x380d241, 0x4}, {0xc00583aab0, 0x6, 0x493ff2?})
+	reflect/value.go:596 +0xce7
+reflect.Value.Call({0xc004b9e780?, 0xc00c39af80?, 0x5b1fe5?}, {0xc00583aab0?, 0x4?, 0x16?})
+	reflect/value.go:380 +0xb9
+github.com/ethereum/go-ethereum/rpc.(*callback).call(0xc0057d71a0, {0x4863588?, 0xc00581b180}, {0xc00577f180, 0x8}, {0xc00576b500, 0x4, 0x51374f?})
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/service.go:205 +0x379
+github.com/ethereum/go-ethereum/rpc.(*handler).runMethod(0xc007618000?, {0x4863588?, 0xc00581b180?}, 0xc010130690, 0x4?, {0xc00576b500?, 0x4956c8?, 0x460000c00050f400?})
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:513 +0x3c
+github.com/ethereum/go-ethereum/rpc.(*handler).handleCall(0xc00583a3f0, 0xc00760a540, 0xc010130690)
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:459 +0x22f
+github.com/ethereum/go-ethereum/rpc.(*handler).handleCallMsg(0xc00583a3f0, 0xc00760a5a0?, 0xc010130690)
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:420 +0x22d
+github.com/ethereum/go-ethereum/rpc.(*handler).handleMsg.func1(0xc00760a540)
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:256 +0x173
+github.com/ethereum/go-ethereum/rpc.(*handler).startCallProc.func1()
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:348 +0xbe
+created by github.com/ethereum/go-ethereum/rpc.(*handler).startCallProc in goroutine 327
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:344 +0x79
+ 
+WARN [03-21|17:19:33.476] Served eth_call                          conn=127.0.0.1:52496 reqid=1 duration=9.816354ms err="method handler crashed"
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"17c071b9815b680e5402158287658cee78114ccf","ip":"47.88.58.36","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:39102->47.88.58.36:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m4
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22","ip":"47.251.14.108","port":26656} [36merr=[0m"dial tcp 47.251.14.108:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m5
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"17c071b9815b680e5402158287658cee78114ccf","ip":"47.88.58.36","port":26656} [36merr=[0m"dial tcp 47.88.58.36:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m5
+ERROR[03-21|17:19:44.828] RPC method eth_call crashed: runtime error: invalid memory address or nil pointer dereference
+goroutine 365 [running]:
+github.com/ethereum/go-ethereum/rpc.(*callback).call.func1()
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/service.go:199 +0x85
+panic({0x33fd780?, 0x6402c60?})
+	runtime/panic.go:914 +0x21f
+github.com/artela-network/artela/ethereum/rpc.(*BackendImpl).DoCall(0xc003b42800, {0x0, 0xc005858fa8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc00afdb008, ...}, ...)
+	github.com/artela-network/artela/ethereum/rpc/blocks.go:434 +0x10e
+github.com/artela-network/artela/ethereum/rpc/ethapi.(*BlockChainAPI).Call(0xc00585ed80?, {0xc005d83490?, 0x4e7d96?}, {0x0, 0xc005858fa8, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...)
+	github.com/artela-network/artela/ethereum/rpc/ethapi/api.go:658 +0x65
+reflect.Value.call({0xc004b9e780?, 0xc00c39af80?, 0x7fe6741e2370?}, {0x380d241, 0x4}, {0xc008ef45a0, 0x6, 0x493ff2?})
+	reflect/value.go:596 +0xce7
+reflect.Value.Call({0xc004b9e780?, 0xc00c39af80?, 0x5b1fe5?}, {0xc008ef45a0?, 0x4?, 0x16?})
+	reflect/value.go:380 +0xb9
+github.com/ethereum/go-ethereum/rpc.(*callback).call(0xc0057d71a0, {0x4863588?, 0xc00779d450}, {0xc0077a0bf0, 0x8}, {0xc0077470e0, 0x4, 0x51374f?})
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/service.go:205 +0x379
+github.com/ethereum/go-ethereum/rpc.(*handler).runMethod(0xc008efc000?, {0x4863588?, 0xc00779d450?}, 0xc003e01340, 0x4?, {0xc0077470e0?, 0x4956c8?, 0x60000c00050f400?})
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:513 +0x3c
+github.com/ethereum/go-ethereum/rpc.(*handler).handleCall(0xc008ef4240, 0xc0077c1260, 0xc003e01340)
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:459 +0x22f
+github.com/ethereum/go-ethereum/rpc.(*handler).handleCallMsg(0xc008ef4240, 0xc0077c12c0?, 0xc003e01340)
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:420 +0x22d
+github.com/ethereum/go-ethereum/rpc.(*handler).handleMsg.func1(0xc0077c1260)
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:256 +0x173
+github.com/ethereum/go-ethereum/rpc.(*handler).startCallProc.func1()
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:348 +0xbe
+created by github.com/ethereum/go-ethereum/rpc.(*handler).startCallProc in goroutine 363
+	github.com/ethereum/go-ethereum@v1.12.0/rpc/handler.go:344 +0x79
+ 
+WARN [03-21|17:19:44.828] Served eth_call                          conn=127.0.0.1:54588 reqid=1 duration="978.963µs" err="method handler crashed"
+[90m5:19PM[0m [32mINF[0m Error reconnecting to peer. Trying again [36maddr=[0m{"id":"5c4ea81ac7b8a7f5202fcbe5fe790a6d6f61fb22","ip":"47.251.14.108","port":26656} [36merr=[0m"auth failure: secret conn failed: read tcp 192.168.3.111:45796->47.251.14.108:26656: i/o timeout" [36mmodule=[0mp2p [36mtries=[0m6

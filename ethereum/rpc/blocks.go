@@ -86,7 +86,7 @@ func (b *BackendImpl) HeaderByNumberOrHash(ctx context.Context,
 func (b *BackendImpl) CurrentHeader() *ethtypes.Header {
 	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil || block == nil {
-		b.logger.Error("get CurrentHeader failed, error or block is nil", "error", err)
+		b.logger.Debug("get CurrentHeader failed, error or block is nil", "error", err)
 		return nil
 	}
 	return block.Header()
@@ -95,7 +95,7 @@ func (b *BackendImpl) CurrentHeader() *ethtypes.Header {
 func (b *BackendImpl) CurrentBlock() *rpctypes.Block {
 	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil {
-		b.logger.Error("get CurrentBlock failed", "error", err)
+		b.logger.Debug("get CurrentBlock failed", "error", err)
 		return nil
 	}
 	return block
