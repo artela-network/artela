@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	artelatypes "github.com/artela-network/artela/ethereum/types"
@@ -45,11 +46,11 @@ func setBip44CoinType(config *sdk.Config) {
 
 // RegisterDenoms registers the base and display denominations to the SDK.
 func registerDenoms() {
-	if err := sdk.RegisterDenom(DisplayDenom, sdk.OneDec()); err != nil {
+	if err := sdk.RegisterDenom(DisplayDenom, math.LegacyOneDec()); err != nil {
 		panic(err)
 	}
 
-	if err := sdk.RegisterDenom(BaseDenom, sdk.NewDecWithPrec(1, artelatypes.BaseDenomUnit)); err != nil {
+	if err := sdk.RegisterDenom(BaseDenom, math.LegacyNewDecWithPrec(1, artelatypes.BaseDenomUnit)); err != nil {
 		panic(err)
 	}
 }
