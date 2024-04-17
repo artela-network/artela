@@ -108,7 +108,7 @@ func checkTxFeeWithValidatorMinGasPrices(ctx cosmos.Context, tx cosmos.FeeTx) (c
 
 		// Determine the required fees by multiplying each required minimum gas
 		// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
-		glDec := math.LegacyNewDec(gas)
+		glDec := sdkmath.LegacyNewDec(gas)
 		for i, gp := range minGasPrices {
 			fee := gp.Amount.Mul(glDec)
 			requiredFees[i] = cosmos.NewCoin(gp.Denom, fee.Ceil().RoundInt())

@@ -38,7 +38,7 @@ func (esc EthSetupContextDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx,
 	}
 
 	// We need to setup an empty gas config so that the gas is consistent with Ethereum.
-	newCtx = ctx.WithGasMeter(cosmos.NewInfiniteGasMeter()).
+	newCtx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter()).
 		WithKVGasConfig(storetypes.GasConfig{}).
 		WithTransientKVGasConfig(storetypes.GasConfig{})
 
@@ -101,10 +101,12 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx
 		return next(ctx, tx, simulate)
 	}
 
-	err := tx.ValidateBasic()
-	// ErrNoSignatures is fine with eth tx
-	if err != nil && !errors.Is(err, errortypes.ErrNoSignatures) {
-		return ctx, errorsmod.Wrap(err, "tx basic validation failed")
+	if validateBasic, ok := tx.(cosmos.HasValidateBasic); ok {
+		err := validateBasic.ValidateBasic()
+		// ErrNoSignatures is fine with eth tx
+		if err != nil && !errors.Is(err, errortypes.ErrNoSignatures) {
+			return ctx, errorsmod.Wrap(err, "tx basic validation failed")
+		}
 	}
 
 	// For eth type cosmos tx, some fields should be verified as zero values,
@@ -183,7 +185,7 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx
 		txFee = txFee.Add(cosmos.Coin{Denom: evmDenom, Amount: sdkmath.NewIntFromBigInt(txData.Fee())})
 	}
 
-	if !authInfo.Fee.Amount.IsEqual(txFee) {
+	if !authInfo.Fee.Amount.Equal(txFee) {
 		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid AuthInfo Fee Amount (%s != %s)", authInfo.Fee.Amount, txFee)
 	}
 
