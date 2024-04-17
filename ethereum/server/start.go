@@ -3,10 +3,9 @@ package server
 // DONTCOVER
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -14,9 +13,11 @@ import (
 	"github.com/artela-network/artela/ethereum/rpc"
 	"github.com/artela-network/artela/ethereum/server/config"
 	artelaflag "github.com/artela-network/artela/ethereum/server/flags"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/cometbft/cometbft/abci/server"
 	tcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
+	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	pvm "github.com/cometbft/cometbft/privval"
@@ -27,8 +28,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	pruningtypes "cosmossdk.io/store/pruning/types"
-	"cosmossdk.io/tools/rosetta"
-	crgserver "cosmossdk.io/tools/rosetta/lib/server"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -36,9 +35,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
+	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	"github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 
 	aspecttypes "github.com/artela-network/aspect-core/types"
@@ -251,7 +250,8 @@ func startStandAlone(ctx *sdkserver.Context, appCreator types.AppCreator) error 
 		return err
 	}
 
-	app := appCreator(ctx.Logger, db, traceWriter, ctx.Viper)
+	var app types.Application
+	app = appCreator(ctx.Logger, db, traceWriter, ctx.Viper)
 
 	config, err := serverconfig.GetConfig(ctx.Viper)
 	if err != nil {
@@ -263,12 +263,14 @@ func startStandAlone(ctx *sdkserver.Context, appCreator types.AppCreator) error 
 		return err
 	}
 
-	svr, err := server.NewServer(addr, transport, app)
+	cmtApp := sdkserver.NewCometABCIWrapper(app)
+	svr, err := server.NewServer(addr, transport, cmtApp)
 	if err != nil {
 		return fmt.Errorf("error creating listener: %v", err)
 	}
 
-	svr.SetLogger(ctx.Logger.With("module", "abci-server"))
+	svr.SetLogger(servercmtlog.CometLoggerWrapper{Logger: ctx.Logger.With("module", "abci-server")})
+	g, _ := getCtx(ctx, false)
 
 	err = svr.Start()
 	if err != nil {
@@ -289,7 +291,7 @@ func startStandAlone(ctx *sdkserver.Context, appCreator types.AppCreator) error 
 	}()
 
 	// Wait for SIGINT or SIGTERM signal
-	return sdkserver.WaitForQuitSignals()
+	return g.Wait()
 }
 
 func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator types.AppCreator) error {
@@ -328,12 +330,15 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 	}
 
 	app := appCreator(ctx.Logger, db, traceWriter, ctx.Viper)
+	cmtApp := sdkserver.NewCometABCIWrapper(app)
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		return err
 	}
 	genDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
+
+	g, wctx := getCtx(ctx, false)
 
 	var (
 		tmNode   *node.Node
@@ -346,15 +351,16 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 	} else {
 		ctx.Logger.Info("starting node with ABCI Tendermint in-txs")
 
+		logger := servercmtlog.CometLoggerWrapper{Logger: ctx.Logger.With("module", "abci-server")}
 		tmNode, err = node.NewNode(
 			cfg,
 			pvm.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 			nodeKey,
-			proxy.NewLocalClientCreator(app),
+			proxy.NewLocalClientCreator(cmtApp),
 			genDocProvider,
-			node.DefaultDBProvider,
+			cmtcfg.DefaultDBProvider,
 			node.DefaultMetricsProvider(cfg.Instrumentation),
-			ctx.Logger,
+			logger,
 		)
 		if err != nil {
 			return err
@@ -375,12 +381,45 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 
 		app.RegisterTxService(clientCtx)
 		app.RegisterTendermintService(clientCtx)
-		app.RegisterNodeService(clientCtx)
+		app.RegisterNodeService(clientCtx, config.Config)
 	}
 
 	metrics, err := startTelemetry(config.Config)
 	if err != nil {
 		return err
+	}
+
+	var (
+		grpcSrv *grpc.Server
+		// TODO confirm grpcweb is not need
+		// grpcWebSrv *http.Server
+	)
+
+	if config.GRPC.Enable {
+		grpcSrv, err := servergrpc.NewGRPCServer(clientCtx, app, config.GRPC)
+		if err != nil {
+			return err
+		}
+
+		err = servergrpc.StartGRPCServer(wctx, ctx.Logger.With("module", "grpc-server"),
+			config.GRPC, grpcSrv)
+		if err != nil {
+			return err
+		}
+		defer grpcSrv.Stop()
+		// TODO confirm grpcweb is not need
+		/*if config.GRPCWeb.Enable {
+			grpcWebSrv, err = servergrpc.StartGRPCWeb(grpcSrv, config.Config)
+			if err != nil {
+				ctx.Logger.Error("failed to start grpc-web http server: ", err)
+				return err
+			}
+			defer func() {
+				if err := grpcWebSrv.Close(); err != nil {
+					ctx.Logger.Error("failed to close grpc-web http server: ", err)
+				}
+			}()
+		}*/
 	}
 
 	var grpcClient *grpc.ClientConn
@@ -429,7 +468,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 			ctx.Logger.Debug("grpc client assigned to client context", "target", grpcAddress)
 		}
 
-		apiSrv = api.New(clientCtx, ctx.Logger.With("module", "api-server"))
+		apiSrv = api.New(clientCtx, ctx.Logger.With("module", "api-server"), grpcSrv)
 		app.RegisterAPIRoutes(apiSrv, config.API)
 		if config.Telemetry.Enabled {
 			apiSrv.SetTelemetry(metrics)
@@ -437,7 +476,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		errCh := make(chan error)
 
 		go func() {
-			if err := apiSrv.Start(config.Config); err != nil {
+			if err := apiSrv.Start(wctx, config.Config); err != nil {
 				errCh <- err
 			}
 		}()
@@ -446,7 +485,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		case err := <-errCh:
 			return err
 
-		case <-time.After(types.ServerStartTime): // assume server started successfully
+		case <-time.After(artelaflag.ServerStartTime): // assume server started successfully
 		}
 	}
 
@@ -482,32 +521,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		case err := <-errCh:
 			return err
 
-		case <-time.After(types.ServerStartTime): // assume server started successfully
-		}
-	}
-
-	var (
-		grpcSrv    *grpc.Server
-		grpcWebSrv *http.Server
-	)
-
-	if config.GRPC.Enable {
-		grpcSrv, err = servergrpc.StartGRPCServer(clientCtx, app, config.GRPC)
-		if err != nil {
-			return err
-		}
-		defer grpcSrv.Stop()
-		if config.GRPCWeb.Enable {
-			grpcWebSrv, err = servergrpc.StartGRPCWeb(grpcSrv, config.Config)
-			if err != nil {
-				ctx.Logger.Error("failed to start grpc-web http server: ", err)
-				return err
-			}
-			defer func() {
-				if err := grpcWebSrv.Close(); err != nil {
-					ctx.Logger.Error("failed to close grpc-web http server: ", err)
-				}
-			}()
+		case <-time.After(artelaflag.ServerStartTime): // assume server started successfully
 		}
 	}
 
@@ -515,10 +529,11 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 	// we do not need to start Rosetta or handle any Tendermint related processes.
 	if gRPCOnly {
 		// wait for signal capture and gracefully return
-		return sdkserver.WaitForQuitSignals()
+		return g.Wait()
 	}
 
-	var rosettaSrv crgserver.Server
+	// TODO confirm rosetta server is not needed
+	/*var rosettaSrv crgserver.Server
 	if config.Rosetta.Enable {
 		offlineMode := config.Rosetta.Offline
 
@@ -564,9 +579,9 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		case err := <-errCh:
 			return err
 
-		case <-time.After(types.ServerStartTime): // assume server started successfully
+		case <-time.After(artelaflag.ServerStartTime): // assume server started successfully
 		}
-	}
+	}*/
 
 	defer func() {
 		if tmNode != nil && tmNode.IsRunning() {
@@ -590,7 +605,15 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 	}()
 
 	// wait for signal capture and gracefully return
-	return sdkserver.WaitForQuitSignals()
+	return g.Wait()
+}
+
+func getCtx(svrCtx *sdkserver.Context, block bool) (*errgroup.Group, context.Context) {
+	ctx, cancelFn := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
+	// listen for quit signals so the calling parent process can gracefully exit
+	sdkserver.ListenForQuitSignals(g, block, cancelFn, svrCtx.Logger)
+	return g, ctx
 }
 
 func startTelemetry(cfg serverconfig.Config) (*telemetry.Metrics, error) {
@@ -602,6 +625,8 @@ func startTelemetry(cfg serverconfig.Config) (*telemetry.Metrics, error) {
 
 // wrapCPUProfile runs callback in a goroutine, then wait for quit signals.
 func wrapCPUProfile(ctx *sdkserver.Context, callback func() error) error {
+	g, _ := getCtx(ctx, false)
+
 	if cpuProfile := ctx.Viper.GetString(flagCPUProfile); cpuProfile != "" {
 		f, err := os.Create(cpuProfile)
 		if err != nil {
@@ -631,8 +656,8 @@ func wrapCPUProfile(ctx *sdkserver.Context, callback func() error) error {
 	case err := <-errCh:
 		return err
 
-	case <-time.After(types.ServerStartTime):
+	case <-time.After(artelaflag.ServerStartTime):
 	}
 
-	return sdkserver.WaitForQuitSignals()
+	return g.Wait()
 }

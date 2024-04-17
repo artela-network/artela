@@ -1,11 +1,15 @@
 package flags
 
 import (
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+const ServerStartTime = 5 * time.Second
 
 // Tendermint/cosmos-sdk full-node start flags
 const (
