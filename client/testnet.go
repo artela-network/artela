@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"cosmossdk.io/math"
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 	"github.com/artela-network/artela/ethereum/server/config"
@@ -312,12 +313,12 @@ func initTestnetFiles(
 
 		valTokens := sdk.TokensFromConsensusPower(100, types2.PowerReduction)
 		createValMsg, err := stakingtypes.NewMsgCreateValidator(
-			sdk.ValAddress(addr),
+			sdk.ValAddress(addr).String(),
 			valPubKeys[i],
 			sdk.NewCoin(types2.AttoArtela, valTokens),
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
-			stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.OneDec()),
-			sdk.OneInt(),
+			stakingtypes.NewCommissionRates(math.LegacyOneDec(), math.LegacyOneDec(), math.LegacyOneDec()),
+			math.OneInt(),
 		)
 		if err != nil {
 			return err
