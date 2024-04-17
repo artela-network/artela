@@ -204,13 +204,17 @@ func (b *BackendImpl) CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.Resu
 
 func (b *BackendImpl) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.ResultBlock, error) {
 	height := blockNum.Int64()
-	if height <= 0 {
+	if height < 0 {
 		// fetch the latest block number from the app state, more accurate than the tendermint block store state.
 		n, err := b.BlockNumber()
 		if err != nil {
 			return nil, err
 		}
 		height = int64(n) // #nosec G701 -- checked for int overflow already
+	} else if height == 0 {
+		// since in cosmos chain we don't actually have the block 0 (which is the genesis in ethereum),
+		// so we decide just return the earliest block (block 1) when the height is 0.
+		height = 1
 	}
 	resBlock, err := b.clientCtx.Client.Block(b.ctx, &height)
 	if err != nil {
