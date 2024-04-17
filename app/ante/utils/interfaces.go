@@ -10,7 +10,7 @@ import (
 // BankKeeper defines the exposed interface for using functionality of the bank keeper
 // in the context of the AnteHandler utils package.
 type BankKeeper interface {
-	GetBalance(ctx cosmos.Context, addr cosmos.AccAddress, denom string) cosmos.Coin
+	GetBalance(ctx context.Context, addr cosmos.AccAddress, denom string) cosmos.Coin
 }
 
 // DistributionKeeper defines the exposed interface for using functionality of the distribution
@@ -22,6 +22,6 @@ type DistributionKeeper interface {
 // StakingKeeper defines the exposed interface for using functionality of the staking keeper
 // in the context of the AnteHandler utils package.
 type StakingKeeper interface {
-	BondDenom(ctx cosmos.Context) string
-	IterateDelegations(ctx cosmos.Context, delegator cosmos.AccAddress, fn func(index int64, delegation stakingmodule.DelegationI) (stop bool))
+	BondDenom(ctx context.Context) string
+	IterateDelegations(ctx context.Context, delegator cosmos.AccAddress, fn func(index int64, delegation stakingmodule.DelegationI) (stop bool))
 }

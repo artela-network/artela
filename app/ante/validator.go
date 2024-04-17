@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
-	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -32,7 +32,7 @@ const (
 //
 // - multisig (Cosmos SDK multisigs)
 func SigVerificationGasConsumer(
-	meter cosmos.GasMeter, sig signing.SignatureV2, params authmodule.Params,
+	meter storetypes.GasMeter, sig signing.SignatureV2, params authmodule.Params,
 ) error {
 	pubkey := sig.PubKey
 	switch pubkey := pubkey.(type) {
@@ -61,7 +61,7 @@ func SigVerificationGasConsumer(
 
 // ConsumeMultisignatureVerificationGas consumes gas from a GasMeter for verifying a multisig pubkey signature
 func ConsumeMultisignatureVerificationGas(
-	meter cosmos.GasMeter, sig *signing.MultiSignatureData, pubkey multisig.PubKey,
+	meter storetypes.GasMeter, sig *signing.MultiSignatureData, pubkey multisig.PubKey,
 	params authmodule.Params, accSeq uint64,
 ) error {
 	size := sig.BitArray.Count()

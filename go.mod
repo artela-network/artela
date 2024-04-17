@@ -11,6 +11,7 @@ require (
 	cosmossdk.io/store v1.0.2
 	cosmossdk.io/x/evidence v0.1.0
 	cosmossdk.io/x/feegrant v0.1.0
+	cosmossdk.io/x/tx v0.13.1
 	cosmossdk.io/x/upgrade v0.1.0
 	github.com/BurntSushi/toml v1.2.1
 	github.com/artela-network/artela-evm v0.4.7-rc6
@@ -21,6 +22,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.4
 	github.com/cosmos/cosmos-sdk v0.50.5
 	github.com/cosmos/gogoproto v1.4.11
+	github.com/cosmos/ibc-go/modules/capability v1.0.0
 	github.com/cosmos/ibc-go/v8 v8.2.0
 	github.com/emirpasic/gods v1.18.1
 	github.com/ethereum/go-ethereum v1.12.0
@@ -42,7 +44,6 @@ require (
 
 require (
 	cosmossdk.io/collections v0.4.0 // indirect
-	cosmossdk.io/x/tx v0.13.1 // indirect
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/artela-network/aspect-runtime v0.4.7-rc6 // indirect
@@ -56,7 +57,6 @@ require (
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
 	github.com/cometbft/cometbft-db v0.9.1 // indirect
-	github.com/cosmos/ibc-go/modules/capability v1.0.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/emicklei/dot v1.6.1 // indirect
@@ -109,7 +109,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/storage v1.36.0 // indirect
-	cosmossdk.io/core v0.11.0 // indirect
+	cosmossdk.io/core v0.11.0
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
 	cosmossdk.io/log v1.3.1
 	cosmossdk.io/tools/rosetta v0.2.1
