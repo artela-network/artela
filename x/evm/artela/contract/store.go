@@ -2,18 +2,19 @@ package contract
 
 import (
 	"bytes"
-	"cosmossdk.io/errors"
 	"encoding/json"
 	"fmt"
-	artelasdkType "github.com/artela-network/aspect-core/types"
 	"math"
 	"math/big"
 	"sort"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"cosmossdk.io/errors"
+	artelasdkType "github.com/artela-network/aspect-core/types"
+
+	"cosmossdk.io/log"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"

@@ -117,6 +117,12 @@ func (AppModule) Name() string {
 	return types.ModuleName
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}
+
 // RegisterInvariants interface for registering invariants. Performs a no-op
 // as the fee market module doesn't expose invariants.
 func (am AppModule) RegisterInvariants(_ cosmos.InvariantRegistry) {}

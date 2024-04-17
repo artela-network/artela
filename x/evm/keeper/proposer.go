@@ -9,16 +9,22 @@ import (
 
 // GetProposerAddress returns the block proposer's validator operator address.
 func (k Keeper) GetProposerAddress(ctx cosmos.Context, proposerAddress cosmos.ConsAddress) (common.Address, error) {
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, GetProposerAddress(ctx, proposerAddress))
-	if !found {
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, GetProposerAddress(ctx, proposerAddress))
+	if err != nil {
 		return common.Address{}, errorsmod.Wrapf(
 			stakingmodule.ErrNoValidatorFound,
-			"failed to retrieve validator from block proposer address %s",
+			"failed to retrieve validator from block proposer address %s, %v",
 			proposerAddress.String(),
+			err,
 		)
 	}
 
-	return common.BytesToAddress(validator.GetOperator()), nil
+	addr, err := cosmos.ValAddressFromBech32(validator.GetOperator())
+	if err != nil {
+		panic(err)
+	}
+
+	return common.BytesToAddress(addr), nil
 }
 
 // GetProposerAddress returns current block proposer's address when provided proposer address is empty.

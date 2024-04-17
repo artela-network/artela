@@ -10,9 +10,9 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/store/prefix"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 )

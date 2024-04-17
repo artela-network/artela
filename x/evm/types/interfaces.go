@@ -1,6 +1,7 @@
 package types
 
 import (
+	"context"
 	"math/big"
 
 	cosmos "github.com/cosmos/cosmos-sdk/types"
@@ -14,30 +15,30 @@ import (
 
 // AccountKeeper defines the expected account keeper interface
 type AccountKeeper interface {
-	NewAccountWithAddress(ctx cosmos.Context, addr cosmos.AccAddress) authmodule.AccountI
+	NewAccountWithAddress(ctx context.Context, addr cosmos.AccAddress) cosmos.AccountI
 	GetModuleAddress(moduleName string) cosmos.AccAddress
-	GetAllAccounts(ctx cosmos.Context) (accounts []authmodule.AccountI)
-	IterateAccounts(ctx cosmos.Context, cb func(account authmodule.AccountI) bool)
-	GetSequence(cosmos.Context, cosmos.AccAddress) (uint64, error)
-	GetAccount(ctx cosmos.Context, addr cosmos.AccAddress) authmodule.AccountI
-	SetAccount(ctx cosmos.Context, account authmodule.AccountI)
-	RemoveAccount(ctx cosmos.Context, account authmodule.AccountI)
-	GetParams(ctx cosmos.Context) (params authmodule.Params)
+	GetAllAccounts(ctx context.Context) (accounts []cosmos.AccountI)
+	IterateAccounts(ctx context.Context, cb func(account cosmos.AccountI) bool)
+	GetSequence(context.Context, cosmos.AccAddress) (uint64, error)
+	GetAccount(ctx context.Context, addr cosmos.AccAddress) cosmos.AccountI
+	SetAccount(ctx context.Context, account cosmos.AccountI)
+	RemoveAccount(ctx context.Context, account cosmos.AccountI)
+	GetParams(ctx context.Context) (params authmodule.Params)
 }
 
 // BankKeeper defines the expected interface needed to retrieve account balances.
 type BankKeeper interface {
 	authmodule.BankKeeper
-	GetBalance(ctx cosmos.Context, addr cosmos.AccAddress, denom string) cosmos.Coin
-	SendCoinsFromModuleToAccount(ctx cosmos.Context, senderModule string, recipientAddr cosmos.AccAddress, amt cosmos.Coins) error
-	MintCoins(ctx cosmos.Context, moduleName string, amt cosmos.Coins) error
-	BurnCoins(ctx cosmos.Context, moduleName string, amt cosmos.Coins) error
+	GetBalance(ctx context.Context, addr cosmos.AccAddress, denom string) cosmos.Coin
+	SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr cosmos.AccAddress, amt cosmos.Coins) error
+	MintCoins(ctx context.Context, moduleName string, amt cosmos.Coins) error
+	BurnCoins(ctx context.Context, moduleName string, amt cosmos.Coins) error
 }
 
 // StakingKeeper returns the historical headers kept in store.
 type StakingKeeper interface {
-	GetHistoricalInfo(ctx cosmos.Context, height int64) (stakingmodule.HistoricalInfo, bool)
-	GetValidatorByConsAddr(ctx cosmos.Context, consAddr cosmos.ConsAddress) (validator stakingmodule.Validator, found bool)
+	GetHistoricalInfo(ctx context.Context, height int64) (stakingmodule.HistoricalInfo, error)
+	GetValidatorByConsAddr(ctx context.Context, consAddr cosmos.ConsAddress) (validator stakingmodule.Validator, err error)
 }
 
 // FeeKeeper

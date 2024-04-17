@@ -3,11 +3,12 @@ package provider
 import (
 	"context"
 	"errors"
+
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/artela-network/artela/x/evm/artela/contract"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	asptypes "github.com/artela-network/aspect-core/types"
-	"github.com/cometbft/cometbft/libs/log"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 

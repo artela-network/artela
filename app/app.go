@@ -8,6 +8,8 @@ import (
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/evidence"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	evidencemodule "cosmossdk.io/x/evidence/types"
@@ -15,17 +17,15 @@ import (
 	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"cosmossdk.io/x/upgrade"
-	upgradeclient "cosmossdk.io/x/upgrade/client"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgrademodule "cosmossdk.io/x/upgrade/types"
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
@@ -33,7 +33,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -50,9 +49,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	bankmodule "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	capabilitymodule "github.com/cosmos/cosmos-sdk/x/capability/types"
+	"github.com/cosmos/ibc-go/modules/capability"
+	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+	capabilitymodule "github.com/cosmos/ibc-go/modules/capability/types"
+
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusmodule "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -98,9 +100,6 @@ import (
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	transfermodule "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v8/modules/core/02-client"
-	ibcclientclient "github.com/cosmos/ibc-go/v8/modules/core/02-client/client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcporttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
@@ -133,6 +132,11 @@ const (
 	ExeName              = "artelad"
 )
 
+// var (
+// 	LegacyProposalHandler       = govclient.NewProposalHandler(upgradeclientcli.NewCmdSubmitUpgradeProposal)
+// 	LegacyCancelProposalHandler = govclient.NewProposalHandler(upgradeclientcli.NewCmdSubmitCancelUpgradeProposal)
+// )
+
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
 
 func getGovProposalHandlers() []govclient.ProposalHandler {
@@ -141,10 +145,10 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 
 	govProposalHandlers = append(govProposalHandlers,
 		paramsclient.ProposalHandler,
-		upgradeclient.LegacyProposalHandler,
-		upgradeclient.LegacyCancelProposalHandler,
-		ibcclientclient.UpdateClientProposalHandler,
-		ibcclientclient.UpgradeProposalHandler,
+		// LegacyProposalHandler,
+		// LegacyCancelProposalHandler,
+		// ibcclientclient.UpdateClientProposalHandler,
+		// ibcclientclient.UpgradeProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -307,7 +311,7 @@ func NewArtela(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
-	keys := cosmos.NewKVStoreKeys(
+	keys := storetypes.NewKVStoreKeys(
 		authmodule.StoreKey, authz.ModuleName, bankmodule.StoreKey, stakingmodule.StoreKey,
 		crisismodule.StoreKey, mintmodule.StoreKey, distrmodule.StoreKey, slashingmodule.StoreKey,
 		govmodule.StoreKey, paramsmodule.StoreKey, ibcexported.StoreKey, upgrademodule.StoreKey,
@@ -317,8 +321,8 @@ func NewArtela(
 		feemoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
-	tkeys := cosmos.NewTransientStoreKeys(paramsmodule.TStoreKey, evmmoduletypes.TransientKey, feemoduletypes.TransientKey)
-	memKeys := cosmos.NewMemoryStoreKeys(capabilitymodule.MemStoreKey)
+	tkeys := storetypes.NewTransientStoreKeys(paramsmodule.TStoreKey, evmmoduletypes.TransientKey, feemoduletypes.TransientKey)
+	memKeys := storetypes.NewMemoryStoreKeys(capabilitymodule.MemStoreKey)
 
 	app := &Artela{
 		BaseApp:           bApp,
@@ -340,8 +344,8 @@ func NewArtela(
 	)
 
 	// set the BaseApp's parameter store
-	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, keys[upgrademodule.StoreKey], authmodule.NewModuleAddress(govmodule.ModuleName).String())
-	bApp.SetParamStore(&app.ConsensusParamsKeeper)
+	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[consensusmodule.StoreKey]), authmodule.NewModuleAddress(govmodule.ModuleName).String(), runtime.EventService{})
+	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
 	// add capability keeper and ScopeToModule for ibc module
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(
@@ -363,15 +367,16 @@ func NewArtela(
 	// add keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec,
-		keys[authmodule.StoreKey],
+		runtime.NewKVStoreService(keys[authmodule.StoreKey]),
 		artela.ProtoAccount,
 		maccPerms,
+		authcodec.NewBech32Codec(cosmos.Bech32MainPrefix),
 		cosmos.Bech32PrefixAccAddr,
 		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
 	)
 
 	app.AuthzKeeper = authzkeeper.NewKeeper(
-		keys[authz.ModuleName],
+		runtime.NewKVStoreService(keys[authz.ModuleName]),
 		appCodec,
 		app.MsgServiceRouter(),
 		app.AccountKeeper,
@@ -379,29 +384,32 @@ func NewArtela(
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
-		keys[bankmodule.StoreKey],
+		runtime.NewKVStoreService(keys[bankmodule.StoreKey]),
 		app.AccountKeeper,
 		app.BlockedModuleAccountAddrs(),
 		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		logger,
 	)
 
 	app.StakingKeeper = stakingkeeper.NewKeeper(
 		appCodec,
-		keys[stakingmodule.StoreKey],
+		runtime.NewKVStoreService(keys[stakingmodule.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
 		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		authcodec.NewBech32Codec(cosmos.Bech32PrefixValAddr),
+		authcodec.NewBech32Codec(cosmos.Bech32PrefixConsAddr),
 	)
 
 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(
 		appCodec,
-		keys[feegrant.StoreKey],
+		runtime.NewKVStoreService(keys[feegrant.StoreKey]),
 		app.AccountKeeper,
 	)
 
 	app.MintKeeper = mintkeeper.NewKeeper(
 		appCodec,
-		keys[mintmodule.StoreKey],
+		runtime.NewKVStoreService(keys[mintmodule.StoreKey]),
 		app.StakingKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
@@ -411,7 +419,7 @@ func NewArtela(
 
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
-		keys[distrmodule.StoreKey],
+		runtime.NewKVStoreService(keys[distrmodule.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.StakingKeeper,
@@ -422,18 +430,19 @@ func NewArtela(
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,
 		cdc,
-		keys[slashingmodule.StoreKey],
+		runtime.NewKVStoreService(keys[slashingmodule.StoreKey]),
 		app.StakingKeeper,
 		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
 	)
 
 	app.CrisisKeeper = crisiskeeper.NewKeeper(
 		appCodec,
-		keys[crisismodule.StoreKey],
+		runtime.NewKVStoreService(keys[crisismodule.StoreKey]),
 		invCheckPeriod,
 		app.BankKeeper,
 		authmodule.FeeCollectorName,
 		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
+		app.AccountKeeper.AddressCodec(),
 	)
 
 	groupConfig := group.DefaultConfig()
@@ -451,7 +460,7 @@ func NewArtela(
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
-		keys[upgrademodule.StoreKey],
+		runtime.NewKVStoreService(keys[upgrademodule.StoreKey]),
 		appCodec,
 		homePath,
 		app.BaseApp,
@@ -460,11 +469,13 @@ func NewArtela(
 
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec, keys[ibcexported.StoreKey],
+		appCodec,
+		keys[ibcexported.StoreKey],
 		app.GetSubspace(ibcexported.ModuleName),
 		app.StakingKeeper,
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
+		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
 	)
 
 	// Create Transfer Keepers
@@ -474,10 +485,11 @@ func NewArtela(
 		app.GetSubspace(transfermodule.ModuleName),
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
 		scopedTransferKeeper,
+		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
@@ -487,17 +499,19 @@ func NewArtela(
 		app.GetSubspace(icahosttypes.SubModuleName),
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
 		scopedICAHostKeeper,
 		app.MsgServiceRouter(),
+		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
 	)
 	icaControllerKeeper := icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey],
 		app.GetSubspace(icacontrollertypes.SubModuleName),
 		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.PortKeeper,
 		scopedICAControllerKeeper, app.MsgServiceRouter(),
+		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
 	)
 	icaModule := ica.NewAppModule(&icaControllerKeeper, &app.ICAHostKeeper)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
@@ -505,9 +519,11 @@ func NewArtela(
 	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
-		keys[evidencemodule.StoreKey],
+		runtime.NewKVStoreService(keys[evidencemodule.StoreKey]),
 		app.StakingKeeper,
 		app.SlashingKeeper,
+		app.AccountKeeper.AddressCodec(),
+		runtime.ProvideCometInfoService(),
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
@@ -515,10 +531,11 @@ func NewArtela(
 	govConfig := govmodule.DefaultConfig()
 	govKeeper := govkeeper.NewKeeper(
 		appCodec,
-		keys[govmodule.StoreKey],
+		runtime.NewKVStoreService(keys[govmodule.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.StakingKeeper,
+		app.DistrKeeper,
 		app.MsgServiceRouter(),
 		govConfig,
 		authmodule.NewModuleAddress(govmodule.ModuleName).String(),
@@ -527,9 +544,9 @@ func NewArtela(
 	govRouter := govv1beta1.NewRouter()
 	govRouter.
 		AddRoute(govmodule.RouterKey, govv1beta1.ProposalHandler).
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(upgrademodule.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper))
+		// AddRoute(upgrademodule.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
+		// AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 	govKeeper.SetLegacyRouter(govRouter)
 
 	app.GovKeeper = *govKeeper.SetHooks(
@@ -592,22 +609,22 @@ func NewArtela(
 		genutil.NewAppModule(
 			app.AccountKeeper,
 			app.StakingKeeper,
-			app.BaseApp.DeliverTx,
+			app,
 			encodingConfig.TxConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authmodule.ModuleName)),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(bankmodule.ModuleName)),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
+		// capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		groupmodule.NewAppModule(appCodec, app.GroupKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govmodule.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(mintmodule.ModuleName)),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingmodule.ModuleName)),
+		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingmodule.ModuleName), app.interfaceRegistry),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrmodule.ModuleName)),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingmodule.ModuleName)),
-		upgrade.NewAppModule(app.UpgradeKeeper),
+		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
@@ -810,17 +827,17 @@ func (app *Artela) setPostHandler() {
 func (app *Artela) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
-func (app *Artela) BeginBlocker(ctx cosmos.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	return app.mm.BeginBlock(ctx, req)
+func (app *Artela) BeginBlocker(ctx cosmos.Context) (cosmos.BeginBlock, error) {
+	return app.mm.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
-func (app *Artela) EndBlocker(ctx cosmos.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
-	return app.mm.EndBlock(ctx, req)
+func (app *Artela) EndBlocker(ctx cosmos.Context) (cosmos.EndBlock, error) {
+	return app.mm.EndBlock(ctx)
 }
 
 // InitChainer application update at chain initialization
-func (app *Artela) InitChainer(ctx cosmos.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+func (app *Artela) InitChainer(ctx cosmos.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var genesisState GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -920,7 +937,7 @@ func (app *Artela) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICon
 	// Register new txs routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
-	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register node gRPC service for grpc-gateway.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
@@ -940,7 +957,7 @@ func (app *Artela) RegisterTxService(clientCtx client.Context) {
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *Artela) RegisterTendermintService(clientCtx client.Context) {
-	tmservice.RegisterTendermintService(
+	cmtservice.RegisterTendermintService(
 		clientCtx,
 		app.BaseApp.GRPCQueryRouter(),
 		app.interfaceRegistry,
@@ -949,8 +966,8 @@ func (app *Artela) RegisterTendermintService(clientCtx client.Context) {
 }
 
 // RegisterNodeService implements the Application.RegisterNodeService method.
-func (app *Artela) RegisterNodeService(clientCtx client.Context) {
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
+func (app *Artela) RegisterNodeService(clientCtx client.Context, svrCfg serverconfig.Config) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), svrCfg)
 }
 
 // initParamsKeeper init params keeper and its subspaces

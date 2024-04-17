@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	pruningtypes "cosmossdk.io/store/pruning/types"
 	"cosmossdk.io/tools/rosetta"
 	crgserver "cosmossdk.io/tools/rosetta/lib/server"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -36,7 +37,6 @@ import (
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
 	"github.com/cosmos/cosmos-sdk/server/types"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
@@ -157,13 +157,9 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 			err = wrapCPUProfile(serverCtx, func() error {
 				return startInProcess(serverCtx, clientCtx, appCreator)
 			})
-			errCode, ok := err.(sdkserver.ErrorCode)
-			if !ok {
-				return err
-			}
 
-			serverCtx.Logger.Debug(fmt.Sprintf("received quit signal: %d", errCode.Code))
-			return nil
+			serverCtx.Logger.Debug(fmt.Sprintf("received quit signal"))
+			return err
 		},
 	}
 
@@ -199,7 +195,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 	cmd.Flags().String(flagGRPCAddress, serverconfig.DefaultGRPCAddress, "the gRPC server address to listen on")
 
 	cmd.Flags().Bool(flagGRPCWebEnable, true, "Define if the gRPC-Web server should be enabled. (Note: gRPC must also be enabled)")
-	cmd.Flags().String(flagGRPCWebAddress, serverconfig.DefaultGRPCWebAddress, "The gRPC-Web server address to listen on")
+	cmd.Flags().String(flagGRPCWebAddress, "localhost:9090", "The gRPC-Web server address to listen on")
 
 	cmd.Flags().Uint64(FlagStateSyncSnapshotInterval, 0, "State sync snapshot interval")
 	cmd.Flags().Uint32(FlagStateSyncSnapshotKeepRecent, 2, "State sync snapshot to keep")

@@ -14,11 +14,13 @@ import (
 	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
 	"github.com/artela-network/artela/ethereum/eip712"
 
-	dbm "github.com/cometbft/cometbft-db"
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	snapshottypes "cosmossdk.io/store/snapshots/types"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
-	"github.com/cometbft/cometbft/libs/log"
 	tmtypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -27,9 +29,6 @@ import (
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -273,12 +272,7 @@ func (a appCreator) newApp(
 		chainID = appGenesis.ChainID
 	}
 
-	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
-	snapshotDB, err := dbm.NewDB("metadata", dbm.GoLevelDBBackend, snapshotDir)
-	if err != nil {
-		panic(err)
-	}
-	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
+	snapshotStore, err := sdkserver.GetSnapshotStore(appOpts)
 	if err != nil {
 		panic(err)
 	}

@@ -8,9 +8,9 @@ import (
 	"github.com/artela-network/artela/x/evm/states"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/artela-network/artela-evm/vm"
-	"github.com/cometbft/cometbft/libs/log"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"

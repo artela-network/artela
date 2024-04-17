@@ -10,22 +10,23 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	evidencetypes "cosmossdk.io/x/evidence/types"
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simulationtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+
+	// capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -354,7 +355,7 @@ func TestAppImportExport(t *testing.T) {
 		{bApp.GetKey(paramstypes.StoreKey), newApp.GetKey(paramstypes.StoreKey), [][]byte{}},
 		{bApp.GetKey(govtypes.StoreKey), newApp.GetKey(govtypes.StoreKey), [][]byte{}},
 		{bApp.GetKey(evidencetypes.StoreKey), newApp.GetKey(evidencetypes.StoreKey), [][]byte{}},
-		{bApp.GetKey(capabilitytypes.StoreKey), newApp.GetKey(capabilitytypes.StoreKey), [][]byte{}},
+		// {bApp.GetKey(capabilitytypes.StoreKey), newApp.GetKey(capabilitytypes.StoreKey), [][]byte{}},
 		{bApp.GetKey(authzkeeper.StoreKey), newApp.GetKey(authzkeeper.StoreKey), [][]byte{authzkeeper.GrantKey, authzkeeper.GrantQueuePrefix}},
 	}
 

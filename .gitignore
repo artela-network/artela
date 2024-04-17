@@ -24,4 +24,5 @@ go.work
 .idea
 build
 _testnet
+_testnet2
 .vscode

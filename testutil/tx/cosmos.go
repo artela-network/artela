@@ -18,7 +18,7 @@ import (
 
 var (
 	feeAmt     = math.Pow10(16)
-	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(uint64(feeAmt))) // 0.01 Artela
+	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(int64(feeAmt))) // 0.01 Artela
 )
 
 // CosmosTxArgs contains the params to create a cosmos txs

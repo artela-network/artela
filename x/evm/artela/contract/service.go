@@ -4,9 +4,9 @@ import (
 	"math/big"
 	"sort"
 
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	artela "github.com/artela-network/aspect-core/types"
-	"github.com/cometbft/cometbft/libs/log"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"

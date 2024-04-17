@@ -11,9 +11,9 @@ import (
 	"github.com/cometbft/cometbft/libs/strings"
 
 	errorsmod "cosmossdk.io/errors"
+	pruningtypes "cosmossdk.io/store/pruning/types"
 	clientflags "github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/config"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -213,8 +213,8 @@ func DefaultServerConfig() *config.Config {
 			IndexEvents:         make([]string, 0),
 			IAVLCacheSize:       781250,
 			IAVLDisableFastNode: false,
-			IAVLLazyLoading:     false,
-			AppDBBackend:        "",
+			// IAVLLazyLoading:     false,
+			AppDBBackend: "",
 		},
 		Telemetry: telemetry.Config{
 			Enabled:      false,
