@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"cosmossdk.io/core/address"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	authmodule "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -24,6 +25,7 @@ type AccountKeeper interface {
 	SetAccount(ctx context.Context, account cosmos.AccountI)
 	RemoveAccount(ctx context.Context, account cosmos.AccountI)
 	GetParams(ctx context.Context) (params authmodule.Params)
+	AddressCodec() address.Codec
 }
 
 // BankKeeper defines the expected interface needed to retrieve account balances.

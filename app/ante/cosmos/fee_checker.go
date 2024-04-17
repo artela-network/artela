@@ -5,6 +5,7 @@ import (
 	"math"
 
 	errorsmod "cosmossdk.io/errors"
+	cosmosmath "cosmossdk.io/math"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -189,7 +190,7 @@ func checkFeeCoinsAgainstMinGasPrices(ctx cosmos.Context, feeCoins cosmos.Coins,
 
 	// Determine the required fees by multiplying each required minimum gas
 	// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
-	glDec := cosmos.NewDec(int64(gas)) // #nosec G701 -- gosec warning about integer overflow is not relevant here
+	glDec := cosmosmath.LegacyNewDec(int64(gas)) // #nosec G701 -- gosec warning about integer overflow is not relevant here
 	for i, gp := range minGasPrices {
 		fee := gp.Amount.Mul(glDec)
 		requiredFees[i] = cosmos.NewCoin(gp.Denom, fee.Ceil().RoundInt())

@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -20,7 +21,7 @@ type (
 
 var (
 	// DefaultMinGasMultiplier is 0.5 or 50%
-	DefaultMinGasMultiplier = cosmos.NewDecWithPrec(50, 2)
+	DefaultMinGasMultiplier = math.LegacyNewDecWithPrec(50, 2)
 	// DefaultMinGasPrice is 0 (i.e disabled)
 	DefaultMinGasPrice = cosmos.ZeroDec()
 	// DefaultEnableHeight is 0 (i.e disabled)

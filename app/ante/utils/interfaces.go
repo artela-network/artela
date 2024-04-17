@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"context"
+
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	stakingmodule "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -14,7 +16,7 @@ type BankKeeper interface {
 // DistributionKeeper defines the exposed interface for using functionality of the distribution
 // keeper in the context of the AnteHandler utils package.
 type DistributionKeeper interface {
-	WithdrawDelegationRewards(ctx cosmos.Context, delAddr cosmos.AccAddress, valAddr cosmos.ValAddress) (cosmos.Coins, error)
+	WithdrawDelegationRewards(ctx context.Context, delAddr cosmos.AccAddress, valAddr cosmos.ValAddress) (cosmos.Coins, error)
 }
 
 // StakingKeeper defines the exposed interface for using functionality of the staking keeper

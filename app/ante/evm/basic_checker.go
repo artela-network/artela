@@ -309,7 +309,7 @@ func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, sim
 			BaseFee:     baseFee,
 		}
 
-		stateDB := states.New(ctx, ctd.evmKeeper, states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes())))
+		stateDB := states.New(ctx, ctd.evmKeeper, states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash())))
 		evm := ctd.evmKeeper.NewEVM(ctx, coreMsg, cfg, txs.NewNoOpTracer(), stateDB)
 
 		// check that caller has enough balance to cover asset transfer for **topmost** call

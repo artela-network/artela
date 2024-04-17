@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -91,10 +92,10 @@ func (empd EthMinGasPriceDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx,
 			feeAmt = ethMsg.GetEffectiveFee(baseFee)
 		}
 
-		gasLimit := cosmos.NewDecFromBigInt(new(big.Int).SetUint64(ethMsg.GetGas()))
+		gasLimit := math.LegacyNewDecFromBigInt(new(big.Int).SetUint64(ethMsg.GetGas()))
 
 		requiredFee := minGasPrice.Mul(gasLimit)
-		fee := cosmos.NewDecFromBigInt(feeAmt)
+		fee := math.LegacyNewDecFromBigInt(feeAmt)
 
 		if fee.LT(requiredFee) {
 			return ctx, errorsmod.Wrapf(
@@ -134,8 +135,8 @@ func (mfd EthMempoolFeeDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, s
 			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
 		}
 
-		fee := cosmos.NewDecFromBigInt(ethMsg.GetFee())
-		gasLimit := cosmos.NewDecFromBigInt(new(big.Int).SetUint64(ethMsg.GetGas()))
+		fee := math.LegacyNewDecFromBigInt(ethMsg.GetFee())
+		gasLimit := math.LegacyNewDecFromBigInt(new(big.Int).SetUint64(ethMsg.GetGas()))
 		requiredFee := minGasPrice.Mul(gasLimit)
 
 		if fee.LT(requiredFee) {

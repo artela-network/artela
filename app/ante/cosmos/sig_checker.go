@@ -85,7 +85,14 @@ func (svd LegacyEip712SigVerificationDecorator) AnteHandle(ctx cosmos.Context,
 		return ctx, err
 	}
 
-	signerAddrs := sigTx.GetSigners()
+	signerAddrs, err := sigTx.GetSigners()
+	if err != nil {
+		return ctx, errorsmod.Wrapf(
+			errortypes.ErrTooManySignatures,
+			"failed to get signers from signed tx, %v",
+			err,
+		)
+	}
 
 	// EIP712 allows just one signature
 	if len(sigs) != 1 {
@@ -188,7 +195,7 @@ func VerifySignature(
 				Amount: tx.GetFee(),
 				Gas:    tx.GetGas(),
 			},
-			msgs, tx.GetMemo(), tx.GetTip(),
+			msgs, tx.GetMemo(),
 		)
 
 		signerChainID, err := artela.ParseChainID(signerData.ChainID)

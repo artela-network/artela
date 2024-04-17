@@ -8,6 +8,7 @@ import (
 	"github.com/artela-network/artela/x/fee/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
@@ -63,8 +64,8 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) {
 	// gasWanted = max(gasWanted * MinGasMultiplier, gasUsed)
 	// this will be keep BaseFee protected from un-penalized manipulation
 	minGasMultiplier := k.GetParams(ctx).MinGasMultiplier
-	limitedGasWanted := cosmos.NewDec(gasWanted.Int64()).Mul(minGasMultiplier)
-	updatedGasWanted := cosmos.MaxDec(limitedGasWanted, cosmos.NewDec(gasUsed.Int64())).TruncateInt().Uint64()
+	limitedGasWanted := math.LegacyNewDec(gasWanted.Int64()).Mul(minGasMultiplier)
+	updatedGasWanted := math.LegacyMaxDec(limitedGasWanted, math.LegacyNewDec(gasUsed.Int64())).TruncateInt().Uint64()
 	k.SetBlockGasWanted(ctx, updatedGasWanted)
 
 	defer func() {
