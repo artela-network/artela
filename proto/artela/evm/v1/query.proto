@@ -299,7 +299,7 @@ message QueryBaseFeeRequest {}
 // QueryBaseFeeResponse returns the EIP1559 base fee.
 message QueryBaseFeeResponse {
   // base_fee is the EIP1559 base fee
-  string base_fee = 1 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int"];
+  string base_fee = 1 [(gogoproto.customtype) = "cosmossdk_io_math.Int"];
 }
 
 // GetSenderResponse returns the from address of tx.
