@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	txTypes "github.com/cosmos/cosmos-sdk/types/tx"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
@@ -127,17 +127,17 @@ func decodeProtobufSignDoc(signDocBytes []byte) (apitypes.TypedData, error) {
 		return apitypes.TypedData{}, err
 	}
 
-	signDoc := &txTypes.SignDoc{}
+	signDoc := &txtypes.SignDoc{}
 	if err := signDoc.Unmarshal(signDocBytes); err != nil {
 		return apitypes.TypedData{}, err
 	}
 
-	authInfo := &txTypes.AuthInfo{}
+	authInfo := &txtypes.AuthInfo{}
 	if err := authInfo.Unmarshal(signDoc.AuthInfoBytes); err != nil {
 		return apitypes.TypedData{}, err
 	}
 
-	body := &txTypes.TxBody{}
+	body := &txtypes.TxBody{}
 	if err := body.Unmarshal(signDoc.BodyBytes); err != nil {
 		return apitypes.TypedData{}, err
 	}

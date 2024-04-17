@@ -12,7 +12,6 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	pruningtypes "cosmossdk.io/store/pruning/types"
-	clientflags "github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
@@ -234,7 +233,7 @@ func DefaultServerConfig() *config.Config {
 			MaxRecvMsgSize: config.DefaultGRPCMaxRecvMsgSize,
 			MaxSendMsgSize: config.DefaultGRPCMaxSendMsgSize,
 		},
-		Rosetta: config.RosettaConfig{
+		/*Rosetta: config.RosettaConfig{
 			Enable:              false,
 			Address:             ":8080",
 			Blockchain:          "app",
@@ -244,16 +243,16 @@ func DefaultServerConfig() *config.Config {
 			EnableFeeSuggestion: false,
 			GasToSuggest:        clientflags.DefaultGasLimit,
 			DenomToSuggest:      "uatom",
-		},
+		},*/
 		GRPCWeb: config.GRPCWebConfig{
-			Enable:  true,
-			Address: config.DefaultGRPCWebAddress,
+			Enable: true,
+			// Address: config.DefaultGRPCWebAddress,
 		},
 		StateSync: config.StateSyncConfig{
 			SnapshotInterval:   2000, // creating snapshot every 2000 blocks
 			SnapshotKeepRecent: 5,
 		},
-		Store: config.StoreConfig{
+		/*Store: config.StoreConfig{
 			Streamers: []string{},
 		},
 		Streamers: config.StreamersConfig{
@@ -266,7 +265,7 @@ func DefaultServerConfig() *config.Config {
 				// in face of system crash.
 				Fsync: false,
 			},
-		},
+		},*/
 		Mempool: config.MempoolConfig{
 			MaxTxs: 5_000,
 		},

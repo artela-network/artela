@@ -324,7 +324,7 @@ func (b *BackendImpl) GetStorageAt(address common.Address, key string, blockNrOr
 
 // BlockBloom query block bloom filter from block results
 func (b *BackendImpl) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.Bloom, error) {
-	for _, event := range blockRes.EndBlockEvents {
+	for _, event := range blockRes.FinalizeBlockEvents { // TODO check is FinalizeBlockEvents ok, which is EndBlockEvents before
 		if event.Type != evmtypes.EventTypeBlockBloom {
 			continue
 		}

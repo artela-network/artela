@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"cosmossdk.io/math"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -332,8 +333,8 @@ func (b *BackendImpl) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int
 		// we can't tell if it's london HF not enabled or the state is pruned,
 		// in either case, we'll fallback to parsing from begin blocker event,
 		// faster to iterate reversely
-		for i := len(blockRes.BeginBlockEvents) - 1; i >= 0; i-- {
-			evt := blockRes.BeginBlockEvents[i]
+		for i := len(blockRes.FinalizeBlockEvents) - 1; i >= 0; i-- {
+			evt := blockRes.FinalizeBlockEvents[i] // TODO check is FinalizeBlockEvents ok, which is EndBlockEvents before
 			if evt.Type == feetypes.EventTypeFee && len(evt.Attributes) > 0 {
 				baseFee, err := strconv.ParseInt(string(evt.Attributes[0].Value), 10, 64)
 				if err == nil {
@@ -402,10 +403,10 @@ func (b *BackendImpl) RPCMinGasPrice() int64 {
 }
 
 // GlobalMinGasPrice returns MinGasPrice param from FeeMarket
-func (b *BackendImpl) GlobalMinGasPrice() (sdktypes.Dec, error) {
+func (b *BackendImpl) GlobalMinGasPrice() (math.LegacyDec, error) {
 	res, err := b.queryClient.FeeMarket.Params(b.ctx, &feetypes.QueryParamsRequest{})
 	if err != nil {
-		return sdktypes.ZeroDec(), err
+		return math.LegacyZeroDec(), err
 	}
 	return res.Params.MinGasPrice, nil
 }
