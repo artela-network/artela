@@ -69,7 +69,22 @@ func ClaimSufficientStakingRewards(
 		cacheCtx,
 		addr,
 		func(_ int64, delegation stakingmodule.DelegationI) (stop bool) {
-			reward, err = distributionKeeper.WithdrawDelegationRewards(cacheCtx, addr, delegation.GetValidatorAddr())
+			/*codec := authcodec.NewBech32Codec(cosmos.Bech32PrefixValAddr)
+
+			valAddr, err := codec.StringToBytes(delegation.GetValidatorAddr())
+			if err != nil {
+				return true
+			}*/
+			// TODO need a test
+			delAddr, err := cosmos.AccAddressFromBech32(delegation.GetDelegatorAddr())
+			if err != nil {
+				panic(err)
+			}
+			valAddr, err := cosmos.ValAddressFromBech32(delegation.GetValidatorAddr())
+			if err != nil {
+				panic(err)
+			}
+			reward, err = distributionKeeper.WithdrawDelegationRewards(cacheCtx, delAddr, valAddr)
 			if err != nil {
 				return true
 			}
