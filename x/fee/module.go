@@ -158,7 +158,7 @@ func (am AppModule) ExportGenesis(ctx cosmos.Context, cdc codec.JSONCodec) json.
 }
 
 // RegisterStoreDecoder registers a decoder for fee market module's types
-func (am AppModule) RegisterStoreDecoder(_ cosmos.StoreDecoderRegistry) {}
+func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {}
 
 // ProposalContents doesn't return any content functions for governance proposals.
 // nolint
@@ -176,13 +176,13 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 }
 
 // BeginBlock returns the begin block for the fee market module.
-func (am AppModule) BeginBlock(ctx cosmos.Context, req abci.RequestBeginBlock) {
-	BeginBlock(ctx, am.keeper, req)
+func (am AppModule) BeginBlock(ctx cosmos.Context) {
+	BeginBlock(ctx, am.keeper)
 }
 
 // EndBlock returns the end blocker for the fee market module. It returns no validator
 // updates.
-func (am AppModule) EndBlock(ctx cosmos.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	EndBlock(ctx, am.keeper, req)
+func (am AppModule) EndBlock(ctx cosmos.Context) []abci.ValidatorUpdate {
+	EndBlock(ctx, am.keeper)
 	return []abci.ValidatorUpdate{}
 }

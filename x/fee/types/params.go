@@ -23,7 +23,7 @@ var (
 	// DefaultMinGasMultiplier is 0.5 or 50%
 	DefaultMinGasMultiplier = math.LegacyNewDecWithPrec(50, 2)
 	// DefaultMinGasPrice is 0 (i.e disabled)
-	DefaultMinGasPrice = cosmos.ZeroDec()
+	DefaultMinGasPrice = math.LegacyZeroDec()
 	// DefaultEnableHeight is 0 (i.e disabled)
 	DefaultEnableHeight = int64(0)
 	// DefaultNoBaseFee is false
@@ -67,8 +67,8 @@ func NewParams(
 	elasticityMultiplier uint32,
 	baseFee uint64,
 	enableHeight int64,
-	minGasPrice cosmos.Dec,
-	minGasPriceMultiplier cosmos.Dec,
+	minGasPrice math.LegacyDec,
+	minGasPriceMultiplier math.LegacyDec,
 ) Params {
 	return Params{
 		NoBaseFee:                noBaseFee,
@@ -128,7 +128,7 @@ func (p *Params) IsBaseFeeEnabled(height int64) bool {
 }
 
 func validateMinGasPrice(i interface{}) error {
-	v, ok := i.(cosmos.Dec)
+	v, ok := i.(math.LegacyDec)
 
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -193,7 +193,7 @@ func validateEnableHeight(i interface{}) error {
 }
 
 func validateMinGasMultiplier(i interface{}) error {
-	v, ok := i.(cosmos.Dec)
+	v, ok := i.(math.LegacyDec)
 
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -207,7 +207,7 @@ func validateMinGasMultiplier(i interface{}) error {
 		return fmt.Errorf("value cannot be negative: %s", v)
 	}
 
-	if v.GT(cosmos.OneDec()) {
+	if v.GT(math.LegacyOneDec()) {
 		return fmt.Errorf("value cannot be greater than 1: %s", v)
 	}
 	return nil

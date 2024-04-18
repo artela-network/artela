@@ -6,10 +6,10 @@ import (
 
 	"github.com/artela-network/artela/x/evm/types"
 
+	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
 
 	errorsmod "cosmossdk.io/errors"
-	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
@@ -47,23 +47,23 @@ func (cc ChainConfig) EthereumConfig(chainID *big.Int) *params.ChainConfig {
 
 // DefaultChainConfig returns default evm parameters.
 func DefaultChainConfig() ChainConfig {
-	homesteadBlock := cosmos.ZeroInt()
-	daoForkBlock := cosmos.ZeroInt()
-	eip150Block := cosmos.ZeroInt()
-	eip155Block := cosmos.ZeroInt()
-	eip158Block := cosmos.ZeroInt()
-	byzantiumBlock := cosmos.ZeroInt()
-	constantinopleBlock := cosmos.ZeroInt()
-	petersburgBlock := cosmos.ZeroInt()
-	istanbulBlock := cosmos.ZeroInt()
-	muirGlacierBlock := cosmos.ZeroInt()
-	berlinBlock := cosmos.ZeroInt()
-	londonBlock := cosmos.ZeroInt()
-	arrowGlacierBlock := cosmos.ZeroInt()
-	grayGlacierBlock := cosmos.ZeroInt()
-	mergeNetsplitBlock := cosmos.ZeroInt()
-	shanghaiBlock := cosmos.ZeroInt()
-	cancunBlock := cosmos.ZeroInt()
+	homesteadBlock := math.ZeroInt()
+	daoForkBlock := math.ZeroInt()
+	eip150Block := math.ZeroInt()
+	eip155Block := math.ZeroInt()
+	eip158Block := math.ZeroInt()
+	byzantiumBlock := math.ZeroInt()
+	constantinopleBlock := math.ZeroInt()
+	petersburgBlock := math.ZeroInt()
+	istanbulBlock := math.ZeroInt()
+	muirGlacierBlock := math.ZeroInt()
+	berlinBlock := math.ZeroInt()
+	londonBlock := math.ZeroInt()
+	arrowGlacierBlock := math.ZeroInt()
+	grayGlacierBlock := math.ZeroInt()
+	mergeNetsplitBlock := math.ZeroInt()
+	shanghaiBlock := math.ZeroInt()
+	cancunBlock := math.ZeroInt()
 
 	return ChainConfig{
 		HomesteadBlock:      &homesteadBlock,

@@ -21,6 +21,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -406,11 +407,11 @@ func (k Keeper) getBaseFee(ctx cosmos.Context, london bool) *big.Int {
 }
 
 // GetMinGasMultiplier returns the MinGasMultiplier param from the fee market module
-func (k Keeper) GetMinGasMultiplier(ctx cosmos.Context) cosmos.Dec {
+func (k Keeper) GetMinGasMultiplier(ctx cosmos.Context) math.LegacyDec {
 	feeParams := k.feeKeeper.GetParams(ctx)
 	if feeParams.MinGasMultiplier.IsNil() {
 		// in case we are executing eth_call on a legacy block, returns a zero value.
-		return cosmos.ZeroDec()
+		return math.LegacyZeroDec()
 	}
 	return feeParams.MinGasMultiplier
 }

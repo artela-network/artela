@@ -6,6 +6,7 @@ import (
 
 	"github.com/artela-network/artela/x/evm/keeper"
 
+	storetypes "cosmossdk.io/store/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 
 	ethereum "github.com/ethereum/go-ethereum/core/types"
@@ -30,7 +31,7 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	k.BlockContext = nil
 
 	// Gas costs are handled within msg handler so costs should be ignored
-	infCtx := ctx.WithGasMeter(cosmos.NewInfiniteGasMeter())
+	infCtx := ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 
 	bloom := ethereum.BytesToBloom(k.GetBlockBloomTransient(infCtx).Bytes())
 	k.EmitBlockBloomEvent(infCtx, bloom)

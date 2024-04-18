@@ -10,7 +10,6 @@ import (
 	"github.com/artela-network/artela/x/evm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
@@ -74,7 +73,7 @@ func InitGenesis(
 // ExportGenesis exports genesis states of the EVM module
 func ExportGenesis(ctx cosmos.Context, k *keeper.Keeper, ak types.AccountKeeper) *support.GenesisState {
 	var ethGenAccounts []support.GenesisAccount
-	ak.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
+	ak.IterateAccounts(ctx, func(account cosmos.AccountI) bool {
 		ethAccount, ok := account.(artela.EthAccountI)
 		if !ok {
 			// ignore non EthAccounts

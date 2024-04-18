@@ -1,8 +1,6 @@
 package datactx
 
 import (
-	"strings"
-
 	"github.com/artela-network/aspect-core/context"
 	artelatypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -198,11 +196,11 @@ func (c *EnvContext) ValueLoader(key string) ContextLoader {
 			return nil, nil
 		}
 
-		if strings.HasPrefix(key, "env.consensusParams.") && c.ctx.CosmosContext().ConsensusParams() == nil {
-			// when it is in an eth call, we are not able to return env.consensusParams.* values
-			return nil, nil
+		// if strings.HasPrefix(key, "env.consensusParams.") && c.ctx.CosmosContext().ConsensusParams() == nil {
+		// 	// when it is in an eth call, we are not able to return env.consensusParams.* values
+		// 	return nil, nil
 
-		}
+		// }
 
 		return proto.Marshal(c.envContentLoaders[key](c.ctx.CosmosContext(), c.ctx.EthTxContext()))
 	}

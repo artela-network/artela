@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/artela-network/artela/x/fee/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -45,7 +46,7 @@ func (k Keeper) CalculateBaseFee(ctx cosmos.Context) *big.Int {
 	gasLimit := new(big.Int).SetUint64(math.MaxUint64)
 
 	// NOTE: a MaxGas equal to -1 means that block gas is unlimited
-	if consParams != nil && consParams.Block.MaxGas > -1 {
+	if consParams.Block.MaxGas > -1 {
 		gasLimit = big.NewInt(consParams.Block.MaxGas)
 	}
 
@@ -147,7 +148,7 @@ func (k Keeper) GetBaseFee(ctx cosmos.Context) *big.Int {
 // SetBaseFee set's the base fee in the store
 func (k Keeper) SetBaseFee(ctx cosmos.Context, baseFee *big.Int) {
 	params := k.GetParams(ctx)
-	params.BaseFee = cosmos.NewIntFromBigInt(baseFee)
+	params.BaseFee = sdkmath.NewIntFromBigInt(baseFee)
 	err := k.SetParams(ctx, params)
 	if err != nil {
 		return

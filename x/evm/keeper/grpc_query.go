@@ -110,9 +110,9 @@ func (k Keeper) ValidatorAccount(c context.Context, req *txs.QueryValidatorAccou
 
 	ctx := cosmos.UnwrapSDKContext(c)
 
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-	if !found {
-		return nil, fmt.Errorf("validator not found for %s", consAddr.String())
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	if err != nil {
+		return nil, fmt.Errorf("validator not found for %s", err.Error())
 	}
 
 	accAddr := cosmos.AccAddress(validator.GetOperator())
@@ -305,7 +305,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	} else {
 		// Query block gas limit
 		params := ctx.ConsensusParams()
-		if params != nil && params.Block != nil && params.Block.MaxGas > 0 {
+		if params.Block != nil && params.Block.MaxGas > 0 {
 			hi = uint64(params.Block.MaxGas)
 		} else {
 			hi = req.GasCap
@@ -335,7 +335,7 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	nonce := k.GetNonce(ctx, args.GetFrom())
 	args.Nonce = (*hexutil.Uint64)(&nonce)
 
-	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 
 	// convert the txs args to an ethereum message
 	msg, err := args.ToMessage(req.GasCap, cfg.BaseFee)
@@ -421,7 +421,7 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 	}
 	signer := ethereum.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()), uint64(ctx.BlockTime().Unix()))
 
-	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 	for i, tx := range req.Predecessors {
 		ethTx := tx.AsTransaction()
 
@@ -511,7 +511,7 @@ func (k Keeper) TraceBlock(c context.Context, req *txs.QueryTraceBlockRequest) (
 	txsLength := len(req.Txs)
 	results := make([]*txs.TxTraceResult, 0, txsLength)
 
-	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := states.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 	for i, tx := range req.Txs {
 		result := txs.TxTraceResult{}
 		ethTx := tx.AsTransaction()

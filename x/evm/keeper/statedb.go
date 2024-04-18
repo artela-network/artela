@@ -11,6 +11,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
@@ -167,7 +168,7 @@ func (k *Keeper) ForEachStorage(ctx cosmos.Context, addr common.Address, cb func
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.AddressStoragePrefix(addr)
 
-	iterator := cosmos.KVStorePrefixIterator(store, prefix)
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {

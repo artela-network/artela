@@ -50,15 +50,15 @@ func NewArtelaProposalHandler(mp mempool.Mempool, txVerifier ProposalTxVerifier)
 // non-default handlers.
 //
 // - If no mempool is set or if the mempool is a no-op mempool, the transactions
-// requested from Tendermint will simply be returned, which, by default, are in
+// requested from Tendermint will simply be returned, whic h, by default, are in
 // FIFO order.
 func (h ArtelaProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHandler {
-	return func(ctx sdk.Context, req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		// If the mempool is nil or NoOp we simply return the transactions
 		// requested from CometBFT, which, by default, should be in FIFO order.
 		_, isNoOp := h.mempool.(mempool.NoOpMempool)
 		if h.mempool == nil || isNoOp {
-			return abci.ResponsePrepareProposal{Txs: req.Txs}
+			return &abci.ResponsePrepareProposal{Txs: req.Txs}, nil
 		}
 
 		var (
@@ -79,7 +79,7 @@ func (h ArtelaProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHandl
 			if err != nil {
 				err := h.mempool.Remove(memTx)
 				if err != nil && !errors.Is(err, mempool.ErrTxNotFound) {
-					panic(err)
+					return nil, err
 				}
 			} else {
 				txSize := int64(len(bz))
@@ -95,7 +95,7 @@ func (h ArtelaProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHandl
 			iterator = iterator.Next()
 		}
 
-		return abci.ResponsePrepareProposal{Txs: selectedTxs}
+		return &abci.ResponsePrepareProposal{Txs: selectedTxs}, nil
 	}
 }
 
@@ -118,30 +118,30 @@ func (h ArtelaProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHandl
 		return NoOpProcessProposal()
 	}
 
-	return func(ctx sdk.Context, req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		for _, txBytes := range req.Txs {
 			_, err := h.txVerifier.ProcessProposalVerifyTx(txBytes)
 			if err != nil {
-				return abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, err
 			}
 		}
 
-		return abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}
+		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 	}
 }
 
 // NoOpPrepareProposal defines a no-op PrepareProposal handler. It will always
 // return the transactions sent by the client's request.
 func NoOpPrepareProposal() sdk.PrepareProposalHandler {
-	return func(_ sdk.Context, req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
-		return abci.ResponsePrepareProposal{Txs: req.Txs}
+	return func(_ sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
+		return &abci.ResponsePrepareProposal{Txs: req.Txs}, nil
 	}
 }
 
 // NoOpProcessProposal defines a no-op ProcessProposal Handler. It will always
 // return ACCEPT.
 func NoOpProcessProposal() sdk.ProcessProposalHandler {
-	return func(_ sdk.Context, _ abci.RequestProcessProposal) abci.ResponseProcessProposal {
-		return abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}
+	return func(_ sdk.Context, _ *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
+		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 	}
 }

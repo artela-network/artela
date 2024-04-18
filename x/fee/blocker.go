@@ -6,7 +6,6 @@ import (
 	"github.com/artela-network/artela/x/fee/keeper"
 
 	"github.com/artela-network/artela/x/fee/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 
 	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
@@ -15,7 +14,7 @@ import (
 )
 
 // BeginBlock updates base fee
-func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestBeginBlock) {
+func BeginBlock(ctx cosmos.Context, k *keeper.Keeper) {
 	baseFee := k.CalculateBaseFee(ctx)
 
 	// return immediately if base fee is nil
@@ -41,7 +40,7 @@ func BeginBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestBeginBlock) 
 // EndBlock update block gas wanted.
 // The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
-func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) {
+func EndBlock(ctx cosmos.Context, k *keeper.Keeper) {
 	if ctx.BlockGasMeter() == nil {
 		k.Logger(ctx).Error("block gas meter is nil when setting block gas wanted")
 		return
