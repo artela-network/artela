@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 
 	"cosmossdk.io/log"
@@ -323,8 +322,8 @@ func NewEthBlockContextFromHeight(height int64) *EthBlockContext {
 	return &EthBlockContext{&ethtypes.Header{Number: big.NewInt(height)}}
 }
 
-func NewEthBlockContextFromABCIBeginBlockReq(req abci.RequestBeginBlock) *EthBlockContext {
-	txHash := ethtypes.EmptyTxsHash
+func NewEthBlockContextFromABCIBeginBlockReq() *EthBlockContext {
+	/*txHash := ethtypes.EmptyTxsHash
 	if len(req.Header.DataHash) != 0 {
 		txHash = common.BytesToHash(req.Header.DataHash)
 	}
@@ -335,10 +334,10 @@ func NewEthBlockContextFromABCIBeginBlockReq(req abci.RequestBeginBlock) *EthBlo
 		TxHash:     txHash,
 		Number:     big.NewInt(req.Header.Height),
 		Time:       uint64(req.Header.Time.UTC().Unix()),
-	}
+	}*/
 
 	return &EthBlockContext{
-		blockHeader: blockHeader,
+		// blockHeader: blockHeader,
 	}
 }
 

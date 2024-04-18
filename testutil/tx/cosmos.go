@@ -144,4 +144,4 @@ func (InvalidTx) GetMsgs() []sdk.Msg { return []sdk.Msg{nil} }
 
 func (InvalidTx) ValidateBasic() error { return nil }
 
-func (InvalidTx) GetMsgsV2() ([]protov2.Message, error)
+func (InvalidTx) GetMsgsV2() ([]protov2.Message, error) { return []protov2.Message{nil}, nil }
