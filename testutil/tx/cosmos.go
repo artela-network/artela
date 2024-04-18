@@ -1,6 +1,7 @@
 package tx
 
 import (
+	"context"
 	"math"
 
 	"github.com/artela-network/artela/ethereum/utils"
@@ -12,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	protov2 "google.golang.org/protobuf/proto"
 
 	"github.com/artela-network/artela/app"
 )
@@ -93,7 +95,7 @@ func signCosmosTx(
 	sigV2 := signing.SignatureV2{
 		PubKey: args.Priv.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  args.TxCfg.SignModeHandler().DefaultMode(),
+			SignMode:  signing.SignMode_SIGN_MODE_TEXTUAL,
 			Signature: nil,
 		},
 		Sequence: seq,
@@ -113,7 +115,8 @@ func signCosmosTx(
 		Sequence:      seq,
 	}
 	sigV2, err = tx.SignWithPrivKey(
-		args.TxCfg.SignModeHandler().DefaultMode(),
+		context.Background(),
+		signing.SignMode_SIGN_MODE_TEXTUAL,
 		signerData,
 		txBuilder, args.Priv, args.TxCfg,
 		seq,
@@ -140,3 +143,5 @@ type InvalidTx struct{}
 func (InvalidTx) GetMsgs() []sdk.Msg { return []sdk.Msg{nil} }
 
 func (InvalidTx) ValidateBasic() error { return nil }
+
+func (InvalidTx) GetMsgsV2() ([]protov2.Message, error)
