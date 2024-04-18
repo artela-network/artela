@@ -14,7 +14,9 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
+	sdkcodec "github.com/cosmos/cosmos-sdk/codec"
 	codec "github.com/cosmos/cosmos-sdk/codec/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
@@ -26,6 +28,7 @@ import (
 	cmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 var (
@@ -65,6 +68,24 @@ func (m MsgUpdateParams) GetSignBytes() []byte {
 // ===============================================================
 //          		      MsgEthereumTx
 // ===============================================================
+
+func (msg MsgEthereumTx) GetMsgsV2() ([]protov2.Message, error) {
+	codec := sdkcodec.NewProtoCodec(codectypes.NewInterfaceRegistry())
+	// wrapperTx, ok := tx.(interfaces.ProtoTxProvider)
+	// if !ok {
+	// 	return nil, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid tx type %T, didn't implement interface protoTxProvider", tx)
+	// }
+	msgs := msg.GetMsgs()
+	msgsv2 := make([]protov2.Message, len(msgs))
+	for i, msg := range msgs {
+		_, msgv2, err := codec.GetMsgV1Signers(msg)
+		if err != nil {
+			return msgsv2, err
+		}
+		msgsv2[i] = msgv2
+	}
+	return msgsv2, nil
+}
 
 // AsTransaction creates an Ethereum Transaction type from the msg fields
 func (msg MsgEthereumTx) AsTransaction() *ethereum.Transaction {
