@@ -63,6 +63,7 @@ artelad add-genesis-account $KEY3 100000000000000000000000000uart --keyring-back
 artelad add-genesis-account $KEY4 100000000000000000000000000uart --keyring-backend $KEYRING
 echo artelad add-genesis-account $KEY 100000000000000000000000000uart --keyring-backend $KEYRING
 
+echo artelad gentx $KEY 1000000000000000000000uart --keyring-backend $KEYRING --chain-id $CHAINID
 # Sign genesis transaction
 artelad gentx $KEY 1000000000000000000000uart --keyring-backend $KEYRING --chain-id $CHAINID
 
