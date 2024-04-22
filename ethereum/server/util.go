@@ -107,8 +107,6 @@ func CreateJSONRPC(ctx *server.Context,
 	am := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false})
 	serv := ethrpc.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, am, nodeCfg.Logger)
 
-	wsSrv := ethrpc.NewWebsocketsServer(clientCtx, wsClient, config, nodeCfg.Logger)
-	wsSrv.Start()
 	return serv, nil
 }
 
