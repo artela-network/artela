@@ -96,7 +96,8 @@ func CreateJSONRPC(ctx *server.Context,
 		}
 		return nil
 	}))
-
+	// do not start websocket
+	nodeCfg.WSHost = ""
 	stack, err := ethrpc.NewNode(nodeCfg)
 	if err != nil {
 		return nil, err

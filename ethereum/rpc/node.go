@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/ethereum/go-ethereum/node"
+
+	"github.com/artela-network/artela/ethereum/rpc/types"
 )
 
 // Node Wrapers Ethereum Node
@@ -44,7 +45,7 @@ func DefaultGethNodeConfig() *node.Config {
 	nodeCfg.HTTPModules = append(nodeCfg.HTTPModules, "eth", "web3", "net", "txpool", "debug")
 	nodeCfg.WSModules = append(nodeCfg.WSModules, "eth")
 	nodeCfg.HTTPHost = "0.0.0.0"
-	nodeCfg.WSHost = "0.0.0.0"
+	nodeCfg.WSHost = ""
 	nodeCfg.WSOrigins = []string{"*"}
 	nodeCfg.HTTPCors = []string{"*"}
 	nodeCfg.HTTPVirtualHosts = []string{"*"}
