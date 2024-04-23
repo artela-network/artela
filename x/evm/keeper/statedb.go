@@ -136,7 +136,7 @@ func (k *Keeper) SetState(ctx cosmos.Context, addr common.Address, key common.Ha
 	} else {
 		store.Set(key.Bytes(), value)
 	}
-	k.Logger(ctx).Debug(
+	k.Logger(ctx).Info(
 		fmt.Sprintf("setState: SetState %s", action),
 		"ethereum-address", addr.Hex(),
 		"key", key.Hex(),
@@ -155,7 +155,7 @@ func (k *Keeper) SetCode(ctx cosmos.Context, codeHash, code []byte) {
 	} else {
 		store.Set(codeHash, code)
 	}
-	k.Logger(ctx).Debug(
+	k.Logger(ctx).Info(
 		fmt.Sprintf("setState: SetCode %s", action),
 		"code-hash", common.BytesToHash(codeHash).Hex(),
 		"contract-code", hexutils.BytesToHex(code),

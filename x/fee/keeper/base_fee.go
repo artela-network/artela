@@ -115,7 +115,7 @@ func (k Keeper) SetParams(ctx cosmos.Context, params types.Params) error {
 	}
 
 	store.Set(types.ParamsKey, bz)
-	k.Logger(ctx).Debug("setState: SetBlockGasWanted",
+	k.Logger(ctx).Info("setState: SetBlockGasWanted",
 		"key", string(types.ParamsKey),
 		"params", fmt.Sprintf("%+v", params))
 

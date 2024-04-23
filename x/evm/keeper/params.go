@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
@@ -40,7 +41,7 @@ func (k Keeper) SetParams(ctx cosmos.Context, params support.Params) error {
 	}
 
 	store.Set(types.KeyPrefixParams, bz)
-	k.Logger(ctx).Debug("setState: SetParams",
+	k.Logger(ctx).Info("setState: SetParams",
 		"key", "KeyPrefixParams",
 		"value", fmt.Sprintf("%+v", params))
 	return nil

@@ -60,7 +60,7 @@ func (k Keeper) SetBlockGasWanted(ctx cosmos.Context, gas uint64) {
 	gasBz := cosmos.Uint64ToBigEndian(gas)
 	store.Set(types.KeyPrefixBlockGasWanted, gasBz)
 
-	k.Logger(ctx).Debug("setState: SetBlockGasWanted",
+	k.Logger(ctx).Info("setState: SetBlockGasWanted",
 		"key", "KeyPrefixBlockGasWanted",
 		"gas", fmt.Sprintf("%d", gas))
 }
@@ -92,7 +92,7 @@ func (k Keeper) SetTransientBlockGasWanted(ctx cosmos.Context, gasWanted uint64)
 	gasBz := cosmos.Uint64ToBigEndian(gasWanted)
 	store.Set(types.KeyPrefixTransientBlockGasWanted, gasBz)
 
-	k.Logger(ctx).Debug("setState: SetTransientBlockGasWanted",
+	k.Logger(ctx).Info("setState: SetTransientBlockGasWanted",
 		"key", "KeyPrefixTransientBlockGasWanted",
 		"gasWanted", fmt.Sprintf("%d", gasWanted))
 }

@@ -3,11 +3,12 @@ package types
 import (
 	"context"
 	"fmt"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/client"
 	"math/big"
 	"sync"
 	"time"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/client"
 
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	artelatypes "github.com/artela-network/aspect-core/types"
@@ -440,9 +441,9 @@ func (k *AspectState) Set(key, value []byte) {
 	}
 
 	if value == nil {
-		k.logger.Debug("setState:", "action", action, "key", string(key), "value", "nil")
+		k.logger.Info("setState:", "action", action, "key", string(key), "value", "nil")
 	} else {
-		k.logger.Debug("setState:", "action", action, "key", string(key), "value", string(value))
+		k.logger.Info("setState:", "action", action, "key", string(key), "value", string(value))
 	}
 
 }
