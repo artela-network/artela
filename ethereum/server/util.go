@@ -107,6 +107,11 @@ func CreateJSONRPC(ctx *server.Context,
 	am := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false})
 	serv := ethrpc.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, am, nodeCfg.Logger)
 
+	// allocate separate WS connection to Tendermint
+	tmWsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, nodeCfg.Logger)
+	wsSrv := ethrpc.NewWebsocketsServer(clientCtx, tmWsClient, config, nodeCfg.Logger)
+	wsSrv.Start()
+
 	return serv, nil
 }
 
