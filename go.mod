@@ -239,3 +239,8 @@ replace (
 	github.com/cockroachdb/pebble => github.com/cockroachdb/pebble v0.0.0-20230525220056-bb4fc9527b3b
 	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk
 )
+
+replace (
+	github.com/cometbft/cometbft => ../artela-cometbft
+	github.com/cosmos/iavl => ../iavl
+)
