@@ -28,6 +28,7 @@ const (
 	codeErrInvalidAccount
 	codeErrInvalidGasLimit
 	codeErrCallContract
+	codeErrAspectNotFound
 )
 
 var (
@@ -77,6 +78,8 @@ var (
 	ErrInvalidGasLimit = errorsmod.Register(ModuleName, codeErrInvalidGasLimit, "invalid gas limit")
 
 	ErrCallContract = errorsmod.Register(ModuleName, codeErrCallContract, "call contract error")
+
+	ErrAspectNotFound = errorsmod.Register(ModuleName, codeErrAspectNotFound, "aspect not found error")
 )
 
 // NewExecErrorWithReason unpacks the revert return bytes and returns a wrapped error

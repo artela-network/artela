@@ -2,14 +2,15 @@ package contract
 
 import (
 	"bytes"
-	"cosmossdk.io/errors"
 	"encoding/json"
 	"fmt"
-	artelasdkType "github.com/artela-network/aspect-core/types"
 	"math"
 	"math/big"
 	"sort"
 	"strings"
+
+	"cosmossdk.io/errors"
+	artelasdkType "github.com/artela-network/aspect-core/types"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -205,7 +206,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 
 	// get treemap value
 	aspectConfigStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
-	//get all property key
+	// get all property key
 	propertyAllKey := k.GetAspectPropertyValue(ctx, aspectId, types.AspectPropertyAllKeyPrefix)
 
 	keySet := treeset.NewWithStringComparator()
@@ -218,10 +219,10 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 	}
 	for i := range prop {
 		key := prop[i].Key
-		//add key and deduplicate
+		// add key and deduplicate
 		keySet.Add(key)
 	}
-	//check key limit
+	// check key limit
 	if keySet.Size() > types.AspectPropertyLimit {
 		return errors.Wrapf(nil, "The maximum key limit is exceeded, and the maximum allowed is %d now available %d", types.AspectPropertyLimit, keySet.Size())
 	}
@@ -377,7 +378,7 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 	if toDelete < 0 {
 		return errors.Wrapf(nil, "aspect %s not bound with contract %s", aspectId.Hex(), contract.Hex())
 	}
-	txAspectBindings = slices.Delete(txAspectBindings, toDelete, toDelete)
+	txAspectBindings = slices.Delete(txAspectBindings, toDelete, toDelete+1)
 	jsonBytes, err := json.Marshal(txAspectBindings)
 	if err != nil {
 		return err
@@ -595,14 +596,14 @@ func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, ve
 	if version.Uint64() == 0 || point.Int64() == 0 {
 		return nil
 	}
-	//check point
+	// check point
 	_, ok := artelasdkType.CheckIsJoinPoint(point)
 	if !ok {
 		// Default store 0
 		point = big.NewInt(0)
 	}
 
-	//Default last Aspect version
+	// Default last Aspect version
 	if version == nil {
 		version = k.GetAspectLastVersion(ctx, aspectId)
 	}
@@ -627,7 +628,7 @@ func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, ve
 //	@param version
 //	@return *big.Int
 func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int) *big.Int {
-	//Default last Aspect version
+	// Default last Aspect version
 	if version == nil {
 		version = k.GetAspectLastVersion(ctx, aspectId)
 	}
