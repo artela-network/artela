@@ -104,6 +104,7 @@ func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*
 	if !ok {
 		return nil, errors.New("invalid ethereum tx")
 	}
+	msg.From = res.Sender
 
 	blockRes, err := b.CosmosBlockResultByNumber(&block.Block.Height)
 	if err != nil {
@@ -250,11 +251,6 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 		status = hexutil.Uint(ethtypes.ReceiptStatusSuccessful)
 	}
 
-	from, err := b.GetSender(ethMsg, b.chainID)
-	if err != nil {
-		return nil, err
-	}
-
 	// parse tx logs from events
 	msgIndex := int(res.MsgIndex)
 	logs, _ := utils.TxLogsFromEvents(blockRes.TxsResults[res.TxIndex].Events, msgIndex)
@@ -294,7 +290,7 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 		"transactionIndex": hexutil.Uint64(res.EthTxIndex),
 
 		// sender and receiver (contract or EOA) addreses
-		"from": from,
+		"from": res.Sender,
 		"to":   txData.GetTo(),
 		"type": hexutil.Uint(ethMsg.AsTransaction().Type()),
 	}
@@ -305,7 +301,7 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 
 	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
 	if txData.GetTo() == nil {
-		receipt["contractAddress"] = crypto.CreateAddress(from, txData.GetNonce())
+		receipt["contractAddress"] = crypto.CreateAddress(common.HexToAddress(res.Sender), txData.GetNonce())
 	}
 
 	if dynamicTx, ok := txData.(*txs.DynamicFeeTx); ok {
