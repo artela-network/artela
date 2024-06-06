@@ -54,6 +54,7 @@ type ParsedTx struct {
 	MsgIndex int
 
 	// the following fields are parsed from events
+	From common.Address
 
 	Hash common.Hash
 	// -1 means uninitialized
@@ -85,6 +86,9 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 	p := &ParsedTxs{
 		TxHashes: make(map[common.Hash]int),
 	}
+
+	attributes := make([]abci.EventAttribute, 0)
+
 	for _, event := range result.Events {
 		if event.Type != evmtypes.EventTypeEthereumTx {
 			continue
@@ -101,6 +105,7 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 
 		if len(event.Attributes) == 2 {
 			// the first part of format 2
+			attributes = append(attributes, event.Attributes...)
 			if err := p.newTx(event.Attributes); err != nil {
 				return nil, err
 			}
@@ -117,6 +122,39 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 				if err := p.updateTx(eventIndex, event.Attributes); err != nil {
 					return nil, err
 				}
+			}
+		}
+	}
+
+	// loop the second time to update the parsed tx from
+	for _, event := range result.Events {
+		if event.Type != sdk.EventTypeMessage {
+			continue
+		}
+
+		// filter only the event module message
+		fromEvmModule := false
+		for _, attr := range event.Attributes {
+			if string(attr.Key) == sdk.AttributeKeyModule {
+				if attr.Value == evmtypes.ModuleName {
+					fromEvmModule = true
+				}
+			}
+		}
+
+		// ignore non-evm module messages
+		if !fromEvmModule {
+			continue
+		}
+
+		// fill the from address
+		for _, attr := range event.Attributes {
+			if string(attr.Key) == sdk.AttributeKeySender {
+				// update all parsed txs
+				for i := 0; i < len(p.Txs); i++ {
+					p.Txs[i].From = common.HexToAddress(attr.Value)
+				}
+				break
 			}
 		}
 	}
@@ -153,6 +191,7 @@ func ParseTxIndexerResult(txResult *tmrpctypes.ResultTx, tx sdk.Tx, getter func(
 	}
 	index := uint32(parsedTx.MsgIndex) // #nosec G701
 	return &types.TxResult{
+		Sender:            parsedTx.From.Hex(),
 		Height:            txResult.Height,
 		TxIndex:           txResult.Index,
 		MsgIndex:          index,
