@@ -149,7 +149,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, 
 	evmParams := egcd.evmKeeper.GetParams(ctx)
 	evmDenom := evmParams.GetEvmDenom()
 	chainCfg := evmParams.GetChainConfig()
-	ethCfg := chainCfg.EthereumConfig(egcd.evmKeeper.ChainID())
+	ethCfg := chainCfg.EthereumConfig(ctx.BlockHeight(), egcd.evmKeeper.ChainID())
 
 	blockHeight := big.NewInt(ctx.BlockHeight())
 	homestead := ethCfg.IsHomestead(blockHeight)
@@ -265,7 +265,7 @@ func NewCanTransferDecorator(evmKeeper interfaces.EVMKeeper) CanTransferDecorato
 // see if the address can execute the transaction.
 func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (cosmos.Context, error) {
 	params := ctd.evmKeeper.GetParams(ctx)
-	ethCfg := params.ChainConfig.EthereumConfig(ctd.evmKeeper.ChainID())
+	ethCfg := params.ChainConfig.EthereumConfig(ctx.BlockHeight(), ctd.evmKeeper.ChainID())
 
 	for _, msg := range tx.GetMsgs() {
 		msgEthTx, ok := msg.(*txs.MsgEthereumTx)
