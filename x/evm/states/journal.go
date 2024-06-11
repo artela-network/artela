@@ -279,6 +279,10 @@ func (ch accessListAddSlotChange) Dirtied() *common.Address {
 	return nil
 }
 
+// ----------------------------------------------------------------------------
+// 					       transientStorageChange
+// ----------------------------------------------------------------------------
+
 func (ch transientStorageChange) Revert(s *StateDB) {
 	s.SetTransientState(*ch.account, ch.key, ch.prevalue)
 }
