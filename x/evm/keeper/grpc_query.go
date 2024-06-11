@@ -579,7 +579,7 @@ func (k *Keeper) traceTx(
 	}
 
 	if traceConfig.Overrides != nil {
-		overrides = traceConfig.Overrides.EthereumConfig(cfg.ChainConfig.ChainID)
+		overrides = traceConfig.Overrides.EthereumConfig(ctx.BlockHeight(), cfg.ChainConfig.ChainID)
 	}
 
 	logConfig := logger.Config{
@@ -642,7 +642,7 @@ func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.Que
 	ctx := cosmos.UnwrapSDKContext(c)
 
 	params := k.GetParams(ctx)
-	ethCfg := params.ChainConfig.EthereumConfig(k.eip155ChainID)
+	ethCfg := params.ChainConfig.EthereumConfig(ctx.BlockHeight(), k.eip155ChainID)
 	baseFee := k.GetBaseFee(ctx, ethCfg)
 
 	res := &txs.QueryBaseFeeResponse{}

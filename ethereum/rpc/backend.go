@@ -164,7 +164,13 @@ func (b *BackendImpl) ChainConfig() *params.ChainConfig {
 		return nil
 	}
 
-	return params.Params.ChainConfig.EthereumConfig(b.chainID)
+	currentHeader := b.CurrentHeader()
+	if currentHeader == nil || currentHeader.Number == nil {
+		b.logger.Info("block number is nil")
+		return nil
+	}
+
+	return params.Params.ChainConfig.EthereumConfig(currentHeader.Number.Int64(), b.chainID)
 }
 
 func (b *BackendImpl) FeeHistory(blockCount uint64, lastBlock rpc.BlockNumber,
