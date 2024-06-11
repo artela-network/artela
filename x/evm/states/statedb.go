@@ -93,6 +93,15 @@ func (s *StateDB) GetTransientState(addr common.Address, key common.Hash) common
 }
 
 func (s *StateDB) SetTransientState(addr common.Address, key, value common.Hash) {
+	prev := s.GetTransientState(addr, key)
+	if prev == value {
+		return
+	}
+	s.journal.append(transientStorageChange{
+		account:  &addr,
+		key:      key,
+		prevalue: prev,
+	})
 	s.transientStorage.Set(addr, key, value)
 }
 
