@@ -33,7 +33,7 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 	chainID := k.ChainID()
 	evmParams := k.GetParams(ctx)
 	chainCfg := evmParams.GetChainConfig()
-	ethCfg := chainCfg.EthereumConfig(chainID)
+	ethCfg := chainCfg.EthereumConfig(ctx.BlockHeight(), chainID)
 	blockNum := big.NewInt(ctx.BlockHeight())
 	signer := ethereum.MakeSigner(ethCfg, blockNum, uint64(ctx.BlockTime().Unix()))
 

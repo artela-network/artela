@@ -34,7 +34,7 @@ func NewDynamicFeeChecker(k interfaces.DynamicFeeEVMKeeper) anteutils.TxFeeCheck
 
 		params := k.GetParams(ctx)
 		denom := params.EvmDenom
-		ethCfg := params.ChainConfig.EthereumConfig(k.ChainID())
+		ethCfg := params.ChainConfig.EthereumConfig(ctx.BlockHeight(), k.ChainID())
 
 		baseFee := k.GetBaseFee(ctx, ethCfg)
 		if baseFee == nil {
