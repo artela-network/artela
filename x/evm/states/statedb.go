@@ -35,6 +35,8 @@ type StateDB struct {
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects map[common.Address]*stateObject
 
+	transientStorage transientStorage
+
 	txConfig TxConfig
 
 	// The refund counter, also used by states transitioning.
@@ -56,25 +58,42 @@ type StateDB struct {
 // New creates a new states from a given trie.
 func New(ctx cosmos.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 	return &StateDB{
-		keeper:       keeper,
-		ctx:          ctx,
-		stateObjects: make(map[common.Address]*stateObject),
-		journal:      newJournal(),
-		accessList:   newAccessList(),
+		keeper:           keeper,
+		ctx:              ctx,
+		stateObjects:     make(map[common.Address]*stateObject),
+		journal:          newJournal(),
+		accessList:       newAccessList(),
+		transientStorage: newTransientStorage(),
 
 		txConfig: txConfig,
 	}
 }
 
+// Prepare handles the preparatory steps for executing a state transition with.
+// This method must be invoked before state transition.
+//
+// Berlin fork:
+// - Add sender to access list (2929)
+// - Add destination to access list (2929)
+// - Add precompiles to access list (2929)
+// - Add the contents of the optional tx access list (2930)
+//
+// Potential EIPs:
+// - Reset access list (Berlin)
+// - Add coinbase to access list (EIP-3651)
+// - Reset transient storage (EIP-1153)
 func (s *StateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses ethereum.AccessList) {
-	// TODO mark this is a new method in ethereum 1.20, implement this here.
+	// TODO: complete the prepare for EIP2929 & EIP4762
+	// Reset transient storage at the beginning of transaction execution
+	s.transientStorage = newTransientStorage()
 }
 
 func (s *StateDB) GetTransientState(addr common.Address, key common.Hash) common.Hash {
-	return common.Hash{}
+	return s.transientStorage.Get(addr, key)
 }
 
 func (s *StateDB) SetTransientState(addr common.Address, key, value common.Hash) {
+	s.transientStorage.Set(addr, key, value)
 }
 
 // Keeper returns the underlying `Keeper`
