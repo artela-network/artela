@@ -18,6 +18,8 @@ import (
 // EthereumConfig returns an Ethereum ChainConfig for EVM states transitions.
 // All the negative or nil values are converted to nil
 func (cc ChainConfig) EthereumConfig(chainID *big.Int) *params.ChainConfig {
+	epochZero := uint64(0)
+
 	return &params.ChainConfig{
 		ChainID:        chainID,
 		HomesteadBlock: getBlockValue(cc.HomesteadBlock),
@@ -25,20 +27,20 @@ func (cc ChainConfig) EthereumConfig(chainID *big.Int) *params.ChainConfig {
 		DAOForkSupport: cc.DAOForkSupport,
 		EIP150Block:    getBlockValue(cc.EIP150Block),
 		// EIP150Hash:              common.HexToHash(cc.EIP150Hash),
-		EIP155Block:         getBlockValue(cc.EIP155Block),
-		EIP158Block:         getBlockValue(cc.EIP158Block),
-		ByzantiumBlock:      getBlockValue(cc.ByzantiumBlock),
-		ConstantinopleBlock: getBlockValue(cc.ConstantinopleBlock),
-		PetersburgBlock:     getBlockValue(cc.PetersburgBlock),
-		IstanbulBlock:       getBlockValue(cc.IstanbulBlock),
-		MuirGlacierBlock:    getBlockValue(cc.MuirGlacierBlock),
-		BerlinBlock:         getBlockValue(cc.BerlinBlock),
-		LondonBlock:         getBlockValue(cc.LondonBlock),
-		ArrowGlacierBlock:   getBlockValue(cc.ArrowGlacierBlock),
-		GrayGlacierBlock:    getBlockValue(cc.GrayGlacierBlock),
-		MergeNetsplitBlock:  getBlockValue(cc.MergeNetsplitBlock),
-		// ShanghaiBlock:           getBlockValue(cc.ShanghaiBlock),
-		// CancunBlock:             getBlockValue(cc.CancunBlock),
+		EIP155Block:             getBlockValue(cc.EIP155Block),
+		EIP158Block:             getBlockValue(cc.EIP158Block),
+		ByzantiumBlock:          getBlockValue(cc.ByzantiumBlock),
+		ConstantinopleBlock:     getBlockValue(cc.ConstantinopleBlock),
+		PetersburgBlock:         getBlockValue(cc.PetersburgBlock),
+		IstanbulBlock:           getBlockValue(cc.IstanbulBlock),
+		MuirGlacierBlock:        getBlockValue(cc.MuirGlacierBlock),
+		BerlinBlock:             getBlockValue(cc.BerlinBlock),
+		LondonBlock:             getBlockValue(cc.LondonBlock),
+		ArrowGlacierBlock:       getBlockValue(cc.ArrowGlacierBlock),
+		GrayGlacierBlock:        getBlockValue(cc.GrayGlacierBlock),
+		MergeNetsplitBlock:      getBlockValue(cc.MergeNetsplitBlock),
+		ShanghaiTime:            &epochZero,
+		CancunTime:              &epochZero,
 		TerminalTotalDifficulty: nil,
 		Ethash:                  nil,
 		Clique:                  nil,
