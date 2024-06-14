@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/artela-network/artela-evm/vm"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -31,21 +32,30 @@ import (
 	"github.com/artela-network/artela/x/evm/txs"
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	ethtypes "github.com/artela-network/artela/ethereum/types"
 )
 
 // EthereumAPI provides an API to access Ethereum related information.
 type EthereumAPI struct {
-	b Backend
+	b      Backend
+	logger log.Logger
 }
 
 // NewEthereumAPI creates a new Ethereum protocol API.
-func NewEthereumAPI(b Backend) *EthereumAPI {
-	return &EthereumAPI{b}
+func NewEthereumAPI(b Backend, logger log.Logger) *EthereumAPI {
+	return &EthereumAPI{b, logger}
+}
+
+// ProtocolVersion returns the supported Ethereum protocol version.
+func (e *EthereumAPI) ProtocolVersion() hexutil.Uint {
+	e.logger.Debug("eth_protocolVersion")
+	return hexutil.Uint(ethtypes.ProtocolVersion)
 }
 
 // GasPrice returns a suggestion for a gas price for legacy transactions.
-func (s *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
-	return s.b.GasPrice(ctx)
+func (e *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
+	e.logger.Debug("eth_gasPrice")
+	return e.b.GasPrice(ctx)
 }
 
 // MaxPriorityFeePerGas returns a suggestion for a gas tip cap for dynamic fee transactions.
@@ -66,7 +76,8 @@ func (s *EthereumAPI) FeeHistory(ctx context.Context, blockCount math.HexOrDecim
 // - pulledStates:  number of states entries processed until now
 // - knownStates:   number of known states entries that still need to be pulled
 func (s *EthereumAPI) Syncing() (interface{}, error) {
-	return nil, errors.New("Syncing is not implemented")
+	s.logger.Debug("eth_syncing")
+	return s.b.Syncing()
 }
 
 // TxPoolAPI offers and API for the transaction pool. It only operates on data that is non-confidential.
@@ -305,6 +316,10 @@ func (api *BlockChainAPI) ChainId() *hexutil.Big {
 	return (*hexutil.Big)(api.b.ChainConfig().ChainID)
 }
 
+func (api *BlockChainAPI) Coinbase() (sdktypes.AccAddress, error) {
+	return api.b.GetCoinbase()
+}
+
 // BlockNumber returns the block number of the chain head.
 func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
 	header, err := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available
@@ -340,8 +355,9 @@ type StorageResult struct {
 }
 
 // GetProof returns the Merkle-proof for a given account and optionally some storage keys.
-func (s *BlockChainAPI) GetProof(ctx context.Context, address common.Address, storageKeys []string, blockNrOrHash rpc.BlockNumberOrHash) (*AccountResult, error) {
-	return nil, errors.New("GetProof is not implemented")
+func (s *BlockChainAPI) GetProof(ctx context.Context, address common.Address, storageKeys []string, blockNrOrHash rpctypes.BlockNumberOrHash) (*rpctypes.AccountResult, error) {
+	s.logger.Debug("eth_getProof", "address", address.Hex(), "keys", storageKeys, "block number or hash", blockNrOrHash)
+	return s.b.GetProof(address, storageKeys, blockNrOrHash)
 }
 
 // decodeHash parses a hex-encoded 32-byte hash. The input may optionally
