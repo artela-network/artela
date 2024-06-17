@@ -26,9 +26,10 @@ import (
 )
 
 const (
-	storageLoadCost   = 50
-	storageStoreCost  = 20000
-	storageUpdateCost = 5000
+	storageLoadCost     = 50
+	storageStoreCost    = 20000
+	storageSaveCodeCost = 200
+	storageUpdateCost   = 5000
 )
 
 type gasMeter struct {
@@ -43,6 +44,10 @@ func newGasMeter(gas uint64) *gasMeter {
 
 func (m *gasMeter) measureStorageUpdate(dataLen int) error {
 	return m.consume(dataLen, storageUpdateCost)
+}
+
+func (m *gasMeter) measureStorageCodeSave(dataLen int) error {
+	return m.consume(dataLen, storageSaveCodeCost)
 }
 
 func (m *gasMeter) measureStorageStore(dataLen int) error {
@@ -100,7 +105,7 @@ func (k *AspectStore) BumpAspectVersion(ctx sdk.Context, aspectId common.Address
 // StoreAspectCode aspect code
 func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte, version *uint256.Int, gas uint64) (uint64, error) {
 	meter := newGasMeter(gas)
-	if err := meter.measureStorageStore(len(code)); err != nil {
+	if err := meter.measureStorageCodeSave(len(code)); err != nil {
 		return meter.remainingGas(), err
 	}
 
