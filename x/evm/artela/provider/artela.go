@@ -49,31 +49,6 @@ func (j *ArtelaProvider) GetAccountVerifiers(ctx context.Context, address common
 	return j.service.GetAccountVerifiers(aspectCtx.CosmosContext(), address)
 }
 
-func (j *ArtelaProvider) GetBlockBondAspects(ctx context.Context) ([]*asptypes.AspectCode, error) {
-	if ctx == nil {
-		return nil, errors.New("invalid Context")
-	}
-	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
-	if !ok {
-		return nil, errors.New("failed to unwrap AspectRuntimeContext from context.Context")
-	}
-
-	return j.service.GetAspectForBlock(aspectCtx.CosmosContext())
-}
-
-func (j *ArtelaProvider) GetAspectAccount(ctx context.Context, aspectId common.Address) (*common.Address, error) {
-
-	if ctx == nil {
-		return nil, errors.New("invalid Context")
-	}
-	aspectCtx, ok := ctx.(*types.AspectRuntimeContext)
-	if !ok {
-		return nil, errors.New("failed to unwrap AspectRuntimeContext from context.Context")
-	}
-
-	return j.service.GetAspectAccount(aspectCtx.CosmosContext(), aspectId)
-}
-
 func (j *ArtelaProvider) GetLatestBlock() int64 {
 	return j.service.GetBlockHeight()
 }

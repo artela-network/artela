@@ -22,7 +22,6 @@ const (
 	ContractBindKeyPrefix      = "AspectStore/ContractBind/"
 	VerifierBindingKeyPrefix   = "AspectStore/VerifierBind/"
 	AspectRefKeyPrefix         = "AspectStore/AspectRef/"
-	AspectBlockKeyPrefix       = "AspectStore/Block/"
 	AspectStateKeyPrefix       = "AspectStore/State/"
 
 	AspectJoinPointRunKeyPrefix = "AspectStore/JoinPointRun/"
@@ -31,9 +30,6 @@ const (
 	VersionMapKey  = "version"
 	PriorityMapKey = "priority"
 
-	AspectStateBeginBlock      = "State/BeginBlock"
-	AspectStateDeliverTxState  = "State/DeliverTx"
-	AspectStateEndBlock        = "State/EndBlock"
 	AspectAccountKey           = "Aspect_@Acount@_"
 	AspectProofKey             = "Aspect_@Proof@_"
 	AspectRunJoinPointKey      = "Aspect_@Run@JoinPoint@_"
@@ -46,22 +42,6 @@ var (
 	PathSeparator    = []byte("/")
 	PathSeparatorLen = len(PathSeparator)
 )
-
-func GetAspectStatePoint(point string) string {
-	if strings.EqualFold(point, string(artela.ON_BLOCK_INITIALIZE_METHOD)) {
-		return AspectStateBeginBlock
-	} else if strings.EqualFold(point, string(artela.ON_BLOCK_FINALIZE_METHOD)) {
-		return AspectStateEndBlock
-	} else if strings.EqualFold(point, string(artela.POST_TX_COMMIT)) ||
-		strings.EqualFold(point, string(artela.PRE_TX_EXECUTE_METHOD)) ||
-		strings.EqualFold(point, string(artela.POST_TX_EXECUTE_METHOD)) ||
-		strings.EqualFold(point, string(artela.PRE_CONTRACT_CALL_METHOD)) ||
-		strings.EqualFold(point, string(artela.POST_CONTRACT_CALL_METHOD)) ||
-		strings.EqualFold(point, string(artela.OPERATION_METHOD)) {
-		return AspectStateDeliverTxState
-	}
-	return ""
-}
 
 func AspectArrayKey(keys ...[]byte) []byte {
 	var key []byte
