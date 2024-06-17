@@ -433,7 +433,7 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					}
 				}
 
-				// remove transactionsRoot，todo get transactionsRoot
+				// TODO: Eth TransactionsRoot unable to obtain ，now remove transactionsRoot，
 				result := map[string]interface{}{
 					"parentHash":      header.ParentHash,
 					"sha3Uncles":      header.UncleHash,
