@@ -139,12 +139,12 @@ func (h DeployHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common
 	}
 	properties = append(properties, proofProperty)
 
-	joinPoints := ctx.parameters["joinPoints"].(*big.Int)
+	joinPoint = ctx.parameters["joinPoints"].(*big.Int)
 	if len(code) == 0 {
 		err = errorsmod.Wrapf(evmtypes.ErrCallContract, "Code verification failed during aspect deploy")
 		return
 	}
-	if joinPoints == nil {
+	if joinPoint == nil {
 		err = errorsmod.Wrapf(evmtypes.ErrCallContract, "JoinPoints verification failed during aspect deploy")
 		return
 	}
