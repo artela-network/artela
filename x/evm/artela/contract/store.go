@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	types2 "github.com/artela-network/aspect-runtime/types"
 	"math"
 	"math/big"
@@ -151,7 +150,7 @@ func (k *AspectStore) storeAspectVersion(ctx sdk.Context, aspectId common.Addres
 	versionKey := types.AspectIdKey(aspectId.Bytes())
 	versionStore.Set(versionKey, version.Bytes())
 
-	k.logger.Debug(fmt.Sprintf("saved aspect version info"), "id", aspectId.Hex(), "version", version.String())
+	k.logger.Info("saved aspect version info", "id", aspectId.Hex(), "version", version.String())
 	return nil
 }
 
@@ -230,11 +229,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 
 		aspectConfigStore.Set(aspectPropertyKey, value)
 
-		k.logger.Debug(
-			fmt.Sprintf("setState: StoreAspectProperty"),
-			"aspect-id", aspectId.Hex(),
-			"aspect-property", fmt.Sprintf("%+v", prop),
-		)
+		k.logger.Info("aspect property updated", "aspect", aspectId.Hex(), "key", key, "value", value)
 	}
 
 	// store AspectPropertyAllKey
@@ -437,7 +432,7 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, account common.A
 		}
 
 		if oldver == 0 {
-			ctx.Logger().Debug("aspect not bound", "aspect", aspectId.Hex(), "account", account.String())
+			k.logger.Debug("aspect not bound", "aspect", aspectId.Hex(), "account", account.String())
 			return nil
 		}
 
