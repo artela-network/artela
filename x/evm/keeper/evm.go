@@ -384,6 +384,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, evm,
 			ctx.BlockHeight, stateDB, k.logger)
+		nativeContract.Init()
 		ret, leftoverGas, vmErr = nativeContract.ApplyMessage(ctx, msg, leftoverGas, commit)
 	} else if contractCreation {
 		// take over the nonce management from evm:
