@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
@@ -20,19 +21,20 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/filters"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/ethereum/go-ethereum/log"
 
+	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpcfilter "github.com/artela-network/artela/ethereum/rpc/filters"
 	"github.com/artela-network/artela/ethereum/rpc/pubsub"
 	"github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/server/config"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 type WebsocketsServer interface {
@@ -350,6 +352,7 @@ type pubSubAPI struct {
 	events    *rpcfilter.EventSystem
 	logger    log.Logger
 	clientCtx client.Context
+	blockApi  *ethapi.BlockChainAPI
 }
 
 // newPubSubAPI creates an instance of the ethereum PubSub API.
@@ -392,9 +395,6 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 		return nil, errors.Wrap(err, "error creating block filter")
 	}
 
-	// TODO: use events
-	baseFee := big.NewInt(params.InitialBaseFee)
-
 	go func() {
 		headersCh := sub.Event()
 		errCh := sub.Err()
@@ -411,7 +411,50 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					continue
 				}
 
+				baseFee := types.BaseFeeFromEvents(data.ResultBeginBlock.Events)
+
+				cosmosHash := data.Header.Hash()
+
 				header := types.EthHeaderFromTendermint(data.Header, ethtypes.Bloom{}, baseFee)
+				if data.NumTxs == 0 {
+					header.TxHash = ethtypes.EmptyTxsHash
+				}
+
+				bloom := ethtypes.Bloom{}
+				for _, et := range data.ResultEndBlock.Events {
+					if et.Type != evmtypes.EventTypeBlockBloom {
+						continue
+					}
+
+					for _, attr := range et.Attributes {
+						if attr.Key == evmtypes.AttributeKeyEthereumBloom {
+							bloom = ethtypes.BytesToBloom([]byte(attr.Value))
+						}
+					}
+				}
+
+				result := map[string]interface{}{
+					"parentHash":       header.ParentHash,
+					"sha3Uncles":       header.UncleHash,
+					"miner":            header.Coinbase,
+					"stateRoot":        header.Root,
+					"transactionsRoot": "0x01",
+					"receiptsRoot":     header.ReceiptHash,
+					"logsBloom":        bloom,
+					"difficulty":       header.Difficulty,
+					"number":           header.Number,
+					"gasLimit":         header.GasLimit,
+					"gasUsed":          header.GasUsed,
+					"timestamp":        header.Time,
+					"extraData":        header.Extra,
+					"mixHash":          header.MixDigest,
+					"nonce":            header.Nonce,
+					"baseFeePerGas":    header.BaseFee,
+					"withdrawalsRoot":  header.WithdrawalsHash,
+					"excessDataGas":    header.ExcessDataGas,
+					"hash":             hexutil.Encode(cosmosHash.Bytes()),
+					"size":             0,
+				}
 
 				// write to ws conn
 				res := &SubscriptionNotification{
@@ -419,7 +462,7 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					Method:  "eth_subscription",
 					Params: &SubscriptionResult{
 						Subscription: subID,
-						Result:       header,
+						Result:       result,
 					},
 				}
 
