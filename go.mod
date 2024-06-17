@@ -235,5 +235,6 @@ replace (
 replace (
 	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk
 	github.com/cosmos/iavl => ../iavl
+	github.com/artela-network/aspect-core => ../aspect-core
 	github.com/artela-network/artela-evm => ../evm
 )

@@ -257,10 +257,8 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-metrics v0.4.1 h1:hR91U9KYmb6bLBYLQjyM+3j+rcd/UhE+G78SFnF8gJA=
 github.com/armon/go-metrics v0.4.1/go.mod h1:E6amYzXo6aW1tqzoZGT755KkbgrJsSdpwZ+3JqfkOG4=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
-github.com/artela-network/artela-evm v0.4.7-rc7 h1:6BbpLmZZQQDIqtU9KIK0yKCovZKag4TzN4gvjGxlgb4=
-github.com/artela-network/artela-evm v0.4.7-rc7/go.mod h1:kRZPmabNVQ+qwtC75qG/JxUTO/bekgAvfvURI8ObcOY=
-github.com/artela-network/aspect-core v0.4.7-rc7 h1:rTk5Mv1pHt+khhQwkAQZNTBYChJoeNwnfJE9Ae7zVSA=
-github.com/artela-network/aspect-core v0.4.7-rc7/go.mod h1:C/aJERYZ2O3yxAuP6I4gg0I/R3efZSIDt64PMw50Uwo=
+github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-7 h1:kV0ojFmLv7lrtc9bkPCitlfehYkuKRHCIPdkIsamowg=
+github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-7/go.mod h1:vCwxnQmF5xn8DieUZdGT2qb0hEbsLNbX4Zscl03MEOc=
 github.com/artela-network/aspect-runtime v0.4.7-rc7 h1:CPqrp4Zrm3s6+EvzIvlhid9bqDLGlxWVo8Xg12rgLdY=
 github.com/artela-network/aspect-runtime v0.4.7-rc7/go.mod h1:eiBT6JkElkgJNRgRXTOJu/bVS3br+GoqMDv6Gn4a0cU=
 github.com/artela-network/wasmtime-go/v20 v20.0.2 h1:miyLlk3+w+5b2LdI0sMpzHiUOFv4O+MzaZjQIg0vqW8=
@@ -382,6 +380,8 @@ github.com/cosmos/gogogateway v1.2.0/go.mod h1:iQpLkGWxYcnCdz5iAdLcRBSw3h7NXeOkZ
 github.com/cosmos/gogoproto v1.4.2/go.mod h1:cLxOsn1ljAHSV527CHOtaIP91kK6cCrZETRBrkzItWU=
 github.com/cosmos/gogoproto v1.4.10 h1:QH/yT8X+c0F4ZDacDv3z+xE3WU1P1Z3wQoLMBRJoKuI=
 github.com/cosmos/gogoproto v1.4.10/go.mod h1:3aAZzeRWpAwr+SS/LLkICX2/kDFyaYVzckBDzygIxek=
+github.com/cosmos/iavl v0.20.0 h1:fTVznVlepH0KK8NyKq8w+U7c2L6jofa27aFX6YGlm38=
+github.com/cosmos/iavl v0.20.0/go.mod h1:WO7FyvaZJoH65+HFOsDir7xU9FWk2w9cHXNW1XHcl7A=
 github.com/cosmos/ibc-go/v7 v7.1.0 h1:SCLgs7tqVnzdIDO5MRLgovAnc696vTTKl+8qsTu8IMM=
 github.com/cosmos/ibc-go/v7 v7.1.0/go.mod h1:7MptlWeIyqmDiuJeRAFqBvXKY8Hybd+rF8vMSmGd2zg=
 github.com/cosmos/ics23/go v0.10.0 h1:iXqLLgp2Lp+EdpIuwXTYIQU+AiHj9mOC2X9ab++bZDM=
