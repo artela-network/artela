@@ -433,27 +433,27 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					}
 				}
 
+				// remove transactionsRoot，todo get transactionsRoot
 				result := map[string]interface{}{
-					"parentHash":       header.ParentHash,
-					"sha3Uncles":       header.UncleHash,
-					"miner":            header.Coinbase,
-					"stateRoot":        header.Root,
-					"transactionsRoot": "0x01",
-					"receiptsRoot":     header.ReceiptHash,
-					"logsBloom":        bloom,
-					"difficulty":       header.Difficulty,
-					"number":           header.Number,
-					"gasLimit":         header.GasLimit,
-					"gasUsed":          header.GasUsed,
-					"timestamp":        header.Time,
-					"extraData":        header.Extra,
-					"mixHash":          header.MixDigest,
-					"nonce":            header.Nonce,
-					"baseFeePerGas":    header.BaseFee,
-					"withdrawalsRoot":  header.WithdrawalsHash,
-					"excessDataGas":    header.ExcessDataGas,
-					"hash":             hexutil.Encode(cosmosHash.Bytes()),
-					"size":             0,
+					"parentHash":      header.ParentHash,
+					"sha3Uncles":      header.UncleHash,
+					"miner":           header.Coinbase,
+					"stateRoot":       header.Root,
+					"receiptsRoot":    header.ReceiptHash,
+					"logsBloom":       bloom,
+					"difficulty":      header.Difficulty,
+					"number":          header.Number,
+					"gasLimit":        header.GasLimit,
+					"gasUsed":         header.GasUsed,
+					"timestamp":       header.Time,
+					"extraData":       header.Extra,
+					"mixHash":         header.MixDigest,
+					"nonce":           header.Nonce,
+					"baseFeePerGas":   header.BaseFee,
+					"withdrawalsRoot": header.WithdrawalsHash,
+					"excessDataGas":   header.ExcessDataGas,
+					"hash":            hexutil.Encode(cosmosHash.Bytes()),
+					"size":            0,
 				}
 
 				// write to ws conn
