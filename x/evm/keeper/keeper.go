@@ -149,7 +149,6 @@ func NewKeeper(
 	artelaType.GetAspectContext = k.GetAspectContext
 	artelaType.SetAspectContext = k.SetAspectContext
 
-	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	artelaType.IsCommit = k.IsCommit
 	return k
