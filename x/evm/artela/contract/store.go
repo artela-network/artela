@@ -28,7 +28,7 @@ import (
 const (
 	storageLoadCost     = 50
 	storageStoreCost    = 20000
-	storageSaveCodeCost = 200
+	storageSaveCodeCost = 1000
 	storageUpdateCost   = 5000
 )
 
@@ -221,7 +221,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 		key := prop[i].Key
 		value := prop[i].Value
 
-		if err := meter.measureStorageStore(len(key) + len(value)); err != nil {
+		if err := meter.measureStorageCodeSave(len(key) + len(value)); err != nil {
 			k.logger.Error("unable to save property", "err", err, "key", key, "value", value)
 			return meter.remainingGas(), err
 		}
@@ -369,7 +369,8 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 		return bytes.Equal(meta.Id.Bytes(), aspectId.Bytes())
 	})
 	if toDelete < 0 {
-		return errors.New("aspect not bound")
+		// not found
+		return nil
 	}
 	txAspectBindings = slices.Delete(txAspectBindings, toDelete, toDelete+1)
 	jsonBytes, err := json.Marshal(txAspectBindings)
@@ -532,23 +533,20 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 	if err != nil {
 		return err
 	}
-	existing := -1
-	// check duplicates
-	for index, binding := range bindings {
-		if bytes.Equal(binding.Id.Bytes(), aspectId.Bytes()) {
-			// delete Aspect id
-			existing = index
-			break
-		}
-	}
-	if existing == -1 {
+
+	toDelete := slices.IndexFunc(bindings, func(meta *types.AspectMeta) bool {
+		return bytes.Equal(meta.Id.Bytes(), aspectId.Bytes())
+	})
+
+	if toDelete < 0 {
+		// not found
 		return nil
 	}
 	// delete existing
-	newBinding := append(bindings[:existing], bindings[existing+1:]...)
+	bindings = slices.Delete(bindings, toDelete, toDelete+1)
 
-	sort.Slice(newBinding, types.NewBindingPriorityComparator(newBinding))
-	jsonBytes, err := json.Marshal(newBinding)
+	sort.Slice(bindings, types.NewBindingPriorityComparator(bindings))
+	jsonBytes, err := json.Marshal(bindings)
 	if err != nil {
 		return err
 	}
