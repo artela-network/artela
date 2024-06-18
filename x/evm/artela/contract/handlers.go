@@ -134,7 +134,7 @@ func (h DeployHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common
 
 	proof := ctx.parameters["proof"].([]byte)
 	proofProperty := types.Property{
-		Key:   types.AspectAccountKey,
+		Key:   types.AspectProofKey,
 		Value: proof,
 	}
 	properties = append(properties, proofProperty)
@@ -545,7 +545,7 @@ func (g GetBindingHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, 
 	}
 
 	aspectInfo := make([]types.AspectInfo, 0)
-	deduplicationMap := make(map[common.Address]*uint256.Int)
+	deduplicationMap := make(map[common.Address]struct{})
 
 	accountVerifiers, err := ctx.service.aspectStore.GetVerificationAspects(ctx.cosmosCtx, account)
 	if err != nil {
@@ -556,7 +556,7 @@ func (g GetBindingHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, 
 		if _, exist := deduplicationMap[aspect.Id]; exist {
 			continue
 		}
-		deduplicationMap[aspect.Id] = aspect.Version
+		deduplicationMap[aspect.Id] = struct{}{}
 		info := types.AspectInfo{
 			AspectId: aspect.Id,
 			Version:  aspect.Version.Uint64(),
@@ -575,7 +575,7 @@ func (g GetBindingHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, 
 			if _, exist := deduplicationMap[aspect.Id]; exist {
 				continue
 			}
-			deduplicationMap[aspect.Id] = aspect.Version
+			deduplicationMap[aspect.Id] = struct{}{}
 			info := types.AspectInfo{
 				AspectId: aspect.Id,
 				Version:  aspect.Version.Uint64(),
