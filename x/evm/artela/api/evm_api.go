@@ -100,8 +100,7 @@ func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitI
 	// determine jit call stage
 	defBool := false
 	switch asptypes.PointCut(ctx.Point) {
-	case asptypes.PRE_TX_EXECUTE_METHOD, asptypes.POST_TX_EXECUTE_METHOD,
-		asptypes.PRE_CONTRACT_CALL_METHOD, asptypes.POST_CONTRACT_CALL_METHOD:
+	case asptypes.PRE_CONTRACT_CALL_METHOD, asptypes.POST_CONTRACT_CALL_METHOD:
 		// FIXME: get leftover gas from last evm
 		resp, gas, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, ctx.AspectId, ctx.Gas, request)
 		if err != nil {
