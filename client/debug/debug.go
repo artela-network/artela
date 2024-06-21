@@ -1,32 +1,34 @@
 package debug
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
-	artela "github.com/artela-network/artela/ethereum/types"
-
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	"github.com/pkg/errors"
-
-	"github.com/artela-network/artela/ethereum/eip712"
-
-	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/spf13/cobra"
 
-	"github.com/ethereum/go-ethereum/common"
-
+	"github.com/cometbft/cometbft/libs/bytes"
+	cometbftTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
+	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
+	"github.com/ethereum/go-ethereum/common"
+
+	appparams "github.com/artela-network/artela/app/params"
+	"github.com/artela-network/artela/ethereum/eip712"
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 // Cmd creates a main CLI command
-func Cmd() *cobra.Command {
+func Cmd(encodingConfig appparams.EncodingConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "debug",
 		Short: "Tool for helping with debugging your application",
@@ -37,6 +39,7 @@ func Cmd() *cobra.Command {
 	cmd.AddCommand(AddrCmd())
 	cmd.AddCommand(RawBytesCmd())
 	cmd.AddCommand(LegacyEIP712Cmd())
+	cmd.AddCommand(CosmosTxHash(encodingConfig))
 
 	return cmd
 }
@@ -174,6 +177,48 @@ func LegacyEIP712Cmd() *cobra.Command {
 			}
 
 			fmt.Println(string(bz))
+			return nil
+		},
+	}
+}
+
+func CosmosTxHash(encodingConfig appparams.EncodingConfig) *cobra.Command {
+	return &cobra.Command{
+		Use:     "tx [base64 encoded tx]",
+		Short:   "Get the ethereum tx of cosmos tx",
+		Example: "",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			txBytes, err := base64.StdEncoding.DecodeString(args[0])
+			if err != nil {
+				log.Fatalf("Failed to decode base64: %v", err)
+			};
+			
+			cometbftTx := cometbftTypes.Tx(txBytes)
+
+			tx, err := encodingConfig.TxConfig.TxDecoder()(cometbftTx)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			for i, msg := range tx.GetMsgs() {
+				ethMsg, ok := msg.(*txs.MsgEthereumTx)
+				if !ok {
+					fmt.Printf("message %d is not etherum tx\n", i)
+					continue
+				}
+
+				fmt.Println("this is a ethereum tx:")
+				ethMsg.Hash = ethMsg.AsTransaction().Hash().Hex()
+				// result = append(result, ethMsg)
+				ethTx := ethMsg.AsTransaction()
+				fmt.Printf("	hash: %s\n	to: %s\n	value: %s\n	data: %s\n",
+					ethTx.Hash().String(),
+					ethTx.To().String(),
+					ethTx.Value().String(),
+					common.Bytes2Hex(ethTx.Data()),
+				)
+			}
 			return nil
 		},
 	}
