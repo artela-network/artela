@@ -135,7 +135,7 @@ func initRootCmd(
 		AddGenesisContractCmd(app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		NewTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
-		debug.Cmd(),
+		debug.Cmd(encodingConfig),
 		config.Cmd(),
 		// this line is used by starport scaffolding # root/commands
 		KeyInfoCmd(),
