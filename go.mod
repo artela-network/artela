@@ -237,4 +237,5 @@ replace (
 	github.com/cosmos/iavl => ../iavl
 	github.com/artela-network/aspect-core => ../aspect-core
 	github.com/artela-network/artela-evm => ../evm
+	github.com/artela-network/aspect-core => ../aspect-core
 )
