@@ -155,7 +155,8 @@ func startInProcess(cfg Config, val *Validator) error {
 		if len(httpEndpoint) > 1 {
 			nodeCfg.HTTPHost = strings.Split(val.AppConfig.JSONRPC.Address, ":")[1]
 		}
-
+		// do not start websocket
+		nodeCfg.WSHost = ""
 		node, err := rpc2.NewNode(nodeCfg)
 		if err != nil {
 			panic(err)

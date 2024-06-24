@@ -134,7 +134,7 @@ func NewKeeper(
 	}
 	k.WithChainID(app.ChainId())
 
-	djpm.NewAspect(aspect)
+	djpm.NewAspect(aspect, k.logger)
 	api.InitAspectGlobals(k)
 
 	// init aspect host api factory
@@ -149,7 +149,6 @@ func NewKeeper(
 	artelaType.GetAspectContext = k.GetAspectContext
 	artelaType.SetAspectContext = k.SetAspectContext
 
-	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	artelaType.IsCommit = k.IsCommit
 	return k

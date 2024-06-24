@@ -33,7 +33,7 @@ func NewGasWantedDecorator(
 func (gwd GasWantedDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (newCtx cosmos.Context, err error) {
 	evmParams := gwd.evmKeeper.GetParams(ctx)
 	chainCfg := evmParams.GetChainConfig()
-	ethCfg := chainCfg.EthereumConfig(gwd.evmKeeper.ChainID())
+	ethCfg := chainCfg.EthereumConfig(ctx.BlockHeight(), gwd.evmKeeper.ChainID())
 
 	blockHeight := big.NewInt(ctx.BlockHeight())
 	isLondon := ethCfg.IsLondon(blockHeight)

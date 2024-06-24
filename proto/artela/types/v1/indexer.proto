@@ -28,4 +28,6 @@ message TxResult {
   // cumulative_gas_used specifies the cumulated amount of gas used for all
   // processed messages within the current batch transaction.
   uint64 cumulative_gas_used = 7;
+
+  string sender = 8;
 }

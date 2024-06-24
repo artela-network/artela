@@ -2,6 +2,7 @@ package states
 
 import (
 	"bytes"
+	"maps"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -20,4 +21,8 @@ func (s Storage) SortedKeys() []common.Hash {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) < 0
 	})
 	return keys
+}
+
+func (s Storage) Copy() Storage {
+	return maps.Clone(s)
 }

@@ -3,9 +3,9 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/emirpasic/gods/sets/hashset"
 
 	"github.com/artela-network/artela-evm/vm"
-	"github.com/artela-network/aspect-core/integration"
 	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -18,13 +18,30 @@ import (
 
 var (
 	_ asptypes.EVMHostAPI = (*evmHostApi)(nil)
+
+	evmStaticCallConstrainedJoinPoints = hashset.New(
+		asptypes.PRE_CONTRACT_CALL_METHOD,
+		asptypes.POST_CONTRACT_CALL_METHOD,
+		asptypes.PRE_TX_EXECUTE_METHOD,
+		asptypes.POST_TX_EXECUTE_METHOD,
+		asptypes.OPERATION_METHOD,
+	)
+
+	evmJITCallConstrainedJoinPoints = hashset.New(
+		asptypes.PRE_CONTRACT_CALL_METHOD,
+		asptypes.POST_CONTRACT_CALL_METHOD,
+	)
 )
 
 type evmHostApi struct {
 	aspectCtx *artelatypes.AspectRuntimeContext
 }
 
-func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.StaticCallRequest) *asptypes.StaticCallResult {
+func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.StaticCallRequest) (*asptypes.StaticCallResult, error) {
+	if !evmStaticCallConstrainedJoinPoints.Contains(asptypes.PointCut(ctx.Point)) {
+		return nil, errors.New("cannot execute static call in current join point")
+	}
+
 	from := common.BytesToAddress(request.From)
 	to := common.BytesToAddress(request.To)
 
@@ -43,8 +60,8 @@ func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.S
 		evmConfig, err := evmKeeper.EVMConfig(e.aspectCtx.CosmosContext(),
 			e.aspectCtx.CosmosContext().BlockHeader().ProposerAddress, evmKeeper.ChainID())
 		if err != nil {
-			msg := err.Error()
-			return &asptypes.StaticCallResult{VmError: &msg}
+			// we need to panic here, since the evm init should not fail here
+			panic(err)
 		}
 		evm = evmKeeper.NewEVM(e.aspectCtx.CosmosContext(), &core.Message{
 			From: from,
@@ -55,8 +72,7 @@ func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.S
 
 	// we cannot create any evm at this stage, return error
 	if evm == nil {
-		stage := "unable to initiate evm at current stage"
-		return &asptypes.StaticCallResult{VmError: &stage}
+		panic("failed to init evm")
 	}
 
 	// set the default request gas to current remaining f not specified or out of limit
@@ -77,48 +93,35 @@ func (e *evmHostApi) StaticCall(ctx *asptypes.RunnerContext, request *asptypes.S
 		Ret:     ret,
 		GasLeft: &gas,
 		VmError: &errStr,
-	}
+	}, nil
 }
 
-func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitInherentRequest) *asptypes.JitInherentResponse {
+func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitInherentRequest) (*asptypes.JitInherentResponse, error) {
 	// determine jit call stage
 	defBool := false
-	var stage integration.JoinPointStage
 	switch asptypes.PointCut(ctx.Point) {
-	case asptypes.PRE_TX_EXECUTE_METHOD, asptypes.POST_TX_EXECUTE_METHOD,
-		asptypes.PRE_CONTRACT_CALL_METHOD, asptypes.POST_CONTRACT_CALL_METHOD:
-		stage = integration.TransactionExecution
-	case asptypes.VERIFY_TX, asptypes.ON_ACCOUNT_VERIFY_METHOD:
-		stage = integration.PreTransactionExecution
-	case asptypes.POST_TX_COMMIT:
-		stage = integration.PostTransactionExecution
-	case asptypes.ON_BLOCK_INITIALIZE_METHOD:
-		stage = integration.BlockInitialization
-	case asptypes.ON_BLOCK_FINALIZE_METHOD:
-		stage = integration.BlockFinalization
-	default:
-		log.Error("unsupported join point for jit call", "point", ctx.Point)
+	case asptypes.PRE_CONTRACT_CALL_METHOD, asptypes.POST_CONTRACT_CALL_METHOD:
+		// FIXME: get leftover gas from last evm
+		resp, gas, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, ctx.AspectId, ctx.Gas, request)
+		if err != nil {
+			if resp == nil {
+				resp = &asptypes.JitInherentResponse{}
+			}
 
-		return &asptypes.JitInherentResponse{Success: &defBool}
-	}
+			resp.Success = &defBool
+			msg := err.Error()
+			resp.ErrorMsg = &msg
 
-	// FIXME: get leftover gas from last evm
-	resp, gas, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, ctx.AspectId, ctx.Gas, stage, request)
-	if err != nil {
-		if resp == nil {
-			resp = &asptypes.JitInherentResponse{}
+			log.Error("jit inherent submit fail", "err", err)
 		}
 
-		resp.Success = &defBool
-		msg := err.Error()
-		resp.ErrorMsg = &msg
+		ctx.Gas = gas
 
-		log.Error("jit inherent submit fail", "err", err)
+		return resp, nil
+	default:
+		log.Error("unsupported join point for jit call", "point", ctx.Point)
+		return &asptypes.JitInherentResponse{Success: &defBool}, errors.New("unsupported join point for jit call")
 	}
-
-	ctx.Gas = gas
-
-	return resp
 }
 
 func GetEvmHostInstance(ctx context.Context) (asptypes.EVMHostAPI, error) {

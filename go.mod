@@ -9,8 +9,8 @@ require (
 	cosmossdk.io/errors v1.0.0
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.2.1
-	github.com/artela-network/artela-evm v0.4.7-rc6
-	github.com/artela-network/aspect-core v0.4.7-rc6
+	github.com/artela-network/artela-evm v0.4.7-rc7
+	github.com/artela-network/aspect-core v0.4.7-rc7
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft v0.37.2
 	github.com/cosmos/cosmos-db v1.0.2
@@ -38,11 +38,11 @@ require (
 
 require (
 	github.com/DataDog/zstd v1.5.5 // indirect
-	github.com/artela-network/aspect-runtime v0.4.7-rc6 // indirect
+	github.com/artela-network/aspect-runtime v0.4.7-rc7 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
-	github.com/bytecodealliance/wasmtime-go/v14 v14.0.0 // indirect
-	github.com/cockroachdb/errors v1.11.1 // indirect
+	github.com/bytecodealliance/wasmtime-go/v20 v20.0.0 // indirect
+	github.com/cockroachdb/errors v1.9.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v1.1.0 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
@@ -139,7 +139,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.11.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/gorilla/websocket v1.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/gtank/merlin v0.1.1 // indirect
@@ -231,16 +231,15 @@ require (
 
 replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.3 // TODO artela: btcd/btcec become not valid for 0.23.x, need to dig into it
-	// github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-6
+	github.com/bytecodealliance/wasmtime-go/v20 => github.com/artela-network/wasmtime-go/v20 v20.0.2
+	// github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-7
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
 
 replace (
-	github.com/cockroachdb/pebble => github.com/cockroachdb/pebble v0.0.0-20230525220056-bb4fc9527b3b
 	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk
-)
-
-replace (
-	github.com/cometbft/cometbft => ../artela-cometbft
 	github.com/cosmos/iavl => ../iavl
+	github.com/artela-network/aspect-core => ../aspect-core
+	github.com/artela-network/artela-evm => ../evm
+	github.com/artela-network/aspect-core => ../aspect-core
 )

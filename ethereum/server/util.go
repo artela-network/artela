@@ -23,7 +23,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	rpc2 "github.com/artela-network/artela/ethereum/rpc"
+	ethrpc "github.com/artela-network/artela/ethereum/rpc"
 	"github.com/artela-network/artela/ethereum/server/config"
 )
 
@@ -63,14 +63,14 @@ func CreateJSONRPC(ctx *server.Context,
 	tmRPCAddr,
 	tmEndpoint string,
 	config *config.Config,
-) (*rpc2.ArtelaService, error) {
-	cfg := rpc2.DefaultConfig()
+) (*ethrpc.ArtelaService, error) {
+	cfg := ethrpc.DefaultConfig()
 	cfg.RPCGasCap = config.JSONRPC.GasCap
 	cfg.RPCEVMTimeout = config.JSONRPC.EVMTimeout
 	cfg.RPCTxFeeCap = config.JSONRPC.TxFeeCap
 	cfg.AppCfg = config
 
-	nodeCfg := rpc2.DefaultGethNodeConfig()
+	nodeCfg := ethrpc.DefaultGethNodeConfig()
 	address := strings.Split(config.JSONRPC.Address, ":")
 	if len(address) > 0 {
 		nodeCfg.HTTPHost = address[0]
@@ -96,8 +96,9 @@ func CreateJSONRPC(ctx *server.Context,
 		}
 		return nil
 	}))
-
-	stack, err := rpc2.NewNode(nodeCfg)
+	// do not start websocket
+	nodeCfg.WSHost = ""
+	stack, err := ethrpc.NewNode(nodeCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +106,12 @@ func CreateJSONRPC(ctx *server.Context,
 	wsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, nodeCfg.Logger)
 
 	am := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false})
-	serv := rpc2.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, am, nodeCfg.Logger)
+	serv := ethrpc.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, am, nodeCfg.Logger)
+
+	// allocate separate WS connection to Tendermint
+	tmWsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, nodeCfg.Logger)
+	wsSrv := ethrpc.NewWebsocketsServer(clientCtx, tmWsClient, config, nodeCfg.Logger)
+	wsSrv.Start()
 
 	return serv, nil
 }

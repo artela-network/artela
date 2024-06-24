@@ -1,6 +1,7 @@
 package support
 
 import (
+	"math"
 	"math/big"
 	"strings"
 
@@ -15,9 +16,24 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
+const (
+	epochZero     = uint64(0)
+	epochInfinite = math.MaxUint64
+)
+
 // EthereumConfig returns an Ethereum ChainConfig for EVM states transitions.
 // All the negative or nil values are converted to nil
-func (cc ChainConfig) EthereumConfig(chainID *big.Int) *params.ChainConfig {
+func (cc ChainConfig) EthereumConfig(currentBlock int64, chainID *big.Int) *params.ChainConfig {
+	// use height instead of time to determine if the fork has been applied
+	shanghaiTime := epochZero
+	if currentBlock < cc.ShanghaiBlock.Int64() {
+		shanghaiTime = epochInfinite
+	}
+	cancunTime := epochZero
+	if currentBlock < cc.CancunBlock.Int64() {
+		cancunTime = epochInfinite
+	}
+
 	return &params.ChainConfig{
 		ChainID:        chainID,
 		HomesteadBlock: getBlockValue(cc.HomesteadBlock),
@@ -25,20 +41,20 @@ func (cc ChainConfig) EthereumConfig(chainID *big.Int) *params.ChainConfig {
 		DAOForkSupport: cc.DAOForkSupport,
 		EIP150Block:    getBlockValue(cc.EIP150Block),
 		// EIP150Hash:              common.HexToHash(cc.EIP150Hash),
-		EIP155Block:         getBlockValue(cc.EIP155Block),
-		EIP158Block:         getBlockValue(cc.EIP158Block),
-		ByzantiumBlock:      getBlockValue(cc.ByzantiumBlock),
-		ConstantinopleBlock: getBlockValue(cc.ConstantinopleBlock),
-		PetersburgBlock:     getBlockValue(cc.PetersburgBlock),
-		IstanbulBlock:       getBlockValue(cc.IstanbulBlock),
-		MuirGlacierBlock:    getBlockValue(cc.MuirGlacierBlock),
-		BerlinBlock:         getBlockValue(cc.BerlinBlock),
-		LondonBlock:         getBlockValue(cc.LondonBlock),
-		ArrowGlacierBlock:   getBlockValue(cc.ArrowGlacierBlock),
-		GrayGlacierBlock:    getBlockValue(cc.GrayGlacierBlock),
-		MergeNetsplitBlock:  getBlockValue(cc.MergeNetsplitBlock),
-		// ShanghaiBlock:           getBlockValue(cc.ShanghaiBlock),
-		// CancunBlock:             getBlockValue(cc.CancunBlock),
+		EIP155Block:             getBlockValue(cc.EIP155Block),
+		EIP158Block:             getBlockValue(cc.EIP158Block),
+		ByzantiumBlock:          getBlockValue(cc.ByzantiumBlock),
+		ConstantinopleBlock:     getBlockValue(cc.ConstantinopleBlock),
+		PetersburgBlock:         getBlockValue(cc.PetersburgBlock),
+		IstanbulBlock:           getBlockValue(cc.IstanbulBlock),
+		MuirGlacierBlock:        getBlockValue(cc.MuirGlacierBlock),
+		BerlinBlock:             getBlockValue(cc.BerlinBlock),
+		LondonBlock:             getBlockValue(cc.LondonBlock),
+		ArrowGlacierBlock:       getBlockValue(cc.ArrowGlacierBlock),
+		GrayGlacierBlock:        getBlockValue(cc.GrayGlacierBlock),
+		MergeNetsplitBlock:      getBlockValue(cc.MergeNetsplitBlock),
+		ShanghaiTime:            &shanghaiTime,
+		CancunTime:              &cancunTime,
 		TerminalTotalDifficulty: nil,
 		Ethash:                  nil,
 		Clique:                  nil,
@@ -146,7 +162,7 @@ func (cc ChainConfig) Validate() error {
 		return errorsmod.Wrap(err, "CancunBlock")
 	}
 	// NOTE: chain ID is not needed to check config order
-	if err := cc.EthereumConfig(nil).CheckConfigForkOrder(); err != nil {
+	if err := cc.EthereumConfig(0, nil).CheckConfigForkOrder(); err != nil {
 		return errorsmod.Wrap(err, "invalid config fork order")
 	}
 	return nil

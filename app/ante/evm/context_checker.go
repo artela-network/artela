@@ -145,7 +145,7 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx
 	evmParams := vbd.evmKeeper.GetParams(ctx)
 	chainCfg := evmParams.GetChainConfig()
 	chainID := vbd.evmKeeper.ChainID()
-	ethCfg := chainCfg.EthereumConfig(chainID)
+	ethCfg := chainCfg.EthereumConfig(ctx.BlockHeight(), chainID)
 	baseFee := vbd.evmKeeper.GetBaseFee(ctx, ethCfg)
 	enableCreate := evmParams.GetEnableCreate()
 	enableCall := evmParams.GetEnableCall()

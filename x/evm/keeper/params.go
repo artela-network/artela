@@ -23,7 +23,7 @@ func (k Keeper) GetParams(ctx cosmos.Context) (params support.Params) {
 
 func (k *Keeper) GetChainConfig(ctx cosmos.Context) *params.ChainConfig {
 	chainParams := k.GetParams(ctx)
-	ethCfg := chainParams.ChainConfig.EthereumConfig(k.ChainID())
+	ethCfg := chainParams.ChainConfig.EthereumConfig(ctx.BlockHeight(), k.ChainID())
 	return ethCfg
 }
 

@@ -258,7 +258,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
 func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
 
-	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
+	evmConfig, err := k.EVMConfig(ctx, ctx.BlockHeader().ProposerAddress, k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
@@ -384,11 +384,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, evm,
 			ctx.BlockHeight, stateDB, k.logger)
-		resp, aspectErr := nativeContract.ApplyMessage(ctx, msg, commit)
-		if resp != nil {
-			resp.Hash = txConfig.TxHash.Hex()
-		}
-		return resp, aspectErr
+		nativeContract.Init()
+		ret, leftoverGas, vmErr = nativeContract.ApplyMessage(ctx, msg, leftoverGas, commit)
 	} else if contractCreation {
 		// take over the nonce management from evm:
 		// - reset sender's nonce to msg.Nonce() before calling evm.
@@ -411,7 +408,11 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		leftoverGas = preTxResult.Gas
 		if preTxResult.Err != nil {
 			// short circuit if pre tx failed
-			vmErr = preTxResult.Err
+			if preTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
+				vmErr = vm.ErrOutOfGas
+			} else {
+				vmErr = preTxResult.Err
+			}
 		} else {
 			// execute evm call
 			ret, leftoverGas, vmErr = evm.Call(aspectCtx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
@@ -463,7 +464,11 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 				})
 			if postTxResult.Err != nil {
 				// overwrite vmErr if post tx reverted
-				vmErr = postTxResult.Err
+				if postTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
+					vmErr = vm.ErrOutOfGas
+				} else {
+					vmErr = postTxResult.Err
+				}
 				ret = postTxResult.Ret
 			}
 			leftoverGas = postTxResult.Gas
