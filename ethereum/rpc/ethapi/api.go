@@ -60,11 +60,13 @@ func (e *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 
 // MaxPriorityFeePerGas returns a suggestion for a gas tip cap for dynamic fee transactions.
 func (s *EthereumAPI) MaxPriorityFeePerGas(ctx context.Context) (*hexutil.Big, error) {
+	s.logger.Debug("json-api: MaxPriorityFeePerGas")
 	return nil, errors.New("MaxPriorityFeePerGas is not implemented")
 }
 
 // FeeHistory returns the fee market history.
 func (s *EthereumAPI) FeeHistory(ctx context.Context, blockCount math.HexOrDecimal64, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*rpctypes.FeeHistoryResult, error) {
+	s.logger.Debug("json-api: FeeHistory")
 	return s.b.FeeHistory(uint64(blockCount), lastBlock, rewardPercentiles)
 }
 
@@ -230,7 +232,7 @@ func (s *PersonalAccountAPI) SendTransaction(ctx context.Context, args Transacti
 	}
 	signed, err := s.signTransaction(ctx, &args, passwd)
 	if err != nil {
-		log.Warn("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
+		log.Debug("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
 		return common.Hash{}, err
 	}
 	return SubmitTransaction(ctx, s.logger, s.b, signed)
@@ -1053,7 +1055,7 @@ func (s *TransactionAPI) SendTransaction(ctx context.Context, args TransactionAr
 	}
 	signed, err := s.b.SignTransaction(&args)
 	if err != nil {
-		log.Warn("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
+		log.Debug("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
 		return common.Hash{}, err
 	}
 	return SubmitTransaction(ctx, s.logger, s.b, signed)
