@@ -1,5 +1,3 @@
-// Copyright Tharsis Labs Ltd.(Evmos)
-// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package rpc
 
 import (
@@ -15,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
@@ -22,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/filters"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
@@ -35,6 +33,7 @@ import (
 	"github.com/artela-network/artela/ethereum/server/config"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 type WebsocketsServer interface {
@@ -394,9 +393,6 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 		return nil, errors.Wrap(err, "error creating block filter")
 	}
 
-	// TODO: use events
-	baseFee := big.NewInt(params.InitialBaseFee)
-
 	go func() {
 		headersCh := sub.Event()
 		errCh := sub.Err()
@@ -413,7 +409,50 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					continue
 				}
 
+				baseFee := types.BaseFeeFromEvents(data.ResultBeginBlock.Events)
+
+				cosmosHash := data.Header.Hash()
+
 				header := types.EthHeaderFromTendermint(data.Header, ethtypes.Bloom{}, baseFee)
+				if data.NumTxs == 0 {
+					header.TxHash = ethtypes.EmptyTxsHash
+				}
+
+				bloom := ethtypes.Bloom{}
+				for _, et := range data.ResultEndBlock.Events {
+					if et.Type != evmtypes.EventTypeBlockBloom {
+						continue
+					}
+
+					for _, attr := range et.Attributes {
+						if attr.Key == evmtypes.AttributeKeyEthereumBloom {
+							bloom = ethtypes.BytesToBloom([]byte(attr.Value))
+						}
+					}
+				}
+
+				// TODO: Eth TransactionsRoot unable to obtain ，now remove transactionsRoot，
+				result := map[string]interface{}{
+					"parentHash":      header.ParentHash,
+					"sha3Uncles":      header.UncleHash,
+					"miner":           header.Coinbase,
+					"stateRoot":       header.Root,
+					"receiptsRoot":    header.ReceiptHash,
+					"logsBloom":       bloom,
+					"difficulty":      header.Difficulty,
+					"number":          header.Number,
+					"gasLimit":        header.GasLimit,
+					"gasUsed":         header.GasUsed,
+					"timestamp":       header.Time,
+					"extraData":       header.Extra,
+					"mixHash":         header.MixDigest,
+					"nonce":           header.Nonce,
+					"baseFeePerGas":   header.BaseFee,
+					"withdrawalsRoot": header.WithdrawalsHash,
+					"excessDataGas":   header.ExcessDataGas,
+					"hash":            hexutil.Encode(cosmosHash.Bytes()),
+					"size":            0,
+				}
 
 				// write to ws conn
 				res := &SubscriptionNotification{
@@ -421,7 +460,7 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					Method:  "eth_subscription",
 					Params: &SubscriptionResult{
 						Subscription: subID,
-						Result:       header,
+						Result:       result,
 					},
 				}
 

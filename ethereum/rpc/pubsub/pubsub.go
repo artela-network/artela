@@ -52,17 +52,14 @@ func (m *memEventBus) Topics() (topics []string) {
 }
 
 func (m *memEventBus) AddTopic(name string, src <-chan coretypes.ResultEvent) error {
-	m.topicsMux.RLock()
-	_, ok := m.topics[name]
-	m.topicsMux.RUnlock()
+	m.topicsMux.Lock()
+	defer m.topicsMux.Unlock()
 
-	if ok {
+	if _, ok := m.topics[name]; ok {
 		return errors.New("topic already registered")
 	}
 
-	m.topicsMux.Lock()
 	m.topics[name] = src
-	m.topicsMux.Unlock()
 
 	go m.publishTopic(name, src)
 
@@ -71,8 +68,9 @@ func (m *memEventBus) AddTopic(name string, src <-chan coretypes.ResultEvent) er
 
 func (m *memEventBus) RemoveTopic(name string) {
 	m.topicsMux.Lock()
+	defer m.topicsMux.Unlock()
 	delete(m.topics, name)
-	m.topicsMux.Unlock()
+
 }
 
 func (m *memEventBus) Subscribe(name string) (<-chan coretypes.ResultEvent, UnsubscribeFunc, error) {
@@ -97,7 +95,13 @@ func (m *memEventBus) Subscribe(name string) (<-chan coretypes.ResultEvent, Unsu
 	unsubscribe := func() {
 		m.subscribersMux.Lock()
 		defer m.subscribersMux.Unlock()
-		delete(m.subscribers[name], id)
+		if subs, ok := m.subscribers[name]; ok {
+			delete(subs, id)
+			if len(subs) == 0 {
+				delete(m.subscribers, name)
+			}
+		}
+		close(ch)
 	}
 
 	return ch, unsubscribe, nil
@@ -121,23 +125,25 @@ func (m *memEventBus) closeAllSubscribers(name string) {
 	m.subscribersMux.Lock()
 	defer m.subscribersMux.Unlock()
 
-	subsribers := m.subscribers[name]
-	delete(m.subscribers, name)
-
-	for _, sub := range subsribers {
-		close(sub)
+	if subscribers, ok := m.subscribers[name]; ok {
+		delete(m.subscribers, name)
+		for _, sub := range subscribers {
+			close(sub)
+		}
 	}
 }
 
 func (m *memEventBus) publishAllSubscribers(name string, msg coretypes.ResultEvent) {
 	m.subscribersMux.RLock()
-	subsribers := m.subscribers[name]
-	m.subscribersMux.RUnlock()
+	defer m.subscribersMux.RUnlock()
 
-	for _, sub := range subsribers {
-		select {
-		case sub <- msg:
-		default:
+	if subscribers, ok := m.subscribers[name]; ok {
+		for _, sub := range subscribers {
+			select {
+			case sub <- msg:
+			default:
+				// Handle message drop if necessary
+			}
 		}
 	}
 }
