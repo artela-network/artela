@@ -41,33 +41,39 @@ require (
 	github.com/artela-network/aspect-runtime v0.4.7-rc6 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
-	github.com/bytecodealliance/wasmtime-go/v14 v14.0.0 // indirect
-	github.com/cockroachdb/errors v1.9.1 // indirect
+	github.com/bytecodealliance/wasmtime-go/v20 v20.0.0 // indirect
+	github.com/cespare/xxhash v1.1.0 // indirect
+	github.com/cockroachdb/errors v1.11.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v1.1.0 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
-	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
-	github.com/cosmos/cosmos-db v1.0.0 // indirect
+	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
-	github.com/emicklei/dot v1.4.2 // indirect
+	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
+	github.com/dgraph-io/ristretto v0.1.1 // indirect
+	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/getsentry/sentry-go v0.21.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
+	github.com/golang/glog v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/hashicorp/go-bexpr v0.1.10 // indirect
+	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/linxGnu/grocksdb v1.8.12 // indirect
 	github.com/mitchellh/pointerstructure v1.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	go.etcd.io/bbolt v1.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20230706204954-ccb25ca9f130 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
@@ -224,42 +230,13 @@ require (
 replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.3 // TODO artela: btcd/btcec become not valid for 0.23.x, need to dig into it
 	github.com/bytecodealliance/wasmtime-go/v20 => github.com/artela-network/wasmtime-go/v20 v20.0.2
+	github.com/cockroachdb/pebble => github.com/cockroachdb/pebble v0.0.0-20230525220056-bb4fc9527b3b
 	// github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-7-1
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
 
-// replace (
-// 	// github.com/artela-network/artela-evm => ../artela-evm
-// 	// github.com/artela-network/aspect-core => ../aspect-core
-// 	// github.com/artela-network/aspect-runtime => ../aspect-runtime
-// 	github.com/cometbft/cometbft => ../artela-cometbft
-
-// 	// github.com/cometbft/cometbft-db => github.com/cometbft/cometbft-db v0.11.0
-// 	github.com/cometbft/cometbft-db => ../../cosmos/cosmos-db
-// 	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk
-// 	// github.com/cosmos/iavl => ../../sei-protocol/sei-iavl
-// 	// github.com/cosmos/iavl => ../../cosmos/iavl
-// 	github.com/cosmos/iavl => ../iavl
-
-// 	github.com/ethereum/go-ethereum => ../../ethereum/go-ethereum
-// // github.com/cometbft/cometbft-db => ../../sei-protocol/sei-db
-// // github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-// )
-
 replace (
-	// github.com/artela-network/artela-evm => ../artela-evm
-	// github.com/artela-network/aspect-core => ../aspect-core
-	// github.com/artela-network/aspect-runtime => ../aspect-runtime
-	github.com/cometbft/cometbft => ../../luketheart/cometbft
-
-	// github.com/cometbft/cometbft-db => github.com/cometbft/cometbft-db v0.11.0
-	github.com/cometbft/cometbft-db => ../../luketheart/cosmos-db
-	github.com/cosmos/cosmos-sdk => ../../luketheart/artela-cosmos-sdk
-	// github.com/cosmos/iavl => ../../sei-protocol/sei-iavl
-	// github.com/cosmos/iavl => ../../cosmos/iavl
-	github.com/cosmos/iavl => ../../luketheart/cosmos-iavl
-
-	github.com/ethereum/go-ethereum => ../../ethereum/go-ethereum
-// github.com/cometbft/cometbft-db => ../../sei-protocol/sei-db
-// github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	github.com/cosmos/cosmos-db => ../cosmos-db // branch: archive-node
+	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk // branch: archive-node
+	github.com/cosmos/iavl => ../iavl // branch: archive-node
 )
