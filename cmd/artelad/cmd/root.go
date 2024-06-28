@@ -312,6 +312,7 @@ func (a appCreator) newApp(
 		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server2.FlagIAVLCacheSize))),
 		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server2.FlagDisableIAVLFastNode))),
 		baseapp.SetChainID(chainID),
+		baseapp.SetForceCompactInterval(cast.ToInt64(appOpts.Get(server2.FlagForceCompactInterval))),
 	)
 }
 
