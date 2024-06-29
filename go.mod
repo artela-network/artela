@@ -8,7 +8,7 @@ require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.2.1
 	github.com/artela-network/artela-evm v0.4.7-rc6
-	github.com/artela-network/aspect-core v0.4.7-rc6
+	github.com/artela-network/aspect-core v0.4.7-rc6-fix
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft v0.37.2
 	github.com/cometbft/cometbft-db v0.7.0
@@ -135,7 +135,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.11.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/gorilla/websocket v1.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/gtank/merlin v0.1.1 // indirect
