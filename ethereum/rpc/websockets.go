@@ -17,6 +17,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
+	"github.com/status-im/keycard-go/hexutils"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -34,6 +35,7 @@ import (
 	"github.com/artela-network/artela/ethereum/server/config"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 type WebsocketsServer interface {
@@ -421,17 +423,23 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 
 				bloom := ethtypes.Bloom{}
 
-				/*for _, et := range data.ResultEndBlock.Events {
+				for _, et := range data.ResultEndBlock.Events {
 					if et.Type != evmtypes.EventTypeBlockBloom {
 						continue
 					}
 
 					for _, attr := range et.Attributes {
 						if attr.Key == evmtypes.AttributeKeyEthereumBloom {
+							msgByte := []byte(attr.Value)
+							if len(msgByte) != 256 {
+								sprintf := fmt.Sprintf("subscribeNewHeads length %d bloom %s header %d ", len(msgByte), hexutils.BytesToHex([]byte(attr.Value)), data.Header.Height)
+								api.logger.Info(sprintf)
+								continue
+							}
 							bloom = ethtypes.BytesToBloom([]byte(attr.Value))
 						}
 					}
-				}*/
+				}
 
 				// TODO: Eth TransactionsRoot unable to obtain ，now remove transactionsRoot，
 				result := map[string]interface{}{
