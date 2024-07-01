@@ -1,10 +1,7 @@
 package evm
 
 import (
-	"fmt"
-
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/status-im/keycard-go/hexutils"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
 
@@ -37,8 +34,6 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	infCtx := ctx.WithGasMeter(cosmos.NewInfiniteGasMeter())
 
 	bloom := ethereum.BytesToBloom(k.GetBlockBloomTransient(infCtx).Bytes())
-	sprintf := fmt.Sprintf("end block event %d bloom %s  header %d, ", len(bloom.Bytes()), hexutils.BytesToHex(bloom.Bytes()), ctx.BlockHeight())
-	k.Logger(ctx).Info(sprintf)
 
 	k.EmitBlockBloomEvent(infCtx, bloom)
 
