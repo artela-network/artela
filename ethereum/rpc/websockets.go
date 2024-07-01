@@ -34,7 +34,6 @@ import (
 	"github.com/artela-network/artela/ethereum/server/config"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 type WebsocketsServer interface {
@@ -421,7 +420,8 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 				}
 
 				bloom := ethtypes.Bloom{}
-				for _, et := range data.ResultEndBlock.Events {
+
+				/*for _, et := range data.ResultEndBlock.Events {
 					if et.Type != evmtypes.EventTypeBlockBloom {
 						continue
 					}
@@ -431,7 +431,7 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 							bloom = ethtypes.BytesToBloom([]byte(attr.Value))
 						}
 					}
-				}
+				}*/
 
 				// TODO: Eth TransactionsRoot unable to obtain ，now remove transactionsRoot，
 				result := map[string]interface{}{
