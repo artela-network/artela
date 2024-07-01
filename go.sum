@@ -261,8 +261,8 @@ github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-7-1 h1:PpGpkm6xxG/
 github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-7-1/go.mod h1:vCwxnQmF5xn8DieUZdGT2qb0hEbsLNbX4Zscl03MEOc=
 github.com/artela-network/artela-evm v0.4.7-rc7 h1:6BbpLmZZQQDIqtU9KIK0yKCovZKag4TzN4gvjGxlgb4=
 github.com/artela-network/artela-evm v0.4.7-rc7/go.mod h1:kRZPmabNVQ+qwtC75qG/JxUTO/bekgAvfvURI8ObcOY=
-github.com/artela-network/aspect-core v0.4.7-rc7 h1:rTk5Mv1pHt+khhQwkAQZNTBYChJoeNwnfJE9Ae7zVSA=
-github.com/artela-network/aspect-core v0.4.7-rc7/go.mod h1:C/aJERYZ2O3yxAuP6I4gg0I/R3efZSIDt64PMw50Uwo=
+github.com/artela-network/aspect-core v0.4.7-rc7-1 h1:jH3NcHfjcWJ3BZqVwHag3CWZwF3EeuR0zTHNOry8kJI=
+github.com/artela-network/aspect-core v0.4.7-rc7-1/go.mod h1:C/aJERYZ2O3yxAuP6I4gg0I/R3efZSIDt64PMw50Uwo=
 github.com/artela-network/aspect-runtime v0.4.7-rc7 h1:CPqrp4Zrm3s6+EvzIvlhid9bqDLGlxWVo8Xg12rgLdY=
 github.com/artela-network/aspect-runtime v0.4.7-rc7/go.mod h1:eiBT6JkElkgJNRgRXTOJu/bVS3br+GoqMDv6Gn4a0cU=
 github.com/artela-network/wasmtime-go/v20 v20.0.2 h1:miyLlk3+w+5b2LdI0sMpzHiUOFv4O+MzaZjQIg0vqW8=
