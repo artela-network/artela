@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math/big"
 
@@ -208,10 +209,12 @@ func (k Keeper) GetAuthority() cosmos.AccAddress {
 
 // EmitBlockBloomEvent emit block bloom events
 func (k Keeper) EmitBlockBloomEvent(ctx cosmos.Context, bloom ethereum.Bloom) {
+	encodedBloom := base64.StdEncoding.EncodeToString(bloom.Bytes())
+
 	ctx.EventManager().EmitEvent(
 		cosmos.NewEvent(
 			types.EventTypeBlockBloom,
-			cosmos.NewAttribute(types.AttributeKeyEthereumBloom, string(bloom.Bytes())),
+			cosmos.NewAttribute(types.AttributeKeyEthereumBloom, encodedBloom),
 		),
 	)
 }

@@ -3,6 +3,7 @@ package rpc
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,16 +14,15 @@ import (
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/eth/filters"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/status-im/keycard-go/hexutils"
-
-	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/filters"
-	"github.com/ethereum/go-ethereum/rpc"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -430,13 +430,21 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 
 					for _, attr := range et.Attributes {
 						if attr.Key == evmtypes.AttributeKeyEthereumBloom {
-							msgByte := []byte(attr.Value)
+							/*msgByte := []byte(attr.Value)
 							if len(msgByte) != 256 {
 								sprintf := fmt.Sprintf("subscribeNewHeads length %d bloom %s header %d ", len(msgByte), hexutils.BytesToHex([]byte(attr.Value)), data.Header.Height)
 								api.logger.Info(sprintf)
 								continue
+							}*/
+							encodedBloom, deCodeErr := base64.StdEncoding.DecodeString(attr.Value)
+							if len(encodedBloom) != 256 {
+								sprintf := fmt.Sprintf("subscribeNewHeads length %d bloom %s header %d ", len(encodedBloom), hexutils.BytesToHex([]byte(attr.Value)), data.Header.Height)
+								api.logger.Info(sprintf)
+								continue
 							}
-							bloom = ethtypes.BytesToBloom([]byte(attr.Value))
+							if deCodeErr != nil {
+								bloom = ethtypes.BytesToBloom(encodedBloom)
+							}
 						}
 					}
 				}
