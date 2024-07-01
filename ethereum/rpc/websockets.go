@@ -442,7 +442,9 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 								api.logger.Info(sprintf)
 								continue
 							}
-							if deCodeErr != nil {
+							if deCodeErr == nil {
+								sprintf := fmt.Sprintf("subscribeNewHeads success length %d bloom %s header %d ", len(encodedBloom), hexutils.BytesToHex([]byte(attr.Value)), data.Header.Height)
+								api.logger.Info(sprintf)
 								bloom = ethtypes.BytesToBloom(encodedBloom)
 							}
 						}
