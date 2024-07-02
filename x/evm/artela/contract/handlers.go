@@ -718,7 +718,9 @@ func isAspectDeployed(ctx sdk.Context, store *AspectStore, aspectId common.Addre
 func validateCode(ctx sdk.Context, aspectId common.Address, aspectCode []byte, commit bool) error {
 	aspectCtx := mustGetAspectContext(ctx)
 	runner, err := run.NewRunner(aspectCtx, ctx.Logger(), aspectId.String(), 1, aspectCode, commit)
-	defer runner.Return()
+	if err == nil {
+		runner.Return()
+	}
 
 	return err
 }
