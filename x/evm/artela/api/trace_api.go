@@ -135,8 +135,11 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 	callTree := tracer.CallTree()
 	if query.CallIdx == nil || *query.CallIdx < 0 {
 		// for negative numbers we return the entire call tree
-		ethCallTree := &artelatypes.EthCallTree{Calls: make(map[uint64]*artelatypes.EthCallMessage)}
+		ethCallTree := &artelatypes.EthCallTree{Calls: make([]*artelatypes.EthCallMessage, 0, tracer.CurrentCallIndex())}
 		traverseEVMCallTree(callTree.Root(), ethCallTree)
+		sort.Slice(ethCallTree.Calls, func(i, j int) bool {
+			return *ethCallTree.Calls[i].Index < *ethCallTree.Calls[j].Index
+		})
 		result = ethCallTree
 	} else {
 		call := tracer.CallTree().FindCall(uint64(*query.CallIdx))
@@ -153,14 +156,11 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 }
 
 func traverseEVMCallTree(ethCall *vm.Call, evmCallTree *artelatypes.EthCallTree) {
-	if evmCallTree == nil {
-		evmCallTree = &artelatypes.EthCallTree{Calls: make(map[uint64]*artelatypes.EthCallMessage)}
-	}
 	if ethCall == nil {
 		return
 	}
 
-	evmCallTree.GetCalls()[ethCall.Index] = callToTrace(ethCall)
+	evmCallTree.Calls = append(evmCallTree.Calls, callToTrace(ethCall))
 
 	children := ethCall.Children
 	if children == nil {
