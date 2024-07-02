@@ -10,7 +10,7 @@ require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.2.1
 	github.com/artela-network/artela-evm v0.4.7-rc6
-	github.com/artela-network/aspect-core v0.4.7-rc6-fix
+	github.com/artela-network/aspect-core v0.4.7-rc7
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft v0.37.2
 	github.com/cosmos/cosmos-db v1.0.2
@@ -38,10 +38,10 @@ require (
 
 require (
 	github.com/DataDog/zstd v1.5.5 // indirect
-	github.com/artela-network/aspect-runtime v0.4.7-rc6 // indirect
+	github.com/artela-network/aspect-runtime v0.4.7-rc7 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
-	github.com/bytecodealliance/wasmtime-go/v20 v20.0.0 // indirect
+	github.com/bytecodealliance/wasmtime-go/v14 v14.0.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cockroachdb/errors v1.11.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
@@ -238,7 +238,9 @@ replace (
 )
 
 replace (
+	github.com/artela-network/aspect-core => github.com/artela-network/aspect-core v0.4.7-rc6-fix
+	github.com/artela-network/aspect-runtime => github.com/artela-network/aspect-runtime v0.4.7-rc6
 	github.com/cosmos/cosmos-db => ../cosmos-db // branch: archive-node
-	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk // branch: archive-node
+	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk // branch: fix/rpc-zero-block-archive-node
 	github.com/cosmos/iavl => ../iavl // branch: archive-node
 )
