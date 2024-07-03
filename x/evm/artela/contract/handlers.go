@@ -12,6 +12,7 @@ import (
 	"github.com/artela-network/aspect-core/djpm/contract"
 	"github.com/artela-network/aspect-core/djpm/run"
 	artelasdkType "github.com/artela-network/aspect-core/types"
+	runtime "github.com/artela-network/aspect-runtime"
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -158,7 +159,7 @@ func (h DeployHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common
 	}
 
 	// validate aspect code
-	err = validateCode(ctx.cosmosCtx, aspectId, code, ctx.commit)
+	err = validateCode(ctx.cosmosCtx, code)
 	return
 }
 
@@ -259,7 +260,7 @@ func (h UpgradeHandler) decodeAndValidation(ctx *HandlerContext, gas uint64) (as
 	}
 
 	// validate aspect code
-	err = validateCode(ctx.cosmosCtx, aspectId, code, false)
+	err = validateCode(ctx.cosmosCtx, code)
 	return
 }
 
@@ -715,12 +716,13 @@ func isAspectDeployed(ctx sdk.Context, store *AspectStore, aspectId common.Addre
 	return store.GetAspectLastVersion(ctx, aspectId).Cmp(zero) != 0
 }
 
-func validateCode(ctx sdk.Context, aspectId common.Address, aspectCode []byte, commit bool) error {
-	aspectCtx := mustGetAspectContext(ctx)
-	runner, err := run.NewRunner(aspectCtx, ctx.Logger(), aspectId.String(), 1, aspectCode, commit)
-	defer runner.Return()
+func validateCode(ctx sdk.Context, aspectCode []byte) error {
+	validator, err := runtime.NewValidator(ctx, ctx.Logger(), runtime.WASM)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return validator.Validate(aspectCode)
 }
 
 func checkContractOwner(ctx *HandlerContext, contractAddr common.Address, gas uint64) (bool, uint64) {
