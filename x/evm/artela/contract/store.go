@@ -136,7 +136,11 @@ func (k *AspectStore) GetAspectCode(ctx sdk.Context, aspectId common.Address, ve
 		version.Bytes(),
 	)
 	code := codeStore.Get(versionKey)
-	return code, version
+
+	// stored code is already validated, so we can ignore the error here
+	parsed, _ := ParseByteCode(code)
+
+	return parsed, version
 }
 
 // storeAspectVersion version
