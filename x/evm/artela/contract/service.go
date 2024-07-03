@@ -40,7 +40,7 @@ func (service *AspectService) GetAspectOf(ctx sdk.Context, aspectId common.Addre
 }
 
 func (service *AspectService) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
-	if version == nil {
+	if version == nil || version.Cmp(zero) <= 0 {
 		version = service.aspectStore.GetAspectLastVersion(ctx, aspectId)
 	}
 	return service.aspectStore.GetAspectCode(ctx, aspectId, version)
