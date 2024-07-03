@@ -367,7 +367,9 @@ func (b BindHandler) decodeAndValidation(ctx *HandlerContext, gas uint64) (
 
 	// overwrite aspect version, just in case if aspect version is 0 which means we will need to overwrite
 	// it to latest
-	_, aspectVersion = ctx.service.GetAspectCode(ctx.cosmosCtx, aspectId, aspectVersion)
+	if aspectVersion == nil || aspectVersion.Cmp(zero) <= 0 {
+		aspectVersion = ctx.service.aspectStore.GetAspectLastVersion(ctx.cosmosCtx, aspectId)
+	}
 
 	return
 }
@@ -713,7 +715,7 @@ func (o OperationHandler) decodeAndValidation(ctx *HandlerContext) (aspectId com
 }
 
 func isAspectDeployed(ctx sdk.Context, store *AspectStore, aspectId common.Address) bool {
-	return store.GetAspectLastVersion(ctx, aspectId).Cmp(zero) != 0
+	return store.GetAspectLastVersion(ctx, aspectId).Cmp(zero) > 0
 }
 
 func validateCode(ctx sdk.Context, aspectCode []byte) error {
@@ -722,7 +724,12 @@ func validateCode(ctx sdk.Context, aspectCode []byte) error {
 		return err
 	}
 
-	return validator.Validate(aspectCode)
+	parsed, err := ParseByteCode(aspectCode)
+	if err != nil {
+		return err
+	}
+
+	return validator.Validate(parsed)
 }
 
 func checkContractOwner(ctx *HandlerContext, contractAddr common.Address, gas uint64) (bool, uint64) {
