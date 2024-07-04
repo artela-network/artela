@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -335,7 +336,12 @@ func (b *BackendImpl) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethty
 
 		for _, attr := range event.Attributes {
 			if attr.Key == evmtypes.AttributeKeyEthereumBloom {
-				return ethtypes.BytesToBloom([]byte(attr.Value)), nil
+				encodedBloom, err := base64.StdEncoding.DecodeString(attr.Value)
+				if err != nil {
+					return ethtypes.Bloom{}, err
+				}
+
+				return ethtypes.BytesToBloom(encodedBloom), nil
 			}
 		}
 	}
