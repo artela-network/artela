@@ -20,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	"math/big"
+	"time"
 )
 
 var (
@@ -719,15 +720,19 @@ func isAspectDeployed(ctx sdk.Context, store *AspectStore, aspectId common.Addre
 }
 
 func validateCode(ctx sdk.Context, aspectCode []byte) error {
+	startTime := time.Now()
 	validator, err := runtime.NewValidator(ctx, ctx.Logger(), runtime.WASM)
 	if err != nil {
 		return err
 	}
+	ctx.Logger().Info("validated aspect bytecode", "duration", time.Since(startTime).String())
 
+	startTime = time.Now()
 	parsed, err := ParseByteCode(aspectCode)
 	if err != nil {
 		return err
 	}
+	ctx.Logger().Info("parsed aspect bytecode", "duration", time.Since(startTime).String())
 
 	return validator.Validate(parsed)
 }
