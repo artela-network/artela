@@ -262,7 +262,8 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	defer aspectCtx.Destroy()
 
 	// pass false to not commit StateDB
-	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
+	isCustomVerification := len(args.GetValidationData()) > 0
+	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig, isCustomVerification)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -324,13 +325,6 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 		return nil, status.Error(codes.Internal, "failed to load evm config")
 	}
 
-	// Aspect Runtime Context Lifecycle: create aspect context.
-	// This marks the beginning of running an aspect of EstimateGas, creating the aspect context,
-	// and establishing the link with the SDK context.
-	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction(), cfg,
-		artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
-	defer aspectCtx.Destroy()
-
 	// ApplyMessageWithConfig expect correct nonce set in msg
 	nonce := k.GetNonce(ctx, args.GetFrom())
 	args.Nonce = (*hexutil.Uint64)(&nonce)
@@ -346,12 +340,23 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	// NOTE: the errors from the executable below should be consistent with go-ethereum,
 	// so we don't wrap them with the gRPC status code
 
+	isCustomVerification := len(args.GetValidationData()) > 0
+
 	// Create a helper to check if a gas allowance results in an executable txs
 	executable := func(gas uint64) (vmError bool, rsp *txs.MsgEthereumTxResponse, err error) {
+		// need to create a cache context here to avoid state change affecting each other
+		tmpCtx, _ := ctx.CacheContext()
+		// Aspect Runtime Context Lifecycle: create aspect context.
+		// This marks the beginning of running an aspect of EstimateGas, creating the aspect context,
+		// and establishing the link with the SDK context.
+		cosmosCtx, aspectCtx := k.WithAspectContext(tmpCtx, txMsg.AsTransaction(), cfg,
+			artelatypes.NewEthBlockContextFromQuery(tmpCtx, k.clientContext))
+		defer aspectCtx.Destroy()
+
 		// update the message with the new gas value
 		msg.GasLimit = gas
 		// pass false to not commit StateDB
-		rsp, err = k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
+		rsp, err = k.ApplyMessageWithConfig(cosmosCtx, aspectCtx, msg, nil, false, cfg, txConfig, isCustomVerification)
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) {
 				return true, nil, nil // Special case, raise gas limit
@@ -439,7 +444,8 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
 
-		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
+		isCustomVerification := k.isCustomizedVerification(ethTx)
+		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig, isCustomVerification)
 		if err != nil {
 			continue
 		}
@@ -624,7 +630,8 @@ func (k *Keeper) traceTx(
 		}
 	}()
 
-	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig)
+	isCustomVerification := k.isCustomizedVerification(tx)
+	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig, isCustomVerification)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}

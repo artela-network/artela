@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
 
 	"github.com/artela-network/artela/x/evm/txs"
@@ -19,14 +20,24 @@ import (
 )
 
 // GetEthIntrinsicGas returns the intrinsic gas cost for the transaction.
-func (k *Keeper) GetEthIntrinsicGas(ctx cosmos.Context, msg *core.Message, cfg *params.ChainConfig, isContractCreation bool) (uint64, error) {
+func (k *Keeper) GetEthIntrinsicGas(ctx cosmos.Context, msg *core.Message, cfg *params.ChainConfig, isContractCreation bool, isCustomVerification bool) (uint64, error) {
 	blockHeight := big.NewInt(ctx.BlockHeight())
 
 	homestead := cfg.IsHomestead(blockHeight)
 	istanbul := cfg.IsIstanbul(blockHeight)
 
 	// EIP3860(limit and meter initcode): https://eips.ethereum.org/EIPS/eip-3860
-	return core.IntrinsicGas(msg.Data, msg.AccessList, isContractCreation, homestead, istanbul, false)
+	intrinsic, err := core.IntrinsicGas(msg.Data, msg.AccessList, isContractCreation, homestead, istanbul, false)
+	if err != nil {
+		return 0, err
+	}
+
+	// for custom verification transaction we add an extra tx verification gas cost as intrinsic gas
+	if isCustomVerification {
+		intrinsic += djpm.MaxTxVerificationGas
+	}
+
+	return intrinsic, nil
 }
 
 // RefundGas transfers the leftover gas to the sender of the message, caped to half of the total gas

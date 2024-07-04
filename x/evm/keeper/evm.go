@@ -176,7 +176,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	}
 
 	// pass true to commit the StateDB
-	res, err := k.ApplyMessageWithConfig(tmpCtx, aspectCtx, msg, nil, true, evmConfig, txConfig)
+	res, err := k.ApplyMessageWithConfig(tmpCtx, aspectCtx, msg, nil, true, evmConfig, txConfig, k.isCustomizedVerification(tx))
 	if err != nil {
 		ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
@@ -273,7 +273,7 @@ func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.E
 		return nil, errors.New("ApplyMessageWithConfig: unwrap AspectRuntimeContext failed")
 	}
 
-	return k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commit, evmConfig, txConfig)
+	return k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commit, evmConfig, txConfig, false)
 }
 
 // ApplyMessageWithConfig computes the new states by applying the given message against the existing states.
@@ -321,6 +321,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	commit bool,
 	cfg *states.EVMConfig,
 	txConfig states.TxConfig,
+	isCustomVerification bool,
 ) (*txs.MsgEthereumTxResponse, error) {
 	var (
 		ret   []byte // return bytes from evm execution
@@ -363,7 +364,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	contractCreation := msg.To == nil
 	isLondon := cfg.ChainConfig.IsLondon(evm.Context.BlockNumber)
 
-	intrinsicGas, err := k.GetEthIntrinsicGas(ctx, msg, cfg.ChainConfig, contractCreation)
+	intrinsicGas, err := k.GetEthIntrinsicGas(ctx, msg, cfg.ChainConfig, contractCreation, isCustomVerification)
 	if err != nil {
 		// should have already been checked on Ante Handler
 		return nil, errorsmod.Wrap(err, "intrinsic gas failed")
