@@ -1,8 +1,6 @@
 package evm
 
 import (
-	"runtime"
-
 	"github.com/artela-network/artela/x/evm/artela/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -15,16 +13,6 @@ import (
 
 // BeginBlock sets the cosmos Context and EIP155 chain id to the Keeper.
 func BeginBlock(_ cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBeginBlock) {
-	// We manually call runtime.GC in every block because in certain cases,
-	// the store objects created by wasmtime-go are not promptly released,
-	// causing the memory allocated by the wasm engine, which consumes a significant
-	// amount of resources, to linger in memory for extended periods. This may
-	// lead to excessive memory consumption and failure to allocate new memory
-	// on some machines.
-	// In testing, the time spent by runtime.GC with STW (Stop-The-World) is
-	// approximately 100 to 200 microseconds, with very limited impact on blocks.
-	runtime.GC()
-
 	// Aspect Runtime Context Lifecycle: create and store ExtBlockContext
 	// due to the design of the block context in Cosmos SDK,
 	// the extBlockCtx cannot be saved directly to the context of the deliver state

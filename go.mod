@@ -226,6 +226,7 @@ require (
 )
 
 replace (
+	github.com/artela-network/aspect-runtime => github.com/artela-network/aspect-runtime v0.4.7-rc7-fix-execution
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.3 // TODO artela: btcd/btcec become not valid for 0.23.x, need to dig into it
 	github.com/bytecodealliance/wasmtime-go/v20 => github.com/artela-network/wasmtime-go/v20 v20.0.2
 	github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-7-1
