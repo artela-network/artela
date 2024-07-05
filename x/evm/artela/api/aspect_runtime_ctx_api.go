@@ -21,6 +21,7 @@ var (
 
 var (
 	ctxKeyConstraints = map[asptypes.PointCut]*hashset.Set{
+		asptypes.INIT_METHOD:               hashset.New(aspctx.InitKeys...),
 		asptypes.OPERATION_METHOD:          hashset.New(aspctx.OperationKeys...),
 		asptypes.VERIFY_TX:                 hashset.New(aspctx.VerifyTxCtxKeys...),
 		asptypes.PRE_TX_EXECUTE_METHOD:     hashset.New(aspctx.PreTxCtxKeys...),

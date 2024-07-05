@@ -18,6 +18,7 @@ var (
 		asptypes.PRE_TX_EXECUTE_METHOD,
 		asptypes.POST_TX_EXECUTE_METHOD,
 		asptypes.OPERATION_METHOD,
+		asptypes.INIT_METHOD,
 	)
 )
 
