@@ -57,7 +57,7 @@ type DeployHandler struct {
 }
 
 func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, error) {
-	aspectId, code, properties, joinPoint, err := h.decodeAndValidation(ctx)
+	aspectId, code, initData, properties, joinPoint, err := h.decodeAndValidate(ctx)
 	if err != nil {
 		ctx.logger.Error("deploy aspect failed", "error", err, "from", ctx.from, "gasLimit", ctx.gasLimit)
 		return nil, 0, err
@@ -88,6 +88,34 @@ func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, 
 		}
 	}
 
+	// initialize aspect
+	aspectCtx := mustGetAspectContext(ctx.cosmosCtx)
+	runner, err := run.NewRunner(aspectCtx, ctx.logger, aspectId.String(), newVersion.Uint64(), code, ctx.commit)
+	if err != nil {
+		ctx.logger.Error("failed to create aspect runner", "error", err)
+		return nil, 0, err
+	}
+	defer runner.Return()
+
+	var txHash []byte
+	ethTxCtx := aspectCtx.EthTxContext()
+	if ethTxCtx != nil && ethTxCtx.TxContent() != nil {
+		txHash = ethTxCtx.TxContent().Hash().Bytes()
+	}
+
+	height := ctx.cosmosCtx.BlockHeight()
+	heightU64 := uint64(height)
+
+	_, gas, err = runner.JoinPoint(artelasdkType.INIT_METHOD, gas, height, &aspectId, &artelasdkType.InitInput{
+		Tx: &artelasdkType.WithFromTxInput{
+			Hash: txHash,
+			To:   aspectId.Bytes(),
+			From: ctx.from.Bytes(),
+		},
+		Block:    &artelasdkType.BlockInput{Number: &heightU64},
+		CallData: initData,
+	})
+
 	return nil, gas, err
 }
 
@@ -95,13 +123,15 @@ func (h DeployHandler) Method() string {
 	return "deploy"
 }
 
-func (h DeployHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common.Address, code []byte, properties []types.Property, joinPoint *big.Int, err error) {
+func (h DeployHandler) decodeAndValidate(ctx *HandlerContext) (aspectId common.Address, code, initData []byte, properties []types.Property, joinPoint *big.Int, err error) {
 	// input validations
 	code = ctx.parameters["code"].([]byte)
 	if len(code) == 0 {
 		err = errors.New("code is empty")
 		return
 	}
+
+	initData = ctx.parameters["initdata"].([]byte)
 
 	propertiesArr := ctx.parameters["properties"].([]struct {
 		Key   string `json:"key"`
@@ -142,12 +172,8 @@ func (h DeployHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common
 	properties = append(properties, proofProperty)
 
 	joinPoint = ctx.parameters["joinPoints"].(*big.Int)
-	if len(code) == 0 {
-		err = errorsmod.Wrapf(evmtypes.ErrCallContract, "Code verification failed during aspect deploy")
-		return
-	}
 	if joinPoint == nil {
-		err = errorsmod.Wrapf(evmtypes.ErrCallContract, "JoinPoints verification failed during aspect deploy")
+		err = errors.New("unable to decode join point")
 		return
 	}
 
@@ -160,7 +186,7 @@ func (h DeployHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common
 	}
 
 	// validate aspect code
-	err = validateCode(ctx.cosmosCtx, code)
+	code, err = validateCode(ctx.cosmosCtx, code)
 	return
 }
 
@@ -168,7 +194,7 @@ type UpgradeHandler struct {
 }
 
 func (h UpgradeHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, error) {
-	aspectId, code, properties, joinPoint, gas, err := h.decodeAndValidation(ctx, gas)
+	aspectId, code, properties, joinPoint, gas, err := h.decodeAndValidate(ctx, gas)
 	if err != nil {
 		return nil, gas, err
 	}
@@ -201,7 +227,7 @@ func (h UpgradeHandler) Method() string {
 	return "upgrade"
 }
 
-func (h UpgradeHandler) decodeAndValidation(ctx *HandlerContext, gas uint64) (aspectId common.Address,
+func (h UpgradeHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (aspectId common.Address,
 	code []byte,
 	properties []types.Property,
 	joinPoint *big.Int, leftover uint64, err error) {
@@ -261,7 +287,7 @@ func (h UpgradeHandler) decodeAndValidation(ctx *HandlerContext, gas uint64) (as
 	}
 
 	// validate aspect code
-	err = validateCode(ctx.cosmosCtx, code)
+	code, err = validateCode(ctx.cosmosCtx, code)
 	return
 }
 
@@ -269,7 +295,7 @@ type BindHandler struct {
 }
 
 func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, account, aspectVersion, priority, isContract, leftover, err := b.decodeAndValidation(ctx, gas)
+	aspectId, account, aspectVersion, priority, isContract, leftover, err := b.decodeAndValidate(ctx, gas)
 	if err != nil {
 		return nil, leftover, err
 	}
@@ -315,7 +341,7 @@ func (b BindHandler) Method() string {
 	return "bind"
 }
 
-func (b BindHandler) decodeAndValidation(ctx *HandlerContext, gas uint64) (
+func (b BindHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
 	aspectId common.Address,
 	account common.Address,
 	aspectVersion *uint256.Int,
@@ -379,7 +405,7 @@ type UnbindHandler struct {
 }
 
 func (u UnbindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, account, isContract, leftover, err := u.decodeAndValidation(ctx, gas)
+	aspectId, account, isContract, leftover, err := u.decodeAndValidate(ctx, gas)
 	if err != nil {
 		return nil, leftover, err
 	}
@@ -402,7 +428,7 @@ func (u UnbindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, rema
 	return nil, leftover, nil
 }
 
-func (u UnbindHandler) decodeAndValidation(ctx *HandlerContext, gas uint64) (
+func (u UnbindHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
 	aspectId common.Address,
 	account common.Address,
 	isContract bool,
@@ -444,7 +470,7 @@ type ChangeVersionHandler struct {
 }
 
 func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, account, version, isContract, leftover, err := c.decodeAndValidation(ctx, gas)
+	aspectId, account, version, isContract, leftover, err := c.decodeAndValidate(ctx, gas)
 	if err != nil {
 		return nil, leftover, err
 	}
@@ -458,7 +484,7 @@ func (c ChangeVersionHandler) Method() string {
 	return "changeversion"
 }
 
-func (c ChangeVersionHandler) decodeAndValidation(ctx *HandlerContext, gas uint64) (
+func (c ChangeVersionHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
 	aspectId common.Address,
 	account common.Address,
 	version uint64,
@@ -510,7 +536,7 @@ type GetVersionHandler struct {
 }
 
 func (g GetVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, err := g.decodeAndValidation(ctx)
+	aspectId, err := g.decodeAndValidate(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -529,7 +555,7 @@ func (g GetVersionHandler) Method() string {
 	return "versionof"
 }
 
-func (g GetVersionHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common.Address, err error) {
+func (g GetVersionHandler) decodeAndValidate(ctx *HandlerContext) (aspectId common.Address, err error) {
 	aspectId = ctx.parameters["aspectId"].(common.Address)
 	if bytes.Equal(emptyAddr.Bytes(), aspectId.Bytes()) {
 		err = errors.New("aspectId not specified")
@@ -543,7 +569,7 @@ type GetBindingHandler struct {
 }
 
 func (g GetBindingHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	account, isContract, err := g.decodeAndValidation(ctx)
+	account, isContract, err := g.decodeAndValidate(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -597,7 +623,7 @@ func (g GetBindingHandler) Method() string {
 	return "aspectsof"
 }
 
-func (g GetBindingHandler) decodeAndValidation(ctx *HandlerContext) (account common.Address, isContract bool, err error) {
+func (g GetBindingHandler) decodeAndValidate(ctx *HandlerContext) (account common.Address, isContract bool, err error) {
 	account = ctx.parameters["contract"].(common.Address)
 	if bytes.Equal(emptyAddr.Bytes(), account.Bytes()) {
 		err = errors.New("binding account not specified")
@@ -612,7 +638,7 @@ type GetBoundAddressHandler struct {
 }
 
 func (g GetBoundAddressHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, err := g.decodeAndValidation(ctx)
+	aspectId, err := g.decodeAndValidate(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -635,7 +661,7 @@ func (g GetBoundAddressHandler) Method() string {
 	return "boundaddressesof"
 }
 
-func (g GetBoundAddressHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common.Address, err error) {
+func (g GetBoundAddressHandler) decodeAndValidate(ctx *HandlerContext) (aspectId common.Address, err error) {
 	aspectId = ctx.parameters["aspectId"].(common.Address)
 	if bytes.Equal(emptyAddr.Bytes(), aspectId.Bytes()) {
 		err = errors.New("aspect id not specified")
@@ -653,7 +679,7 @@ type OperationHandler struct {
 }
 
 func (o OperationHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, args, err := o.decodeAndValidation(ctx)
+	aspectId, args, err := o.decodeAndValidate(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -675,7 +701,6 @@ func (o OperationHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, r
 		txHash = ethTxCtx.TxContent().Hash().Bytes()
 	}
 	height := uint64(lastHeight)
-	// ignore gasLimit output for now, since we haven't implemented gasLimit metering for aspect for now
 	ret, gas, err = runner.JoinPoint(artelasdkType.OPERATION_METHOD, gas, lastHeight, &aspectId, &artelasdkType.OperationInput{
 		Tx: &artelasdkType.WithFromTxInput{
 			Hash: txHash,
@@ -699,7 +724,7 @@ func (o OperationHandler) Method() string {
 	return "entrypoint"
 }
 
-func (o OperationHandler) decodeAndValidation(ctx *HandlerContext) (aspectId common.Address, args []byte, err error) {
+func (o OperationHandler) decodeAndValidate(ctx *HandlerContext) (aspectId common.Address, args []byte, err error) {
 	aspectId = ctx.parameters["aspectId"].(common.Address)
 	if bytes.Equal(emptyAddr.Bytes(), aspectId.Bytes()) {
 		err = errors.New("aspect id not specified")
@@ -719,22 +744,22 @@ func isAspectDeployed(ctx sdk.Context, store *AspectStore, aspectId common.Addre
 	return store.GetAspectLastVersion(ctx, aspectId).Cmp(zero) > 0
 }
 
-func validateCode(ctx sdk.Context, aspectCode []byte) error {
+func validateCode(ctx sdk.Context, aspectCode []byte) ([]byte, error) {
 	startTime := time.Now()
 	validator, err := runtime.NewValidator(ctx, ctx.Logger(), runtime.WASM)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctx.Logger().Info("validated aspect bytecode", "duration", time.Since(startTime).String())
 
 	startTime = time.Now()
 	parsed, err := ParseByteCode(aspectCode)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctx.Logger().Info("parsed aspect bytecode", "duration", time.Since(startTime).String())
 
-	return validator.Validate(parsed)
+	return parsed, validator.Validate(parsed)
 }
 
 func checkContractOwner(ctx *HandlerContext, contractAddr common.Address, gas uint64) (bool, uint64) {
