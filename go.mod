@@ -9,8 +9,8 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/andybalholm/brotli v1.1.0
 	github.com/artela-network/artela-evm v0.4.7-rc7
-	github.com/artela-network/aspect-runtime v0.4.7-rc7
 	github.com/artela-network/aspect-core v0.4.7-rc7-1
+	github.com/artela-network/aspect-runtime v0.4.7-rc7
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft v0.37.2
 	github.com/cometbft/cometbft-db v0.7.0
