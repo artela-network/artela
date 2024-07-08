@@ -4,7 +4,12 @@ import (
 	codec "github.com/cosmos/cosmos-sdk/codec/types"
 )
 
-func (m QueryTraceTxRequest) UnPackInterfaces(unPacker codec.AnyUnpacker) error {
+var (
+	_ codec.UnpackInterfacesMessage = (*QueryTraceTxRequest)(nil)
+	_ codec.UnpackInterfacesMessage = (*QueryTraceBlockRequest)(nil)
+)
+
+func (m QueryTraceTxRequest) UnpackInterfaces(unPacker codec.AnyUnpacker) error {
 	for _, msg := range m.Predecessors {
 		if err := msg.UnpackInterfaces(unPacker); err != nil {
 			return err
@@ -13,7 +18,7 @@ func (m QueryTraceTxRequest) UnPackInterfaces(unPacker codec.AnyUnpacker) error 
 	return m.Msg.UnpackInterfaces(unPacker)
 }
 
-func (m QueryTraceBlockRequest) UnPackInterfaces(unPacker codec.AnyUnpacker) error {
+func (m QueryTraceBlockRequest) UnpackInterfaces(unPacker codec.AnyUnpacker) error {
 	for _, msg := range m.Txs {
 		if err := msg.UnpackInterfaces(unPacker); err != nil {
 			return err

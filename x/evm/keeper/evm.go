@@ -229,6 +229,8 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 			res.Logs = support.NewLogsFromEth(receipt.Logs)
 			ctx.EventManager().EmitEvents(tmpCtx.EventManager().Events())
 		}
+	} else {
+		ctx.Logger().Debug("apply transaction failed", "tx hash", txConfig.TxHash.String(), "error", res.VmError)
 	}
 
 	// refund gas in order to match the Ethereum gas consumption instead of the default SDK one.
