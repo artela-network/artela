@@ -51,10 +51,11 @@ run:
         text: "SA1019:"
         linters:
           - staticcheck
-      - path: crypto/bn256/cloudflare/optate.go
+      - path: "crypto/bn256/cloudflare/optate.go"
         linters:
           - deadcode
           - staticcheck
+        text: "SA1019: \"golang.org/x/crypto/openpgp\" is deprecated: this package is unmaintained except for security fixes."
       - path: internal/build/pgp.go
         text: 'SA1019: "golang.org/x/crypto/openpgp" is deprecated: this package is unmaintained except for security fixes.'
       - path: core/vm/contracts.go
