@@ -3,6 +3,7 @@ package rpc
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -426,7 +427,18 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 
 					for _, attr := range et.Attributes {
 						if attr.Key == evmtypes.AttributeKeyEthereumBloom {
-							bloom = ethtypes.BytesToBloom([]byte(attr.Value))
+
+							encodedBloom, deCodeErr := base64.StdEncoding.DecodeString(attr.Value)
+
+							sprintf := fmt.Sprintf("subscribeNewHeads event %d bloom %s header %d, ", len(bloom.Bytes()), attr.Value, data.Header.Height)
+							api.logger.Info(sprintf)
+
+							if len(encodedBloom) != 256 {
+								continue
+							}
+							if deCodeErr == nil {
+								bloom = ethtypes.BytesToBloom(encodedBloom)
+							}
 						}
 					}
 				}
