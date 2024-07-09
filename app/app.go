@@ -130,6 +130,9 @@ import (
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
+
+	// do not remove this, this will register the native evm tracers
+	_ "github.com/artela-network/artela-evm/tracers/native"
 )
 
 const (
