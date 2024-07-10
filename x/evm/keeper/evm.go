@@ -352,13 +352,15 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	leftoverGas := msg.GasLimit
 
 	// Allow the tracer captures the txs level events, mainly the gas consumption.
-	// evmCfg := evm.Config
-	// if evmCfg.Debug {
-	//	evmCfg.Tracer.CaptureTxStart(leftoverGas)
-	//	defer func() {
-	//		evmCfg.Tracer.CaptureTxEnd(leftoverGas)
-	//	}()
-	// }
+	var aspectLogger asptypes.AspectLogger
+	if tracer != nil {
+		tracer.CaptureTxStart(leftoverGas)
+		defer func() {
+			tracer.CaptureTxEnd(leftoverGas)
+		}()
+
+		aspectLogger, _ = tracer.(asptypes.AspectLogger)
+	}
 
 	sender := vm.AccountRef(msg.From)
 	contractCreation := msg.To == nil
@@ -398,15 +400,14 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
 		// begin pre tx aspect execution
-
-		preTxResult := djpm.AspectInstance().PreTxExecute(aspectCtx, msg.To, ctx.BlockHeight(), leftoverGas, &asptypes.PreTxExecuteInput{
+		preTxResult := djpm.AspectInstance().PreTxExecute(aspectCtx, msg.From, *msg.To, msg.Data, ctx.BlockHeight(), leftoverGas, msg.Value, &asptypes.PreTxExecuteInput{
 			Tx: &asptypes.WithFromTxInput{
 				Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
 				To:   msg.To.Bytes(),
 				From: msg.From.Bytes(),
 			},
 			Block: &asptypes.BlockInput{Number: &lastHeight},
-		})
+		}, aspectLogger)
 
 		leftoverGas = preTxResult.Gas
 		if preTxResult.Err != nil {
@@ -445,36 +446,39 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 				}
 			}
 
-			// set receipt
-			aspectCtx.EthTxContext().WithReceipt(&ethereum.Receipt{
-				Status:            status,
-				Bloom:             bloomReceipt,
-				Logs:              logs,
-				GasUsed:           gasUsed,
-				CumulativeGasUsed: cumulativeGasUsed,
-			})
-
-			// begin post tx aspect execution
-			postTxResult := djpm.AspectInstance().PostTxExecute(aspectCtx, msg.To, ctx.BlockHeight(), leftoverGas,
-				&asptypes.PostTxExecuteInput{
-					Tx: &asptypes.WithFromTxInput{
-						Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
-						To:   msg.To.Bytes(),
-						From: msg.From.Bytes(),
-					},
-					Block:   &asptypes.BlockInput{Number: &lastHeight},
-					Receipt: &asptypes.ReceiptInput{Status: &status},
+			// only trigger post tx execute if tx not reverted
+			if vmErr == nil {
+				// set receipt
+				aspectCtx.EthTxContext().WithReceipt(&ethereum.Receipt{
+					Status:            status,
+					Bloom:             bloomReceipt,
+					Logs:              logs,
+					GasUsed:           gasUsed,
+					CumulativeGasUsed: cumulativeGasUsed,
 				})
-			if postTxResult.Err != nil {
-				// overwrite vmErr if post tx reverted
-				if postTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
-					vmErr = vm.ErrOutOfGas
-				} else {
-					vmErr = postTxResult.Err
+
+				// begin post tx aspect execution
+				postTxResult := djpm.AspectInstance().PostTxExecute(aspectCtx, msg.From, *msg.To, msg.Data, ctx.BlockHeight(), leftoverGas, msg.Value,
+					&asptypes.PostTxExecuteInput{
+						Tx: &asptypes.WithFromTxInput{
+							Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
+							To:   msg.To.Bytes(),
+							From: msg.From.Bytes(),
+						},
+						Block:   &asptypes.BlockInput{Number: &lastHeight},
+						Receipt: &asptypes.ReceiptInput{Status: &status},
+					}, aspectLogger)
+				if postTxResult.Err != nil {
+					// overwrite vmErr if post tx reverted
+					if postTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
+						vmErr = vm.ErrOutOfGas
+					} else {
+						vmErr = postTxResult.Err
+					}
+					ret = postTxResult.Ret
 				}
-				ret = postTxResult.Ret
+				leftoverGas = postTxResult.Gas
 			}
-			leftoverGas = postTxResult.Gas
 		}
 	}
 

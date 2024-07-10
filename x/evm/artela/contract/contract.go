@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"github.com/artela-network/artela/common"
 	"strings"
 
 	"github.com/artela-network/artela/x/evm/states"
@@ -83,7 +84,7 @@ func (c *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, gas 
 		parameters,
 		commit,
 		c.aspectService,
-		c.logger,
+		common.WrapLogger(c.logger.With("module", "aspect-system-contract")),
 		c.evmState,
 		c.evm,
 		method,

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	common2 "github.com/artela-network/artela/common"
 	"math/big"
 
 	"github.com/artela-network/aspect-core/djpm"
@@ -134,7 +135,7 @@ func NewKeeper(
 	}
 	k.WithChainID(app.ChainId())
 
-	djpm.NewAspect(aspect, k.logger)
+	djpm.NewAspect(aspect, common2.WrapLogger(k.logger.With("module", "aspect")))
 	api.InitAspectGlobals(k)
 
 	// init aspect host api factory

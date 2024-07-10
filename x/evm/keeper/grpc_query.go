@@ -435,10 +435,10 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		// and establishing the link with the SDK context.
 		ctx, aspectCtx := k.WithAspectContext(ctx, ethTx, cfg,
 			artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
-		defer aspectCtx.Destroy()
 
 		msg, err := txs.ToMessage(ethTx, signer, cfg.BaseFee)
 		if err != nil {
+			aspectCtx.Destroy()
 			continue
 		}
 		txConfig.TxHash = ethTx.Hash()
@@ -447,9 +447,11 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		isCustomVerification := k.isCustomizedVerification(ethTx)
 		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig, isCustomVerification)
 		if err != nil {
+			aspectCtx.Destroy()
 			continue
 		}
 
+		aspectCtx.Destroy()
 		txConfig.LogIndex += uint(len(rsp.Logs))
 	}
 

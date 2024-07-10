@@ -166,7 +166,12 @@ func (b *BackendImpl) GetTransactionCount(address common.Address, blockNrOrHash 
 	if err != nil {
 		return &n, err
 	}
-	currentHeight := b.CurrentHeader().Number
+	header := b.CurrentHeader()
+	if header == nil {
+		return &n, fmt.Errorf("unable to retrieve block %v", blockNrOrHash.String())
+	}
+
+	currentHeight := header.Number
 	if height.Int64() > currentHeight.Int64() {
 		return &n, fmt.Errorf(
 			"cannot query with height in the future (current: %d, queried: %d); please provide a valid height",
@@ -176,8 +181,7 @@ func (b *BackendImpl) GetTransactionCount(address common.Address, blockNrOrHash 
 	from := sdktypes.AccAddress(address.Bytes())
 	accRet := b.clientCtx.AccountRetriever
 
-	err = accRet.EnsureExists(b.clientCtx, from)
-	if err != nil {
+	if err = accRet.EnsureExists(b.clientCtx, from); err != nil {
 		// account doesn't exist yet, return 0
 		b.logger.Info("GetTransactionCount faild, return 0. Account doesn't exist yet", "account", address.Hex(), "error", err)
 		return &n, nil
