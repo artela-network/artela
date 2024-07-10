@@ -241,7 +241,11 @@ func (b *BackendImpl) blockNumberFromCosmos(blockNrOrHash rpc.BlockNumberOrHash)
 		return rpc.BlockNumber(resBlock.Block.Height), nil
 	case blockNrOrHash.BlockNumber != nil:
 		if *blockNrOrHash.BlockNumber == rpc.LatestBlockNumber {
-			currentHeight := b.CurrentHeader().Number
+			header := b.CurrentHeader()
+			if header == nil {
+				return rpc.EarliestBlockNumber, errors.New("unable to retrieve latest block")
+			}
+			currentHeight := header.Number
 			return rpc.BlockNumber(currentHeight.Int64()), nil
 		}
 		return *blockNrOrHash.BlockNumber, nil

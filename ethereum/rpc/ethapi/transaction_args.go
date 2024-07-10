@@ -142,6 +142,10 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 	}
 	// Now attempt to fill in default value depending on whether London is active or not.
 	head := b.CurrentHeader()
+	if head == nil {
+		return errors.New("unable to fetch current header")
+	}
+
 	if b.ChainConfig().IsLondon(head.Number) {
 		// London is active, set maxPriorityFeePerGas and maxFeePerGas.
 		if err := args.setLondonFeeDefaults(ctx, head, b); err != nil {
