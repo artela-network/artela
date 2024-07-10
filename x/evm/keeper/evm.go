@@ -446,36 +446,39 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 				}
 			}
 
-			// set receipt
-			aspectCtx.EthTxContext().WithReceipt(&ethereum.Receipt{
-				Status:            status,
-				Bloom:             bloomReceipt,
-				Logs:              logs,
-				GasUsed:           gasUsed,
-				CumulativeGasUsed: cumulativeGasUsed,
-			})
+			// only trigger post tx execute if tx not reverted
+			if vmErr == nil {
+				// set receipt
+				aspectCtx.EthTxContext().WithReceipt(&ethereum.Receipt{
+					Status:            status,
+					Bloom:             bloomReceipt,
+					Logs:              logs,
+					GasUsed:           gasUsed,
+					CumulativeGasUsed: cumulativeGasUsed,
+				})
 
-			// begin post tx aspect execution
-			postTxResult := djpm.AspectInstance().PostTxExecute(aspectCtx, msg.From, *msg.To, msg.Data, ctx.BlockHeight(), leftoverGas, msg.Value,
-				&asptypes.PostTxExecuteInput{
-					Tx: &asptypes.WithFromTxInput{
-						Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
-						To:   msg.To.Bytes(),
-						From: msg.From.Bytes(),
-					},
-					Block:   &asptypes.BlockInput{Number: &lastHeight},
-					Receipt: &asptypes.ReceiptInput{Status: &status},
-				}, aspectLogger)
-			if postTxResult.Err != nil {
-				// overwrite vmErr if post tx reverted
-				if postTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
-					vmErr = vm.ErrOutOfGas
-				} else {
-					vmErr = postTxResult.Err
+				// begin post tx aspect execution
+				postTxResult := djpm.AspectInstance().PostTxExecute(aspectCtx, msg.From, *msg.To, msg.Data, ctx.BlockHeight(), leftoverGas, msg.Value,
+					&asptypes.PostTxExecuteInput{
+						Tx: &asptypes.WithFromTxInput{
+							Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
+							To:   msg.To.Bytes(),
+							From: msg.From.Bytes(),
+						},
+						Block:   &asptypes.BlockInput{Number: &lastHeight},
+						Receipt: &asptypes.ReceiptInput{Status: &status},
+					}, aspectLogger)
+				if postTxResult.Err != nil {
+					// overwrite vmErr if post tx reverted
+					if postTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
+						vmErr = vm.ErrOutOfGas
+					} else {
+						vmErr = postTxResult.Err
+					}
+					ret = postTxResult.Ret
 				}
-				ret = postTxResult.Ret
+				leftoverGas = postTxResult.Gas
 			}
-			leftoverGas = postTxResult.Gas
 		}
 	}
 
