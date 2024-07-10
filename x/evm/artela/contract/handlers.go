@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/artela-network/artela-evm/vm"
+	common2 "github.com/artela-network/artela/common"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
@@ -13,7 +14,7 @@ import (
 	"github.com/artela-network/aspect-core/djpm/run"
 	artelasdkType "github.com/artela-network/aspect-core/types"
 	runtime "github.com/artela-network/aspect-runtime"
-	"github.com/cometbft/cometbft/libs/log"
+	runtimeTypes "github.com/artela-network/aspect-runtime/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,7 +36,7 @@ type HandlerContext struct {
 	parameters map[string]interface{}
 	commit     bool
 	service    *AspectService
-	logger     log.Logger
+	logger     runtimeTypes.Logger
 	evmState   *states.StateDB
 	evm        *vm.EVM
 	abi        *abi.Method
@@ -106,7 +107,7 @@ func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, 
 	height := ctx.cosmosCtx.BlockHeight()
 	heightU64 := uint64(height)
 
-	_, gas, err = runner.JoinPoint(artelasdkType.INIT_METHOD, gas, height, &aspectId, &artelasdkType.InitInput{
+	_, gas, err = runner.JoinPoint(artelasdkType.INIT_METHOD, gas, height, aspectId, &artelasdkType.InitInput{
 		Tx: &artelasdkType.WithFromTxInput{
 			Hash: txHash,
 			To:   aspectId.Bytes(),
@@ -701,7 +702,7 @@ func (o OperationHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, r
 		txHash = ethTxCtx.TxContent().Hash().Bytes()
 	}
 	height := uint64(lastHeight)
-	ret, gas, err = runner.JoinPoint(artelasdkType.OPERATION_METHOD, gas, lastHeight, &aspectId, &artelasdkType.OperationInput{
+	ret, gas, err = runner.JoinPoint(artelasdkType.OPERATION_METHOD, gas, lastHeight, aspectId, &artelasdkType.OperationInput{
 		Tx: &artelasdkType.WithFromTxInput{
 			Hash: txHash,
 			To:   aspectId.Bytes(),
@@ -746,7 +747,7 @@ func isAspectDeployed(ctx sdk.Context, store *AspectStore, aspectId common.Addre
 
 func validateCode(ctx sdk.Context, aspectCode []byte) ([]byte, error) {
 	startTime := time.Now()
-	validator, err := runtime.NewValidator(ctx, ctx.Logger(), runtime.WASM)
+	validator, err := runtime.NewValidator(ctx, common2.WrapLogger(ctx.Logger()), runtime.WASM)
 	if err != nil {
 		return nil, err
 	}
@@ -802,13 +803,13 @@ func checkContractOwner(ctx *HandlerContext, contractAddr common.Address, gas ui
 
 func checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, gas uint64, code []byte, version *uint256.Int, commit bool) (bool, uint64, error) {
 	aspectCtx := mustGetAspectContext(ctx)
-	runner, err := run.NewRunner(aspectCtx, ctx.Logger(), aspectId.String(), version.Uint64(), code, commit)
+	runner, err := run.NewRunner(aspectCtx, common2.WrapLogger(ctx.Logger()), aspectId.String(), version.Uint64(), code, commit)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create runner: %v", err))
 	}
 	defer runner.Return()
 
-	return runner.IsOwner(ctx.BlockHeight(), gas, &sender, sender.Bytes())
+	return runner.IsOwner(ctx.BlockHeight(), gas, sender, sender.Bytes())
 }
 
 // retrieving aspect context from sdk.Context must not fail, so we panic if it does

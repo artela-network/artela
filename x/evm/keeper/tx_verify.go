@@ -59,7 +59,7 @@ func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction)
 	// retrieve aspectCtx from sdk.Context
 	aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
 	if !ok {
-		return common.Address{}, []byte{}, errors.New("ApplyMessageWithConfig: wrap *artelatype.AspectRuntimeContext failed")
+		return common.Address{}, []byte{}, errors.New("aspect transaction verification failed")
 	}
 	return djpm.AspectInstance().GetSenderAndCallData(aspectCtx, aspectCtx.EthBlockContext().BlockHeader().Number.Int64(), tx)
 }
