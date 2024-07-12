@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/artela-network/artela/common"
 	"io"
 	"os"
 	"path/filepath"
@@ -113,6 +112,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/artela-network/artela/app/upgrades/v047rc7"
+	v1 "github.com/artela-network/artela/app/upgrades/v1"
 	evmmodule "github.com/artela-network/artela/x/evm"
 	evmmodulekeeper "github.com/artela-network/artela/x/evm/keeper"
 	evmmoduletypes "github.com/artela-network/artela/x/evm/types"
@@ -128,6 +128,7 @@ import (
 	ethante "github.com/artela-network/artela/app/ante/evm"
 	appparams "github.com/artela-network/artela/app/params"
 	"github.com/artela-network/artela/app/post"
+	"github.com/artela-network/artela/common"
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
@@ -1000,11 +1001,19 @@ func (app *Artela) ModuleManager() *module.Manager {
 }
 
 func (app *Artela) setupUpgradeHandlers() {
-	// v16 upgrade handler
+	// v0.47-rc7 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v047rc7.UpgradeName,
 		v047rc7.CreateUpgradeHandler(
 			app.mm, app.configurator, app.BankKeeper, app.AccountKeeper,
+		),
+	)
+
+	// v1.0.0 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v1.UpgradeName,
+		v1.CreateUpgradeHandler(
+			app.mm, app.configurator,
 		),
 	)
 
@@ -1025,6 +1034,8 @@ func (app *Artela) setupUpgradeHandlers() {
 	switch upgradeInfo.Name {
 	case v047rc7.UpgradeName:
 		// no store upgrades
+	case v1.UpgradeName:
+		// no store upgrades in v1.0.0
 	default:
 		// no-op
 	}
