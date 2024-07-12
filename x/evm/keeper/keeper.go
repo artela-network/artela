@@ -1,12 +1,12 @@
 package keeper
 
 import (
+	"encoding/base64"
 	"fmt"
 	common2 "github.com/artela-network/artela/common"
 	"math/big"
 
 	"github.com/artela-network/aspect-core/djpm"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 
@@ -208,10 +208,15 @@ func (k Keeper) GetAuthority() cosmos.AccAddress {
 
 // EmitBlockBloomEvent emit block bloom events
 func (k Keeper) EmitBlockBloomEvent(ctx cosmos.Context, bloom ethereum.Bloom) {
+	encodedBloom := base64.StdEncoding.EncodeToString(bloom.Bytes())
+
+	sprintf := fmt.Sprintf("emit block event %d bloom %s header %d, ", len(bloom.Bytes()), encodedBloom, ctx.BlockHeight())
+	k.Logger(ctx).Info(sprintf)
+
 	ctx.EventManager().EmitEvent(
 		cosmos.NewEvent(
 			types.EventTypeBlockBloom,
-			cosmos.NewAttribute(types.AttributeKeyEthereumBloom, string(bloom.Bytes())),
+			cosmos.NewAttribute(types.AttributeKeyEthereumBloom, encodedBloom),
 		),
 	)
 }
