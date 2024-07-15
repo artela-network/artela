@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 
 	errorsmod "cosmossdk.io/errors"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
@@ -78,12 +79,12 @@ func ParseMethod(callData []byte) (*abi.Method, map[string]interface{}, error) {
 	methodId := hex.EncodeToString(callData[:4])
 	methodName, ok := methodsLookup[methodId]
 	if !ok {
-		return nil, nil, errorsmod.Wrapf(nil, "missing expected method %s", methodId)
+		return nil, nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "method with id %s not found", methodId)
 	}
 
 	method, ok := methods[methodName]
 	if !ok {
-		return nil, nil, errorsmod.Wrapf(nil, "method %s does not exist", methodName)
+		return nil, nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "method %s is not valid", methodName)
 	}
 
 	argsMap := make(map[string]interface{})
@@ -98,7 +99,7 @@ func ParseInput(tx []byte) (*abi.Method, map[string]interface{}, error) {
 	methodId := hex.EncodeToString(tx[:4])
 	methodName, exist := AbiMap()[methodId]
 	if !exist {
-		return nil, nil, errorsmod.Wrapf(nil, "Missing expected method %v", methodId)
+		return nil, nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "method with id %s not found", methodId)
 	}
 	method := methods[methodName]
 	argsMap := make(map[string]interface{})
