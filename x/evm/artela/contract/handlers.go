@@ -648,13 +648,15 @@ func (g GetBoundAddressHandler) Handle(ctx *HandlerContext, gas uint64) (ret []b
 	if err != nil {
 		return nil, 0, err
 	}
-	addressAry := make([]common.Address, 0)
-	for _, data := range value.Values() {
-		contractAddr := common.HexToAddress(data.(string))
-		addressAry = append(addressAry, contractAddr)
+	addressArr := make([]common.Address, 0)
+	if value != nil {
+		for _, data := range value.Values() {
+			contractAddr := common.HexToAddress(data.(string))
+			addressArr = append(addressArr, contractAddr)
+		}
 	}
 
-	ret, err = ctx.abi.Outputs.Pack(addressAry)
+	ret, err = ctx.abi.Outputs.Pack(addressArr)
 	return ret, gas, err
 }
 
