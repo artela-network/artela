@@ -303,7 +303,11 @@ func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remain
 
 	// check aspect types
 	store := ctx.service.aspectStore
-	aspectJP := store.GetAspectJP(ctx.cosmosCtx, aspectId, aspectVersion)
+	aspectJP, err := store.GetAspectJP(ctx.cosmosCtx, aspectId, aspectVersion)
+	if err != nil {
+		return nil, leftover, err
+	}
+
 	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
 	txVerifier := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
 

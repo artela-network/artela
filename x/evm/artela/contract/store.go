@@ -599,22 +599,26 @@ func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, ve
 //	@param aspectId
 //	@param version
 //	@return *big.Int
-func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int) *big.Int {
+func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int) (*big.Int, error) {
 	// Default last Aspect version
+	latestVersion := k.GetAspectLastVersion(ctx, aspectId)
 	if version == nil {
-		version = k.GetAspectLastVersion(ctx, aspectId)
+		version = latestVersion
+	} else if version.Cmp(zero) < 0 || version.Cmp(latestVersion) > 0 {
+		return nil, errors.New("invalid aspect version")
 	}
-	codeStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
+
+	store := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
 	aspectPropertyKey := types.AspectArrayKey(
 		aspectId.Bytes(),
 		version.Bytes(),
 		[]byte(types.AspectRunJoinPointKey),
 	)
-	get := codeStore.Get(aspectPropertyKey)
+	jp := store.Get(aspectPropertyKey)
 
-	if nil != get && len(get) > 0 {
-		return new(big.Int).SetBytes(get)
+	if jp == nil || len(jp) == 0 {
+		return new(big.Int), nil
 	} else {
-		return new(big.Int)
+		return new(big.Int).SetBytes(jp), nil
 	}
 }
