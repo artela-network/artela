@@ -442,8 +442,8 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, account common.A
 		}
 
 		if oldver == 0 {
-			k.logger.Debug("aspect not bound", "aspect", aspectId.Hex(), "account", account.String())
-			return nil
+			k.logger.Debug("aspect not bound", "store", bindingStoreKey, "aspect", aspectId.Hex(), "account", account.String())
+			continue
 		}
 
 		jsonBytes, err := json.Marshal(metas)
