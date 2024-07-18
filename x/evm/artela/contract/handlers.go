@@ -107,7 +107,7 @@ func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, 
 	height := ctx.cosmosCtx.BlockHeight()
 	heightU64 := uint64(height)
 
-	_, gas, err = runner.JoinPoint(artelasdkType.INIT_METHOD, gas, height, aspectId, &artelasdkType.InitInput{
+	return runner.JoinPoint(artelasdkType.INIT_METHOD, gas, height, aspectId, &artelasdkType.InitInput{
 		Tx: &artelasdkType.WithFromTxInput{
 			Hash: txHash,
 			To:   aspectId.Bytes(),
@@ -116,8 +116,6 @@ func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, 
 		Block:    &artelasdkType.BlockInput{Number: &heightU64},
 		CallData: initData,
 	})
-
-	return nil, gas, err
 }
 
 func (h DeployHandler) Method() string {
