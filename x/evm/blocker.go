@@ -1,6 +1,8 @@
 package evm
 
 import (
+	"sync"
+
 	"github.com/artela-network/artela/x/evm/artela/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -19,6 +21,9 @@ func BeginBlock(_ cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBegin
 	// using code like ctx = ctx.WithValue(artelatypes.ExtBlockContextKey, extBlockCtx).
 	// Instead, it suggests saving it to the keeper.
 	k.BlockContext = types.NewEthBlockContextFromABCIBeginBlockReq(beginBlock)
+
+	// clear the verifyTxCache when BeginBlock
+	clearSyncMap(k.VerifySigCache)
 }
 
 // EndBlock also retrieves the bloom filter value from the transient store and commits it to the
@@ -34,5 +39,19 @@ func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []ab
 	bloom := ethereum.BytesToBloom(k.GetBlockBloomTransient(infCtx).Bytes())
 	k.EmitBlockBloomEvent(infCtx, bloom)
 
+	// clear the verifyTxCache when EndBlock
+	clearSyncMap(k.VerifySigCache)
+
 	return []abci.ValidatorUpdate{}
+}
+
+func clearSyncMap(m *sync.Map) {
+	keys := make([]any, 0)
+	m.Range(func(key, value any) bool {
+		keys = append(keys, key)
+		return true
+	})
+	for _, key := range keys {
+		m.Delete(key)
+	}
 }

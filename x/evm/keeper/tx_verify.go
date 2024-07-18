@@ -56,12 +56,38 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 }
 
 func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {
+	value, ok := k.VerifySigCache.Load(tx.Hash())
+	if ok {
+		retValue := value.(struct {
+			sender   common.Address
+			callData []byte
+			err      error
+		})
+		return retValue.sender, retValue.callData, retValue.err
+	}
+
 	// retrieve aspectCtx from sdk.Context
 	aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
 	if !ok {
 		return common.Address{}, []byte{}, errors.New("aspect transaction verification failed")
 	}
-	return djpm.AspectInstance().GetSenderAndCallData(aspectCtx, aspectCtx.EthBlockContext().BlockHeader().Number.Int64(), tx)
+
+	sender, call, err := djpm.AspectInstance().GetSenderAndCallData(aspectCtx, aspectCtx.EthBlockContext().BlockHeader().Number.Int64(), tx)
+
+	// not cache for eth_all, which hash is empty
+	if tx.Hash() != (common.Hash{}) {
+		k.VerifySigCache.Store(tx.Hash(), struct {
+			sender   common.Address
+			callData []byte
+			err      error
+		}{
+			sender:   sender,
+			callData: call,
+			err:      err,
+		})
+	}
+
+	return sender, call, err
 }
 
 func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer {

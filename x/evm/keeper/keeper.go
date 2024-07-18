@@ -3,8 +3,8 @@ package keeper
 import (
 	"encoding/base64"
 	"fmt"
-	common2 "github.com/artela-network/artela/common"
 	"math/big"
+	"sync"
 
 	"github.com/artela-network/aspect-core/djpm"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -32,10 +32,10 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
-	artelaType "github.com/artela-network/aspect-core/types"
-
+	common2 "github.com/artela-network/artela/common"
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/types"
+	artelaType "github.com/artela-network/aspect-core/types"
 )
 
 // Keeper grants access to the EVM module states and implements the go-ethereum StateDB interface.
@@ -85,6 +85,9 @@ type Keeper struct {
 
 	// store the block context, this will be fresh every block.
 	BlockContext *artvmtype.EthBlockContext
+
+	// cache of aspect sig
+	VerifySigCache *sync.Map
 }
 
 // NewKeeper generates new evm module keeper
@@ -132,6 +135,7 @@ func NewKeeper(
 		ss:                   subSpace,
 		aspectRuntimeContext: aspectRuntimeContext,
 		aspect:               aspect,
+		VerifySigCache:       &sync.Map{},
 	}
 	k.WithChainID(app.ChainId())
 
