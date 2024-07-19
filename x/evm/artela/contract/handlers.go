@@ -489,6 +489,10 @@ func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byt
 		return nil, leftover, errors.New("aspect is either for tx or verifier")
 	}
 
+	if !verifierAspect && !isContract {
+		return nil, 0, errors.New("only verifier aspect can be bound with eoa")
+	}
+
 	err = ctx.service.aspectStore.ChangeBoundAspectVersion(ctx.cosmosCtx, account, aspectId, version, isContract, verifierAspect, txAspect)
 	remainingGas = leftover
 	return
