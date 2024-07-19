@@ -83,7 +83,11 @@ func (service *AspectService) GetAspectsForJoinPoint(ctx sdk.Context, to common.
 	}
 	for _, aspect := range aspects {
 		// check if the Join point has run permissions
-		jp := service.aspectStore.GetAspectJP(ctx, aspect.Id, nil)
+		jp, err := service.aspectStore.GetAspectJP(ctx, aspect.Id, nil)
+		if err != nil {
+			return nil, err
+		}
+
 		if !artela.CanExecPoint(jp.Int64(), cut) {
 			continue
 		}
@@ -113,7 +117,11 @@ func (service *AspectService) GetAccountVerifiers(ctx sdk.Context, to common.Add
 	}
 	for _, aspect := range aspects {
 		// check if the verify point has run permissions
-		jp := service.aspectStore.GetAspectJP(ctx, aspect.Id, nil)
+		jp, err := service.aspectStore.GetAspectJP(ctx, aspect.Id, nil)
+		if err != nil {
+			return nil, err
+		}
+
 		if !artela.CanExecPoint(jp.Int64(), artela.VERIFY_TX) {
 			continue
 		}
@@ -133,7 +141,7 @@ func (service *AspectService) GetBlockHeight() int64 {
 	return service.getHeight()
 }
 
-func (service *AspectService) GetAspectJoinPoint(ctx sdk.Context, aspectId common.Address, version *uint256.Int) *big.Int {
+func (service *AspectService) GetAspectJoinPoint(ctx sdk.Context, aspectId common.Address, version *uint256.Int) (*big.Int, error) {
 
 	if version == nil {
 		version = service.aspectStore.GetAspectLastVersion(ctx, aspectId)

@@ -120,9 +120,6 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 		return []byte{}, errors.New("cannot query call tree in current join point")
 	}
 
-	if ctx == nil {
-		return []byte{}, nil
-	}
 	txContext := a.aspectRuntimeContext.EthTxContext()
 
 	if txContext == nil || txContext.VmTracer() == nil || txContext.VmTracer().CallTree() == nil {

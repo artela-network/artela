@@ -251,7 +251,7 @@ func CheckTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
 	// no need to check error from parsing
 	feeFloat, _ := feeEth.Float64()
 	if feeFloat > cap {
-		return fmt.Errorf("txs fee (%.2f ether) exceeds the configured cap (%.2f ether)", feeFloat, cap)
+		return fmt.Errorf("txs fee (%.2f art) exceeds the configured cap (%.2f art)", feeFloat, cap)
 	}
 	return nil
 }
