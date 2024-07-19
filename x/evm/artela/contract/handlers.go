@@ -2,14 +2,12 @@ package contract
 
 import (
 	"bytes"
-	errorsmod "cosmossdk.io/errors"
 	"errors"
 	"fmt"
 	"github.com/artela-network/artela-evm/vm"
 	common2 "github.com/artela-network/artela/common"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 	"github.com/artela-network/aspect-core/djpm/contract"
 	"github.com/artela-network/aspect-core/djpm/run"
 	artelasdkType "github.com/artela-network/aspect-core/types"
@@ -262,10 +260,9 @@ func (h UpgradeHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (aspe
 		})
 	}
 
-	joinPoints := ctx.parameters["joinPoints"].(*big.Int)
-	if joinPoints == nil {
-		err = errorsmod.Wrapf(evmtypes.ErrCallContract, "")
-		return
+	joinPoint = ctx.parameters["joinPoints"].(*big.Int)
+	if joinPoint == nil {
+		joinPoint = big.NewInt(0)
 	}
 
 	// check deployment
@@ -309,8 +306,8 @@ func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remain
 	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
 	txVerifier := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
 
-	if !(txAspect || txVerifier) {
-		return nil, 0, errors.New("neither tx nor verifier aspect")
+	if !txAspect && !txVerifier {
+		return nil, 0, errors.New("aspect is either for tx or verifier")
 	}
 
 	// EoA can only bind with tx verifier
@@ -321,6 +318,7 @@ func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remain
 	// bind tx processing aspect if account is a contract
 	if txAspect && isContract {
 		if err := store.BindTxAspect(ctx.cosmosCtx, account, aspectId, aspectVersion, priority); err != nil {
+			ctx.logger.Error("bind tx aspect failed", "aspect", aspectId.Hex(), "version", aspectVersion.Uint64(), "contract", account.Hex(), "error", err)
 			return nil, 0, err
 		}
 	}
@@ -328,6 +326,7 @@ func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remain
 	// bind tx verifier aspect
 	if txVerifier {
 		if err := store.BindVerificationAspect(ctx.cosmosCtx, account, aspectId, aspectVersion, priority, isContract); err != nil {
+			ctx.logger.Error("bind verifier aspect failed", "aspect", aspectId.Hex(), "version", aspectVersion.Uint64(), "account", account.Hex(), "error", err)
 			return nil, 0, err
 		}
 	}
@@ -478,7 +477,19 @@ func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byt
 		return nil, leftover, err
 	}
 
-	err = ctx.service.aspectStore.ChangeBoundAspectVersion(ctx.cosmosCtx, account, aspectId, version, isContract)
+	aspectJP, err := ctx.service.aspectStore.GetAspectJP(ctx.cosmosCtx, aspectId, uint256.NewInt(version))
+	if err != nil {
+		return nil, leftover, err
+	}
+
+	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
+	verifierAspect := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
+
+	if !txAspect && !verifierAspect {
+		return nil, leftover, errors.New("aspect is either for tx or verifier")
+	}
+
+	err = ctx.service.aspectStore.ChangeBoundAspectVersion(ctx.cosmosCtx, account, aspectId, version, isContract, verifierAspect, txAspect)
 	remainingGas = leftover
 	return
 }

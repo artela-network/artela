@@ -279,15 +279,15 @@ func (k *AspectStore) BindTxAspect(ctx sdk.Context, account common.Address, aspe
 }
 
 func (k *AspectStore) BindVerificationAspect(ctx sdk.Context, account common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8, isContractAccount bool) error {
+	// EoA can have multiple verifiers
+	limit := math.MaxUint8
 	if isContractAccount {
 		// contract can have only 1 verifier
-		return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
-			k.GetVerificationAspects, types.VerifierBindingKeyPrefix, 1)
-	} else {
-		// EoA can have multiple verifiers
-		return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
-			k.GetVerificationAspects, types.VerifierBindingKeyPrefix, math.MaxUint8)
+		limit = 1
 	}
+
+	return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
+		k.GetVerificationAspects, types.VerifierBindingKeyPrefix, limit)
 }
 
 func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, aspectId common.Address,
@@ -310,18 +310,9 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 	}
 
 	// check duplicates
-	existing := -1
-	for index, binding := range bindings {
+	for _, binding := range bindings {
 		if bytes.Equal(binding.Id.Bytes(), aspectId.Bytes()) {
-			// ignore if binding already exists
-			if binding.Priority == int64(priority) &&
-				binding.Version.Cmp(aspectVersion) == 0 {
-				return nil
-			}
-
-			// record existing, replace later
-			existing = index
-			break
+			return errors.New("aspect already bound")
 		}
 	}
 
@@ -331,12 +322,7 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 		Priority: int64(priority),
 	}
 
-	// replace existing binding
-	if existing > 0 {
-		bindings[existing] = newAspect
-	} else {
-		bindings = append(bindings, newAspect)
-	}
+	bindings = append(bindings, newAspect)
 
 	// re-sort aspects by priority
 	if limit != 1 {
@@ -389,7 +375,7 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 	)
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 
-	k.logger.Info("aspect unbound", "aspect", aspectId.Hex(), "contract", contract.String())
+	k.logger.Info("tx aspect unbound", "aspect", aspectId.Hex(), "contract", contract.String())
 	return nil
 }
 
@@ -419,34 +405,87 @@ func (k *AspectStore) getAccountBondAspects(ctx sdk.Context, account common.Addr
 	return bindings, nil
 }
 
-func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, account common.Address, aspectId common.Address, version uint64, isContract bool) error {
+func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, account common.Address, aspectId common.Address, version uint64, isContract, verifierAspect, txAspect bool) error {
 	bindingStoreKeys := make([]string, 0, 2)
 	bindingStoreKeys = append(bindingStoreKeys, types.VerifierBindingKeyPrefix)
 	if isContract {
 		bindingStoreKeys = append(bindingStoreKeys, types.ContractBindKeyPrefix)
 	}
 
+	bindings := make(map[string][]*types.AspectMeta, len(bindingStoreKeys))
+	bindingIndex := make(map[string]int, len(bindingStoreKeys))
+
+	bound := false
+	var priority int8
 	for _, bindingStoreKey := range bindingStoreKeys {
-		metas, err := k.getAccountBondAspects(ctx, account, bindingStoreKey)
+		binding, err := k.getAccountBondAspects(ctx, account, bindingStoreKey)
 		if err != nil {
 			return err
 		}
+		bindings[bindingStoreKey] = binding
 
-		oldver := uint64(0)
-		for _, aspect := range metas {
+		for i, aspect := range binding {
 			if bytes.Equal(aspect.Id.Bytes(), aspectId.Bytes()) {
-				oldver = aspect.Version.Uint64()
-				aspect.Version = uint256.NewInt(version)
+				bindingIndex[bindingStoreKey] = i
+				bound = true
+				priority = int8(aspect.Priority)
 				break
 			}
 		}
+	}
 
-		if oldver == 0 {
-			k.logger.Debug("aspect not bound", "store", bindingStoreKey, "aspect", aspectId.Hex(), "account", account.String())
+	if !bound {
+		return errors.New("aspect not bound")
+	}
+
+	newBindingTypes := make(map[string]bool, 2)
+	newBindingTypes[types.VerifierBindingKeyPrefix] = verifierAspect
+	newBindingTypes[types.ContractBindKeyPrefix] = txAspect
+	u256Version := uint256.NewInt(version)
+
+	for bindingStoreKey, binding := range bindings {
+		updateIdx, ok := bindingIndex[bindingStoreKey]
+		if !ok {
+			// join-point in the new version aspect has been changed, we need to add the new binding type
+			if newBindingTypes[bindingStoreKey] {
+				var err error
+				if bindingStoreKey == types.ContractBindKeyPrefix {
+					err = k.BindTxAspect(ctx, account, aspectId, u256Version, priority)
+				} else {
+					err = k.BindVerificationAspect(ctx, account, aspectId, u256Version, priority, isContract)
+				}
+				if err != nil {
+					k.logger.Error("failed to add new aspect binding type", "store", bindingStoreKey, "aspect", aspectId.Hex(), "version", version, "account", account.String())
+					return err
+				}
+				k.logger.Info("added new binding type", "store", bindingStoreKey, "aspect", aspectId.Hex(), "version", version, "account", account.String())
+			}
 			continue
 		}
 
-		jsonBytes, err := json.Marshal(metas)
+		// join-point in the new version aspect has been changed, we need to remove the non-exist binding type
+		if !newBindingTypes[bindingStoreKey] {
+			var unbind func(ctx sdk.Context, contract common.Address, aspectId common.Address) error
+			if bindingStoreKey == types.ContractBindKeyPrefix {
+				unbind = k.UnBindContractAspects
+			} else {
+				unbind = k.UnBindVerificationAspect
+			}
+
+			if err := unbind(ctx, account, aspectId); err != nil {
+				k.logger.Error("failed to remove aspect binding type", "store", bindingStoreKey, "aspect", aspectId.Hex(), "version", version, "account", account.String())
+				return err
+			}
+
+			k.logger.Info("removed binding type", "store", bindingStoreKey, "aspect", aspectId.Hex(), "version", version, "account", account.String())
+			continue
+		}
+
+		// join-point in the new version aspect not changed, we can just update the old one
+		oldVer := binding[updateIdx].Version.Uint64()
+		binding[updateIdx].Version = u256Version
+
+		jsonBytes, err := json.Marshal(binding)
 		if err != nil {
 			return err
 		}
@@ -457,7 +496,7 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, account common.A
 		)
 		bindingStore.Set(bindingKey, jsonBytes)
 
-		k.logger.Info("aspect bound version changed", "aspect", aspectId.Hex(), "account", account.String(), "old", oldver, "new", version)
+		k.logger.Info("aspect bound version changed", "aspect", aspectId.Hex(), "account", account.String(), "old", oldVer, "new", version)
 	}
 
 	return nil
