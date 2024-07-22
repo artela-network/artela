@@ -23,7 +23,19 @@ command -v jq >/dev/null 2>&1 || {
 }
 
 # remove existing daemon and client
-rm -rf ~/.artelad*
+folder_path="$HOME/.artelad"
+echo folder_path
+if [ -d "$folder_path" ]; then
+  read -p "Are you sure you want to delete the folder '$folder_path' ? (y/n): " confirm
+
+  if [ "$confirm" == "y" ]; then
+    rm -rf "$folder_path"
+    echo "The folder has been deleted."
+  else
+    echo "Operation canceled."
+    exit 1
+  fi
+fi
 
 echo artelad config keyring-backend $KEYRING
 artelad config keyring-backend $KEYRING
