@@ -112,7 +112,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/artela-network/artela/app/upgrades/v047rc7"
-	v1 "github.com/artela-network/artela/app/upgrades/v1"
+	"github.com/artela-network/artela/app/upgrades/v048rc8"
 	evmmodule "github.com/artela-network/artela/x/evm"
 	evmmodulekeeper "github.com/artela-network/artela/x/evm/keeper"
 	evmmoduletypes "github.com/artela-network/artela/x/evm/types"
@@ -1001,7 +1001,7 @@ func (app *Artela) ModuleManager() *module.Manager {
 }
 
 func (app *Artela) setupUpgradeHandlers() {
-	// v0.47-rc7 upgrade handler
+	// v0.4.7-rc7 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v047rc7.UpgradeName,
 		v047rc7.CreateUpgradeHandler(
@@ -1009,10 +1009,10 @@ func (app *Artela) setupUpgradeHandlers() {
 		),
 	)
 
-	// v1.0.0 upgrade handler
+	// v0.4.8-rc8 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
-		v1.UpgradeName,
-		v1.CreateUpgradeHandler(
+		v048rc8.UpgradeName,
+		v048rc8.CreateUpgradeHandler(
 			app.mm, app.configurator,
 		),
 	)
@@ -1034,8 +1034,8 @@ func (app *Artela) setupUpgradeHandlers() {
 	switch upgradeInfo.Name {
 	case v047rc7.UpgradeName:
 		// no store upgrades
-	case v1.UpgradeName:
-		// no store upgrades in v1.0.0
+	case v048rc8.UpgradeName:
+		// no store upgrades in v048rc8
 	default:
 		// no-op
 	}

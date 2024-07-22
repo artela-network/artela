@@ -1,4 +1,4 @@
-package v1
+package v048rc8
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,7 +12,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator) 
 		logger := ctx.Logger().With("upgrade", UpgradeName)
 
 		// Leave modules are as-is to avoid running InitGenesis.
-		logger.Debug("v1 running module migrations ...")
+		logger.Debug("v048rc8 running module migrations ...")
 		return mm.RunMigrations(ctx, configurator, vm)
 	}
 }
