@@ -1029,9 +1029,9 @@ func SubmitTransaction(ctx context.Context, logger log.Logger, b Backend, tx *ty
 		return tx.Hash(), nil
 	}
 
-	head := b.CurrentHeader()
-	if head == nil {
-		return common.Hash{}, errors.New("no header available for transaction submission")
+	head, err := b.CurrentHeader()
+	if err != nil {
+		return common.Hash{}, err
 	}
 
 	signer := types.MakeSigner(b.ChainConfig(), head.Number, head.Time)

@@ -133,13 +133,18 @@ func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*
 		b.logger.Error("failed to fetch Base Fee from prunned block. Check node prunning configuration", "height", blockRes.Height, "error", err)
 	}
 
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	return ethapi.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.BlockID.Hash.Bytes()),
 		uint64(res.Height),
 		uint64(res.EthTxIndex),
 		baseFee,
-		b.ChainConfig(),
+		cfg,
 	), nil
 }
 
@@ -181,12 +186,21 @@ func (b *BackendImpl) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Sub
 
 // Version returns the current ethereum protocol version.
 func (b *BackendImpl) Version() string {
-	chainID := b.ChainConfig().ChainID
-	if chainID == nil {
-		b.logger.Error("eth.rpc.backend.Version", "ChainID is nil")
-		return "-1"
+	v, _ := b.version()
+	return v
+}
+
+func (b *BackendImpl) version() (string, error) {
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return "", err
 	}
-	return chainID.String()
+
+	if cfg.ChainID == nil {
+		b.logger.Error("eth.rpc.backend.Version", "ChainID is nil")
+		return "", errors.New("chain id is not valid")
+	}
+	return cfg.ChainID.String(), nil
 }
 
 func (b *BackendImpl) Engine() consensus.Engine {
@@ -361,6 +375,10 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.R
 			continue
 		}
 
+		cfg, err := b.chainConfig()
+		if err != nil {
+			return nil, err
+		}
 		if msg.Hash == hexTx {
 			// use zero block values since it's not included in a block yet
 			rpctx := ethapi.NewTransactionFromMsg(
@@ -369,7 +387,7 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.R
 				uint64(0),
 				uint64(0),
 				nil,
-				b.ChainConfig(),
+				cfg,
 			)
 			return rpctx, nil
 		}

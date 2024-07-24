@@ -158,19 +158,26 @@ func (b *BackendImpl) SuggestGasTipCap(baseFee *big.Int) (*big.Int, error) {
 }
 
 func (b *BackendImpl) ChainConfig() *params.ChainConfig {
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil
+	}
+	return cfg
+}
+
+func (b *BackendImpl) chainConfig() (*params.ChainConfig, error) {
 	params, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{})
 	if err != nil {
 		b.logger.Info("queryClient.Params failed", err)
-		return nil
+		return nil, err
 	}
 
-	currentHeader := b.CurrentHeader()
-	if currentHeader == nil || currentHeader.Number == nil {
-		b.logger.Info("block number is nil")
-		return nil
+	currentHeader, err := b.CurrentHeader()
+	if err != nil {
+		return nil, err
 	}
 
-	return params.Params.ChainConfig.EthereumConfig(currentHeader.Number.Int64(), b.chainID)
+	return params.Params.ChainConfig.EthereumConfig(currentHeader.Number.Int64(), b.chainID), nil
 }
 
 func (b *BackendImpl) FeeHistory(blockCount uint64, lastBlock rpc.BlockNumber,
@@ -402,7 +409,7 @@ func (b *BackendImpl) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 		result *big.Int
 		err    error
 	)
-	if head := b.CurrentHeader(); head != nil && head.BaseFee != nil {
+	if head, err := b.CurrentHeader(); err == nil && head.BaseFee != nil {
 		result, err = b.SuggestGasTipCap(head.BaseFee)
 		if err != nil {
 			return nil, err
