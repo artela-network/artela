@@ -83,22 +83,29 @@ func (b *BackendImpl) HeaderByNumberOrHash(ctx context.Context,
 	return nil, errors.New("HeaderByNumberOrHash is not implemented")
 }
 
-func (b *BackendImpl) CurrentHeader() *ethtypes.Header {
+func (b *BackendImpl) CurrentHeader() (*ethtypes.Header, error) {
 	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
-	if err != nil || block == nil {
-		b.logger.Error("get CurrentHeader failed, error or block is nil", "error", err)
-		return nil
+	if err != nil {
+		return nil, err
 	}
-	return block.Header()
+	if block == nil || block.Header() == nil {
+		return nil, errors.New("current block header not found")
+	}
+	return block.Header(), nil
 }
 
 func (b *BackendImpl) CurrentBlock() *rpctypes.Block {
+	block, _ := b.currentBlock()
+	return block
+}
+
+func (b *BackendImpl) currentBlock() (*rpctypes.Block, error) {
 	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil {
 		b.logger.Error("get CurrentBlock failed", "error", err)
-		return nil
+		return nil, err
 	}
-	return block
+	return block, nil
 }
 
 func (b *BackendImpl) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
@@ -242,12 +249,11 @@ func (b *BackendImpl) blockNumberFromCosmos(blockNrOrHash rpc.BlockNumberOrHash)
 		return rpc.BlockNumber(resBlock.Block.Height), nil
 	case blockNrOrHash.BlockNumber != nil:
 		if *blockNrOrHash.BlockNumber == rpc.LatestBlockNumber {
-			header := b.CurrentHeader()
-			if header == nil {
-				return rpc.EarliestBlockNumber, errors.New("unable to retrieve latest block")
+			currentHeader, err := b.CurrentHeader()
+			if err != nil {
+				return rpc.LatestBlockNumber, err
 			}
-			currentHeight := header.Number
-			return rpc.BlockNumber(currentHeight.Int64()), nil
+			return rpc.BlockNumber(currentHeader.Number.Int64()), nil
 		}
 		return *blockNrOrHash.BlockNumber, nil
 	default:
@@ -521,11 +527,14 @@ func (b *BackendImpl) processBlock(
 
 	targetOneFeeHistory := &rpctypes.OneFeeHistory{}
 	targetOneFeeHistory.BaseFee = blockBaseFee
-	cfg := b.ChainConfig()
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil, err
+	}
 	if cfg.IsLondon(big.NewInt(blockHeight + 1)) {
-		header := b.CurrentHeader()
-		if header == nil {
-			return nil, errors.New("header does not exist")
+		header, err := b.CurrentHeader()
+		if err != nil {
+			return nil, err
 		}
 		targetOneFeeHistory.NextBaseFee = misc.CalcBaseFee(cfg, header)
 	} else {

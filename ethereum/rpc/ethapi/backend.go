@@ -38,7 +38,7 @@ type Backend interface {
 	HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)
 	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
 	HeaderByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Header, error)
-	CurrentHeader() *types.Header
+	CurrentHeader() (*types.Header, error)
 	CurrentBlock() *rpctypes.Block
 	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
 	ArtBlockByNumber(ctx context.Context, number rpc.BlockNumber) (*rpctypes.Block, error)

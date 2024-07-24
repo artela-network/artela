@@ -131,7 +131,11 @@ func (b *BackendImpl) SignTransaction(args *ethapi2.TransactionArgs) (*ethtypes.
 		return nil, err
 	}
 
-	signer := ethtypes.MakeSigner(b.ChainConfig(), new(big.Int).SetUint64(uint64(bn)), bt)
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil, err
+	}
+	signer := ethtypes.MakeSigner(cfg, new(big.Int).SetUint64(uint64(bn)), bt)
 
 	// LegacyTx derives chainID from the signature. To make sure the msg.ValidateBasic makes
 	// the corresponding chainID validation, we need to sign the transaction before calling it
@@ -166,16 +170,14 @@ func (b *BackendImpl) GetTransactionCount(address common.Address, blockNrOrHash 
 	if err != nil {
 		return &n, err
 	}
-	header := b.CurrentHeader()
-	if header == nil {
-		return &n, fmt.Errorf("unable to retrieve block %v", blockNrOrHash.String())
+	header, err := b.CurrentHeader()
+	if err != nil {
+		return &n, err
 	}
-
-	currentHeight := header.Number
-	if height.Int64() > currentHeight.Int64() {
+	if height.Int64() > header.Number.Int64() {
 		return &n, fmt.Errorf(
 			"cannot query with height in the future (current: %d, queried: %d); please provide a valid height",
-			currentHeight, height)
+			header.Number, height)
 	}
 	// Get nonce (sequence) from account
 	from := sdktypes.AccAddress(address.Bytes())
