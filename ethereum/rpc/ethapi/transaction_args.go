@@ -166,7 +166,7 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 }
 
 // setLondonFeeDefaults fills in reasonable default fee values for unspecified fields.
-func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
+func (args *TransactionArgs) setLondonFeeDefaults(_ context.Context, head *types.Header, b Backend) error {
 	// Set maxPriorityFeePerGas if it is missing.
 	if args.MaxPriorityFeePerGas == nil {
 		tip, err := b.SuggestGasTipCap(head.BaseFee)

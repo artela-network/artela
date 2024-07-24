@@ -7,14 +7,14 @@ import (
 )
 
 // DbGet returns the raw value of a key stored in the database.
-func (api *DebugAPI) DbGet(key string) (hexutil.Bytes, error) {
+func (api *DebugAPI) DbGet(_ string) (hexutil.Bytes, error) {
 	// not implement
 	return nil, errors.New("not implemented")
 }
 
 // DbAncient retrieves an ancient binary blob from the append-only immutable files.
 // It is a mapping to the `AncientReaderOp.Ancient` method
-func (api *DebugAPI) DbAncient(kind string, number uint64) (hexutil.Bytes, error) {
+func (api *DebugAPI) DbAncient(_ string, _ uint64) (hexutil.Bytes, error) {
 	// not implement
 	return nil, errors.New("not implemented")
 }
