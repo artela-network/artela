@@ -109,7 +109,7 @@ func (s *websocketsServer) Start() {
 		}
 
 		if err != nil {
-			if err == http.ErrServerClosed {
+			if errors.Is(err, http.ErrServerClosed) {
 				return
 			}
 
@@ -138,7 +138,6 @@ func (s *websocketsServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		conn: conn,
 	})
 	s.logger.Info("Success HTTP server for WS ")
-
 }
 
 func (s *websocketsServer) sendErrResponse(wsConn *wsConn, msg string) {
@@ -261,7 +260,9 @@ func (s *websocketsServer) readLoop(wsConn *wsConn) {
 			}
 
 			if err := wsConn.WriteJSON(res); err != nil {
-				break
+				_ = wsConn.Close() // #nosec G703
+				s.logger.Error("error writing subscription response", "error", err)
+				return
 			}
 		case "eth_unsubscribe":
 			params, ok := s.getParamsAndCheckValid(msg, wsConn)
@@ -289,12 +290,15 @@ func (s *websocketsServer) readLoop(wsConn *wsConn) {
 			}
 
 			if err := wsConn.WriteJSON(res); err != nil {
-				break
+				_ = wsConn.Close() // #nosec G703
+				s.logger.Error("error writing unsubscribe response", "error", err)
+				return
 			}
 		default:
 			// otherwise, call the usual rpc server to respond
 			if err := s.tcpGetAndSendResponse(wsConn, mb); err != nil {
 				s.sendErrResponse(wsConn, err.Error())
+				s.logger.Error("error sending response", "error", err)
 			}
 		}
 	}
@@ -427,7 +431,6 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 
 					for _, attr := range et.Attributes {
 						if attr.Key == evmtypes.AttributeKeyEthereumBloom {
-
 							encodedBloom, deCodeErr := base64.StdEncoding.DecodeString(attr.Value)
 
 							sprintf := fmt.Sprintf("subscribeNewHeads event %d bloom %s header %d, ", len(bloom.Bytes()), attr.Value, data.Header.Height)
@@ -481,7 +484,7 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					api.logger.Error("error writing header, will drop peer", "error", err.Error())
 
 					try(func() {
-						if err != websocket.ErrCloseSent {
+						if !errors.Is(websocket.ErrCloseSent, err) {
 							_ = wsConn.Close() // #nosec G703
 						}
 					}, api.logger, "closing websocket peer sub")
@@ -535,10 +538,6 @@ func (api *pubSubAPI) subscribeLogs(wsConn *wsConn, subID rpc.ID, extra interfac
 				return nil, err
 			}
 
-			if ok {
-				crit.Addresses = []common.Address{common.HexToAddress(address)}
-			}
-
 			if isSlice {
 				crit.Addresses = []common.Address{}
 				for _, addr := range addresses {
@@ -551,6 +550,8 @@ func (api *pubSubAPI) subscribeLogs(wsConn *wsConn, subID rpc.ID, extra interfac
 
 					crit.Addresses = append(crit.Addresses, common.HexToAddress(address))
 				}
+			} else {
+				crit.Addresses = []common.Address{common.HexToAddress(address)}
 			}
 		}
 
@@ -661,7 +662,7 @@ func (api *pubSubAPI) subscribeLogs(wsConn *wsConn, subID rpc.ID, extra interfac
 					err = wsConn.WriteJSON(res)
 					if err != nil {
 						try(func() {
-							if err != websocket.ErrCloseSent {
+							if !errors.Is(websocket.ErrCloseSent, err) {
 								_ = wsConn.Close() // #nosec G703
 							}
 						}, api.logger, "closing websocket peer sub")
@@ -719,7 +720,7 @@ func (api *pubSubAPI) subscribePendingTransactions(wsConn *wsConn, subID rpc.ID)
 						api.logger.Debug("error writing header, will drop peer", "error", err.Error())
 
 						try(func() {
-							if err != websocket.ErrCloseSent {
+							if !errors.Is(websocket.ErrCloseSent, err) {
 								_ = wsConn.Close() // #nosec G703
 							}
 						}, api.logger, "closing websocket peer sub")

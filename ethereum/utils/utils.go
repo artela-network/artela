@@ -123,15 +123,11 @@ func IsCustomizedVerification(tx *ethereum.Transaction) bool {
 	}
 
 	// check prefix
-	if bytes.Compare(data[:4], djpm.CustomVerificationPrefix) != 0 {
+	if !bytes.Equal(data[:4], djpm.CustomVerificationPrefix) {
 		return false
 	}
 
 	// compute checksum and check
 	dataHash := crypto.Keccak256(data[8:])
-	if bytes.Compare(data[4:8], dataHash[:4]) != 0 {
-		return false
-	}
-
-	return true
+	return bytes.Equal(data[4:8], dataHash[:4])
 }

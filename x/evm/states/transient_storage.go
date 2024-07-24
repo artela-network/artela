@@ -71,7 +71,7 @@ func (t transientStorage) Copy() transientStorage {
 // PrettyPrint prints the contents of the access list in a human-readable form
 func (t transientStorage) PrettyPrint() string {
 	out := new(strings.Builder)
-	var sortedAddrs []common.Address
+	sortedAddrs := make([]common.Address, 0, len(t))
 	for addr := range t {
 		sortedAddrs = append(sortedAddrs, addr)
 		slices.SortFunc(sortedAddrs, func(a, b common.Address) int {

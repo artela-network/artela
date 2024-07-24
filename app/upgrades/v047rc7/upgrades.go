@@ -9,7 +9,7 @@ import (
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v17.0.0
-func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keeper bankkeeper.Keeper, accountKeeper authkeeper.AccountKeeper) upgradetypes.UpgradeHandler {
+func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, _ bankkeeper.Keeper, _ authkeeper.AccountKeeper) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger().With("upgrade", UpgradeName)
 

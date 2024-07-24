@@ -20,7 +20,6 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -101,8 +100,8 @@ func (b *BackendImpl) CurrentBlock() *rpctypes.Block {
 	return block
 }
 
-func (b *BackendImpl) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
-	block, err := b.ArtBlockByNumber(context.Background(), number)
+func (b *BackendImpl) BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
+	block, err := b.ArtBlockByNumber(ctx, number)
 	if err != nil {
 		return nil, err
 	}
@@ -137,39 +136,39 @@ func (b *BackendImpl) BlockByHash(_ context.Context, hash common.Hash) (*rpctype
 	return b.BlockFromCosmosBlock(resBlock, blockRes)
 }
 
-func (b *BackendImpl) BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
+func (b *BackendImpl) BlockByNumberOrHash(_ context.Context, _ rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
 	return nil, errors.New("BlockByNumberOrHash is not implemented")
 }
 
 func (b *BackendImpl) StateAndHeaderByNumber(
-	ctx context.Context, number rpc.BlockNumber,
+	_ context.Context, number rpc.BlockNumber,
 ) (*state.StateDB, *ethtypes.Header, error) {
 	return nil, nil, errors.New("StateAndHeaderByNumber is not implemented")
 }
 
 func (b *BackendImpl) StateAndHeaderByNumberOrHash(
-	ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash,
+	_ context.Context, _ rpc.BlockNumberOrHash,
 ) (*state.StateDB, *ethtypes.Header, error) {
 	return nil, nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-func (b *BackendImpl) PendingBlockAndReceipts() (*ethtypes.Block, types.Receipts) {
+func (b *BackendImpl) PendingBlockAndReceipts() (*ethtypes.Block, ethtypes.Receipts) {
 	b.logger.Error("PendingBlockAndReceipts is not implemented")
 	return nil, nil
 }
 
 // GetReceipts get receipts by block hash
-func (b *BackendImpl) GetReceipts(_ context.Context, hash common.Hash) (types.Receipts, error) {
+func (b *BackendImpl) GetReceipts(_ context.Context, _ common.Hash) (ethtypes.Receipts, error) {
 	return nil, errors.New("GetReceipts is not implemented")
 }
 
-func (b *BackendImpl) GetTd(_ context.Context, hash common.Hash) *big.Int {
+func (b *BackendImpl) GetTd(_ context.Context, _ common.Hash) *big.Int {
 	b.logger.Error("GetTd is not implemented")
 	return nil
 }
 
-func (b *BackendImpl) GetEVM(ctx context.Context, msg *core.Message, state *state.StateDB,
-	header *ethtypes.Header, vmConfig *vm.Config, _ *vm.BlockContext,
+func (b *BackendImpl) GetEVM(_ context.Context, _ *core.Message, _ *state.StateDB,
+	_ *ethtypes.Header, _ *vm.Config, _ *vm.BlockContext,
 ) (*vm.EVM, func() error) {
 	return nil, func() error {
 		return errors.New("GetEVM is not impelemted")

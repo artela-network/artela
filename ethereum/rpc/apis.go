@@ -13,7 +13,6 @@ import (
 )
 
 func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.Logger, apiBackend *BackendImpl) []rpc.API {
-
 	nonceLock := new(ethapi.AddrLocker)
 	return []rpc.API{
 		{

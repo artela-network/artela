@@ -5,21 +5,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/eth/filters"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela/ethereum/rpc/types"
 )
-
-// nolint:unused
-var defaultEthConfig = ethconfig.Config{
-	SyncMode:           0,
-	FilterLogCacheSize: 0,
-}
 
 type ArtelaService struct {
 	clientCtx client.Context
@@ -27,9 +17,7 @@ type ArtelaService struct {
 	cfg       *Config
 	stack     types.NetworkingStack
 	backend   *BackendImpl
-	// nolint:unused
-	filterSystem *filters.FilterSystem
-	logger       log.Logger
+	logger    log.Logger
 }
 
 func NewArtelaService(
@@ -38,7 +26,6 @@ func NewArtelaService(
 	wsClient *rpcclient.WSClient,
 	cfg *Config,
 	stack types.NetworkingStack,
-	am *accounts.Manager,
 	logger log.Logger,
 ) *ArtelaService {
 	art := &ArtelaService{
@@ -51,26 +38,6 @@ func NewArtelaService(
 
 	art.backend = NewBackend(ctx, clientCtx, art, stack.ExtRPCEnabled(), cfg, logger)
 	return art
-}
-
-func Accounts(clientCtx client.Context) ([]common.Address, error) {
-	addresses := make([]common.Address, 0) // return [] instead of nil if empty
-
-	infos, err := clientCtx.Keyring.List()
-	if err != nil {
-		return addresses, err
-	}
-
-	for _, info := range infos {
-		pubKey, err := info.GetPubKey()
-		if err != nil {
-			return nil, err
-		}
-		addressBytes := pubKey.Address().Bytes()
-		addresses = append(addresses, common.BytesToAddress(addressBytes))
-	}
-
-	return addresses, nil
 }
 
 func (art *ArtelaService) APIs() []rpc.API {
@@ -94,24 +61,5 @@ func (art *ArtelaService) Shutdown() error {
 // RegisterAPIs register apis and create graphql instance.
 func (art *ArtelaService) registerAPIs() error {
 	art.stack.RegisterAPIs(art.APIs())
-	// art.filterSystem = RegisterFilterAPI(art.stack, art.backend, &defaultEthConfig)
-
-	// create graphql
-	// if err := graphql.New(art.stack, art.backend, art.filterSystem, []string{"*"}, []string{"*"}); err != nil {
-	// 	return err
-	// }
-
 	return nil
 }
-
-// func RegisterFilterAPI(stack types.NetworkingStack, backend ethapi.Backend, ethcfg *ethconfig.Config) *filters.FilterSystem {
-// 	isLightClient := ethcfg.SyncMode == downloader.LightSync
-// 	filterSystem := filters.NewFilterSystem(backend, filters.Config{
-// 		LogCacheSize: ethcfg.FilterLogCacheSize,
-// 	})
-// 	stack.RegisterAPIs([]rpc.API{{
-// 		Namespace: "eth",
-// 		Service:   filters.NewFilterAPI(filterSystem, isLightClient),
-// 	}})
-// 	return filterSystem
-// }

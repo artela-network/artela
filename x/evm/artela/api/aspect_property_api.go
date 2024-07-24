@@ -8,9 +8,7 @@ import (
 	asptypes "github.com/artela-network/aspect-core/types"
 )
 
-var (
-	_ asptypes.AspectPropertyHostAPI = (*aspectPropertyHostAPI)(nil)
-)
+var _ asptypes.AspectPropertyHostAPI = (*aspectPropertyHostAPI)(nil)
 
 type aspectPropertyHostAPI struct {
 	aspectRuntimeContext *types.AspectRuntimeContext

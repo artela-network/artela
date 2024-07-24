@@ -186,8 +186,6 @@ type (
 		jsonrpcDone chan struct{}
 
 		artelaService *rpc.ArtelaService
-		// nolint:unused
-		artelaServiceDone chan struct{}
 	}
 )
 

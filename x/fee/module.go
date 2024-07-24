@@ -155,8 +155,7 @@ func (am AppModule) ExportGenesis(ctx cosmos.Context, cdc codec.JSONCodec) json.
 func (am AppModule) RegisterStoreDecoder(_ cosmos.StoreDecoderRegistry) {}
 
 // ProposalContents doesn't return any content functions for governance proposals.
-// nolint
-func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
+func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent { //nolint
 	return nil
 }
 

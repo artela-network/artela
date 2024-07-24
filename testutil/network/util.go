@@ -17,7 +17,6 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/local"
 	"github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/cosmos/cosmos-sdk/server/api"
@@ -162,7 +161,7 @@ func startInProcess(cfg Config, val *Validator) error {
 			panic(err)
 		}
 
-		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, nil, cfg, node, accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}), log.Root())
+		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, nil, cfg, node, log.Root())
 		startErr := val.artelaService.Start()
 		if startErr != nil {
 			return startErr
@@ -234,17 +233,8 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 	var govGenState govv1.GenesisState
 	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[govtypes.ModuleName], &govGenState)
 
-	// nolint:staticcheck
-	govGenState.DepositParams.MinDeposit[0].Denom = cfg.BondDenom
+	govGenState.Params.MinDeposit[0].Denom = cfg.BondDenom
 	cfg.GenesisState[govtypes.ModuleName] = cfg.Codec.MustMarshalJSON(&govGenState)
-
-	/* TODO artela
-	var inflationGenState inflationtypes.GenesisState
-	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[inflationtypes.ModuleName], &inflationGenState)
-
-	inflationGenState.Params.MintDenom = cfg.BondDenom
-	cfg.GenesisState[inflationtypes.ModuleName] = cfg.Codec.MustMarshalJSON(&inflationGenState)
-	*/
 
 	var crisisGenState crisistypes.GenesisState
 	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[crisistypes.ModuleName], &crisisGenState)

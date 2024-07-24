@@ -30,7 +30,7 @@ func BeginBlock(_ cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBegin
 // KVStore. The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
 func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	// Aspect Runtime Context Lifecycle: destory ExtBlockContext
+	// Aspect Runtime Context Lifecycle: destroy ExtBlockContext
 	k.BlockContext = nil
 
 	// Gas costs are handled within msg handler so costs should be ignored

@@ -1,17 +1,17 @@
 package txs
 
-//EIP-2930 was part of the Berlin upgrade and is seen as a step towards improving the
-//efficiency and flexibility of the Ethereum network. It allows for more sophisticated
-//transaction handling and can mitigate some of the effects of increased gas costs
-//introduced by other changes in the protocol.
+// EIP-2930 was part of the Berlin upgrade and is seen as a step towards improving the
+// efficiency and flexibility of the Ethereum network. It allows for more sophisticated
+// transaction handling and can mitigate some of the effects of increased gas costs
+// introduced by other changes in the protocol.
 //
-//Access lists in EIP-2930 provide several benefits:
-//1. **Gas Cost Predictability**: By specifying the addresses and keys that will be accessed,
-//the sender can pre-calculate the gas costs, making them more predictable.
-//2. **Increased Efficiency**: Clients and miners can txs transactions more efficiently,
-//as they know in advance which addresses and keys will be accessed.
-//3. **Compatibility with Future Upgrades**: Access lists can facilitate smoother upgrades,
-//such as the transition to Ethereum 2.0, by allowing transactions to explicitly states their dependencies.
+// Access lists in EIP-2930 provide several benefits:
+// 1. **Gas Cost Predictability**: By specifying the addresses and keys that will be accessed,
+// the sender can pre-calculate the gas costs, making them more predictable.
+// 2. **Increased Efficiency**: Clients and miners can txs transactions more efficiently,
+// as they know in advance which addresses and keys will be accessed.
+// 3. **Compatibility with Future Upgrades**: Access lists can facilitate smoother upgrades,
+// such as the transition to Ethereum 2.0, by allowing transactions to explicitly states their dependencies.
 
 import (
 	"github.com/artela-network/artela/x/evm/txs/support"

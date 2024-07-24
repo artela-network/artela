@@ -11,14 +11,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	ethlog "github.com/ethereum/go-ethereum/log"
 
 	dbm "github.com/cometbft/cometbft-db"
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/server"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -58,7 +56,7 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 }
 
 // CreateJSONRPC starts the JSON-RPC server
-func CreateJSONRPC(ctx *server.Context,
+func CreateJSONRPC(ctx *sdkserver.Context,
 	clientCtx client.Context,
 	tmRPCAddr,
 	tmEndpoint string,
@@ -105,8 +103,7 @@ func CreateJSONRPC(ctx *server.Context,
 
 	wsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, nodeCfg.Logger)
 
-	am := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false})
-	serv := ethrpc.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, am, nodeCfg.Logger)
+	serv := ethrpc.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, nodeCfg.Logger)
 
 	// allocate separate WS connection to Tendermint
 	tmWsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, nodeCfg.Logger)

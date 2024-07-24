@@ -37,18 +37,17 @@ func NewTxContext(getEthTxContext func() *types.EthTxContext,
 
 func (c *TxContext) registerLoaders() {
 	loaders := c.receiptContentLoaders
-	loaders[aspctx.TxType] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxType] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		txType := uint64(tx.Type())
 		return &artelatypes.UintData{Data: &txType}
 	}
-	loaders[aspctx.TxChainId] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxChainId] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		if tx.ChainId() != nil {
 			return &artelatypes.BytesData{Data: tx.ChainId().Bytes()}
-		} else {
-			return &artelatypes.BytesData{Data: []byte{}}
 		}
+		return &artelatypes.BytesData{Data: []byte{}}
 	}
-	loaders[aspctx.TxAccessList] = func(ehTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxAccessList] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		res := &artelatypes.EthAccessList{AccessList: make([]*artelatypes.EthAccessTuple, 0, len(tx.AccessList()))}
 		if len(tx.AccessList()) == 0 {
 			return res
@@ -68,40 +67,40 @@ func (c *TxContext) registerLoaders() {
 		}
 		return res
 	}
-	loaders[aspctx.TxNonce] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxNonce] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		nonce := tx.Nonce()
 		return &artelatypes.UintData{Data: &nonce}
 	}
-	loaders[aspctx.TxGas] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxGas] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		gas := tx.Gas()
 		return &artelatypes.UintData{Data: &gas}
 	}
-	loaders[aspctx.TxGasPrice] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxGasPrice] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: tx.GasPrice().Bytes()}
 	}
-	loaders[aspctx.TxGasTipCap] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxGasTipCap] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: tx.GasTipCap().Bytes()}
 	}
-	loaders[aspctx.TxGasFeeCap] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxGasFeeCap] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: tx.GasFeeCap().Bytes()}
 	}
-	loaders[aspctx.TxTo] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxTo] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: tx.To().Bytes()}
 	}
-	loaders[aspctx.TxValue] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxValue] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: tx.Value().Bytes()}
 	}
-	loaders[aspctx.TxData] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxData] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: tx.Data()}
 	}
-	loaders[aspctx.TxBytes] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxBytes] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		raw, err := tx.MarshalBinary()
 		if err != nil {
 			panic(err)
 		}
 		return &artelatypes.BytesData{Data: raw}
 	}
-	loaders[aspctx.TxHash] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxHash] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: tx.Hash().Bytes()}
 	}
 	loaders[aspctx.TxUnsignedBytes] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
@@ -201,22 +200,22 @@ func (c *TxContext) registerLoaders() {
 		signer := ethereum.MakeSigner(config, blockNumber, blockTime)
 		return &artelatypes.BytesData{Data: signer.Hash(tx).Bytes()}
 	}
-	loaders[aspctx.TxSigV] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxSigV] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		v, _, _ := tx.RawSignatureValues()
 		return &artelatypes.BytesData{Data: v.Bytes()}
 	}
-	loaders[aspctx.TxSigS] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxSigS] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		_, r, _ := tx.RawSignatureValues()
 		return &artelatypes.BytesData{Data: r.Bytes()}
 	}
-	loaders[aspctx.TxSigR] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxSigR] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
 		_, _, s := tx.RawSignatureValues()
 		return &artelatypes.BytesData{Data: s.Bytes()}
 	}
-	loaders[aspctx.TxFrom] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxFrom] = func(ethTxCtx *types.EthTxContext, _ *ethereum.Transaction) proto.Message {
 		return &artelatypes.BytesData{Data: ethTxCtx.TxFrom().Bytes()}
 	}
-	loaders[aspctx.TxIndex] = func(ethTxCtx *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
+	loaders[aspctx.TxIndex] = func(ethTxCtx *types.EthTxContext, _ *ethereum.Transaction) proto.Message {
 		index := ethTxCtx.TxIndex()
 		return &artelatypes.UintData{Data: &index}
 	}

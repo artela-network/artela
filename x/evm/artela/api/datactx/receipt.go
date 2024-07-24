@@ -33,10 +33,10 @@ func NewReceiptContext(getEthTxContext func() *types.EthTxContext,
 
 func (c *ReceiptContext) registerLoaders() {
 	loaders := c.receiptContentLoaders
-	loaders[aspctx.ReceiptStatus] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
+	loaders[aspctx.ReceiptStatus] = func(_ *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
 		return &artelatypes.UintData{Data: &receipt.Status}
 	}
-	loaders[aspctx.ReceiptLogs] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
+	loaders[aspctx.ReceiptLogs] = func(_ *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
 		logs := make([]*artelatypes.EthLog, 0, len(receipt.Logs))
 		for _, log := range receipt.Logs {
 			topics := make([][]byte, 0, len(log.Topics))
@@ -53,13 +53,13 @@ func (c *ReceiptContext) registerLoaders() {
 		}
 		return &artelatypes.EthLogs{Logs: logs}
 	}
-	loaders[aspctx.ReceiptGasUsed] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
+	loaders[aspctx.ReceiptGasUsed] = func(_ *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
 		return &artelatypes.UintData{Data: &receipt.GasUsed}
 	}
-	loaders[aspctx.ReceiptCumulativeGasUsed] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
+	loaders[aspctx.ReceiptCumulativeGasUsed] = func(_ *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
 		return &artelatypes.UintData{Data: &receipt.CumulativeGasUsed}
 	}
-	loaders[aspctx.ReceiptBloom] = func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
+	loaders[aspctx.ReceiptBloom] = func(_ *types.EthTxContext, receipt *ethereum.Receipt) proto.Message {
 		return &artelatypes.BytesData{Data: receipt.Bloom.Bytes()}
 	}
 }

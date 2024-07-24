@@ -3,26 +3,23 @@ package types
 import (
 	"context"
 	"fmt"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/client"
-	"math/big"
-	"sync"
-	"time"
-
+	"github.com/artela-network/artela-evm/vm"
+	statedb "github.com/artela-network/artela/x/evm/states"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	artelatypes "github.com/artela-network/aspect-core/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-
-	"github.com/artela-network/artela-evm/vm"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
-	statedb "github.com/artela-network/artela/x/evm/states"
-	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
+	"math/big"
+	"sync"
+	"time"
 )
 
 const (
@@ -44,28 +41,21 @@ type (
 // containing information related to transactions (tx) and blocks. Aspects at different
 // join points can access this context, and consequently, the context dynamically
 // adjusts its content based on the actual execution of blocks and transactions.
-
 // Here is the execution scenario of this context in the lifecycle of a tx process,
 // listed in the order of tx execution:
-
 // 1. initialization: Before each transaction execution, create the AspectRuntimeContext
 // and establish a bidirectional connection with the sdk context.
-
 // 2. withBlockConfig: Write information before the start of each block and destroy it
 // at the end of each block. Transfer it to the AspectRuntimeContext before the execution
 // of tx in the deliver state through WithExtBlock.
-
 // 3. withEVM: Before Pre-tx-execute, incorporate the EVM context, including evm, stateDB,
 // evm tracer, message, message from, etc., and pass it to the AspectRuntimeContext through
 // WithTxContext.
-
 // 4. withReceipt: After the execution of the EVM, store the result in TxContext, enabling
 // subsequent JoinPoints to access the execution details of the tx.
-
 // 5. commit: Decide whether to commit at the end of each transaction. If committing is
 // necessary, write the result to the sdk context.
-
-// 6. destory: After each transaction execution, destroy the AspectRuntimeContext.
+// 6. destroy: After each transaction execution, destroy the AspectRuntimeContext.
 type AspectRuntimeContext struct {
 	baseCtx context.Context
 
@@ -100,9 +90,9 @@ func (c *AspectRuntimeContext) WithCosmosContext(newTxCtx cosmos.Context) {
 
 func (c *AspectRuntimeContext) Debug(msg string, keyvals ...interface{}) {
 	if c.ethTxContext != nil {
-		keyvals = append(keyvals, "tx-from", fmt.Sprintf("%s", c.ethTxContext.TxFrom().Hex()))
+		keyvals = append(keyvals, "tx-from", c.ethTxContext.TxFrom().Hex())
 		if c.ethTxContext.TxContent() != nil {
-			keyvals = append(keyvals, "tx-hash", fmt.Sprintf("%s", c.ethTxContext.TxContent().Hash().Hex()))
+			keyvals = append(keyvals, "tx-hash", c.ethTxContext.TxContent().Hash().Hex())
 		}
 	}
 	c.logger.Debug(msg, keyvals...)
@@ -154,7 +144,7 @@ func (c *AspectRuntimeContext) StateDb() vm.StateDB {
 	if c.EthTxContext() == nil {
 		return nil
 	}
-	return c.EthTxContext().stateDb
+	return c.EthTxContext().stateDB
 }
 
 func (c *AspectRuntimeContext) ClearBlockContext() {
@@ -182,7 +172,6 @@ func (c *AspectRuntimeContext) SetAspectState(ctx *artelatypes.RunnerContext, ke
 	)
 
 	c.aspectState.Set(stateKey, value)
-	return
 }
 
 func (c *AspectRuntimeContext) Destroy() {
@@ -223,7 +212,7 @@ type EthTxContext struct {
 	msg       *core.Message
 	vmTracer  *vm.Tracer
 	receipt   *ethtypes.Receipt
-	stateDb   vm.StateDB
+	stateDB   vm.StateDB
 	evmCfg    *statedb.EVMConfig
 	lastEvm   *vm.EVM
 	from      common.Address
@@ -236,7 +225,7 @@ func NewEthTxContext(ethTx *ethtypes.Transaction) *EthTxContext {
 		txContent: ethTx,
 		vmTracer:  nil,
 		receipt:   nil,
-		stateDb:   nil,
+		stateDB:   nil,
 	}
 }
 
@@ -253,14 +242,12 @@ func (c *EthTxContext) TxTo() string {
 func (c *EthTxContext) TxFrom() common.Address {
 	return c.from
 }
-func (c *EthTxContext) TxIndex() uint64 {
-	return c.index
-}
+func (c *EthTxContext) TxIndex() uint64                  { return c.index }
 func (c *EthTxContext) EvmCfg() *statedb.EVMConfig       { return c.evmCfg }
 func (c *EthTxContext) TxContent() *ethtypes.Transaction { return c.txContent }
 func (c *EthTxContext) VmTracer() *vm.Tracer             { return c.vmTracer }
 func (c *EthTxContext) Receipt() *ethtypes.Receipt       { return c.receipt }
-func (c *EthTxContext) VmStateDB() vm.StateDB            { return c.stateDb }
+func (c *EthTxContext) VmStateDB() vm.StateDB            { return c.stateDB }
 func (c *EthTxContext) LastEvm() *vm.EVM                 { return c.lastEvm }
 func (c *EthTxContext) Message() *core.Message           { return c.msg }
 func (c *EthTxContext) Commit() bool                     { return c.commit }
@@ -276,7 +263,7 @@ func (c *EthTxContext) WithEVM(
 	c.msg = msg
 	c.lastEvm = lastEvm
 	c.vmTracer = monitor
-	c.stateDb = db
+	c.stateDB = db
 	return c
 }
 
@@ -300,13 +287,13 @@ func (c *EthTxContext) WithCommit(commit bool) *EthTxContext {
 	return c
 }
 
-func (c *EthTxContext) WithStateDB(stateDb vm.StateDB) *EthTxContext {
-	c.stateDb = stateDb
+func (c *EthTxContext) WithStateDB(stateDB vm.StateDB) *EthTxContext {
+	c.stateDB = stateDB
 	return c
 }
 
 func (c *EthTxContext) ClearEvmObject() *EthTxContext {
-	c.stateDb = nil
+	c.stateDB = nil
 	c.vmTracer = nil
 	c.lastEvm = nil
 	c.evmCfg = nil
@@ -444,7 +431,6 @@ func (k *AspectState) Set(key, value []byte) {
 	} else {
 		k.logger.Debug("setState:", "action", action, "key", string(key), "value", string(value))
 	}
-
 }
 
 func (k *AspectState) Get(key []byte) []byte {

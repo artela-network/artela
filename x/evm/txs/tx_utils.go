@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/artela-network/artela/x/evm/txs/support"
-	//"github.com/artela-network/artela/x/evm/txs"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"

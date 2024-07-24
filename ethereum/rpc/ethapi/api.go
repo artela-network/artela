@@ -2,24 +2,20 @@ package ethapi
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/artela-network/artela-evm/vm"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -47,15 +43,15 @@ func NewEthereumAPI(b Backend, logger log.Logger) *EthereumAPI {
 }
 
 // ProtocolVersion returns the supported Ethereum protocol version.
-func (e *EthereumAPI) ProtocolVersion() hexutil.Uint {
-	e.logger.Debug("eth_protocolVersion")
+func (s *EthereumAPI) ProtocolVersion() hexutil.Uint {
+	s.logger.Debug("eth_protocolVersion")
 	return hexutil.Uint(ethtypes.ProtocolVersion)
 }
 
 // GasPrice returns a suggestion for a gas price for legacy transactions.
-func (e *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
-	e.logger.Debug("eth_gasPrice")
-	return e.b.GasPrice(ctx)
+func (s *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
+	s.logger.Debug("eth_gasPrice")
+	return s.b.GasPrice(ctx)
 }
 
 // MaxPriorityFeePerGas returns a suggestion for a gas tip cap for dynamic fee transactions.
@@ -312,12 +308,12 @@ func NewBlockChainAPI(b Backend, logger log.Logger) *BlockChainAPI {
 // returned, regardless of the current head block. We used to return an error when the chain
 // wasn't synced up to a block where EIP-155 is enabled, but this behavior caused issues
 // in CL clients.
-func (api *BlockChainAPI) ChainId() *hexutil.Big {
-	return (*hexutil.Big)(api.b.ChainConfig().ChainID)
+func (s *BlockChainAPI) ChainId() *hexutil.Big {
+	return (*hexutil.Big)(s.b.ChainConfig().ChainID)
 }
 
-func (api *BlockChainAPI) Coinbase() (sdktypes.AccAddress, error) {
-	return api.b.GetCoinbase()
+func (s *BlockChainAPI) Coinbase() (sdktypes.AccAddress, error) {
+	return s.b.GetCoinbase()
 }
 
 // BlockNumber returns the block number of the chain head.
@@ -358,26 +354,6 @@ type StorageResult struct {
 func (s *BlockChainAPI) GetProof(ctx context.Context, address common.Address, storageKeys []string, blockNrOrHash rpctypes.BlockNumberOrHash) (*rpctypes.AccountResult, error) {
 	s.logger.Debug("eth_getProof", "address", address.Hex(), "keys", storageKeys, "block number or hash", blockNrOrHash)
 	return s.b.GetProof(address, storageKeys, blockNrOrHash)
-}
-
-// decodeHash parses a hex-encoded 32-byte hash. The input may optionally
-// be prefixed by 0x and can have a byte length up to 32.
-// nolint:unused
-func decodeHash(s string) (common.Hash, error) {
-	if strings.HasPrefix(s, "0x") || strings.HasPrefix(s, "0X") {
-		s = s[2:]
-	}
-	if (len(s) & 1) > 0 {
-		s = "0" + s
-	}
-	b, err := hex.DecodeString(s)
-	if err != nil {
-		return common.Hash{}, errors.New("hex string invalid")
-	}
-	if len(b) > 32 {
-		return common.Hash{}, errors.New("hex string too long, want at most 32 bytes")
-	}
-	return common.BytesToHash(b), nil
 }
 
 // GetHeaderByNumber returns the requested canonical block header.
@@ -630,40 +606,6 @@ func (context *ChainContext) GetHeader(hash common.Hash, number uint64) *types.H
 	return header
 }
 
-// nolint:unused
-func newRevertError(result *core.ExecutionResult) *revertError {
-	reason, errUnpack := abi.UnpackRevert(result.Revert())
-	err := errors.New("execution reverted")
-	if errUnpack == nil {
-		err = fmt.Errorf("execution reverted: %v", reason)
-	}
-	return &revertError{
-		error:  err,
-		reason: hexutil.Encode(result.Revert()),
-	}
-}
-
-// revertError is an API error that encompasses an EVM revertal with JSON error
-// code and a binary data blob.
-// nolint:unused
-type revertError struct {
-	error
-	reason string // revert reason hex encoded
-}
-
-// ErrorCode returns the JSON error code for a revertal.
-// See: https://github.com/ethereum/wiki/wiki/JSON-RPC-Error-Codes-Improvement-Proposal
-// nolint:unused
-func (e *revertError) ErrorCode() int {
-	return 3
-}
-
-// ErrorData returns the hex encoded revert reason.
-// nolint:unused
-func (e *revertError) ErrorData() interface{} {
-	return e.reason
-}
-
 // Call executes the given transaction on the states for the given block number.
 //
 // Additionally, the caller can specify a batch of contract for fields overriding.
@@ -764,15 +706,7 @@ func (s *BlockChainAPI) rpcMarshalHeader(ctx context.Context, header *types.Head
 // rpcMarshalBlock uses the generalized output filler, then adds the total difficulty field, which requires
 // a `BlockchainAPI`.
 func (s *BlockChainAPI) rpcMarshalBlock(ctx context.Context, b *rpctypes.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
-	fields, err := RPCMarshalBlock(b, inclTx, fullTx, s.b.ChainConfig())
-	if err != nil {
-		return nil, err
-	}
-	// nolint
-	if inclTx {
-		// fields["totalDifficulty"] = (*hexutil.Big)(s.b.GetTd(ctx, b.Hash()))
-	}
-	return fields, err
+	return RPCMarshalBlock(b, inclTx, fullTx, s.b.ChainConfig())
 }
 
 // RPCTransaction represents a transaction that will serialize to the RPC representation of a transaction
@@ -1196,7 +1130,7 @@ func (api *DebugAPI) GetRawReceipts(ctx context.Context, blockNrOrHash rpc.Block
 }
 
 // GetRawTransaction returns the bytes of the transaction for the given hash.
-func (s *DebugAPI) GetRawTransaction(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
+func (api *DebugAPI) GetRawTransaction(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
 	// TODO
 	return hexutil.Bytes{}, errors.New("GetRawTransaction is not implemented")
 }
@@ -1268,16 +1202,6 @@ func checkTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
 		return fmt.Errorf("tx fee (%.2f art) exceeds the configured cap (%.2f art)", feeFloat, cap)
 	}
 	return nil
-}
-
-// toHexSlice creates a slice of hex-strings based on []byte.
-// nolint:unused
-func toHexSlice(b [][]byte) []string {
-	r := make([]string, len(b))
-	for i := range b {
-		r[i] = hexutil.Encode(b[i])
-	}
-	return r
 }
 
 func isCustomizedVerificationRequired(tx *types.Transaction) bool {

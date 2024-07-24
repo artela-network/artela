@@ -16,11 +16,8 @@ import (
 )
 
 var (
-	_ asptypes.RuntimeContextHostAPI = (*aspectRuntimeContextHostAPI)(nil)
-)
-
-var (
-	ctxKeyConstraints = map[asptypes.PointCut]*hashset.Set{
+	_                 asptypes.RuntimeContextHostAPI = (*aspectRuntimeContextHostAPI)(nil)
+	ctxKeyConstraints                                = map[asptypes.PointCut]*hashset.Set{
 		asptypes.INIT_METHOD:               hashset.New(aspctx.InitKeys...),
 		asptypes.OPERATION_METHOD:          hashset.New(aspctx.OperationKeys...),
 		asptypes.VERIFY_TX:                 hashset.New(aspctx.VerifyTxCtxKeys...),

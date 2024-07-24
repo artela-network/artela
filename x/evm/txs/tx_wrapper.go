@@ -326,15 +326,14 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err 
 	tx := msg.AsTransaction()
 	// retrieve sender info from aspect if tx is not signed
 	if utils.IsCustomizedVerification(tx) {
-
 		// TODO, more checkings, should never reach here
 		return common.Address{}, errors.New("failed to get sender of customized tx")
-	} else {
-		signer := ethereum.LatestSignerForChainID(chainID)
-		from, err = signer.Sender(tx)
-		if err != nil {
-			return common.Address{}, err
-		}
+	}
+
+	signer := ethereum.LatestSignerForChainID(chainID)
+	from, err = signer.Sender(tx)
+	if err != nil {
+		return common.Address{}, err
 	}
 
 	msg.From = from.Hex()

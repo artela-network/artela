@@ -245,8 +245,8 @@ func (k Keeper) SetBlockBloomTransient(ctx cosmos.Context, bloom *big.Int) {
 	store.Set(heightBz, bloom.Bytes())
 
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("setState: SetBlockBloomTransient"),
-		"block-height", fmt.Sprintf("%d", ctx.BlockHeight()),
+		"setState: SetBlockBloomTransient",
+		"block-height", ctx.BlockHeight(),
 		"bloom", bloom.String(),
 	)
 }
@@ -261,9 +261,9 @@ func (k Keeper) SetTxIndexTransient(ctx cosmos.Context, index uint64) {
 	store.Set(types.KeyPrefixTransientTxIndex, cosmos.Uint64ToBigEndian(index))
 
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("setState: SetTxIndexTransient"),
+		"setState: SetTxIndexTransient",
 		"key", "KeyPrefixTransientTxIndex",
-		"index", fmt.Sprintf("%d", index),
+		"index", index,
 	)
 }
 
@@ -300,9 +300,9 @@ func (k Keeper) SetLogSizeTransient(ctx cosmos.Context, logSize uint64) {
 	store.Set(types.KeyPrefixTransientLogSize, cosmos.Uint64ToBigEndian(logSize))
 
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("setState: SetLogSizeTransient"),
+		"setState: SetLogSizeTransient",
 		"key", "KeyPrefixTransientLogSize",
-		"logSize", fmt.Sprintf("%d", logSize),
+		"logSize", logSize,
 	)
 }
 
@@ -449,7 +449,7 @@ func (k Keeper) SetTransientGasUsed(ctx cosmos.Context, gasUsed uint64) {
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("setState: SetTransientGasUsed, set"),
+		"setState: SetTransientGasUsed, set",
 		"key", "KeyPrefixTransientGasUsed",
 		"gasUsed", fmt.Sprintf("%d", gasUsed),
 	)

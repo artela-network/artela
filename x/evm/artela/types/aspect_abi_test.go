@@ -102,15 +102,15 @@ func TestPack(t *testing.T) {
 
 func TestAspectsOfPack(t *testing.T) {
 	ma := make(map[string]interface{}, 2)
-	ma[AspectIdMapKey] = "1111"
+	ma[AspectIDMapKey] = "1111"
 	ma[VersionMapKey] = 0
 	ma[PriorityMapKey] = 1
 	mb := make(map[string]interface{}, 2)
-	mb[AspectIdMapKey] = "2222"
+	mb[AspectIDMapKey] = "2222"
 	mb[VersionMapKey] = 1
 	mb[PriorityMapKey] = -10
 	mc := make(map[string]interface{}, 2)
-	mc[AspectIdMapKey] = "3333"
+	mc[AspectIDMapKey] = "3333"
 	mc[VersionMapKey] = 2
 	mc[PriorityMapKey] = 3
 
@@ -125,7 +125,7 @@ func TestAspectsOfPack(t *testing.T) {
 	for iterator.Next() {
 		m := iterator.Value().(map[string]interface{})
 		e := AspectMeta{
-			Id:       common.HexToAddress(m[AspectIdMapKey].(string)),
+			Id:       common.HexToAddress(m[AspectIDMapKey].(string)),
 			Priority: int64(m[PriorityMapKey].(int)),
 			Version:  uint256.NewInt(m[VersionMapKey].(uint64)),
 		}

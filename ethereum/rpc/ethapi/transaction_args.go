@@ -74,7 +74,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		if err != nil {
 			return err
 		}
-		args.Nonce = (*hexutil.Uint64)(nonce)
+		args.Nonce = nonce
 		// TODO set nonce
 	}
 	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {

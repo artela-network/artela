@@ -128,7 +128,7 @@ func (a *DebugAPI) BlockProfile(file string, nsec uint) error {
 
 // CpuProfile turns on CPU profiling for nsec seconds and writes
 // profile data to file.
-func (a *DebugAPI) CpuProfile(file string, nsec uint) error { // nolint: golint, stylecheck, revive
+func (a *DebugAPI) CpuProfile(file string, nsec uint) error {
 	a.logger.Debug("debug_cpuProfile", "file", file, "nsec", nsec)
 	if err := a.StartCPUProfile(file); err != nil {
 		return err
@@ -300,7 +300,7 @@ func (a *DebugAPI) SetGCPercent(v int) int {
 
 // GetHeaderRlp retrieves the RLP encoded for of a single header.
 func (a *DebugAPI) GetHeaderRlp(number uint64) (hexutil.Bytes, error) {
-	header, err := a.backend.HeaderByNumber(nil, rpc.BlockNumber(number))
+	header, err := a.backend.HeaderByNumber(context.TODO(), rpc.BlockNumber(number))
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func (a *DebugAPI) GetHeaderRlp(number uint64) (hexutil.Bytes, error) {
 
 // GetBlockRlp retrieves the RLP encoded for of a single block.
 func (a *DebugAPI) GetBlockRlp(number uint64) (hexutil.Bytes, error) {
-	block, err := a.backend.BlockByNumber(nil, rpc.BlockNumber(number))
+	block, err := a.backend.BlockByNumber(context.TODO(), rpc.BlockNumber(number))
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +320,7 @@ func (a *DebugAPI) GetBlockRlp(number uint64) (hexutil.Bytes, error) {
 
 // PrintBlock retrieves a block and returns its pretty printed form.
 func (a *DebugAPI) PrintBlock(number uint64) (string, error) {
-	block, err := a.backend.BlockByNumber(nil, rpc.BlockNumber(number))
+	block, err := a.backend.BlockByNumber(context.TODO(), rpc.BlockNumber(number))
 	if err != nil {
 		return "", err
 	}

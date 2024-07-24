@@ -259,7 +259,6 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
 func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
-
 	evmConfig, err := k.EVMConfig(ctx, ctx.BlockHeader().ProposerAddress, k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
@@ -527,7 +526,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	gasUsed := cosmos.MaxDec(minimumGasUsed, cosmos.NewDec(int64(temporaryGasUsed))).TruncateInt().Uint64()
 	// reset leftoverGas, to be used by the tracer
-	// nolint
 	leftoverGas = msg.GasLimit - gasUsed
 
 	return &txs.MsgEthereumTxResponse{

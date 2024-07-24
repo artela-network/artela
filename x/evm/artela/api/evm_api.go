@@ -27,11 +27,6 @@ var (
 		asptypes.OPERATION_METHOD,
 		asptypes.INIT_METHOD,
 	)
-
-	evmJITCallConstrainedJoinPoints = hashset.New(
-		asptypes.PRE_CONTRACT_CALL_METHOD,
-		asptypes.POST_CONTRACT_CALL_METHOD,
-	)
 )
 
 type evmHostApi struct {

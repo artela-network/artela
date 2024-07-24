@@ -133,7 +133,6 @@ func (b *BackendImpl) TraceTransaction(hash common.Hash, config *support.TraceCo
 	}
 
 	return decodedResult, nil
-
 }
 
 // TraceBlock configures a new tracer according to the provided configuration, and
