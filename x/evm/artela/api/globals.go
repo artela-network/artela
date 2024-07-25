@@ -1,12 +1,14 @@
 package api
 
 import (
-	"github.com/artela-network/artela-evm/vm"
-	"github.com/artela-network/artela/x/evm/states"
+	"math/big"
+
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"math/big"
+
+	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/artela/x/evm/states"
 )
 
 // globals, we need to manage the lifecycle carefully for the following hooks / variables

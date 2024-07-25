@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/artela-network/artela/ethereum/crypto/codec"
-
 	"sigs.k8s.io/yaml"
 
 	cryptokeyring "github.com/cosmos/cosmos-sdk/crypto/keyring"
+
+	"github.com/artela-network/artela/ethereum/crypto/codec"
 )
 
 // available output formats.

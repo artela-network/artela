@@ -1,17 +1,17 @@
 package hd
 
 import (
-	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	bip39 "github.com/tyler-smith/go-bip39"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/crypto"
+
+	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 )
 
 const (

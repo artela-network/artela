@@ -4,12 +4,12 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/artela-network/artela-evm/tracers/logger"
-
-	"github.com/artela-network/artela-evm/vm"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela-evm/tracers/logger"
+	"github.com/artela-network/artela-evm/vm"
 )
 
 const (

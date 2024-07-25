@@ -2,10 +2,12 @@ package keeper
 
 import (
 	"fmt"
-	"github.com/artela-network/artela/x/evm/txs/support"
-	"github.com/artela-network/artela/x/evm/types"
+
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela/x/evm/txs/support"
+	"github.com/artela-network/artela/x/evm/types"
 )
 
 // GetParams returns the total set of evm parameters.

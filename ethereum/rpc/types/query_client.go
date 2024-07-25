@@ -3,15 +3,12 @@ package types
 import (
 	"fmt"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 
 	evmtypes "github.com/artela-network/artela/x/evm/txs"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-
-	"github.com/cosmos/cosmos-sdk/client"
-
 	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 

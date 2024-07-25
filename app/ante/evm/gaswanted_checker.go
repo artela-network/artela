@@ -3,12 +3,12 @@ package evm
 import (
 	"math/big"
 
-	"github.com/artela-network/artela/app/interfaces"
-	"github.com/artela-network/artela/ethereum/types"
-
 	errorsmod "cosmossdk.io/errors"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/artela-network/artela/app/interfaces"
+	"github.com/artela-network/artela/ethereum/types"
 )
 
 // GasWantedDecorator keeps track of the gasWanted amount on the current block in transient store

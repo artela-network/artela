@@ -3,13 +3,13 @@ package datactx
 import (
 	"errors"
 
-	aspctx "github.com/artela-network/aspect-core/context"
-	artelatypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
+	aspctx "github.com/artela-network/aspect-core/context"
+	artelatypes "github.com/artela-network/aspect-core/types"
 )
 
 type ReceiptContextFieldLoader func(ethTxCtx *types.EthTxContext, receipt *ethereum.Receipt) proto.Message

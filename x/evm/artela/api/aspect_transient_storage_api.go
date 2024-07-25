@@ -3,10 +3,13 @@ package api
 import (
 	"context"
 	"errors"
+
+	"github.com/emirpasic/gods/sets/hashset"
+
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/artela-network/artela/x/evm/artela/types"
 	asptypes "github.com/artela-network/aspect-core/types"
-	"github.com/emirpasic/gods/sets/hashset"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 var (

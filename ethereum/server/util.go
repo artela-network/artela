@@ -11,8 +11,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	ethlog "github.com/ethereum/go-ethereum/log"
-
 	dbm "github.com/cometbft/cometbft-db"
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
@@ -20,6 +18,7 @@ import (
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/version"
+	ethlog "github.com/ethereum/go-ethereum/log"
 
 	ethrpc "github.com/artela-network/artela/ethereum/rpc"
 	"github.com/artela-network/artela/ethereum/server/config"

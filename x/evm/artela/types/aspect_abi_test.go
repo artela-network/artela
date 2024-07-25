@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
+	pq "github.com/emirpasic/gods/queues/priorityqueue"
+	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/holiman/uint256"
 	jsoniter "github.com/json-iterator/go"
 
-	pq "github.com/emirpasic/gods/queues/priorityqueue"
-	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"

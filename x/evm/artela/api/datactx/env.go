@@ -3,12 +3,12 @@ package datactx
 import (
 	"strings"
 
-	"github.com/artela-network/aspect-core/context"
-	artelatypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/aspect-core/context"
+	artelatypes "github.com/artela-network/aspect-core/types"
 )
 
 type EnvContextFieldLoader func(sdkCtx sdk.Context, ethTxCtx *types.EthTxContext) proto.Message

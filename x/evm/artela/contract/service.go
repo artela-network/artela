@@ -1,7 +1,8 @@
 package contract
 
 import (
-	artela "github.com/artela-network/aspect-core/types"
+	"math/big"
+
 	"github.com/cometbft/cometbft/libs/log"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,9 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
-	"math/big"
 
 	evmtypes "github.com/artela-network/artela/x/evm/artela/types"
+	artela "github.com/artela-network/aspect-core/types"
 )
 
 type AspectService struct {

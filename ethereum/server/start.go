@@ -11,10 +11,12 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/artela-network/artela/ethereum/rpc"
-	"github.com/artela-network/artela/ethereum/server/config"
-	artelaflag "github.com/artela-network/artela/ethereum/server/flags"
+	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
+	"cosmossdk.io/tools/rosetta"
+	crgserver "cosmossdk.io/tools/rosetta/lib/server"
 	"github.com/cometbft/cometbft/abci/server"
 	tcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	"github.com/cometbft/cometbft/node"
@@ -22,12 +24,6 @@ import (
 	pvm "github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/rpc/client/local"
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	"cosmossdk.io/tools/rosetta"
-	crgserver "cosmossdk.io/tools/rosetta/lib/server"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -41,6 +37,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 
+	"github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
+	artelaflag "github.com/artela-network/artela/ethereum/server/flags"
 	aspecttypes "github.com/artela-network/aspect-core/types"
 )
 

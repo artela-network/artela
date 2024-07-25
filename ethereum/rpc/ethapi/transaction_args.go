@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/artela-network/artela/x/evm/txs"
-
 	sdkmath "cosmossdk.io/math"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -17,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 // TransactionArgs represents the arguments to construct a new transaction

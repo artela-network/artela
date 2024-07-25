@@ -6,10 +6,12 @@ import (
 	"math"
 	"strings"
 
-	artela "github.com/artela-network/aspect-core/types"
 	"github.com/emirpasic/gods/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	artela "github.com/artela-network/aspect-core/types"
 )
 
 var _ binary.ByteOrder

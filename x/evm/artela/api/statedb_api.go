@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+
+	"github.com/pkg/errors"
+
 	"github.com/artela-network/artela/x/evm/artela/types"
 	artelatypes "github.com/artela-network/aspect-core/types"
-	"github.com/pkg/errors"
 )
 
 func GetStateDBHostInstance(ctx context.Context) (artelatypes.StateDBHostAPI, error) {

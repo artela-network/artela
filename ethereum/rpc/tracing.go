@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/pkg/errors"
+
 	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
-
-	"github.com/pkg/errors"
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"

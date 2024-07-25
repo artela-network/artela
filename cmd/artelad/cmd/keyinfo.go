@@ -8,11 +8,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/version"
 	jose "github.com/dvsekhvalnov/jose2go"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/spf13/cobra"
 )
 
 const (

@@ -7,9 +7,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/artela-network/artela-evm/vm"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/davecgh/go-spew/spew"
+
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -25,10 +25,10 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/artela-network/artela/x/evm/txs"
-
+	"github.com/artela-network/artela-evm/vm"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	ethtypes "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 // EthereumAPI provides an API to access Ethereum related information.

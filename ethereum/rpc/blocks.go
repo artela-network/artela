@@ -11,7 +11,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/artela-network/artela-evm/vm"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
@@ -29,6 +28,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"

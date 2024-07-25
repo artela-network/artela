@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/artela-network/artela-evm/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -15,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/artela-network/artela-evm/vm"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 )

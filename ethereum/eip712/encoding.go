@@ -4,18 +4,14 @@ import (
 	"errors"
 	"fmt"
 
-	artelatypes "github.com/artela-network/artela/ethereum/types"
-
-	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
-
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txTypes "github.com/cosmos/cosmos-sdk/types/tx"
-
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"github.com/artela-network/artela/app/params"
-
-	"github.com/cosmos/cosmos-sdk/codec"
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 )
 
 var (

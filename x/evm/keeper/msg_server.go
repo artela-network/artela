@@ -6,18 +6,15 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/artela-network/artela/x/evm/txs"
-
-	govmodule "github.com/cosmos/cosmos-sdk/x/gov/types"
-
-	tmbytes "github.com/cometbft/cometbft/libs/bytes"
-	cometbft "github.com/cometbft/cometbft/types"
-
 	errorsmod "cosmossdk.io/errors"
 	"github.com/armon/go-metrics"
+	tmbytes "github.com/cometbft/cometbft/libs/bytes"
+	cometbft "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
+	govmodule "github.com/cosmos/cosmos-sdk/x/gov/types"
 
+	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/types"
 )
 

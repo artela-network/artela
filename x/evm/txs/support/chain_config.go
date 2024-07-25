@@ -5,15 +5,13 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/artela-network/artela/x/evm/types"
-
-	sdkmath "cosmossdk.io/math"
-
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela/x/evm/types"
 )
 
 const (

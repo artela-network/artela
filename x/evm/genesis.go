@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"fmt"
 
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs/support"
-
-	"github.com/artela-network/artela/x/evm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/keeper"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 )
 

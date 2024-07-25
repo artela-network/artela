@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 

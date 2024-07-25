@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	aspctx "github.com/artela-network/aspect-core/context"
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/emirpasic/gods/sets/hashset"
 
-	asptypes "github.com/artela-network/aspect-core/types"
+	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/artela-network/artela/x/evm/artela/api/datactx"
 	"github.com/artela-network/artela/x/evm/artela/types"
+	aspctx "github.com/artela-network/aspect-core/context"
+	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 var (

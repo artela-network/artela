@@ -6,22 +6,10 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/artela-network/aspect-core/djpm"
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-
-	"github.com/artela-network/artela/x/evm/artela/api"
-	"github.com/artela-network/artela/x/evm/artela/provider"
-
-	"github.com/artela-network/artela-evm/vm"
-
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/states"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
-
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -32,9 +20,17 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
+	"github.com/artela-network/artela-evm/vm"
 	common2 "github.com/artela-network/artela/common"
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/artela/api"
+	"github.com/artela-network/artela/x/evm/artela/provider"
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/djpm"
 	artelaType "github.com/artela-network/aspect-core/types"
 )
 

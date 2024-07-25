@@ -5,14 +5,13 @@ import (
 	"os"
 	"path"
 
-	"github.com/artela-network/artela/ethereum/types"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/cometbft/cometbft/libs/cli"
-
 	"github.com/cosmos/cosmos-sdk/client/flags"
+
+	"github.com/artela-network/artela/ethereum/types"
 )
 
 // InitConfig adds the chain-id, encoding and output flags to the persistent flag set.

@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/emirpasic/gods/sets/hashset"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
+	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 var (

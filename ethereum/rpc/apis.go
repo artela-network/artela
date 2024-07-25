@@ -1,11 +1,10 @@
 package rpc
 
 import (
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rpc"
-
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela/ethereum/rpc/api"
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
