@@ -4,17 +4,17 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/artela-network/artela/ethereum/utils"
-	"github.com/ethereum/go-ethereum/params"
-
 	errorsmod "cosmossdk.io/errors"
-	artelatype "github.com/artela-network/artela/x/evm/artela/types"
-	"github.com/artela-network/artela/x/evm/states"
-	"github.com/artela-network/aspect-core/djpm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela/ethereum/utils"
+	artelatype "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/aspect-core/djpm"
 )
 
 func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {

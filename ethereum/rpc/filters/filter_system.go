@@ -13,14 +13,12 @@ import (
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	tmtypes "github.com/cometbft/cometbft/types"
-
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/filters"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/artela-network/artela/ethereum/rpc/pubsub"
 	evmtypes "github.com/artela-network/artela/x/evm/types"

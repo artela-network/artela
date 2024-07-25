@@ -4,10 +4,6 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/artela-network/artela/ethereum/server/config"
-	"github.com/artela-network/artela/ethereum/utils"
-	"github.com/artela-network/artela/x/evm/txs"
-
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -21,6 +17,9 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela/app"
+	"github.com/artela-network/artela/ethereum/server/config"
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 // PrepareEthTx creates an ethereum txs and signs it with the provided messages and private key.

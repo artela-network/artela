@@ -1,10 +1,8 @@
 package ante
 
 import (
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/cosmos/cosmos-sdk/baseapp"
-
 	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
@@ -12,18 +10,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authmodule "github.com/cosmos/cosmos-sdk/x/auth/types"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	ibcante "github.com/cosmos/ibc-go/v7/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
-	anteutils "github.com/artela-network/artela/app/ante/utils"
-	"github.com/artela-network/artela/app/interfaces"
-
 	cosmosante "github.com/artela-network/artela/app/ante/cosmos"
 	evmante "github.com/artela-network/artela/app/ante/evm"
+	anteutils "github.com/artela-network/artela/app/ante/utils"
+	"github.com/artela-network/artela/app/interfaces"
+	"github.com/artela-network/artela/x/evm/txs"
 	evmmodule "github.com/artela-network/artela/x/evm/types"
-
 	// vestingtypes "github.com/artela-network/artela/x/vesting/types"
-	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 )
 
 // AnteDecorators defines the list of module keepers required to run the Artela

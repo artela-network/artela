@@ -3,15 +3,16 @@ package api
 import (
 	"context"
 	"errors"
-	"github.com/emirpasic/gods/sets/hashset"
 	"sort"
 
-	"github.com/artela-network/artela-evm/vm"
-	artelatypes "github.com/artela-network/aspect-core/types"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/emirpasic/gods/sets/hashset"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/x/evm/artela/types"
+	artelatypes "github.com/artela-network/aspect-core/types"
 )
 
 var (

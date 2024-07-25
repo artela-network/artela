@@ -16,18 +16,17 @@ import (
 	"sync"
 	"time"
 
-	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-	"github.com/davecgh/go-spew/spew"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
-
 	stderrors "github.com/pkg/errors"
 
 	"github.com/cometbft/cometbft/libs/log"
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/server"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/rpc"
 
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"

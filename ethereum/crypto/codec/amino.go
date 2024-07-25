@@ -1,11 +1,12 @@
 package codec
 
 import (
-	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+
+	ethsecp256k12 "github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 )
 
 var KeysCdc *codec.LegacyAmino

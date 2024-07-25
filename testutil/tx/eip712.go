@@ -3,9 +3,6 @@ package tx
 import (
 	"errors"
 
-	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
-	types2 "github.com/artela-network/artela/ethereum/types"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -19,7 +16,9 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	"github.com/artela-network/artela/app"
+	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
 	"github.com/artela-network/artela/ethereum/eip712"
+	types2 "github.com/artela-network/artela/ethereum/types"
 )
 
 type EIP712TxArgs struct {

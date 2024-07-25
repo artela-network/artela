@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/artela-network/artela/x/evm/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // ----------------------------------------------------------------------------

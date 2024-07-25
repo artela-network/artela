@@ -14,9 +14,10 @@ package txs
 // such as the transition to Ethereum 2.0, by allowing transactions to explicitly states their dependencies.
 
 import (
-	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/artela-network/artela/x/evm/txs/support"
 )
 
 // AccessList is EIP-2930 access list

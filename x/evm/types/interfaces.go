@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-
 	authmodule "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingmodule "github.com/cosmos/cosmos-sdk/x/staking/types"

@@ -4,17 +4,8 @@ import (
 	"errors"
 	"math/big"
 
-	asptypes "github.com/artela-network/aspect-core/types"
-
-	"github.com/artela-network/artela/x/evm/artela/contract"
-	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
-
-	"github.com/artela-network/aspect-core/djpm"
-	cometbft "github.com/cometbft/cometbft/types"
-
 	errorsmod "cosmossdk.io/errors"
-	artcore "github.com/artela-network/artela-evm/core"
-	"github.com/artela-network/artela-evm/vm"
+	cometbft "github.com/cometbft/cometbft/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -22,11 +13,17 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
+	artcore "github.com/artela-network/artela-evm/core"
+	"github.com/artela-network/artela-evm/vm"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/djpm"
+	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters

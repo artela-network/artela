@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	artela "github.com/artela-network/artela/ethereum/types"
-
-	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txTypes "github.com/cosmos/cosmos-sdk/types/tx"
-
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+
+	artela "github.com/artela-network/artela/ethereum/types"
 )
 
 type aminoMessage struct {

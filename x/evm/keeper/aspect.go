@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 )
 
 func (k Keeper) GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext {

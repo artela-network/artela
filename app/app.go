@@ -122,8 +122,6 @@ import (
 
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
-	aspecttypes "github.com/artela-network/aspect-core/types"
-
 	"github.com/artela-network/artela/app/ante"
 	ethante "github.com/artela-network/artela/app/ante/evm"
 	appparams "github.com/artela-network/artela/app/params"
@@ -132,6 +130,7 @@ import (
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
+	aspecttypes "github.com/artela-network/aspect-core/types"
 
 	// do not remove this, this will register the native evm tracers
 	_ "github.com/artela-network/artela-evm/tracers/native"

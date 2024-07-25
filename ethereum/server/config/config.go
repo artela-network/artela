@@ -8,9 +8,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/cometbft/cometbft/libs/strings"
-
 	errorsmod "cosmossdk.io/errors"
+	"github.com/cometbft/cometbft/libs/strings"
 	clientflags "github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"

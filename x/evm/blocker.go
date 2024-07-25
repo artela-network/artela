@@ -3,14 +3,12 @@ package evm
 import (
 	"sync"
 
-	"github.com/artela-network/artela/x/evm/artela/types"
 	abci "github.com/cometbft/cometbft/abci/types"
-
-	"github.com/artela-network/artela/x/evm/keeper"
-
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/keeper"
 )
 
 // BeginBlock sets the cosmos Context and EIP155 chain id to the Keeper.

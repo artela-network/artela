@@ -3,8 +3,6 @@ package cosmos
 import (
 	"fmt"
 
-	artela "github.com/artela-network/artela/ethereum/types"
-
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -22,7 +20,7 @@ import (
 
 	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
 	"github.com/artela-network/artela/ethereum/eip712"
-
+	artela "github.com/artela-network/artela/ethereum/types"
 	evmmodule "github.com/artela-network/artela/x/evm/types"
 )
 

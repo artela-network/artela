@@ -8,14 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/artela-network/artela/ethereum/server/config"
-
 	"github.com/stretchr/testify/suite"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 
+	"github.com/artela-network/artela/ethereum/server/config"
 	"github.com/artela-network/artela/testutil/network"
-
 	artelanetwork "github.com/artela-network/artela/testutil/network"
 )
 

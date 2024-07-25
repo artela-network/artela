@@ -8,12 +8,13 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela-evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela-evm/vm"
 )
 
 type revision struct {

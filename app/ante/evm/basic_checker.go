@@ -6,19 +6,18 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-	"github.com/artela-network/artela/app/interfaces"
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/ethereum/go-ethereum/common"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
+	"github.com/artela-network/artela/app/interfaces"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/keeper"
 	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	evmmodule "github.com/artela-network/artela/x/evm/types"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // EthAccountVerificationDecorator validates an account balance checks

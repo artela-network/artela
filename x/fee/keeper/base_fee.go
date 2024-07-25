@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/artela-network/artela/x/fee/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+
+	"github.com/artela-network/artela/x/fee/types"
 )
 
 // CalculateBaseFee calculates the base fee for the current block. This is only calculated once per

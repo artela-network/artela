@@ -3,11 +3,11 @@ package types
 import (
 	"context"
 	"fmt"
-	"github.com/artela-network/artela-evm/vm"
-	statedb "github.com/artela-network/artela/x/evm/states"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
-	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
-	artelatypes "github.com/artela-network/aspect-core/types"
+
+	"math/big"
+	"sync"
+	"time"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -17,9 +17,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"sync"
-	"time"
+
+	"github.com/artela-network/artela-evm/vm"
+	statedb "github.com/artela-network/artela/x/evm/states"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
+	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
+	artelatypes "github.com/artela-network/aspect-core/types"
 )
 
 const (

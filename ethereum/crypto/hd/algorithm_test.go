@@ -5,16 +5,16 @@ import (
 	"strings"
 	"testing"
 
-	artelatypes "github.com/artela-network/artela/ethereum/types"
+	"github.com/stretchr/testify/require"
 
 	amino "github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/require"
 
 	"github.com/artela-network/artela/app"
 	cryptocodec "github.com/artela-network/artela/ethereum/crypto/codec"
+	artelatypes "github.com/artela-network/artela/ethereum/types"
 )
 
 var TestCodec amino.Codec

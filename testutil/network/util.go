@@ -6,9 +6,6 @@ import (
 	"strings"
 	"time"
 
-	rpc2 "github.com/artela-network/artela/ethereum/rpc"
-	"github.com/artela-network/artela/x/evm/txs/support"
-
 	tmos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
@@ -17,8 +14,6 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/local"
 	"github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
-	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/cosmos/cosmos-sdk/server/api"
 	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
 	srvtypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -30,7 +25,10 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/ethereum/go-ethereum/log"
 
+	rpc2 "github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 

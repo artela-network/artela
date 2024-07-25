@@ -5,12 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/ethereum/utils"
-
-	// rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
-	"github.com/artela-network/artela/x/evm/types"
-
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -25,6 +19,10 @@ import (
 	cmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/artela/x/evm/types"
 )
 
 var (

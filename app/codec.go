@@ -1,12 +1,13 @@
 package app
 
 import (
-	codec2 "github.com/artela-network/artela/ethereum/crypto/codec"
-	"github.com/artela-network/artela/ethereum/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	codec2 "github.com/artela-network/artela/ethereum/crypto/codec"
+	"github.com/artela-network/artela/ethereum/types"
 )
 
 // RegisterLegacyAminoCodec registers Interfaces from types, crypto, and SDK std.

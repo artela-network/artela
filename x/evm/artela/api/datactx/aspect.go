@@ -3,9 +3,10 @@ package datactx
 import (
 	"errors"
 
+	"google.golang.org/protobuf/proto"
+
 	aspctx "github.com/artela-network/aspect-core/context"
 	artelatypes "github.com/artela-network/aspect-core/types"
-	"google.golang.org/protobuf/proto"
 )
 
 type AspectContextFieldLoader func(ctx *artelatypes.RunnerContext) proto.Message

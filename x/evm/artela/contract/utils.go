@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
+
 	"github.com/andybalholm/brotli"
 	"github.com/ethereum/go-ethereum/crypto"
-	"io"
 )
 
 // ParseByteCode byte code format rules:
