@@ -8,9 +8,9 @@ require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.2.1
 	github.com/andybalholm/brotli v1.1.0
-	github.com/artela-network/artela-evm v0.4.7-rc7
-	github.com/artela-network/aspect-core v0.4.7-rc7-1
-	github.com/artela-network/aspect-runtime v0.4.7-rc7
+	github.com/artela-network/artela-evm v0.4.8-rc8
+	github.com/artela-network/aspect-core v0.4.8-rc8
+	github.com/artela-network/aspect-runtime v0.4.8-rc8
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft v0.37.2
 	github.com/cometbft/cometbft-db v0.7.0
@@ -220,17 +220,10 @@ require (
 
 replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.3 // TODO artela: btcd/btcec become not valid for 0.23.x, need to dig into it
+	github.com/bytecodealliance/wasmtime-go/v20 => github.com/artela-network/wasmtime-go/v20 v20.0.3
 	github.com/cockroachdb/pebble => github.com/cockroachdb/pebble v0.0.0-20230525220056-bb4fc9527b3b
-	// github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc-7-1
+	github.com/cometbft/cometbft-db => github.com/artela-network/cosmos-db v1.0.2-048-rc8
+	github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc8
+	github.com/cosmos/iavl => github.com/artela-network/iavl v0.20.0-048-rc8
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-)
-
-replace (
-	github.com/artela-network/artela-evm => ../artela-evm
-	github.com/artela-network/aspect-core => ../aspect-core
-	github.com/artela-network/aspect-runtime => ../aspect-runtime
-	github.com/bytecodealliance/wasmtime-go/v20 => ../wasmtime-go
-	github.com/cometbft/cometbft-db => ../cosmos-db
-	github.com/cosmos/cosmos-sdk => ../artela-cosmos-sdk
-	github.com/cosmos/iavl => ../iavl
 )
