@@ -25,7 +25,6 @@ import (
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
 	"github.com/artela-network/artela/ethereum/rpc/types"
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/ethereum/utils"
 	"github.com/artela-network/artela/x/evm/txs"
@@ -269,7 +268,7 @@ func (b *BackendImpl) GetBalance(address common.Address, blockNrOrHash rpc.Block
 		return nil, err
 	}
 
-	res, err := b.queryClient.Balance(rpctypes.ContextWithHeight(blockNum.Int64()), req)
+	res, err := b.queryClient.Balance(types.ContextWithHeight(blockNum.Int64()), req)
 	if err != nil {
 		return nil, err
 	}

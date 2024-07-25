@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func MigrateStore(ctx sdk.Context, storeKey storetypes.StoreKey, cdc codec.BinaryCodec, logger log.Logger) error {
+func MigrateStore(_ sdk.Context, _ storetypes.StoreKey, _ codec.BinaryCodec, logger log.Logger) error {
 	logger.Error("v048rc8 Migrate Store is updating")
 	return nil
 }

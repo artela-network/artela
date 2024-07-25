@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/artela-network/artela-evm/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -12,10 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/artela-network/artela-evm/vm"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 )
@@ -54,7 +53,7 @@ type Backend interface {
 	// Transaction pool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
 	GetTransaction(ctx context.Context, txHash common.Hash) (*RPCTransaction, error)
-	SignTransaction(args *TransactionArgs) (*ethtypes.Transaction, error)
+	SignTransaction(args *TransactionArgs) (*types.Transaction, error)
 	GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error)
 	RPCTxFeeCap() float64
 	UnprotectedAllowed() bool

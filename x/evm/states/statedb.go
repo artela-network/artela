@@ -8,12 +8,13 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela-evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela-evm/vm"
 )
 
 type revision struct {
@@ -52,7 +53,7 @@ type StateDB struct {
 	// Snapshot and RevertToSnapshot.
 	journal        *journal
 	validRevisions []revision
-	nextRevisionId int
+	nextRevisionID int
 }
 
 // New creates a new states from a given trie.
@@ -82,7 +83,7 @@ func New(ctx cosmos.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 // - Reset access list (Berlin)
 // - Add coinbase to access list (EIP-3651)
 // - Reset transient storage (EIP-1153)
-func (s *StateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses ethereum.AccessList) {
+func (s *StateDB) Prepare(_ params.Rules, _, _ common.Address, _ *common.Address, _ []common.Address, _ ethereum.AccessList) {
 	// TODO: complete the prepare for EIP2929 & EIP4762
 	// Reset transient storage at the beginning of transaction execution
 	s.transientStorage = newTransientStorage()
@@ -454,8 +455,8 @@ func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addre
 
 // Snapshot returns an identifier for the current revision of the states.
 func (s *StateDB) Snapshot() int {
-	id := s.nextRevisionId
-	s.nextRevisionId++
+	id := s.nextRevisionID
+	s.nextRevisionID++
 	s.validRevisions = append(s.validRevisions, revision{id, s.journal.length()})
 	return id
 }

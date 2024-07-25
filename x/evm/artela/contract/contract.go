@@ -1,19 +1,19 @@
 package contract
 
 import (
-	"github.com/artela-network/artela/common"
 	"strings"
 
-	"github.com/artela-network/artela/x/evm/states"
-
-	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela-evm/vm"
-	"github.com/artela-network/artela/x/evm/artela/types"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 	"github.com/cometbft/cometbft/libs/log"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/core"
+
+	errorsmod "cosmossdk.io/errors"
+	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/artela/common"
+	"github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 type AspectNativeContract struct {

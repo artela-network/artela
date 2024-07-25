@@ -8,9 +8,10 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/artela-network/artela/ethereum/server/config"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
+
+	"github.com/artela-network/artela/ethereum/server/config"
 )
 
 const (

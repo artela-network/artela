@@ -4,6 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
+	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/holiman/uint256"
+
 	"github.com/artela-network/artela-evm/vm"
 	common2 "github.com/artela-network/artela/common"
 	"github.com/artela-network/artela/x/evm/artela/types"
@@ -13,13 +22,6 @@ import (
 	artelasdkType "github.com/artela-network/aspect-core/types"
 	runtime "github.com/artela-network/aspect-runtime"
 	runtimeTypes "github.com/artela-network/aspect-runtime/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/holiman/uint256"
-	"math/big"
-	"time"
 )
 
 var (
@@ -52,8 +54,7 @@ type Handler interface {
 	Method() string
 }
 
-type DeployHandler struct {
-}
+type DeployHandler struct{}
 
 func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, error) {
 	aspectId, code, initData, properties, joinPoint, err := h.decodeAndValidate(ctx)
@@ -187,8 +188,7 @@ func (h DeployHandler) decodeAndValidate(ctx *HandlerContext) (aspectId common.A
 	return
 }
 
-type UpgradeHandler struct {
-}
+type UpgradeHandler struct{}
 
 func (h UpgradeHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, error) {
 	aspectId, code, properties, joinPoint, gas, err := h.decodeAndValidate(ctx, gas)
@@ -229,7 +229,7 @@ func (h UpgradeHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (aspe
 	properties []types.Property,
 	joinPoint *big.Int, leftover uint64, err error) {
 	aspectId = ctx.parameters["aspectId"].(common.Address)
-	if bytes.Compare(emptyAddr.Bytes(), aspectId.Bytes()) == 0 {
+	if bytes.Equal(emptyAddr.Bytes(), aspectId.Bytes()) {
 		err = errors.New("aspectId not specified")
 		return
 	}
@@ -287,8 +287,7 @@ func (h UpgradeHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (aspe
 	return
 }
 
-type BindHandler struct {
-}
+type BindHandler struct{}
 
 func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
 	aspectId, account, aspectVersion, priority, isContract, leftover, err := b.decodeAndValidate(ctx, gas)
@@ -403,8 +402,7 @@ func (b BindHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
 	return
 }
 
-type UnbindHandler struct {
-}
+type UnbindHandler struct{}
 
 func (u UnbindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
 	aspectId, account, isContract, leftover, err := u.decodeAndValidate(ctx, gas)
@@ -468,8 +466,7 @@ func (u UnbindHandler) Method() string {
 	return "unbind"
 }
 
-type ChangeVersionHandler struct {
-}
+type ChangeVersionHandler struct{}
 
 func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
 	aspectId, account, version, isContract, leftover, err := c.decodeAndValidate(ctx, gas)
@@ -550,8 +547,7 @@ func (c ChangeVersionHandler) decodeAndValidate(ctx *HandlerContext, gas uint64)
 	return
 }
 
-type GetVersionHandler struct {
-}
+type GetVersionHandler struct{}
 
 func (g GetVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
 	aspectId, err := g.decodeAndValidate(ctx)
@@ -583,8 +579,7 @@ func (g GetVersionHandler) decodeAndValidate(ctx *HandlerContext) (aspectId comm
 	return
 }
 
-type GetBindingHandler struct {
-}
+type GetBindingHandler struct{}
 
 func (g GetBindingHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
 	account, isContract, err := g.decodeAndValidate(ctx)
@@ -652,8 +647,7 @@ func (g GetBindingHandler) decodeAndValidate(ctx *HandlerContext) (account commo
 	return
 }
 
-type GetBoundAddressHandler struct {
-}
+type GetBoundAddressHandler struct{}
 
 func (g GetBoundAddressHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
 	aspectId, err := g.decodeAndValidate(ctx)
@@ -695,8 +689,7 @@ func (g GetBoundAddressHandler) decodeAndValidate(ctx *HandlerContext) (aspectId
 	return
 }
 
-type OperationHandler struct {
-}
+type OperationHandler struct{}
 
 func (o OperationHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
 	aspectId, args, err := o.decodeAndValidate(ctx)
@@ -721,7 +714,7 @@ func (o OperationHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, r
 		txHash = ethTxCtx.TxContent().Hash().Bytes()
 	}
 	height := uint64(lastHeight)
-	ret, gas, err = runner.JoinPoint(artelasdkType.OPERATION_METHOD, gas, lastHeight, aspectId, &artelasdkType.OperationInput{
+	ret, remainingGas, err = runner.JoinPoint(artelasdkType.OPERATION_METHOD, gas, lastHeight, aspectId, &artelasdkType.OperationInput{
 		Tx: &artelasdkType.WithFromTxInput{
 			Hash: txHash,
 			To:   aspectId.Bytes(),

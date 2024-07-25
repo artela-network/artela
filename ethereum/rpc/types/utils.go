@@ -7,22 +7,19 @@ import (
 	"math/big"
 	"strings"
 
-	evmtypes "github.com/artela-network/artela/x/evm/txs"
-
+	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
-
-	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-
-	feetypes "github.com/artela-network/artela/x/fee/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
+	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 
 // ExceedBlockGasLimitError defines the error message when txs execution exceeds the block gas limit.
@@ -224,7 +221,7 @@ func BaseFeeFromEvents(events []abci.Event) *big.Int {
 
 		for _, attr := range event.Attributes {
 			if bytes.Equal([]byte(attr.Key), []byte(feetypes.AttributeKeyBaseFee)) {
-				result, success := new(big.Int).SetString(string(attr.Value), 10)
+				result, success := new(big.Int).SetString(attr.Value, 10)
 				if success {
 					return result
 				}

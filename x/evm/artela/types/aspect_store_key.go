@@ -6,10 +6,12 @@ import (
 	"math"
 	"strings"
 
-	artela "github.com/artela-network/aspect-core/types"
 	"github.com/emirpasic/gods/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	artela "github.com/artela-network/aspect-core/types"
 )
 
 var _ binary.ByteOrder
@@ -26,7 +28,7 @@ const (
 
 	AspectJoinPointRunKeyPrefix = "AspectStore/JoinPointRun/"
 
-	AspectIdMapKey = "aspectId"
+	AspectIDMapKey = "aspectId"
 	VersionMapKey  = "version"
 	PriorityMapKey = "priority"
 
@@ -54,12 +56,12 @@ func AspectArrayKey(keys ...[]byte) []byte {
 
 // AspectCodeStoreKey returns the store key to retrieve a AspectCodeStore from the index fields
 func AspectPropertyKey(
-	aspectId []byte,
+	aspectID []byte,
 	propertyKey []byte,
 ) []byte {
-	key := make([]byte, 0, len(aspectId)+PathSeparatorLen*2+len(propertyKey))
+	key := make([]byte, 0, len(aspectID)+PathSeparatorLen*2+len(propertyKey))
 
-	key = append(key, aspectId...)
+	key = append(key, aspectID...)
 	key = append(key, PathSeparator...)
 	key = append(key, propertyKey...)
 	key = append(key, PathSeparator...)
@@ -68,12 +70,12 @@ func AspectPropertyKey(
 }
 
 func AspectVersionKey(
-	aspectId []byte,
+	aspectID []byte,
 	version []byte,
 ) []byte {
-	key := make([]byte, 0, len(aspectId)+PathSeparatorLen*2+len(version))
+	key := make([]byte, 0, len(aspectID)+PathSeparatorLen*2+len(version))
 
-	key = append(key, aspectId...)
+	key = append(key, aspectID...)
 	key = append(key, PathSeparator...)
 	key = append(key, version...)
 	key = append(key, PathSeparator...)
@@ -81,11 +83,11 @@ func AspectVersionKey(
 	return key
 }
 
-func AspectIdKey(
-	aspectId []byte,
+func AspectIDKey(
+	aspectID []byte,
 ) []byte {
-	key := make([]byte, 0, len(aspectId)+PathSeparatorLen)
-	key = append(key, aspectId...)
+	key := make([]byte, 0, len(aspectID)+PathSeparatorLen)
+	key = append(key, aspectID...)
 	key = append(key, PathSeparator...)
 
 	return key

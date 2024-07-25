@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"math/big"
 
-	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/status-im/keycard-go/hexutils"
 
-	sdkmath "cosmossdk.io/math"
-
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela/x/evm/states"
-	"github.com/artela-network/artela/x/evm/types"
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/artela/x/evm/types"
 )
 
 var _ states.Keeper = &Keeper{}

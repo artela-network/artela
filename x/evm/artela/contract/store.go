@@ -4,25 +4,25 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	types2 "github.com/artela-network/aspect-runtime/types"
 	"math"
 	"math/big"
 	"sort"
 	"strings"
 
-	artelasdkType "github.com/artela-network/aspect-core/types"
+	"github.com/emirpasic/gods/sets/treeset"
+	"github.com/holiman/uint256"
+	"golang.org/x/exp/slices"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/uint256"
-	"golang.org/x/exp/slices"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
+	artelasdkType "github.com/artela-network/aspect-core/types"
+	types2 "github.com/artela-network/aspect-runtime/types"
 )
 
 const (
@@ -90,12 +90,12 @@ func (k *AspectStore) newPrefixStore(ctx sdk.Context, fixKey string) prefix.Stor
 	return prefix.NewStore(ctx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
 }
 
-func (k *AspectStore) BumpAspectVersion(ctx sdk.Context, aspectId common.Address, gas uint64) (*uint256.Int, uint64, error) {
+func (k *AspectStore) BumpAspectVersion(ctx sdk.Context, aspectID common.Address, gas uint64) (*uint256.Int, uint64, error) {
 	meter := newGasMeter(gas)
-	version := k.getAspectLastVersion(ctx, aspectId)
+	version := k.getAspectLastVersion(ctx, aspectID)
 
 	newVersion := version.Add(version, uint256.NewInt(1))
-	if err := k.storeAspectVersion(ctx, aspectId, newVersion, meter); err != nil {
+	if err := k.storeAspectVersion(ctx, aspectID, newVersion, meter); err != nil {
 		return nil, meter.remainingGas(), err
 	}
 
@@ -103,7 +103,7 @@ func (k *AspectStore) BumpAspectVersion(ctx sdk.Context, aspectId common.Address
 }
 
 // StoreAspectCode aspect code
-func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte, version *uint256.Int, gas uint64) (uint64, error) {
+func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectID common.Address, code []byte, version *uint256.Int, gas uint64) (uint64, error) {
 	meter := newGasMeter(gas)
 	if err := meter.measureStorageCodeSave(len(code)); err != nil {
 		return meter.remainingGas(), err
@@ -112,12 +112,12 @@ func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, 
 	// store code
 	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
 	versionKey := types.AspectVersionKey(
-		aspectId.Bytes(),
+		aspectID.Bytes(),
 		version.Bytes(),
 	)
 	codeStore.Set(versionKey, code)
 
-	k.logger.Info("saved aspect code", "id", aspectId.Hex(), "version", version.String())
+	k.logger.Info("saved aspect code", "id", aspectID.Hex(), "version", version.String())
 	return meter.remainingGas(), nil
 }
 
@@ -156,7 +156,7 @@ func (k *AspectStore) storeAspectVersion(ctx sdk.Context, aspectId common.Addres
 	}
 
 	versionStore := k.newPrefixStore(ctx, types.AspectCodeVersionKeyPrefix)
-	versionKey := types.AspectIdKey(aspectId.Bytes())
+	versionKey := types.AspectIDKey(aspectId.Bytes())
 	versionStore.Set(versionKey, version.Bytes())
 
 	k.logger.Info("saved aspect version info", "id", aspectId.Hex(), "version", version.String())
@@ -169,7 +169,7 @@ func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Addr
 
 func (k *AspectStore) getAspectLastVersion(ctx sdk.Context, aspectId common.Address) *uint256.Int {
 	aspectVersionStore := k.newPrefixStore(ctx, types.AspectCodeVersionKeyPrefix)
-	versionKey := types.AspectIdKey(aspectId.Bytes())
+	versionKey := types.AspectIDKey(aspectId.Bytes())
 	version := uint256.NewInt(0)
 	if data := aspectVersionStore.Get(versionKey); data != nil || len(data) > 0 {
 		version.SetBytes(data)
@@ -504,7 +504,7 @@ func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, account common.A
 
 func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, aspectId common.Address) (*treeset.Set, error) {
 	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
-	aspectPropertyKey := types.AspectIdKey(
+	aspectPropertyKey := types.AspectIDKey(
 		aspectId.Bytes(),
 	)
 
@@ -536,7 +536,7 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Addres
 	// store
 	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
 
-	aspectIdKey := types.AspectIdKey(
+	aspectIdKey := types.AspectIDKey(
 		aspectId.Bytes(),
 	)
 	aspectRefStore.Set(aspectIdKey, jsonBytes)
@@ -562,7 +562,7 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, account common.Addre
 	}
 	// store
 	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
-	aspectPropertyKey := types.AspectIdKey(
+	aspectPropertyKey := types.AspectIDKey(
 		aspectId.Bytes(),
 	)
 	aspectRefStore.Set(aspectPropertyKey, jsonBytes)
@@ -654,10 +654,8 @@ func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address, vers
 		[]byte(types.AspectRunJoinPointKey),
 	)
 	jp := store.Get(aspectPropertyKey)
-
-	if jp == nil || len(jp) == 0 {
+	if len(jp) == 0 {
 		return new(big.Int), nil
-	} else {
-		return new(big.Int).SetBytes(jp), nil
 	}
+	return new(big.Int).SetBytes(jp), nil
 }

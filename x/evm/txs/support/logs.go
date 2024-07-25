@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	artela "github.com/artela-network/artela/ethereum/types"
 )
 
 // ----------------------------------------------------------------------------
@@ -109,7 +110,7 @@ func NewLogsFromEth(ethlogs []*ethereum.Log) []*Log {
 
 // LogsToEthereum casts the Artela Logs to a slice of Ethereum Logs.
 func LogsToEthereum(logs []*Log) []*ethereum.Log {
-	var ethLogs []*ethereum.Log //nolint: prealloc
+	ethLogs := make([]*ethereum.Log, 0, len(logs))
 	for i := range logs {
 		ethLogs = append(ethLogs, logs[i].ToEthereum())
 	}

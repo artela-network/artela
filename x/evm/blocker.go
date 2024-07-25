@@ -3,14 +3,12 @@ package evm
 import (
 	"sync"
 
-	"github.com/artela-network/artela/x/evm/artela/types"
 	abci "github.com/cometbft/cometbft/abci/types"
-
-	"github.com/artela-network/artela/x/evm/keeper"
-
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/keeper"
 )
 
 // BeginBlock sets the cosmos Context and EIP155 chain id to the Keeper.
@@ -30,7 +28,7 @@ func BeginBlock(_ cosmos.Context, k *keeper.Keeper, beginBlock abci.RequestBegin
 // KVStore. The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
 func EndBlock(ctx cosmos.Context, k *keeper.Keeper, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	// Aspect Runtime Context Lifecycle: destory ExtBlockContext
+	// Aspect Runtime Context Lifecycle: destroy ExtBlockContext
 	k.BlockContext = nil
 
 	// Gas costs are handled within msg handler so costs should be ignored

@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -49,7 +48,7 @@ func NewRangeFilter(logger log.Logger, backend Backend, begin, end int64, addres
 	// Flatten the address and topic filter clauses into a single bloombits filter
 	// system. Since the bloombits are not positional, nil topics are permitted,
 	// which get flattened into a nil byte slice.
-	var filtersBz [][][]byte //nolint: prealloc
+	filtersBz := make([][][]byte, 0, len(topics)+1)
 	if len(addresses) > 0 {
 		filter := make([][]byte, len(addresses))
 		for i, address := range addresses {

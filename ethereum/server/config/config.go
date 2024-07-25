@@ -8,9 +8,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/cometbft/cometbft/libs/strings"
-
 	errorsmod "cosmossdk.io/errors"
+	"github.com/cometbft/cometbft/libs/strings"
 	clientflags "github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
@@ -301,11 +300,11 @@ func DefaultAspectConfig() *AspectConfig {
 // Validate returns an error if the tracer type is invalid.
 func (a AspectConfig) Validate() error {
 	if a.ApplyPoolSize < 0 {
-		return errors.New("Aspect apply-pool-size cannot be negative")
+		return errors.New("aspect apply-pool-size cannot be negative")
 	}
 
 	if a.QueryPoolSize < 0 {
-		return errors.New("Aspect query-pool-size cannot be negative")
+		return errors.New("aspect query-pool-size cannot be negative")
 	}
 
 	return nil

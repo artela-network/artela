@@ -7,25 +7,21 @@ import (
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
-	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
-	ctypes "github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/artela-network/artela/ethereum/types"
-
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
+	"github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
@@ -148,7 +144,7 @@ func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*
 	), nil
 }
 
-func (b *BackendImpl) GetPoolTransactions() (ctypes.Transactions, error) {
+func (b *BackendImpl) GetPoolTransactions() (ethtypes.Transactions, error) {
 	b.logger.Debug("called eth.rpc.backend.GetPoolTransactions")
 	return nil, errors.New("GetPoolTransactions is not implemented")
 }
@@ -168,14 +164,14 @@ func (b *BackendImpl) Stats() (int, int) {
 }
 
 func (b *BackendImpl) TxPoolContent() (
-	map[common.Address]ctypes.Transactions, map[common.Address]ctypes.Transactions,
+	map[common.Address]ethtypes.Transactions, map[common.Address]ethtypes.Transactions,
 ) {
 	b.logger.Error("TxPoolContent is not implemented")
 	return nil, nil
 }
 
 func (b *BackendImpl) TxPoolContentFrom(addr common.Address) (
-	ctypes.Transactions, ctypes.Transactions,
+	ethtypes.Transactions, ethtypes.Transactions,
 ) {
 	return nil, nil
 }
@@ -351,11 +347,6 @@ func (b *BackendImpl) queryCosmosTxIndexer(query string, txGetter func(*rpctypes
 	}
 
 	return rpctypes.ParseTxIndexerResult(txResult, tx, txGetter)
-}
-
-// nolint:unused
-func (b *BackendImpl) txResult(ctx context.Context, hash common.Hash, prove bool) (*tmrpctypes.ResultTx, error) {
-	return b.clientCtx.Client.Tx(ctx, hash.Bytes(), prove)
 }
 
 // getTransactionByHashPending find pending tx from mempool

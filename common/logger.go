@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/artela-network/aspect-runtime/types"
 	"github.com/cometbft/cometbft/libs/log"
+
+	"github.com/artela-network/aspect-runtime/types"
 )
 
 var _ types.Logger = (*runtimeLoggerWrapper)(nil)

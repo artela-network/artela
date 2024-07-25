@@ -15,10 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/artela-network/artela/ethereum/rpc"
-	"github.com/artela-network/artela/ethereum/server/config"
-	"github.com/artela-network/artela/ethereum/types"
-	evmtypes "github.com/artela-network/artela/x/evm/txs"
+	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 
 	"cosmossdk.io/math"
 	dbm "github.com/cometbft/cometbft-db"
@@ -28,11 +26,6 @@ import (
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/node"
 	tmclient "github.com/cometbft/cometbft/rpc/client"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -45,10 +38,6 @@ import (
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
-
-	"github.com/artela-network/artela/app"
-	"github.com/artela-network/artela/app/params"
-
 	"github.com/cosmos/cosmos-sdk/testutil"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -56,9 +45,17 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 
+	"github.com/artela-network/artela/app"
+	"github.com/artela-network/artela/app/params"
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
+	"github.com/artela-network/artela/ethereum/rpc"
+	"github.com/artela-network/artela/ethereum/server/config"
+	"github.com/artela-network/artela/ethereum/types"
+	evmtypes "github.com/artela-network/artela/x/evm/txs"
 )
 
 // package-wide network lock to only allow one test network at a time
@@ -186,8 +183,6 @@ type (
 		jsonrpcDone chan struct{}
 
 		artelaService *rpc.ArtelaService
-		// nolint:unused
-		artelaServiceDone chan struct{}
 	}
 )
 

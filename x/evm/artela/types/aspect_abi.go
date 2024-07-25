@@ -47,22 +47,57 @@ var (
 	})
 )
 
-// nolint
 var methods = map[string]abi.Method{
-	"deploy":           abi.NewMethod("deploy", "deploy", abi.Function, "", false, false, []abi.Argument{{"code", Bytes, false}, {"initdata", Bytes, false}, {"properties", KvPairArr, false}, {"account", Address, false}, {"proof", Bytes, false}, {"joinPoints", Uint256, false}}, nil),
-	"upgrade":          abi.NewMethod("upgrade", "upgrade", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"code", Bytes, false}, {"properties", KvPairArr, false}, {"joinPoints", Uint256, false}}, nil),
-	"bind":             abi.NewMethod("bind", "bind", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"aspectVersion", Uint256, false}, {"contract", Address, false}, {"priority", Int8, false}}, nil),
-	"unbind":           abi.NewMethod("unbind", "unbind", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"contract", Address, false}}, nil),
-	"changeVersion":    abi.NewMethod("changeVersion", "changeVersion", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"contract", Address, false}, {"version", Uint64, false}}, nil),
-	"versionOf":        abi.NewMethod("versionOf", "versionOf", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}}, []abi.Argument{{"version", Uint64, false}}),
-	"aspectsOf":        abi.NewMethod("aspectsOf", "aspectsOf", abi.Function, "", false, false, []abi.Argument{{"contract", Address, false}}, []abi.Argument{{"aspectBoundInfo", AspectBoundInfoArr, false}}),
-	"boundAddressesOf": abi.NewMethod("boundAddressesOf", "boundAddressesOf", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}}, []abi.Argument{{"account", AddressArr, false}}),
-	"entrypoint":       abi.NewMethod("entrypoint", "entrypoint", abi.Function, "", false, false, []abi.Argument{{"aspectId", Address, false}, {"optArgs", Bytes, false}}, []abi.Argument{{"resultMap", Bytes, false}}),
-}
-
-// nolint
-var AspectOwnableMethod = map[string]abi.Method{
-	"isOwner": abi.NewMethod("isOwner", "isOwner", abi.Function, "", false, false, []abi.Argument{{"sender", Address, false}}, []abi.Argument{{"result", Bool, false}}),
+	"deploy": abi.NewMethod("deploy", "deploy", abi.Function, "", false, false, []abi.Argument{
+		{Name: "code", Type: Bytes, Indexed: false},
+		{Name: "initdata", Type: Bytes, Indexed: false},
+		{Name: "properties", Type: KvPairArr, Indexed: false},
+		{Name: "account", Type: Address, Indexed: false},
+		{Name: "proof", Type: Bytes, Indexed: false},
+		{Name: "joinPoints", Type: Uint256, Indexed: false},
+	}, nil),
+	"upgrade": abi.NewMethod("upgrade", "upgrade", abi.Function, "", false, false, []abi.Argument{
+		{Name: "aspectId", Type: Address, Indexed: false},
+		{Name: "code", Type: Bytes, Indexed: false},
+		{Name: "properties", Type: KvPairArr, Indexed: false},
+		{Name: "joinPoints", Type: Uint256, Indexed: false},
+	}, nil),
+	"bind": abi.NewMethod("bind", "bind", abi.Function, "", false, false, []abi.Argument{
+		{Name: "aspectId", Type: Address, Indexed: false},
+		{Name: "aspectVersion", Type: Uint256, Indexed: false},
+		{Name: "contract", Type: Address, Indexed: false},
+		{Name: "priority", Type: Int8, Indexed: false},
+	}, nil),
+	"unbind": abi.NewMethod("unbind", "unbind", abi.Function, "", false, false, []abi.Argument{
+		{Name: "aspectId", Type: Address, Indexed: false},
+		{Name: "contract", Type: Address, Indexed: false},
+	}, nil),
+	"changeVersion": abi.NewMethod("changeVersion", "changeVersion", abi.Function, "", false, false, []abi.Argument{
+		{Name: "aspectId", Type: Address, Indexed: false},
+		{Name: "contract", Type: Address, Indexed: false},
+		{Name: "version", Type: Uint64, Indexed: false},
+	}, nil),
+	"versionOf": abi.NewMethod("versionOf", "versionOf", abi.Function, "", false, false, []abi.Argument{
+		{Name: "aspectId", Type: Address, Indexed: false},
+	}, []abi.Argument{
+		{Name: "version", Type: Uint64, Indexed: false},
+	}),
+	"aspectsOf": abi.NewMethod("aspectsOf", "aspectsOf", abi.Function, "", false, false, []abi.Argument{
+		{Name: "contract", Type: Address, Indexed: false},
+	}, []abi.Argument{
+		{Name: "aspectBoundInfo", Type: AspectBoundInfoArr, Indexed: false},
+	}),
+	"boundAddressesOf": abi.NewMethod("boundAddressesOf", "boundAddressesOf", abi.Function, "", false, false, []abi.Argument{
+		{Name: "aspectId", Type: Address, Indexed: false},
+	}, []abi.Argument{
+		{Name: "account", Type: AddressArr, Indexed: false},
+	}),
+	"entrypoint": abi.NewMethod("entrypoint", "entrypoint", abi.Function, "", false, false, []abi.Argument{
+		{Name: "aspectId", Type: Address, Indexed: false},
+		{Name: "optArgs", Type: Bytes, Indexed: false},
+	}, []abi.Argument{
+		{Name: "resultMap", Type: Bytes, Indexed: false},
+	}),
 }
 
 var methodsLookup = AbiMap()
@@ -76,10 +111,10 @@ var AbiMap = func() map[string]string {
 }
 
 func ParseMethod(callData []byte) (*abi.Method, map[string]interface{}, error) {
-	methodId := hex.EncodeToString(callData[:4])
-	methodName, ok := methodsLookup[methodId]
+	methodID := hex.EncodeToString(callData[:4])
+	methodName, ok := methodsLookup[methodID]
 	if !ok {
-		return nil, nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "method with id %s not found", methodId)
+		return nil, nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "method with id %s not found", methodID)
 	}
 
 	method, ok := methods[methodName]

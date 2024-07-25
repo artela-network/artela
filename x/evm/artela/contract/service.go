@@ -1,7 +1,8 @@
 package contract
 
 import (
-	artela "github.com/artela-network/aspect-core/types"
+	"math/big"
+
 	"github.com/cometbft/cometbft/libs/log"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,13 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
-	"math/big"
 
 	evmtypes "github.com/artela-network/artela/x/evm/artela/types"
-)
-
-type (
-	heightRetriever func() int64
+	artela "github.com/artela-network/aspect-core/types"
 )
 
 type AspectService struct {
@@ -70,7 +67,6 @@ func (service *AspectService) GetBoundAspectForAddr(sdkCtx sdk.Context, to commo
 
 // GetAspectsForJoinPoint BoundAspects get bound Aspects on previous block
 func (service *AspectService) GetAspectsForJoinPoint(ctx sdk.Context, to common.Address, cut artela.PointCut) ([]*artela.AspectCode, error) {
-
 	aspects, err := service.aspectStore.GetTxLevelAspects(ctx, to)
 
 	if err != nil {
@@ -106,7 +102,6 @@ func (service *AspectService) GetAspectsForJoinPoint(ctx sdk.Context, to common.
 
 // GetAccountVerifiers gets the bound Aspect verifier for the account
 func (service *AspectService) GetAccountVerifiers(ctx sdk.Context, to common.Address) ([]*artela.AspectCode, error) {
-
 	aspects, err := service.aspectStore.GetVerificationAspects(ctx, to)
 	if err != nil {
 		return nil, errors.Wrap(err, "load contract aspect binding failed")

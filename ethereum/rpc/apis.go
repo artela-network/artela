@@ -1,11 +1,10 @@
 package rpc
 
 import (
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rpc"
-
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela/ethereum/rpc/api"
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
@@ -13,7 +12,6 @@ import (
 )
 
 func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.Logger, apiBackend *BackendImpl) []rpc.API {
-
 	nonceLock := new(ethapi.AddrLocker)
 	return []rpc.API{
 		{

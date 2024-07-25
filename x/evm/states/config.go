@@ -3,9 +3,10 @@ package states
 import (
 	"math/big"
 
-	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela/x/evm/txs/support"
 )
 
 // EVMConfig encapsulates common parameters needed to create an EVM to execute a message

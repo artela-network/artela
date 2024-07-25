@@ -3,18 +3,17 @@ package txs
 import (
 	"errors"
 	"fmt"
-	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
 
-	"github.com/artela-network/artela-evm/vm"
-
 	sdkmath "cosmossdk.io/math"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/aspect-core/djpm"
 )
 
 var (

@@ -3,19 +3,16 @@ package txs
 import (
 	"math/big"
 
-	"github.com/artela-network/aspect-core/djpm"
-
-	"github.com/artela-network/artela/ethereum/utils"
-
 	errorsmod "cosmossdk.io/errors"
-	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-
-	artela "github.com/artela-network/artela/ethereum/types"
-	evmmodule "github.com/artela-network/artela/x/evm/types"
-
 	sdkmath "cosmossdk.io/math"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/ethereum/utils"
+	evmmodule "github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/djpm"
 )
 
 func newAccessListTx(tx *ethereum.Transaction) (*AccessListTx, error) {

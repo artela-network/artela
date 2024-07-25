@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
@@ -87,8 +86,6 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 		TxHashes: make(map[common.Hash]int),
 	}
 
-	attributes := make([]abci.EventAttribute, 0)
-
 	for _, event := range result.Events {
 		if event.Type != evmtypes.EventTypeEthereumTx {
 			continue
@@ -105,7 +102,6 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 
 		if len(event.Attributes) == 2 {
 			// the first part of format 2
-			attributes = append(attributes, event.Attributes...)
 			if err := p.newTx(event.Attributes); err != nil {
 				return nil, err
 			}
@@ -135,7 +131,7 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 		// filter only the event module message
 		fromEvmModule := false
 		for _, attr := range event.Attributes {
-			if string(attr.Key) == sdk.AttributeKeyModule {
+			if attr.Key == sdk.AttributeKeyModule {
 				if attr.Value == evmtypes.ModuleName {
 					fromEvmModule = true
 				}
@@ -149,7 +145,7 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 
 		// fill the from address
 		for _, attr := range event.Attributes {
-			if string(attr.Key) == sdk.AttributeKeySender {
+			if attr.Key == sdk.AttributeKeySender {
 				// update all parsed txs
 				for i := 0; i < len(p.Txs); i++ {
 					p.Txs[i].From = common.HexToAddress(attr.Value)

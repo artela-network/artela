@@ -5,19 +5,18 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/artela-network/aspect-core/djpm"
-	"github.com/ethereum/go-ethereum/common"
-	ethereum "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
-
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/ethereum/go-ethereum/common"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/aspect-core/djpm"
 )
 
 const (
@@ -123,15 +122,11 @@ func IsCustomizedVerification(tx *ethereum.Transaction) bool {
 	}
 
 	// check prefix
-	if bytes.Compare(data[:4], djpm.CustomVerificationPrefix) != 0 {
+	if !bytes.Equal(data[:4], djpm.CustomVerificationPrefix) {
 		return false
 	}
 
 	// compute checksum and check
 	dataHash := crypto.Keccak256(data[8:])
-	if bytes.Compare(data[4:8], dataHash[:4]) != 0 {
-		return false
-	}
-
-	return true
+	return bytes.Equal(data[4:8], dataHash[:4])
 }

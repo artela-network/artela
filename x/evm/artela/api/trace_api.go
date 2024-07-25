@@ -3,15 +3,16 @@ package api
 import (
 	"context"
 	"errors"
-	"github.com/emirpasic/gods/sets/hashset"
 	"sort"
 
-	"github.com/artela-network/artela-evm/vm"
-	artelatypes "github.com/artela-network/aspect-core/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/protobuf/proto"
+	"github.com/emirpasic/gods/sets/hashset"
+	"google.golang.org/protobuf/proto"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/x/evm/artela/types"
+	artelatypes "github.com/artela-network/aspect-core/types"
 )
 
 var (
@@ -64,11 +65,9 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 	}
 
 	var result proto.Message
-	// nolint:gosimple
-	switch storageChanges.(type) {
-	// nolint:gosimple
+	switch sc := storageChanges.(type) {
 	case *vm.StorageChanges:
-		changes := storageChanges.(*vm.StorageChanges).Changes()
+		changes := sc.Changes()
 		ethStateChanges := &artelatypes.EthStateChanges{
 			All: make([]*artelatypes.EthStateChange, 0, len(changes)),
 		}
@@ -95,11 +94,9 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 			}
 		}
 		result = ethStateChanges
-	// nolint:gosimple
 	case [][]byte:
-		indices := storageChanges.([][]byte)
 		ethStateChangeIndices := &artelatypes.EthStateChangeIndices{
-			Indices: indices,
+			Indices: sc,
 		}
 
 		result = ethStateChangeIndices

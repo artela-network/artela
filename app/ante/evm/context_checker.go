@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/artela-network/artela/x/evm/txs"
-
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -15,6 +13,7 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela/app/interfaces"
+	"github.com/artela-network/artela/x/evm/txs"
 	evmmodule "github.com/artela-network/artela/x/evm/types"
 )
 
