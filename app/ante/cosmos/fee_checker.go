@@ -144,7 +144,8 @@ func (dfd DeductFeeDecorator) deductFee(ctx cosmos.Context, sdkTx cosmos.Tx, fee
 
 // deductFeesFromBalanceOrUnclaimedStakingRewards tries to deduct the fees from the account balance.
 // If the account balance is not enough, it tries to claim enough staking rewards to cover the fees.
-// nolint:unused
+//
+//nolint:unused
 func deductFeesFromBalanceOrUnclaimedStakingRewards(
 	ctx cosmos.Context, dfd DeductFeeDecorator, deductFeesFromAcc authtypes.AccountI, fees cosmos.Coins,
 ) error {

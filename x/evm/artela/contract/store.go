@@ -3,33 +3,78 @@ package contract
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"math"
 	"math/big"
 	"sort"
 	"strings"
 
-	"cosmossdk.io/errors"
-	artelasdkType "github.com/artela-network/aspect-core/types"
+	"github.com/emirpasic/gods/sets/treeset"
+	"github.com/holiman/uint256"
+	"golang.org/x/exp/slices"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/uint256"
-	"github.com/status-im/keycard-go/hexutils"
-	"golang.org/x/exp/slices"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
+	artelasdkType "github.com/artela-network/aspect-core/types"
+	types2 "github.com/artela-network/aspect-runtime/types"
 )
+
+const (
+	storageLoadCost     = 50
+	storageStoreCost    = 20000
+	storageSaveCodeCost = 1000
+	storageUpdateCost   = 5000
+)
+
+type gasMeter struct {
+	gas uint64
+}
+
+func newGasMeter(gas uint64) *gasMeter {
+	return &gasMeter{
+		gas: gas,
+	}
+}
+
+func (m *gasMeter) measureStorageUpdate(dataLen int) error {
+	return m.consume(dataLen, storageUpdateCost)
+}
+
+func (m *gasMeter) measureStorageCodeSave(dataLen int) error {
+	return m.consume(dataLen, storageSaveCodeCost)
+}
+
+func (m *gasMeter) measureStorageStore(dataLen int) error {
+	return m.consume(dataLen, storageStoreCost)
+}
+
+func (m *gasMeter) measureStorageLoad(dataLen int) error {
+	return m.consume(dataLen, storageLoadCost)
+}
+
+func (m *gasMeter) remainingGas() uint64 {
+	return m.gas
+}
+
+func (m *gasMeter) consume(dataLen int, gasCostPer32Bytes uint64) error {
+	gas := ((uint64(dataLen) + 32) >> 5) * gasCostPer32Bytes
+	if m.gas < gas {
+		m.gas = 0
+		return types2.OutOfGasError
+	}
+	m.gas -= gas
+	return nil
+}
 
 type AspectStore struct {
 	storeKey storetypes.StoreKey
-
-	logger log.Logger
+	logger   log.Logger
 }
 
 type bindingQueryFunc func(sdk.Context, common.Address) ([]*types.AspectMeta, error)
@@ -45,146 +90,91 @@ func (k *AspectStore) newPrefixStore(ctx sdk.Context, fixKey string) prefix.Stor
 	return prefix.NewStore(ctx.KVStore(k.storeKey), evmtypes.KeyPrefix(fixKey))
 }
 
-func (k *AspectStore) RemoveBlockLevelAspect(ctx sdk.Context, aspectId common.Address) error {
-	dataSet, err := k.GetBlockLevelAspects(ctx)
-	if err != nil {
-		return err
-	}
-	if dataSet == nil {
-		return nil
-	}
-	delete(dataSet, aspectId.String())
-	jsonBytes, err := json.Marshal(dataSet)
-	if err != nil {
-		return err
-	}
-	// store
-	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
-	aspectBlockKey := types.AspectBlockKey()
-	store.Set(aspectBlockKey, jsonBytes)
+func (k *AspectStore) BumpAspectVersion(ctx sdk.Context, aspectID common.Address, gas uint64) (*uint256.Int, uint64, error) {
+	meter := newGasMeter(gas)
+	version := k.getAspectLastVersion(ctx, aspectID)
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: RemoveBlockLevelAspect"),
-		"key", string(aspectBlockKey),
-		"aspect-id", aspectId.Hex(),
-		"data-set", string(jsonBytes),
-	)
-	return nil
-}
+	newVersion := version.Add(version, uint256.NewInt(1))
+	if err := k.storeAspectVersion(ctx, aspectID, newVersion, meter); err != nil {
+		return nil, meter.remainingGas(), err
+	}
 
-// StoreBlockLevelAspect key="AspectBlock" value=map[string]int64
-func (k *AspectStore) StoreBlockLevelAspect(ctx sdk.Context, aspectId common.Address) error {
-	dataSet, err := k.GetBlockLevelAspects(ctx)
-	if err != nil {
-		return err
-	}
-	if dataSet == nil {
-		// order by
-		dataSet = make(map[string]int64)
-	}
-	// oder by block height
-	dataSet[aspectId.String()] = ctx.BlockHeight()
-	jsonBytes, err := json.Marshal(dataSet)
-	if err != nil {
-		return err
-	}
-	//
-	// prefix
-	// kv
-	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
-	aspectBlockKey := types.AspectBlockKey()
-	store.Set(aspectBlockKey, jsonBytes)
-
-	k.logger.Debug(
-		fmt.Sprintf("setState: StoreBlockLevelAspect"),
-		"key", string(aspectBlockKey),
-		"aspect-id", aspectId.Hex(),
-		"data-set", string(jsonBytes),
-	)
-	return nil
-}
-
-func (k *AspectStore) GetBlockLevelAspects(ctx sdk.Context) (map[string]int64, error) {
-	store := k.newPrefixStore(ctx, types.AspectBlockKeyPrefix)
-	blockKey := types.AspectBlockKey()
-	get := store.Get(blockKey)
-	if get == nil {
-		return nil, nil
-	}
-	blockMap := make(map[string]int64)
-	if err := json.Unmarshal(get, &blockMap); err != nil {
-		return nil, err
-	}
-	return blockMap, nil
+	return newVersion, meter.remainingGas(), nil
 }
 
 // StoreAspectCode aspect code
-func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectId common.Address, code []byte) *uint256.Int {
-	// get last value
-	version := k.GetAspectLastVersion(ctx, aspectId)
-	if len(code) == 0 {
-		return version
+func (k *AspectStore) StoreAspectCode(ctx sdk.Context, aspectID common.Address, code []byte, version *uint256.Int, gas uint64) (uint64, error) {
+	meter := newGasMeter(gas)
+	if err := meter.measureStorageCodeSave(len(code)); err != nil {
+		return meter.remainingGas(), err
 	}
 
 	// store code
 	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
-	newVersion := version.Add(version, uint256.NewInt(1))
 	versionKey := types.AspectVersionKey(
-		aspectId.Bytes(),
-		newVersion.Bytes(),
+		aspectID.Bytes(),
+		version.Bytes(),
 	)
 	codeStore.Set(versionKey, code)
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: StoreAspectCode"),
-		"aspect-id", aspectId.Hex(),
-		"aspect-version", fmt.Sprintf("%d", newVersion),
-		"aspect-code-hex", hexutils.BytesToHex(code),
-	)
-
-	// update last version
-	k.StoreAspectVersion(ctx, aspectId, newVersion)
-	return newVersion
+	k.logger.Info("saved aspect code", "id", aspectID.Hex(), "version", version.String())
+	return meter.remainingGas(), nil
 }
 
 func (k *AspectStore) GetAspectCode(ctx sdk.Context, aspectId common.Address, version *uint256.Int) ([]byte, *uint256.Int) {
 	codeStore := k.newPrefixStore(ctx, types.AspectCodeKeyPrefix)
 	if version == nil {
-		version = k.GetAspectLastVersion(ctx, aspectId)
+		version = k.getAspectLastVersion(ctx, aspectId)
 	}
+
+	if version.Cmp(zero) == 0 {
+		return nil, zero
+	}
+
 	versionKey := types.AspectVersionKey(
 		aspectId.Bytes(),
 		version.Bytes(),
 	)
 	code := codeStore.Get(versionKey)
-	return code, version
+
+	// stored code is already validated, so we can ignore the error here
+	parsed, _ := ParseByteCode(code)
+
+	return parsed, version
 }
 
-// StoreAspectVersion version
-func (k *AspectStore) StoreAspectVersion(ctx sdk.Context, aspectId common.Address, version *uint256.Int) {
+// storeAspectVersion version
+func (k *AspectStore) storeAspectVersion(ctx sdk.Context, aspectId common.Address, version *uint256.Int, meter *gasMeter) error {
+	var err error
+	if version.Cmp(one) == 0 {
+		err = meter.measureStorageStore(32)
+	} else {
+		err = meter.measureStorageUpdate(32)
+	}
+	if err != nil {
+		return err
+	}
+
 	versionStore := k.newPrefixStore(ctx, types.AspectCodeVersionKeyPrefix)
-	versionKey := types.AspectIdKey(
-		aspectId.Bytes(),
-	)
+	versionKey := types.AspectIDKey(aspectId.Bytes())
 	versionStore.Set(versionKey, version.Bytes())
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: StoreAspectVersion"),
-		"aspect-id", aspectId.Hex(),
-		"aspect-version", fmt.Sprintf("%d", version),
-	)
+	k.logger.Info("saved aspect version info", "id", aspectId.Hex(), "version", version.String())
+	return nil
 }
 
 func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Address) *uint256.Int {
+	return k.getAspectLastVersion(ctx, aspectId)
+}
+
+func (k *AspectStore) getAspectLastVersion(ctx sdk.Context, aspectId common.Address) *uint256.Int {
 	aspectVersionStore := k.newPrefixStore(ctx, types.AspectCodeVersionKeyPrefix)
-	versionKey := types.AspectIdKey(
-		aspectId.Bytes(),
-	)
+	versionKey := types.AspectIDKey(aspectId.Bytes())
 	version := uint256.NewInt(0)
-	data := aspectVersionStore.Get(versionKey)
-	if data != nil || len(data) > 0 {
+	if data := aspectVersionStore.Get(versionKey); data != nil || len(data) > 0 {
 		version.SetBytes(data)
 	}
+
 	return version
 }
 
@@ -198,16 +188,19 @@ func (k *AspectStore) GetAspectLastVersion(ctx sdk.Context, aspectId common.Addr
 //	@param aspectId
 //	@param prop
 //	@return error
-func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property) error {
-
+func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Address, prop []types.Property, gas uint64) (uint64, error) {
+	meter := newGasMeter(gas)
 	if len(prop) == 0 {
-		return nil
+		return gas, nil
 	}
 
 	// get treemap value
 	aspectConfigStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
 	// get all property key
-	propertyAllKey := k.GetAspectPropertyValue(ctx, aspectId, types.AspectPropertyAllKeyPrefix)
+	propertyAllKey, err := k.getAspectPropertyValue(ctx, aspectId, types.AspectPropertyAllKeyPrefix, meter)
+	if err != nil {
+		return meter.remainingGas(), err
+	}
 
 	keySet := treeset.NewWithStringComparator()
 	// add propertyAllKey to keySet
@@ -224,13 +217,18 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 	}
 	// check key limit
 	if keySet.Size() > types.AspectPropertyLimit {
-		return errors.Wrapf(nil, "The maximum key limit is exceeded, and the maximum allowed is %d now available %d", types.AspectPropertyLimit, keySet.Size())
+		return meter.remainingGas(), errors.New("aspect property limit exceeds")
 	}
 
 	// store property key
 	for i := range prop {
 		key := prop[i].Key
 		value := prop[i].Value
+
+		if err := meter.measureStorageCodeSave(len(key) + len(value)); err != nil {
+			k.logger.Error("unable to save property", "err", err, "key", key, "value", value)
+			return meter.remainingGas(), err
+		}
 
 		// store
 		aspectPropertyKey := types.AspectPropertyKey(
@@ -240,11 +238,7 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 
 		aspectConfigStore.Set(aspectPropertyKey, value)
 
-		k.logger.Debug(
-			fmt.Sprintf("setState: StoreAspectProperty"),
-			"aspect-id", aspectId.Hex(),
-			"aspect-property", fmt.Sprintf("%+v", prop),
-		)
+		k.logger.Info("aspect property updated", "aspect", aspectId.Hex(), "key", key, "value", value)
 	}
 
 	// store AspectPropertyAllKey
@@ -259,20 +253,24 @@ func (k *AspectStore) StoreAspectProperty(ctx sdk.Context, aspectId common.Addre
 	)
 	aspectConfigStore.Set(allPropertyKeys, []byte(join))
 
-	return nil
+	return meter.remainingGas(), nil
 }
 
-func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Address, propertyKey string) []byte {
-	if types.AspectProofKey == propertyKey || types.AspectAccountKey == propertyKey {
-		// Block query of account and Proof
-		return nil
-	}
+func (k *AspectStore) GetAspectPropertyValue(ctx sdk.Context, aspectId common.Address, propertyKey string, gas uint64) ([]byte, uint64, error) {
+	meter := newGasMeter(gas)
+	value, err := k.getAspectPropertyValue(ctx, aspectId, propertyKey, meter)
+	return value, meter.remainingGas(), err
+}
+
+func (k *AspectStore) getAspectPropertyValue(ctx sdk.Context, aspectId common.Address, propertyKey string, meter *gasMeter) ([]byte, error) {
 	codeStore := k.newPrefixStore(ctx, types.AspectPropertyKeyPrefix)
 	aspectPropertyKey := types.AspectPropertyKey(
 		aspectId.Bytes(),
 		[]byte(propertyKey),
 	)
-	return codeStore.Get(aspectPropertyKey)
+
+	value := codeStore.Get(aspectPropertyKey)
+	return value, meter.measureStorageLoad(len(propertyKey) + len(value))
 }
 
 func (k *AspectStore) BindTxAspect(ctx sdk.Context, account common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8) error {
@@ -281,15 +279,15 @@ func (k *AspectStore) BindTxAspect(ctx sdk.Context, account common.Address, aspe
 }
 
 func (k *AspectStore) BindVerificationAspect(ctx sdk.Context, account common.Address, aspectId common.Address, aspectVersion *uint256.Int, priority int8, isContractAccount bool) error {
+	// EoA can have multiple verifiers
+	limit := math.MaxUint8
 	if isContractAccount {
 		// contract can have only 1 verifier
-		return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
-			k.GetVerificationAspects, types.VerifierBindingKeyPrefix, 1)
-	} else {
-		// EoA can have multiple verifiers
-		return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
-			k.GetVerificationAspects, types.VerifierBindingKeyPrefix, math.MaxUint8)
+		limit = 1
 	}
+
+	return k.saveBindingInfo(ctx, account, aspectId, aspectVersion, priority,
+		k.GetVerificationAspects, types.VerifierBindingKeyPrefix, limit)
 }
 
 func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, aspectId common.Address,
@@ -298,7 +296,7 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 	// check aspect existence
 	code, version := k.GetAspectCode(ctx, aspectId, aspectVersion)
 	if code == nil || version == nil {
-		return errors.Wrap(nil, "aspect not exist")
+		return errors.New("aspect not found")
 	}
 
 	// get transaction level aspect binding relationships
@@ -308,22 +306,13 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 	}
 
 	if len(bindings) >= limit {
-		return errors.Wrap(nil, "aspect binding limit exceeds")
+		return errors.New("binding limit exceeded")
 	}
 
 	// check duplicates
-	existing := -1
-	for index, binding := range bindings {
+	for _, binding := range bindings {
 		if bytes.Equal(binding.Id.Bytes(), aspectId.Bytes()) {
-			// ignore if binding already exists
-			if binding.Priority == int64(priority) &&
-				binding.Version.Cmp(aspectVersion) == 0 {
-				return nil
-			}
-
-			// record existing, replace later
-			existing = index
-			break
+			return errors.New("aspect already bound")
 		}
 	}
 
@@ -333,12 +322,7 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 		Priority: int64(priority),
 	}
 
-	// replace existing binding
-	if existing > 0 {
-		bindings[existing] = newAspect
-	} else {
-		bindings = append(bindings, newAspect)
-	}
+	bindings = append(bindings, newAspect)
 
 	// re-sort aspects by priority
 	if limit != 1 {
@@ -357,10 +341,9 @@ func (k *AspectStore) saveBindingInfo(ctx sdk.Context, account common.Address, a
 	)
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: saveBindingInfo"),
-		"aspect-id", aspectId.Hex(),
-		"countract", account.String(),
+	k.logger.Info("binding info saved",
+		"aspect", aspectId.Hex(),
+		"contract", account.Hex(),
 		"bindings", string(jsonBytes),
 	)
 
@@ -376,7 +359,8 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 		return bytes.Equal(meta.Id.Bytes(), aspectId.Bytes())
 	})
 	if toDelete < 0 {
-		return errors.Wrapf(nil, "aspect %s not bound with contract %s", aspectId.Hex(), contract.Hex())
+		// not found
+		return nil
 	}
 	txAspectBindings = slices.Delete(txAspectBindings, toDelete, toDelete+1)
 	jsonBytes, err := json.Marshal(txAspectBindings)
@@ -391,12 +375,7 @@ func (k *AspectStore) UnBindContractAspects(ctx sdk.Context, contract common.Add
 	)
 	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: UnBindContractAspects"),
-		"aspect-id", aspectId.Hex(),
-		"contract", contract.String(),
-		"txAspectBindings", string(jsonBytes),
-	)
+	k.logger.Info("tx aspect unbound", "aspect", aspectId.Hex(), "contract", contract.String())
 	return nil
 }
 
@@ -421,49 +400,111 @@ func (k *AspectStore) getAccountBondAspects(ctx sdk.Context, account common.Addr
 		return bindings, nil
 	}
 	if err := json.Unmarshal(rawJSON, &bindings); err != nil {
-		return nil, errors.Wrap(err, "unable to deserialize value bytes")
+		return nil, errors.New("failed to unmarshal aspect bindings")
 	}
 	return bindings, nil
 }
 
-func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, contract common.Address, aspectId common.Address, version uint64) error {
-	meta, err := k.GetTxLevelAspects(ctx, contract)
-	if err != nil {
-		return err
+func (k *AspectStore) ChangeBoundAspectVersion(ctx sdk.Context, account common.Address, aspectId common.Address, version uint64, isContract, verifierAspect, txAspect bool) error {
+	bindingStoreKeys := make([]string, 0, 2)
+	bindingStoreKeys = append(bindingStoreKeys, types.VerifierBindingKeyPrefix)
+	if isContract {
+		bindingStoreKeys = append(bindingStoreKeys, types.ContractBindKeyPrefix)
 	}
-	hasAspect := false
-	for _, aspect := range meta {
-		if bytes.Equal(aspect.Id.Bytes(), aspectId.Bytes()) {
-			aspect.Version = uint256.NewInt(version)
-			hasAspect = true
+
+	bindings := make(map[string][]*types.AspectMeta, len(bindingStoreKeys))
+	bindingIndex := make(map[string]int, len(bindingStoreKeys))
+
+	bound := false
+	var priority int8
+	for _, bindingStoreKey := range bindingStoreKeys {
+		binding, err := k.getAccountBondAspects(ctx, account, bindingStoreKey)
+		if err != nil {
+			return err
+		}
+		bindings[bindingStoreKey] = binding
+
+		for i, aspect := range binding {
+			if bytes.Equal(aspect.Id.Bytes(), aspectId.Bytes()) {
+				bindingIndex[bindingStoreKey] = i
+				bound = true
+				priority = int8(aspect.Priority)
+				break
+			}
 		}
 	}
-	if !hasAspect {
-		return nil
-	}
-	jsonBytes, err := json.Marshal(meta)
-	if err != nil {
-		return err
-	}
-	// store
-	contractBindingStore := k.newPrefixStore(ctx, types.ContractBindKeyPrefix)
-	aspectPropertyKey := types.AccountKey(
-		contract.Bytes(),
-	)
-	contractBindingStore.Set(aspectPropertyKey, jsonBytes)
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: ChangeBoundAspectVersion"),
-		"aspect-id", aspectId.Hex(),
-		"contract", contract.String(),
-		"aspects", string(jsonBytes),
-	)
+	if !bound {
+		return errors.New("aspect not bound")
+	}
+
+	newBindingTypes := make(map[string]bool, 2)
+	newBindingTypes[types.VerifierBindingKeyPrefix] = verifierAspect
+	newBindingTypes[types.ContractBindKeyPrefix] = txAspect
+	u256Version := uint256.NewInt(version)
+
+	for bindingStoreKey, binding := range bindings {
+		updateIdx, ok := bindingIndex[bindingStoreKey]
+		if !ok {
+			// join-point in the new version aspect has been changed, we need to add the new binding type
+			if newBindingTypes[bindingStoreKey] {
+				var err error
+				if bindingStoreKey == types.ContractBindKeyPrefix {
+					err = k.BindTxAspect(ctx, account, aspectId, u256Version, priority)
+				} else {
+					err = k.BindVerificationAspect(ctx, account, aspectId, u256Version, priority, isContract)
+				}
+				if err != nil {
+					k.logger.Error("failed to add new aspect binding type", "store", bindingStoreKey, "aspect", aspectId.Hex(), "version", version, "account", account.String())
+					return err
+				}
+				k.logger.Info("added new binding type", "store", bindingStoreKey, "aspect", aspectId.Hex(), "version", version, "account", account.String())
+			}
+			continue
+		}
+
+		// join-point in the new version aspect has been changed, we need to remove the non-exist binding type
+		if !newBindingTypes[bindingStoreKey] {
+			var unbind func(ctx sdk.Context, contract common.Address, aspectId common.Address) error
+			if bindingStoreKey == types.ContractBindKeyPrefix {
+				unbind = k.UnBindContractAspects
+			} else {
+				unbind = k.UnBindVerificationAspect
+			}
+
+			if err := unbind(ctx, account, aspectId); err != nil {
+				k.logger.Error("failed to remove aspect binding type", "store", bindingStoreKey, "aspect", aspectId.Hex(), "version", version, "account", account.String())
+				return err
+			}
+
+			k.logger.Info("removed binding type", "store", bindingStoreKey, "aspect", aspectId.Hex(), "version", version, "account", account.String())
+			continue
+		}
+
+		// join-point in the new version aspect not changed, we can just update the old one
+		oldVer := binding[updateIdx].Version.Uint64()
+		binding[updateIdx].Version = u256Version
+
+		jsonBytes, err := json.Marshal(binding)
+		if err != nil {
+			return err
+		}
+
+		bindingStore := k.newPrefixStore(ctx, bindingStoreKey)
+		bindingKey := types.AccountKey(
+			account.Bytes(),
+		)
+		bindingStore.Set(bindingKey, jsonBytes)
+
+		k.logger.Info("aspect bound version changed", "aspect", aspectId.Hex(), "account", account.String(), "old", oldVer, "new", version)
+	}
+
 	return nil
 }
 
 func (k *AspectStore) GetAspectRefValue(ctx sdk.Context, aspectId common.Address) (*treeset.Set, error) {
 	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
-	aspectPropertyKey := types.AspectIdKey(
+	aspectPropertyKey := types.AspectIDKey(
 		aspectId.Bytes(),
 	)
 
@@ -495,21 +536,16 @@ func (k *AspectStore) StoreAspectRefValue(ctx sdk.Context, account common.Addres
 	// store
 	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
 
-	aspectIdKey := types.AspectIdKey(
+	aspectIdKey := types.AspectIDKey(
 		aspectId.Bytes(),
 	)
 	aspectRefStore.Set(aspectIdKey, jsonBytes)
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: StoreAspectRefValue"),
-		"aspect-id", aspectId.Hex(),
-		"context", account.Hex(),
-		"aspects", string(jsonBytes),
-	)
+	k.logger.Info("aspect bound", "aspect", aspectId.Hex(), "account", account.Hex())
 	return nil
 }
 
-func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Address, aspectId common.Address) error {
+func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, account common.Address, aspectId common.Address) error {
 	dataSet, err := k.GetAspectRefValue(ctx, aspectId)
 	if err != nil {
 		return err
@@ -517,8 +553,8 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 	if dataSet == nil {
 		return nil
 	}
-	// remove contract
-	dataSet.Remove(contract.String())
+	// remove account
+	dataSet.Remove(account.String())
 	// marshal set and put treemap with new blockHeight
 	jsonBytes, err := dataSet.MarshalJSON()
 	if err != nil {
@@ -526,43 +562,34 @@ func (k *AspectStore) UnbindAspectRefValue(ctx sdk.Context, contract common.Addr
 	}
 	// store
 	aspectRefStore := k.newPrefixStore(ctx, types.AspectRefKeyPrefix)
-	aspectPropertyKey := types.AspectIdKey(
+	aspectPropertyKey := types.AspectIDKey(
 		aspectId.Bytes(),
 	)
 	aspectRefStore.Set(aspectPropertyKey, jsonBytes)
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: UnbindAspectRefValue"),
-		"aspect-id", aspectId.Hex(),
-		"context", contract.Hex(),
-		"aspect-refvalue", string(jsonBytes),
-	)
+	k.logger.Info("aspect unbound", "aspect", aspectId.Hex(), "account", account.Hex())
 	return nil
 }
 
 func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.Address, aspectId common.Address) error {
-
 	bindings, err := k.GetVerificationAspects(ctx, account)
 	if err != nil {
 		return err
 	}
-	existing := -1
-	// check duplicates
-	for index, binding := range bindings {
-		if bytes.Equal(binding.Id.Bytes(), aspectId.Bytes()) {
-			// delete Aspect id
-			existing = index
-			break
-		}
-	}
-	if existing == -1 {
+
+	toDelete := slices.IndexFunc(bindings, func(meta *types.AspectMeta) bool {
+		return bytes.Equal(meta.Id.Bytes(), aspectId.Bytes())
+	})
+
+	if toDelete < 0 {
+		// not found
 		return nil
 	}
 	// delete existing
-	newBinding := append(bindings[:existing], bindings[existing+1:]...)
+	bindings = slices.Delete(bindings, toDelete, toDelete+1)
 
-	sort.Slice(newBinding, types.NewBindingPriorityComparator(newBinding))
-	jsonBytes, _ := json.Marshal(newBinding)
+	sort.Slice(bindings, types.NewBindingPriorityComparator(bindings))
+	jsonBytes, err := json.Marshal(bindings)
 	if err != nil {
 		return err
 	}
@@ -574,12 +601,7 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 	)
 	aspectBindingStore.Set(aspectPropertyKey, jsonBytes)
 
-	k.logger.Debug(
-		fmt.Sprintf("setState: UnBindVerificationAspect"),
-		"aspect-id", aspectId.Hex(),
-		"contract", account.Hex(),
-		"newBinding", string(jsonBytes),
-	)
+	k.logger.Info("aspect unbound", "aspect", aspectId.Hex(), "account", account.String())
 	return nil
 }
 
@@ -592,31 +614,20 @@ func (k *AspectStore) UnBindVerificationAspect(ctx sdk.Context, account common.A
 //	@param version: aspect version ,optional，Default Aspect last version
 //	@param point  JoinPointRunType value, @see join_point_type.go
 //	@return bool Execute Result
-func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int, point *big.Int) error {
-	if version.Uint64() == 0 || point.Int64() == 0 {
-		return nil
-	}
+func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, version uint256.Int, point *big.Int) {
 	// check point
-	_, ok := artelasdkType.CheckIsJoinPoint(point)
-	if !ok {
+	if _, ok := artelasdkType.CheckIsJoinPoint(point); !ok {
 		// Default store 0
 		point = big.NewInt(0)
 	}
 
-	// Default last Aspect version
-	if version == nil {
-		version = k.GetAspectLastVersion(ctx, aspectId)
-	}
-
 	aspectPropertyStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
-	// store
 	aspectPropertyKey := types.AspectArrayKey(
 		aspectId.Bytes(),
 		version.Bytes(),
 		[]byte(types.AspectRunJoinPointKey),
 	)
 	aspectPropertyStore.Set(aspectPropertyKey, point.Bytes())
-	return nil
 }
 
 // GetAspectJP
@@ -627,22 +638,24 @@ func (k *AspectStore) StoreAspectJP(ctx sdk.Context, aspectId common.Address, ve
 //	@param aspectId
 //	@param version
 //	@return *big.Int
-func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int) *big.Int {
+func (k *AspectStore) GetAspectJP(ctx sdk.Context, aspectId common.Address, version *uint256.Int) (*big.Int, error) {
 	// Default last Aspect version
+	latestVersion := k.GetAspectLastVersion(ctx, aspectId)
 	if version == nil {
-		version = k.GetAspectLastVersion(ctx, aspectId)
+		version = latestVersion
+	} else if version.Cmp(zero) < 0 || version.Cmp(latestVersion) > 0 {
+		return nil, errors.New("invalid aspect version")
 	}
-	codeStore := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
+
+	store := k.newPrefixStore(ctx, types.AspectJoinPointRunKeyPrefix)
 	aspectPropertyKey := types.AspectArrayKey(
 		aspectId.Bytes(),
 		version.Bytes(),
 		[]byte(types.AspectRunJoinPointKey),
 	)
-	get := codeStore.Get(aspectPropertyKey)
-
-	if nil != get && len(get) > 0 {
-		return new(big.Int).SetBytes(get)
-	} else {
-		return new(big.Int)
+	jp := store.Get(aspectPropertyKey)
+	if len(jp) == 0 {
+		return new(big.Int), nil
 	}
+	return new(big.Int).SetBytes(jp), nil
 }

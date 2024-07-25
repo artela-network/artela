@@ -7,13 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/spf13/cobra"
-
-	ethtypes "github.com/artela-network/artela/ethereum/types"
-	evmstate "github.com/artela-network/artela/x/evm/txs/support"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -23,6 +17,12 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+
+	ethtypes "github.com/artela-network/artela/ethereum/types"
+	evmstate "github.com/artela-network/artela/x/evm/txs/support"
+	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
 // AddGenesisContractCmd returns add-genesis-contract cobra Command.

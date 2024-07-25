@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
@@ -54,6 +53,7 @@ type ParsedTx struct {
 	MsgIndex int
 
 	// the following fields are parsed from events
+	From common.Address
 
 	Hash common.Hash
 	// -1 means uninitialized
@@ -85,6 +85,7 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 	p := &ParsedTxs{
 		TxHashes: make(map[common.Hash]int),
 	}
+
 	for _, event := range result.Events {
 		if event.Type != evmtypes.EventTypeEthereumTx {
 			continue
@@ -121,6 +122,39 @@ func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error
 		}
 	}
 
+	// loop the second time to update the parsed tx from
+	for _, event := range result.Events {
+		if event.Type != sdk.EventTypeMessage {
+			continue
+		}
+
+		// filter only the event module message
+		fromEvmModule := false
+		for _, attr := range event.Attributes {
+			if attr.Key == sdk.AttributeKeyModule {
+				if attr.Value == evmtypes.ModuleName {
+					fromEvmModule = true
+				}
+			}
+		}
+
+		// ignore non-evm module messages
+		if !fromEvmModule {
+			continue
+		}
+
+		// fill the from address
+		for _, attr := range event.Attributes {
+			if attr.Key == sdk.AttributeKeySender {
+				// update all parsed txs
+				for i := 0; i < len(p.Txs); i++ {
+					p.Txs[i].From = common.HexToAddress(attr.Value)
+				}
+				break
+			}
+		}
+	}
+
 	// some old versions miss some events, fill it with txs result
 	gasUsed := uint64(result.GasUsed) // #nosec G701
 	if len(p.Txs) == 1 {
@@ -153,6 +187,7 @@ func ParseTxIndexerResult(txResult *tmrpctypes.ResultTx, tx sdk.Tx, getter func(
 	}
 	index := uint32(parsedTx.MsgIndex) // #nosec G701
 	return &types.TxResult{
+		Sender:            parsedTx.From.Hex(),
 		Height:            txResult.Height,
 		TxIndex:           txResult.Index,
 		MsgIndex:          index,

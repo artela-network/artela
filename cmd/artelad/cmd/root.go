@@ -7,12 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	artclient "github.com/artela-network/artela/client"
-	server2 "github.com/artela-network/artela/ethereum/server"
-	config2 "github.com/artela-network/artela/ethereum/server/config"
-
-	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
-	"github.com/artela-network/artela/ethereum/eip712"
+	"github.com/spf13/cast"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	dbm "github.com/cometbft/cometbft-db"
 	tmcfg "github.com/cometbft/cometbft/config"
@@ -38,15 +35,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/spf13/cast"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	// this line is used by starport scaffolding # root/moduleImport
 
 	"github.com/artela-network/artela/app"
 	appparams "github.com/artela-network/artela/app/params"
+	artclient "github.com/artela-network/artela/client"
 	"github.com/artela-network/artela/client/debug"
+	artelakeyring "github.com/artela-network/artela/ethereum/crypto/keyring"
+	"github.com/artela-network/artela/ethereum/eip712"
+	server2 "github.com/artela-network/artela/ethereum/server"
+	config2 "github.com/artela-network/artela/ethereum/server/config"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
@@ -135,7 +134,7 @@ func initRootCmd(
 		AddGenesisContractCmd(app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		NewTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
-		debug.Cmd(),
+		debug.Cmd(encodingConfig),
 		config.Cmd(),
 		// this line is used by starport scaffolding # root/commands
 		KeyInfoCmd(),
@@ -312,6 +311,7 @@ func (a appCreator) newApp(
 		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server2.FlagIAVLCacheSize))),
 		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server2.FlagDisableIAVLFastNode))),
 		baseapp.SetChainID(chainID),
+		baseapp.SetForceCompactInterval(cast.ToInt64(appOpts.Get(server2.FlagForceCompactInterval))),
 	)
 }
 

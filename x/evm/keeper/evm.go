@@ -4,17 +4,8 @@ import (
 	"errors"
 	"math/big"
 
-	asptypes "github.com/artela-network/aspect-core/types"
-
-	"github.com/artela-network/artela/x/evm/artela/contract"
-	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
-
-	"github.com/artela-network/aspect-core/djpm"
-	cometbft "github.com/cometbft/cometbft/types"
-
 	errorsmod "cosmossdk.io/errors"
-	artcore "github.com/artela-network/artela-evm/core"
-	"github.com/artela-network/artela-evm/vm"
+	cometbft "github.com/cometbft/cometbft/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -22,11 +13,18 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
+	artcore "github.com/artela-network/artela-evm/core"
+	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/artela/common/aspect"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/artela/contract"
+	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/djpm"
+	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
@@ -176,7 +174,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	}
 
 	// pass true to commit the StateDB
-	res, err := k.ApplyMessageWithConfig(tmpCtx, aspectCtx, msg, nil, true, evmConfig, txConfig)
+	res, err := k.ApplyMessageWithConfig(tmpCtx, aspectCtx, msg, nil, true, evmConfig, txConfig, k.isCustomizedVerification(tx))
 	if err != nil {
 		ctx.Logger().Error("ApplyMessageWithConfig with error", "txhash", tx.Hash().String(), "error", err, "response", res)
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
@@ -203,7 +201,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	res.CumulativeGasUsed = cumulativeGasUsed
 
 	var contractAddr common.Address
-	if msg.To == nil {
+	if msg.To == nil || aspect.IsAspectDeploy(msg.To, msg.Data) {
 		contractAddr = crypto.CreateAddress(msg.From, msg.Nonce)
 	}
 
@@ -259,8 +257,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
 func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.EVMLogger, commit bool) (*txs.MsgEthereumTxResponse, error) {
-
-	evmConfig, err := k.EVMConfig(ctx, cosmos.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
+	evmConfig, err := k.EVMConfig(ctx, ctx.BlockHeader().ProposerAddress, k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
@@ -273,7 +270,7 @@ func (k *Keeper) ApplyMessage(ctx cosmos.Context, msg *core.Message, tracer vm.E
 		return nil, errors.New("ApplyMessageWithConfig: unwrap AspectRuntimeContext failed")
 	}
 
-	return k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commit, evmConfig, txConfig)
+	return k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commit, evmConfig, txConfig, false)
 }
 
 // ApplyMessageWithConfig computes the new states by applying the given message against the existing states.
@@ -321,6 +318,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	commit bool,
 	cfg *states.EVMConfig,
 	txConfig states.TxConfig,
+	isCustomVerification bool,
 ) (*txs.MsgEthereumTxResponse, error) {
 	var (
 		ret   []byte // return bytes from evm execution
@@ -351,19 +349,21 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	leftoverGas := msg.GasLimit
 
 	// Allow the tracer captures the txs level events, mainly the gas consumption.
-	// evmCfg := evm.Config
-	// if evmCfg.Debug {
-	//	evmCfg.Tracer.CaptureTxStart(leftoverGas)
-	//	defer func() {
-	//		evmCfg.Tracer.CaptureTxEnd(leftoverGas)
-	//	}()
-	// }
+	var aspectLogger asptypes.AspectLogger
+	if tracer != nil {
+		tracer.CaptureTxStart(leftoverGas)
+		defer func() {
+			tracer.CaptureTxEnd(leftoverGas)
+		}()
+
+		aspectLogger, _ = tracer.(asptypes.AspectLogger)
+	}
 
 	sender := vm.AccountRef(msg.From)
 	contractCreation := msg.To == nil
 	isLondon := cfg.ChainConfig.IsLondon(evm.Context.BlockNumber)
 
-	intrinsicGas, err := k.GetEthIntrinsicGas(ctx, msg, cfg.ChainConfig, contractCreation)
+	intrinsicGas, err := k.GetEthIntrinsicGas(ctx, msg, cfg.ChainConfig, contractCreation, isCustomVerification)
 	if err != nil {
 		// should have already been checked on Ante Handler
 		return nil, errorsmod.Wrap(err, "intrinsic gas failed")
@@ -386,11 +386,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
 		nativeContract := contract.NewAspectNativeContract(k.storeKey, evm,
 			ctx.BlockHeight, stateDB, k.logger)
-		resp, aspectErr := nativeContract.ApplyMessage(ctx, msg, commit)
-		if resp != nil {
-			resp.Hash = txConfig.TxHash.Hex()
-		}
-		return resp, aspectErr
+		nativeContract.Init()
+		ret, leftoverGas, vmErr = nativeContract.ApplyMessage(ctx, msg, leftoverGas, commit)
 	} else if contractCreation {
 		// take over the nonce management from evm:
 		// - reset sender's nonce to msg.Nonce() before calling evm.
@@ -400,15 +397,14 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
 		// begin pre tx aspect execution
-
-		preTxResult := djpm.AspectInstance().PreTxExecute(aspectCtx, msg.To, ctx.BlockHeight(), leftoverGas, &asptypes.PreTxExecuteInput{
+		preTxResult := djpm.AspectInstance().PreTxExecute(aspectCtx, msg.From, *msg.To, msg.Data, ctx.BlockHeight(), leftoverGas, msg.Value, &asptypes.PreTxExecuteInput{
 			Tx: &asptypes.WithFromTxInput{
 				Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
 				To:   msg.To.Bytes(),
 				From: msg.From.Bytes(),
 			},
 			Block: &asptypes.BlockInput{Number: &lastHeight},
-		})
+		}, aspectLogger)
 
 		leftoverGas = preTxResult.Gas
 		if preTxResult.Err != nil {
@@ -447,36 +443,39 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 				}
 			}
 
-			// set receipt
-			aspectCtx.EthTxContext().WithReceipt(&ethereum.Receipt{
-				Status:            status,
-				Bloom:             bloomReceipt,
-				Logs:              logs,
-				GasUsed:           gasUsed,
-				CumulativeGasUsed: cumulativeGasUsed,
-			})
-
-			// begin post tx aspect execution
-			postTxResult := djpm.AspectInstance().PostTxExecute(aspectCtx, msg.To, ctx.BlockHeight(), leftoverGas,
-				&asptypes.PostTxExecuteInput{
-					Tx: &asptypes.WithFromTxInput{
-						Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
-						To:   msg.To.Bytes(),
-						From: msg.From.Bytes(),
-					},
-					Block:   &asptypes.BlockInput{Number: &lastHeight},
-					Receipt: &asptypes.ReceiptInput{Status: &status},
+			// only trigger post tx execute if tx not reverted
+			if vmErr == nil {
+				// set receipt
+				aspectCtx.EthTxContext().WithReceipt(&ethereum.Receipt{
+					Status:            status,
+					Bloom:             bloomReceipt,
+					Logs:              logs,
+					GasUsed:           gasUsed,
+					CumulativeGasUsed: cumulativeGasUsed,
 				})
-			if postTxResult.Err != nil {
-				// overwrite vmErr if post tx reverted
-				if postTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
-					vmErr = vm.ErrOutOfGas
-				} else {
-					vmErr = postTxResult.Err
+
+				// begin post tx aspect execution
+				postTxResult := djpm.AspectInstance().PostTxExecute(aspectCtx, msg.From, *msg.To, msg.Data, ctx.BlockHeight(), leftoverGas, msg.Value,
+					&asptypes.PostTxExecuteInput{
+						Tx: &asptypes.WithFromTxInput{
+							Hash: aspectCtx.EthTxContext().TxContent().Hash().Bytes(),
+							To:   msg.To.Bytes(),
+							From: msg.From.Bytes(),
+						},
+						Block:   &asptypes.BlockInput{Number: &lastHeight},
+						Receipt: &asptypes.ReceiptInput{Status: &status},
+					}, aspectLogger)
+				if postTxResult.Err != nil {
+					// overwrite vmErr if post tx reverted
+					if postTxResult.Err.Error() == vm.ErrOutOfGas.Error() {
+						vmErr = vm.ErrOutOfGas
+					} else {
+						vmErr = postTxResult.Err
+					}
+					ret = postTxResult.Ret
 				}
-				ret = postTxResult.Ret
+				leftoverGas = postTxResult.Gas
 			}
-			leftoverGas = postTxResult.Gas
 		}
 	}
 
@@ -525,7 +524,6 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 
 	gasUsed := cosmos.MaxDec(minimumGasUsed, cosmos.NewDec(int64(temporaryGasUsed))).TruncateInt().Uint64()
 	// reset leftoverGas, to be used by the tracer
-	// nolint
 	leftoverGas = msg.GasLimit - gasUsed
 
 	return &txs.MsgEthereumTxResponse{

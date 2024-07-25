@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/emirpasic/gods/sets/hashset"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
+	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 var (
@@ -18,6 +18,7 @@ var (
 		asptypes.PRE_TX_EXECUTE_METHOD,
 		asptypes.POST_TX_EXECUTE_METHOD,
 		asptypes.OPERATION_METHOD,
+		asptypes.INIT_METHOD,
 	)
 )
 

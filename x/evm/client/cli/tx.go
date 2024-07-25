@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"os"
 
-	rpc "github.com/artela-network/artela/ethereum/rpc/types"
-	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/input"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 
+	rpc "github.com/artela-network/artela/ethereum/rpc/types"
+	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/types"
 )
 

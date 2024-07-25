@@ -118,7 +118,7 @@ func (h ArtelaProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHandl
 		return NoOpProcessProposal()
 	}
 
-	return func(ctx sdk.Context, req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+	return func(_ sdk.Context, req abci.RequestProcessProposal) abci.ResponseProcessProposal {
 		for _, txBytes := range req.Txs {
 			_, err := h.txVerifier.ProcessProposalVerifyTx(txBytes)
 			if err != nil {

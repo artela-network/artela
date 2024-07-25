@@ -3,25 +3,22 @@ package interfaces
 import (
 	"math/big"
 
-	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
-
-	ethereum "github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/artela-network/artela/x/evm/states"
-
 	"github.com/artela-network/artela-evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
+	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
 	evmtypes "github.com/artela-network/artela/x/evm/txs/support"
 	feemodule "github.com/artela-network/artela/x/fee/types"
 )
 
 // EVMKeeper defines the expected keeper interface used on the AnteHandler
-type EVMKeeper interface { // nolint: revive
+type EVMKeeper interface {
 	states.Keeper
 	DynamicFeeEVMKeeper
 

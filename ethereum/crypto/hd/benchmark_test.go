@@ -3,9 +3,9 @@ package hd
 import (
 	"testing"
 
-	"github.com/artela-network/artela/ethereum/types"
-
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+
+	"github.com/artela-network/artela/ethereum/types"
 )
 
 func BenchmarkEthSecp256k1Algo_Derive(b *testing.B) {

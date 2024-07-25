@@ -2,7 +2,6 @@ package types
 
 import (
 	"encoding/json"
-	_ "encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -12,19 +11,19 @@ import (
 	pq "github.com/emirpasic/gods/queues/priorityqueue"
 )
 
-func TestPriorityqueue(t *testing.T) {
+func TestPriorityQueue(t *testing.T) {
 	/*	a := BondAspect{AspectId: "1111", priority: 1}
 		b := BondAspect{AspectId: "22222", priority: -10}
 		c := BondAspect{AspectId: "3333", priority: 3}
 	*/
 	ma := make(map[string]interface{}, 2)
-	ma[AspectIdMapKey] = "1111"
+	ma[AspectIDMapKey] = "1111"
 	ma[PriorityMapKey] = 1
 	mb := make(map[string]interface{}, 2)
-	mb[AspectIdMapKey] = "2222"
+	mb[AspectIDMapKey] = "2222"
 	mb[PriorityMapKey] = -10
 	mc := make(map[string]interface{}, 2)
-	mc[AspectIdMapKey] = "3333"
+	mc[AspectIDMapKey] = "3333"
 	mc[PriorityMapKey] = 3
 
 	queue := pq.NewWith(ByMapKeyPriority) // empty
@@ -57,7 +56,7 @@ func TestPriorityqueue(t *testing.T) {
 	fmt.Println(newQueue.Values())
 }
 
-func TestTreemap(t *testing.T) {
+func TestTreemap(_ *testing.T) {
 	m := hashmap.New()
 	m.Put("a", "1")
 	m.Put("b", "2")
@@ -95,8 +94,8 @@ func TestTreemap(t *testing.T) {
 	fmt.Println(string(bytes))
 
 	comparator := treemap.NewWithIntComparator()
-	errJson := json.Unmarshal(bytes, &comparator)
-	if errJson != nil {
+	err = json.Unmarshal(bytes, &comparator)
+	if err != nil {
 		return
 	}
 	foundKey7, foundValue7 := comparator.Floor("90")

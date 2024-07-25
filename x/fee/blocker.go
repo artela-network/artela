@@ -3,14 +3,13 @@ package fee
 import (
 	"fmt"
 
-	"github.com/artela-network/artela/x/fee/keeper"
-
-	"github.com/artela-network/artela/x/fee/types"
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	sdkmath "cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/artela-network/artela/x/fee/keeper"
+	"github.com/artela-network/artela/x/fee/types"
 )
 
 // BeginBlock updates base fee

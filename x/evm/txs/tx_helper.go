@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/artela-network/artela-evm/vm"
-
 	sdkmath "cosmossdk.io/math"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/aspect-core/djpm"
 )
 
 var (
@@ -124,7 +124,7 @@ func (args *TransactionArgs) GetFrom() common.Address {
 	return *args.From
 }
 
-// GetData retrieves the transaction calldata. Input field is preferred.
+// GetData retrieves the transaction data. Input field is preferred.
 func (args *TransactionArgs) GetData() []byte {
 	if args.Input != nil {
 		return *args.Input
@@ -133,6 +133,28 @@ func (args *TransactionArgs) GetData() []byte {
 		return *args.Data
 	}
 	return nil
+}
+
+// GetValidationData retrieves the validation data if the call is for a customized validation.
+func (args *TransactionArgs) GetValidationData() []byte {
+	data := args.GetData()
+	validation, _, err := djpm.DecodeValidationAndCallData(data)
+	if err != nil {
+		// decode fail
+		return data
+	}
+	return validation
+}
+
+// GetCallData retrieves the call data if the call is for a customized validation.
+func (args *TransactionArgs) GetCallData() []byte {
+	data := args.GetData()
+	_, call, err := djpm.DecodeValidationAndCallData(data)
+	if err != nil {
+		// decode fail
+		return data
+	}
+	return call
 }
 
 // ToTransaction converts the arguments to an ethereum transaction.
@@ -296,7 +318,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (*
 	if args.Value != nil {
 		value = args.Value.ToInt()
 	}
-	data := args.GetData()
+	data := args.GetCallData()
 	var accessList ethereum.AccessList
 	if args.AccessList != nil {
 		accessList = *args.AccessList

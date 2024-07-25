@@ -6,19 +6,18 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-	"github.com/artela-network/artela/app/interfaces"
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/ethereum/go-ethereum/common"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
+	"github.com/artela-network/artela/app/interfaces"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/keeper"
 	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	evmmodule "github.com/artela-network/artela/x/evm/types"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // EthAccountVerificationDecorator validates an account balance checks
@@ -149,7 +148,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, 
 	evmParams := egcd.evmKeeper.GetParams(ctx)
 	evmDenom := evmParams.GetEvmDenom()
 	chainCfg := evmParams.GetChainConfig()
-	ethCfg := chainCfg.EthereumConfig(egcd.evmKeeper.ChainID())
+	ethCfg := chainCfg.EthereumConfig(ctx.BlockHeight(), egcd.evmKeeper.ChainID())
 
 	blockHeight := big.NewInt(ctx.BlockHeight())
 	homestead := ethCfg.IsHomestead(blockHeight)
@@ -265,7 +264,7 @@ func NewCanTransferDecorator(evmKeeper interfaces.EVMKeeper) CanTransferDecorato
 // see if the address can execute the transaction.
 func (ctd CanTransferDecorator) AnteHandle(ctx cosmos.Context, tx cosmos.Tx, simulate bool, next cosmos.AnteHandler) (cosmos.Context, error) {
 	params := ctd.evmKeeper.GetParams(ctx)
-	ethCfg := params.ChainConfig.EthereumConfig(ctd.evmKeeper.ChainID())
+	ethCfg := params.ChainConfig.EthereumConfig(ctx.BlockHeight(), ctd.evmKeeper.ChainID())
 
 	for _, msg := range tx.GetMsgs() {
 		msgEthTx, ok := msg.(*txs.MsgEthereumTx)

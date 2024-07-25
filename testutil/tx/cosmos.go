@@ -3,8 +3,6 @@ package tx
 import (
 	"math"
 
-	"github.com/artela-network/artela/ethereum/utils"
-
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -14,6 +12,7 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 
 	"github.com/artela-network/artela/app"
+	"github.com/artela-network/artela/ethereum/utils"
 )
 
 var (

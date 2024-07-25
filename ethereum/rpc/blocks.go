@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +11,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/artela-network/artela-evm/vm"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
@@ -19,7 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -29,6 +28,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
@@ -82,26 +82,33 @@ func (b *BackendImpl) HeaderByNumberOrHash(ctx context.Context,
 	return nil, errors.New("HeaderByNumberOrHash is not implemented")
 }
 
-func (b *BackendImpl) CurrentHeader() *ethtypes.Header {
+func (b *BackendImpl) CurrentHeader() (*ethtypes.Header, error) {
 	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
-	if err != nil || block == nil {
-		b.logger.Error("get CurrentHeader failed, error or block is nil", "error", err)
-		return nil
+	if err != nil {
+		return nil, err
 	}
-	return block.Header()
+	if block == nil || block.Header() == nil {
+		return nil, errors.New("current block header not found")
+	}
+	return block.Header(), nil
 }
 
 func (b *BackendImpl) CurrentBlock() *rpctypes.Block {
-	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
-	if err != nil {
-		b.logger.Error("get CurrentBlock failed", "error", err)
-		return nil
-	}
+	block, _ := b.currentBlock()
 	return block
 }
 
-func (b *BackendImpl) BlockByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
-	block, err := b.ArtBlockByNumber(context.Background(), number)
+func (b *BackendImpl) currentBlock() (*rpctypes.Block, error) {
+	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
+	if err != nil {
+		b.logger.Error("get CurrentBlock failed", "error", err)
+		return nil, err
+	}
+	return block, nil
+}
+
+func (b *BackendImpl) BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
+	block, err := b.ArtBlockByNumber(ctx, number)
 	if err != nil {
 		return nil, err
 	}
@@ -136,39 +143,39 @@ func (b *BackendImpl) BlockByHash(_ context.Context, hash common.Hash) (*rpctype
 	return b.BlockFromCosmosBlock(resBlock, blockRes)
 }
 
-func (b *BackendImpl) BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
+func (b *BackendImpl) BlockByNumberOrHash(_ context.Context, _ rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
 	return nil, errors.New("BlockByNumberOrHash is not implemented")
 }
 
 func (b *BackendImpl) StateAndHeaderByNumber(
-	ctx context.Context, number rpc.BlockNumber,
+	_ context.Context, number rpc.BlockNumber,
 ) (*state.StateDB, *ethtypes.Header, error) {
 	return nil, nil, errors.New("StateAndHeaderByNumber is not implemented")
 }
 
 func (b *BackendImpl) StateAndHeaderByNumberOrHash(
-	ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash,
+	_ context.Context, _ rpc.BlockNumberOrHash,
 ) (*state.StateDB, *ethtypes.Header, error) {
 	return nil, nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-func (b *BackendImpl) PendingBlockAndReceipts() (*ethtypes.Block, types.Receipts) {
+func (b *BackendImpl) PendingBlockAndReceipts() (*ethtypes.Block, ethtypes.Receipts) {
 	b.logger.Error("PendingBlockAndReceipts is not implemented")
 	return nil, nil
 }
 
 // GetReceipts get receipts by block hash
-func (b *BackendImpl) GetReceipts(_ context.Context, hash common.Hash) (types.Receipts, error) {
+func (b *BackendImpl) GetReceipts(_ context.Context, _ common.Hash) (ethtypes.Receipts, error) {
 	return nil, errors.New("GetReceipts is not implemented")
 }
 
-func (b *BackendImpl) GetTd(_ context.Context, hash common.Hash) *big.Int {
+func (b *BackendImpl) GetTd(_ context.Context, _ common.Hash) *big.Int {
 	b.logger.Error("GetTd is not implemented")
 	return nil
 }
 
-func (b *BackendImpl) GetEVM(ctx context.Context, msg *core.Message, state *state.StateDB,
-	header *ethtypes.Header, vmConfig *vm.Config, _ *vm.BlockContext,
+func (b *BackendImpl) GetEVM(_ context.Context, _ *core.Message, _ *state.StateDB,
+	_ *ethtypes.Header, _ *vm.Config, _ *vm.BlockContext,
 ) (*vm.EVM, func() error) {
 	return nil, func() error {
 		return errors.New("GetEVM is not impelemted")
@@ -241,8 +248,11 @@ func (b *BackendImpl) blockNumberFromCosmos(blockNrOrHash rpc.BlockNumberOrHash)
 		return rpc.BlockNumber(resBlock.Block.Height), nil
 	case blockNrOrHash.BlockNumber != nil:
 		if *blockNrOrHash.BlockNumber == rpc.LatestBlockNumber {
-			currentHeight := b.CurrentHeader().Number
-			return rpc.BlockNumber(currentHeight.Int64()), nil
+			currentHeader, err := b.CurrentHeader()
+			if err != nil {
+				return rpc.LatestBlockNumber, err
+			}
+			return rpc.BlockNumber(currentHeader.Number.Int64()), nil
 		}
 		return *blockNrOrHash.BlockNumber, nil
 	default:
@@ -335,7 +345,12 @@ func (b *BackendImpl) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethty
 
 		for _, attr := range event.Attributes {
 			if attr.Key == evmtypes.AttributeKeyEthereumBloom {
-				return ethtypes.BytesToBloom([]byte(attr.Value)), nil
+				encodedBloom, err := base64.StdEncoding.DecodeString(attr.Value)
+				if err != nil {
+					return ethtypes.Bloom{}, err
+				}
+
+				return ethtypes.BytesToBloom(encodedBloom), nil
 			}
 		}
 	}
@@ -511,11 +526,14 @@ func (b *BackendImpl) processBlock(
 
 	targetOneFeeHistory := &rpctypes.OneFeeHistory{}
 	targetOneFeeHistory.BaseFee = blockBaseFee
-	cfg := b.ChainConfig()
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil, err
+	}
 	if cfg.IsLondon(big.NewInt(blockHeight + 1)) {
-		header := b.CurrentHeader()
-		if header == nil {
-			return nil, errors.New("header does not exist")
+		header, err := b.CurrentHeader()
+		if err != nil {
+			return nil, err
 		}
 		targetOneFeeHistory.NextBaseFee = misc.CalcBaseFee(cfg, header)
 	} else {

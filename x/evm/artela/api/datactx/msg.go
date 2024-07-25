@@ -3,13 +3,13 @@ package datactx
 import (
 	"errors"
 
-	aspctx "github.com/artela-network/aspect-core/context"
-	artelatypes "github.com/artela-network/aspect-core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/core"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/artela-network/artela/x/evm/artela/types"
+	aspctx "github.com/artela-network/aspect-core/context"
+	artelatypes "github.com/artela-network/aspect-core/types"
 )
 
 type MessageContextFieldLoader func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message
@@ -37,23 +37,23 @@ func (c *MessageContext) registerLoaders() {
 		index := ethTxCtx.VmTracer().CurrentCallIndex()
 		return &artelatypes.UintData{Data: &index}
 	}
-	loaders[aspctx.MsgFrom] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
+	loaders[aspctx.MsgFrom] = func(_ *types.EthTxContext, message *core.Message) proto.Message {
 		return &artelatypes.BytesData{Data: message.From.Bytes()}
 	}
-	loaders[aspctx.MsgTo] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
+	loaders[aspctx.MsgTo] = func(_ *types.EthTxContext, message *core.Message) proto.Message {
 		return &artelatypes.BytesData{Data: message.To.Bytes()}
 	}
-	loaders[aspctx.MsgValue] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
+	loaders[aspctx.MsgValue] = func(_ *types.EthTxContext, message *core.Message) proto.Message {
 		return &artelatypes.BytesData{Data: message.Value.Bytes()}
 	}
-	loaders[aspctx.MsgInput] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
+	loaders[aspctx.MsgInput] = func(_ *types.EthTxContext, message *core.Message) proto.Message {
 		return &artelatypes.BytesData{Data: message.Data}
 	}
-	loaders[aspctx.MsgGas] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
+	loaders[aspctx.MsgGas] = func(_ *types.EthTxContext, message *core.Message) proto.Message {
 		gasLimit := message.GasLimit
 		return &artelatypes.UintData{Data: &gasLimit}
 	}
-	loaders[aspctx.MsgResultRet] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
+	loaders[aspctx.MsgResultRet] = func(ethTxCtx *types.EthTxContext, _ *core.Message) proto.Message {
 		tracer := ethTxCtx.VmTracer()
 		callIdx := tracer.CurrentCallIndex()
 		currentCall := tracer.CallTree().FindCall(callIdx)
@@ -70,7 +70,7 @@ func (c *MessageContext) registerLoaders() {
 		result := message.GasLimit - currentCall.RemainingGas
 		return &artelatypes.UintData{Data: &result}
 	}
-	loaders[aspctx.MsgResultError] = func(ethTxCtx *types.EthTxContext, message *core.Message) proto.Message {
+	loaders[aspctx.MsgResultError] = func(ethTxCtx *types.EthTxContext, _ *core.Message) proto.Message {
 		tracer := ethTxCtx.VmTracer()
 		callIdx := tracer.CurrentCallIndex()
 		currentCall := tracer.CallTree().FindCall(callIdx)

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/artela-network/artela/x/evm/txs"
-
 	sdkmath "cosmossdk.io/math"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -17,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 // TransactionArgs represents the arguments to construct a new transaction
@@ -74,7 +74,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		if err != nil {
 			return err
 		}
-		args.Nonce = (*hexutil.Uint64)(nonce)
+		args.Nonce = nonce
 		// TODO set nonce
 	}
 	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
@@ -141,7 +141,11 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 		return nil
 	}
 	// Now attempt to fill in default value depending on whether London is active or not.
-	head := b.CurrentHeader()
+	head, err := b.CurrentHeader()
+	if err != nil {
+		return err
+	}
+
 	if b.ChainConfig().IsLondon(head.Number) {
 		// London is active, set maxPriorityFeePerGas and maxFeePerGas.
 		if err := args.setLondonFeeDefaults(ctx, head, b); err != nil {
@@ -162,7 +166,7 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 }
 
 // setLondonFeeDefaults fills in reasonable default fee values for unspecified fields.
-func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
+func (args *TransactionArgs) setLondonFeeDefaults(_ context.Context, head *types.Header, b Backend) error {
 	// Set maxPriorityFeePerGas if it is missing.
 	if args.MaxPriorityFeePerGas == nil {
 		tip, err := b.SuggestGasTipCap(head.BaseFee)

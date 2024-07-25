@@ -112,6 +112,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/artela-network/artela/app/upgrades/v047rc7"
+	"github.com/artela-network/artela/app/upgrades/v048rc8"
 	evmmodule "github.com/artela-network/artela/x/evm"
 	evmmodulekeeper "github.com/artela-network/artela/x/evm/keeper"
 	evmmoduletypes "github.com/artela-network/artela/x/evm/types"
@@ -121,15 +122,18 @@ import (
 
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
-	aspecttypes "github.com/artela-network/aspect-core/types"
-
 	"github.com/artela-network/artela/app/ante"
 	ethante "github.com/artela-network/artela/app/ante/evm"
 	appparams "github.com/artela-network/artela/app/params"
 	"github.com/artela-network/artela/app/post"
+	"github.com/artela-network/artela/common"
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
+	aspecttypes "github.com/artela-network/aspect-core/types"
+
+	// do not remove this, this will register the native evm tracers
+	_ "github.com/artela-network/artela-evm/tracers/native"
 )
 
 const (
@@ -222,7 +226,6 @@ func init() {
 
 	// manually update the power reduction
 	cosmos.DefaultPowerReduction = artela.PowerReduction
-
 }
 
 // Artela extends an ABCI application, but with most of its parameters exported.
@@ -356,7 +359,7 @@ func NewArtela(
 	)
 
 	// set the runner cache capacity of aspect-runtime
-	aspecttypes.InitRuntimePool(context.Background(), app.Logger(), cast.ToInt32(appOpts.Get(srvflags.ApplyPoolSize)), cast.ToInt32(appOpts.Get(srvflags.QueryPoolSize)))
+	aspecttypes.InitRuntimePool(context.Background(), common.WrapLogger(app.Logger()), cast.ToInt32(appOpts.Get(srvflags.ApplyPoolSize)), cast.ToInt32(appOpts.Get(srvflags.QueryPoolSize)))
 
 	// grant capabilities for the ibc and ibc-transfer modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)
@@ -996,11 +999,19 @@ func (app *Artela) ModuleManager() *module.Manager {
 }
 
 func (app *Artela) setupUpgradeHandlers() {
-	// v16 upgrade handler
+	// v0.4.7-rc7 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v047rc7.UpgradeName,
 		v047rc7.CreateUpgradeHandler(
 			app.mm, app.configurator, app.BankKeeper, app.AccountKeeper,
+		),
+	)
+
+	// v0.4.8-rc8 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v048rc8.UpgradeName,
+		v048rc8.CreateUpgradeHandler(
+			app.mm, app.configurator,
 		),
 	)
 
@@ -1021,6 +1032,8 @@ func (app *Artela) setupUpgradeHandlers() {
 	switch upgradeInfo.Name {
 	case v047rc7.UpgradeName:
 		// no store upgrades
+	case v048rc8.UpgradeName:
+		// no store upgrades in v048rc8
 	default:
 		// no-op
 	}

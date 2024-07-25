@@ -3,9 +3,9 @@ package post
 import (
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
-	cosmos "github.com/cosmos/cosmos-sdk/types"
 	// vestingtypes "github.com/artela-network/artela/x/vesting/types"
 	"github.com/artela-network/artela/app/interfaces"
 	evmpost "github.com/artela-network/artela/app/post/evm"

@@ -1,26 +1,15 @@
 package keeper
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math/big"
-
-	"github.com/artela-network/aspect-core/djpm"
-
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-
-	"github.com/artela-network/artela/x/evm/artela/api"
-	"github.com/artela-network/artela/x/evm/artela/provider"
-
-	"github.com/artela-network/artela-evm/vm"
-
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/states"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
+	"sync"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -31,10 +20,18 @@ import (
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
-	artelaType "github.com/artela-network/aspect-core/types"
-
+	"github.com/artela-network/artela-evm/vm"
+	common2 "github.com/artela-network/artela/common"
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/artela/api"
+	"github.com/artela-network/artela/x/evm/artela/provider"
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/djpm"
+	artelaType "github.com/artela-network/aspect-core/types"
 )
 
 // Keeper grants access to the EVM module states and implements the go-ethereum StateDB interface.
@@ -84,6 +81,9 @@ type Keeper struct {
 
 	// store the block context, this will be fresh every block.
 	BlockContext *artvmtype.EthBlockContext
+
+	// cache of aspect sig
+	VerifySigCache *sync.Map
 }
 
 // NewKeeper generates new evm module keeper
@@ -131,10 +131,11 @@ func NewKeeper(
 		ss:                   subSpace,
 		aspectRuntimeContext: aspectRuntimeContext,
 		aspect:               aspect,
+		VerifySigCache:       &sync.Map{},
 	}
 	k.WithChainID(app.ChainId())
 
-	djpm.NewAspect(aspect, k.logger)
+	djpm.NewAspect(aspect, common2.WrapLogger(k.logger.With("module", "aspect")))
 	api.InitAspectGlobals(k)
 
 	// init aspect host api factory
@@ -149,7 +150,6 @@ func NewKeeper(
 	artelaType.GetAspectContext = k.GetAspectContext
 	artelaType.SetAspectContext = k.SetAspectContext
 
-	artelaType.GetAspectPaymaster = aspect.GetAspectAccount
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	artelaType.IsCommit = k.IsCommit
 	return k
@@ -208,10 +208,15 @@ func (k Keeper) GetAuthority() cosmos.AccAddress {
 
 // EmitBlockBloomEvent emit block bloom events
 func (k Keeper) EmitBlockBloomEvent(ctx cosmos.Context, bloom ethereum.Bloom) {
+	encodedBloom := base64.StdEncoding.EncodeToString(bloom.Bytes())
+
+	sprintf := fmt.Sprintf("emit block event %d bloom %s header %d, ", len(bloom.Bytes()), encodedBloom, ctx.BlockHeight())
+	k.Logger(ctx).Info(sprintf)
+
 	ctx.EventManager().EmitEvent(
 		cosmos.NewEvent(
 			types.EventTypeBlockBloom,
-			cosmos.NewAttribute(types.AttributeKeyEthereumBloom, string(bloom.Bytes())),
+			cosmos.NewAttribute(types.AttributeKeyEthereumBloom, encodedBloom),
 		),
 	)
 }
@@ -236,8 +241,8 @@ func (k Keeper) SetBlockBloomTransient(ctx cosmos.Context, bloom *big.Int) {
 	store.Set(heightBz, bloom.Bytes())
 
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("setState: SetBlockBloomTransient"),
-		"block-height", fmt.Sprintf("%d", ctx.BlockHeight()),
+		"setState: SetBlockBloomTransient",
+		"block-height", ctx.BlockHeight(),
 		"bloom", bloom.String(),
 	)
 }
@@ -252,9 +257,9 @@ func (k Keeper) SetTxIndexTransient(ctx cosmos.Context, index uint64) {
 	store.Set(types.KeyPrefixTransientTxIndex, cosmos.Uint64ToBigEndian(index))
 
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("setState: SetTxIndexTransient"),
+		"setState: SetTxIndexTransient",
 		"key", "KeyPrefixTransientTxIndex",
-		"index", fmt.Sprintf("%d", index),
+		"index", index,
 	)
 }
 
@@ -291,9 +296,9 @@ func (k Keeper) SetLogSizeTransient(ctx cosmos.Context, logSize uint64) {
 	store.Set(types.KeyPrefixTransientLogSize, cosmos.Uint64ToBigEndian(logSize))
 
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("setState: SetLogSizeTransient"),
+		"setState: SetLogSizeTransient",
 		"key", "KeyPrefixTransientLogSize",
-		"logSize", fmt.Sprintf("%d", logSize),
+		"logSize", logSize,
 	)
 }
 
@@ -440,7 +445,7 @@ func (k Keeper) SetTransientGasUsed(ctx cosmos.Context, gasUsed uint64) {
 	store.Set(types.KeyPrefixTransientGasUsed, bz)
 
 	k.Logger(ctx).Debug(
-		fmt.Sprintf("setState: SetTransientGasUsed, set"),
+		"setState: SetTransientGasUsed, set",
 		"key", "KeyPrefixTransientGasUsed",
 		"gasUsed", fmt.Sprintf("%d", gasUsed),
 	)

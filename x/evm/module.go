@@ -8,11 +8,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
-
 	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -22,11 +18,13 @@ import (
 
 	"github.com/artela-network/artela/x/evm/client/cli"
 	"github.com/artela-network/artela/x/evm/keeper"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 )
 
 // TODO mark ConsensusVersion defines the current x/evm module consensus version.
-const ConsensusVersion = 6
+const ConsensusVersion = 7
 
 var (
 	_ module.AppModule      = AppModule{}
@@ -120,11 +118,14 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	txs.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	m := keeper.NewMigrator(*am.keeper)
-	err := cfg.RegisterMigration(types.ModuleName, 5, m.Migrate5to6)
-	if err != nil {
+
+	if err := cfg.RegisterMigration(types.ModuleName, 5, m.Migrate5to6); err != nil {
 		panic(err)
 	}
 
+	if err := cfg.RegisterMigration(types.ModuleName, 6, m.Migrate6to7); err != nil {
+		panic(err)
+	}
 }
 
 // NewAppModule creates a new AppModule object

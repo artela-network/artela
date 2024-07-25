@@ -4,17 +4,17 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/artela-network/artela/ethereum/utils"
-	"github.com/ethereum/go-ethereum/params"
-
 	errorsmod "cosmossdk.io/errors"
-	artelatype "github.com/artela-network/artela/x/evm/artela/types"
-	"github.com/artela-network/artela/x/evm/states"
-	"github.com/artela-network/aspect-core/djpm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/artela-network/artela/ethereum/utils"
+	artelatype "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/aspect-core/djpm"
 )
 
 func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {
@@ -33,7 +33,7 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 	chainID := k.ChainID()
 	evmParams := k.GetParams(ctx)
 	chainCfg := evmParams.GetChainConfig()
-	ethCfg := chainCfg.EthereumConfig(chainID)
+	ethCfg := chainCfg.EthereumConfig(ctx.BlockHeight(), chainID)
 	blockNum := big.NewInt(ctx.BlockHeight())
 	signer := ethereum.MakeSigner(ethCfg, blockNum, uint64(ctx.BlockTime().Unix()))
 
@@ -56,12 +56,38 @@ func (k *Keeper) VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common
 }
 
 func (k *Keeper) tryAspectVerifier(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error) {
+	value, ok := k.VerifySigCache.Load(tx.Hash())
+	if ok {
+		retValue := value.(struct {
+			sender   common.Address
+			callData []byte
+			err      error
+		})
+		return retValue.sender, retValue.callData, retValue.err
+	}
+
 	// retrieve aspectCtx from sdk.Context
 	aspectCtx, ok := ctx.Value(artelatype.AspectContextKey).(*artelatype.AspectRuntimeContext)
 	if !ok {
-		return common.Address{}, []byte{}, errors.New("ApplyMessageWithConfig: wrap *artelatype.AspectRuntimeContext failed")
+		return common.Address{}, []byte{}, errors.New("aspect transaction verification failed")
 	}
-	return djpm.AspectInstance().GetSenderAndCallData(aspectCtx, aspectCtx.EthBlockContext().BlockHeader().Number.Int64(), tx)
+
+	sender, call, err := djpm.AspectInstance().GetSenderAndCallData(aspectCtx, aspectCtx.EthBlockContext().BlockHeader().Number.Int64(), tx)
+
+	// not cache for eth_all, which hash is empty
+	if tx.Hash() != (common.Hash{}) {
+		k.VerifySigCache.Store(tx.Hash(), struct {
+			sender   common.Address
+			callData []byte
+			err      error
+		}{
+			sender:   sender,
+			callData: call,
+			err:      err,
+		})
+	}
+
+	return sender, call, err
 }
 
 func (k *Keeper) MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer {

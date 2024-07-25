@@ -3,17 +3,18 @@ package api
 import (
 	"context"
 	"errors"
+
 	"github.com/emirpasic/gods/sets/hashset"
 
-	"github.com/artela-network/artela-evm/vm"
-	asptypes "github.com/artela-network/aspect-core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/log"
 
+	"github.com/artela-network/artela-evm/vm"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	types "github.com/artela-network/artela/x/evm/txs"
+	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 var (
@@ -25,11 +26,7 @@ var (
 		asptypes.PRE_TX_EXECUTE_METHOD,
 		asptypes.POST_TX_EXECUTE_METHOD,
 		asptypes.OPERATION_METHOD,
-	)
-
-	evmJITCallConstrainedJoinPoints = hashset.New(
-		asptypes.PRE_CONTRACT_CALL_METHOD,
-		asptypes.POST_CONTRACT_CALL_METHOD,
+		asptypes.INIT_METHOD,
 	)
 )
 
@@ -100,8 +97,7 @@ func (e *evmHostApi) JITCall(ctx *asptypes.RunnerContext, request *asptypes.JitI
 	// determine jit call stage
 	defBool := false
 	switch asptypes.PointCut(ctx.Point) {
-	case asptypes.PRE_TX_EXECUTE_METHOD, asptypes.POST_TX_EXECUTE_METHOD,
-		asptypes.PRE_CONTRACT_CALL_METHOD, asptypes.POST_CONTRACT_CALL_METHOD:
+	case asptypes.PRE_CONTRACT_CALL_METHOD, asptypes.POST_CONTRACT_CALL_METHOD:
 		// FIXME: get leftover gas from last evm
 		resp, gas, err := e.aspectCtx.JITManager().Submit(ctx.Ctx, ctx.AspectId, ctx.Gas, request)
 		if err != nil {

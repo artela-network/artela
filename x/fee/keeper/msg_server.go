@@ -4,9 +4,10 @@ import (
 	"context"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela/x/fee/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	govmodule "github.com/cosmos/cosmos-sdk/x/gov/types"
+
+	"github.com/artela-network/artela/x/fee/types"
 )
 
 // UpdateParams implements the gRPC MsgServer interface. When an UpdateParams

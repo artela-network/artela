@@ -37,7 +37,6 @@ import (
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/ethereum/server/config"
-	"github.com/artela-network/artela/ethereum/types"
 	ethereumtypes "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
@@ -158,13 +157,26 @@ func (b *BackendImpl) SuggestGasTipCap(baseFee *big.Int) (*big.Int, error) {
 }
 
 func (b *BackendImpl) ChainConfig() *params.ChainConfig {
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil
+	}
+	return cfg
+}
+
+func (b *BackendImpl) chainConfig() (*params.ChainConfig, error) {
 	params, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{})
 	if err != nil {
 		b.logger.Info("queryClient.Params failed", err)
-		return nil
+		return nil, err
 	}
 
-	return params.Params.ChainConfig.EthereumConfig(b.chainID)
+	currentHeader, err := b.CurrentHeader()
+	if err != nil {
+		return nil, err
+	}
+
+	return params.Params.ChainConfig.EthereumConfig(currentHeader.Number.Int64(), b.chainID), nil
 }
 
 func (b *BackendImpl) FeeHistory(blockCount uint64, lastBlock rpc.BlockNumber,
@@ -256,8 +268,8 @@ func (b *BackendImpl) FeeHistory(blockCount uint64, lastBlock rpc.BlockNumber,
 	return &feeHistory, nil
 }
 
-func (b *BackendImpl) ChainDb() ethdb.Database { //nolint:stylecheck // conforms to interface.
-	return ethdb.Database(nil)
+func (b *BackendImpl) ChainDb() ethdb.Database {
+	return nil
 }
 
 func (b *BackendImpl) ExtRPCEnabled() bool {
@@ -369,7 +381,7 @@ func (b *BackendImpl) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int
 		for i := len(blockRes.BeginBlockEvents) - 1; i >= 0; i-- {
 			evt := blockRes.BeginBlockEvents[i]
 			if evt.Type == feetypes.EventTypeFee && len(evt.Attributes) > 0 {
-				baseFee, err := strconv.ParseInt(string(evt.Attributes[0].Value), 10, 64)
+				baseFee, err := strconv.ParseInt(evt.Attributes[0].Value, 10, 64)
 				if err == nil {
 					return big.NewInt(baseFee), nil
 				}
@@ -396,7 +408,7 @@ func (b *BackendImpl) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 		result *big.Int
 		err    error
 	)
-	if head := b.CurrentHeader(); head.BaseFee != nil {
+	if head, err := b.CurrentHeader(); err == nil && head.BaseFee != nil {
 		result, err = b.SuggestGasTipCap(head.BaseFee)
 		if err != nil {
 			return nil, err
@@ -422,14 +434,14 @@ func (b *BackendImpl) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 func (b *BackendImpl) RPCMinGasPrice() int64 {
 	evmParams, err := b.queryClient.Params(b.ctx, &txs.QueryParamsRequest{})
 	if err != nil {
-		return types.DefaultGasPrice
+		return ethereumtypes.DefaultGasPrice
 	}
 
 	minGasPrice := b.appConf.GetMinGasPrices()
 	amt := minGasPrice.AmountOf(evmParams.Params.EvmDenom).TruncateInt64()
 	if amt == 0 {
 		b.logger.Debug("amt is 0, return DefaultGasPrice")
-		return types.DefaultGasPrice
+		return ethereumtypes.DefaultGasPrice
 	}
 
 	return amt

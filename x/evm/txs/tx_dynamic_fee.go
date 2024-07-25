@@ -3,20 +3,16 @@ package txs
 import (
 	"math/big"
 
-	"github.com/artela-network/aspect-core/djpm"
-
-	"github.com/artela-network/artela/ethereum/utils"
-
-	sdkmath "cosmossdk.io/math"
-
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/types"
-
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/djpm"
 )
 
 func newDynamicFeeTx(tx *ethereum.Transaction) (*DynamicFeeTx, error) {

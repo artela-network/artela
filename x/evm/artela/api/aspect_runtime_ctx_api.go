@@ -5,22 +5,20 @@ import (
 	"errors"
 	"fmt"
 
-	aspctx "github.com/artela-network/aspect-core/context"
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/emirpasic/gods/sets/hashset"
 
-	asptypes "github.com/artela-network/aspect-core/types"
+	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/artela-network/artela/x/evm/artela/api/datactx"
 	"github.com/artela-network/artela/x/evm/artela/types"
+	aspctx "github.com/artela-network/aspect-core/context"
+	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 var (
-	_ asptypes.RuntimeContextHostAPI = (*aspectRuntimeContextHostAPI)(nil)
-)
-
-var (
-	ctxKeyConstraints = map[asptypes.PointCut]*hashset.Set{
+	_                 asptypes.RuntimeContextHostAPI = (*aspectRuntimeContextHostAPI)(nil)
+	ctxKeyConstraints                                = map[asptypes.PointCut]*hashset.Set{
+		asptypes.INIT_METHOD:               hashset.New(aspctx.InitKeys...),
 		asptypes.OPERATION_METHOD:          hashset.New(aspctx.OperationKeys...),
 		asptypes.VERIFY_TX:                 hashset.New(aspctx.VerifyTxCtxKeys...),
 		asptypes.PRE_TX_EXECUTE_METHOD:     hashset.New(aspctx.PreTxCtxKeys...),

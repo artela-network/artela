@@ -7,25 +7,22 @@ import (
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
-	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
-	ctypes "github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/artela-network/artela/ethereum/types"
-
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
+	"github.com/artela-network/artela/common/aspect"
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
+	"github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
@@ -104,6 +101,7 @@ func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*
 	if !ok {
 		return nil, errors.New("invalid ethereum tx")
 	}
+	msg.From = res.Sender
 
 	blockRes, err := b.CosmosBlockResultByNumber(&block.Block.Height)
 	if err != nil {
@@ -132,17 +130,22 @@ func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*
 		b.logger.Error("failed to fetch Base Fee from prunned block. Check node prunning configuration", "height", blockRes.Height, "error", err)
 	}
 
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	return ethapi.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.BlockID.Hash.Bytes()),
 		uint64(res.Height),
 		uint64(res.EthTxIndex),
 		baseFee,
-		b.ChainConfig(),
+		cfg,
 	), nil
 }
 
-func (b *BackendImpl) GetPoolTransactions() (ctypes.Transactions, error) {
+func (b *BackendImpl) GetPoolTransactions() (ethtypes.Transactions, error) {
 	b.logger.Debug("called eth.rpc.backend.GetPoolTransactions")
 	return nil, errors.New("GetPoolTransactions is not implemented")
 }
@@ -162,14 +165,14 @@ func (b *BackendImpl) Stats() (int, int) {
 }
 
 func (b *BackendImpl) TxPoolContent() (
-	map[common.Address]ctypes.Transactions, map[common.Address]ctypes.Transactions,
+	map[common.Address]ethtypes.Transactions, map[common.Address]ethtypes.Transactions,
 ) {
 	b.logger.Error("TxPoolContent is not implemented")
 	return nil, nil
 }
 
 func (b *BackendImpl) TxPoolContentFrom(addr common.Address) (
-	ctypes.Transactions, ctypes.Transactions,
+	ethtypes.Transactions, ethtypes.Transactions,
 ) {
 	return nil, nil
 }
@@ -180,12 +183,21 @@ func (b *BackendImpl) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Sub
 
 // Version returns the current ethereum protocol version.
 func (b *BackendImpl) Version() string {
-	chainID := b.ChainConfig().ChainID
-	if chainID == nil {
-		b.logger.Error("eth.rpc.backend.Version", "ChainID is nil")
-		return "-1"
+	v, _ := b.version()
+	return v
+}
+
+func (b *BackendImpl) version() (string, error) {
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return "", err
 	}
-	return chainID.String()
+
+	if cfg.ChainID == nil {
+		b.logger.Error("eth.rpc.backend.Version", "ChainID is nil")
+		return "", errors.New("chain id is not valid")
+	}
+	return cfg.ChainID.String(), nil
 }
 
 func (b *BackendImpl) Engine() consensus.Engine {
@@ -250,11 +262,6 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 		status = hexutil.Uint(ethtypes.ReceiptStatusSuccessful)
 	}
 
-	from, err := b.GetSender(ethMsg, b.chainID)
-	if err != nil {
-		return nil, err
-	}
-
 	// parse tx logs from events
 	msgIndex := int(res.MsgIndex)
 	logs, _ := utils.TxLogsFromEvents(blockRes.TxsResults[res.TxIndex].Events, msgIndex)
@@ -294,7 +301,7 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 		"transactionIndex": hexutil.Uint64(res.EthTxIndex),
 
 		// sender and receiver (contract or EOA) addreses
-		"from": from,
+		"from": res.Sender,
 		"to":   txData.GetTo(),
 		"type": hexutil.Uint(ethMsg.AsTransaction().Type()),
 	}
@@ -304,8 +311,8 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 	}
 
 	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
-	if txData.GetTo() == nil {
-		receipt["contractAddress"] = crypto.CreateAddress(from, txData.GetNonce())
+	if txData.GetTo() == nil || aspect.IsAspectDeploy(txData.GetTo(), txData.GetData()) {
+		receipt["contractAddress"] = crypto.CreateAddress(common.HexToAddress(res.Sender), txData.GetNonce())
 	}
 
 	if dynamicTx, ok := txData.(*txs.DynamicFeeTx); ok {
@@ -343,11 +350,6 @@ func (b *BackendImpl) queryCosmosTxIndexer(query string, txGetter func(*rpctypes
 	return rpctypes.ParseTxIndexerResult(txResult, tx, txGetter)
 }
 
-// nolint:unused
-func (b *BackendImpl) txResult(ctx context.Context, hash common.Hash, prove bool) (*tmrpctypes.ResultTx, error) {
-	return b.clientCtx.Client.Tx(ctx, hash.Bytes(), prove)
-}
-
 // getTransactionByHashPending find pending tx from mempool
 func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.RPCTransaction, error) {
 	hexTx := txHash.Hex()
@@ -365,6 +367,10 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.R
 			continue
 		}
 
+		cfg, err := b.chainConfig()
+		if err != nil {
+			return nil, err
+		}
 		if msg.Hash == hexTx {
 			// use zero block values since it's not included in a block yet
 			rpctx := ethapi.NewTransactionFromMsg(
@@ -373,7 +379,7 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.R
 				uint64(0),
 				uint64(0),
 				nil,
-				b.ChainConfig(),
+				cfg,
 			)
 			return rpctx, nil
 		}

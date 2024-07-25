@@ -5,12 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/ethereum/utils"
-
-	// rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
-	"github.com/artela-network/artela/x/evm/types"
-
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -25,6 +19,10 @@ import (
 	cmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/artela/x/evm/types"
 )
 
 var (
@@ -326,15 +324,14 @@ func (msg *MsgEthereumTx) GetSender(chainID *big.Int) (from common.Address, err 
 	tx := msg.AsTransaction()
 	// retrieve sender info from aspect if tx is not signed
 	if utils.IsCustomizedVerification(tx) {
-
 		// TODO, more checkings, should never reach here
 		return common.Address{}, errors.New("failed to get sender of customized tx")
-	} else {
-		signer := ethereum.LatestSignerForChainID(chainID)
-		from, err = signer.Sender(tx)
-		if err != nil {
-			return common.Address{}, err
-		}
+	}
+
+	signer := ethereum.LatestSignerForChainID(chainID)
+	from, err = signer.Sender(tx)
+	if err != nil {
+		return common.Address{}, err
 	}
 
 	msg.From = from.Hex()

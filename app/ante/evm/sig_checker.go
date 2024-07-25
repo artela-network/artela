@@ -1,13 +1,13 @@
 package evm
 
 import (
-	"github.com/artela-network/artela/app/interfaces"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/cosmos/cosmos-sdk/baseapp"
-
 	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/artela-network/artela/app/interfaces"
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 // EthSigVerificationDecorator validates an ethereum signatures

@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"math/big"
 
+	cosmos "github.com/cosmos/cosmos-sdk/types"
 	paramsmodule "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	"github.com/artela-network/artela/ethereum/utils"
-
-	"github.com/artela-network/artela-evm/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	cosmos "github.com/cosmos/cosmos-sdk/types"
+	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/artela/ethereum/utils"
 )
 
 var (

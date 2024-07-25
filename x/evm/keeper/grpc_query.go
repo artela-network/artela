@@ -8,30 +8,26 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"cosmossdk.io/math"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/artela-network/artela-evm/tracers"
-	"github.com/artela-network/artela-evm/tracers/logger"
-	"github.com/artela-network/artela-evm/vm"
-
-	artela "github.com/artela-network/artela/ethereum/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
+	"github.com/artela-network/artela-evm/tracers"
+	"github.com/artela-network/artela-evm/tracers/logger"
+	"github.com/artela-network/artela-evm/vm"
+	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/artela/provider"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	"github.com/artela-network/artela/x/evm/types"
 	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 )
@@ -262,7 +258,8 @@ func (k Keeper) EthCall(c context.Context, req *txs.EthCallRequest) (*txs.MsgEth
 	defer aspectCtx.Destroy()
 
 	// pass false to not commit StateDB
-	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
+	isCustomVerification := len(args.GetValidationData()) > 0
+	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig, isCustomVerification)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -324,13 +321,6 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 		return nil, status.Error(codes.Internal, "failed to load evm config")
 	}
 
-	// Aspect Runtime Context Lifecycle: create aspect context.
-	// This marks the beginning of running an aspect of EstimateGas, creating the aspect context,
-	// and establishing the link with the SDK context.
-	ctx, aspectCtx := k.WithAspectContext(ctx, txMsg.AsTransaction(), cfg,
-		artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
-	defer aspectCtx.Destroy()
-
 	// ApplyMessageWithConfig expect correct nonce set in msg
 	nonce := k.GetNonce(ctx, args.GetFrom())
 	args.Nonce = (*hexutil.Uint64)(&nonce)
@@ -346,12 +336,23 @@ func (k Keeper) EstimateGas(c context.Context, req *txs.EthCallRequest) (*txs.Es
 	// NOTE: the errors from the executable below should be consistent with go-ethereum,
 	// so we don't wrap them with the gRPC status code
 
+	isCustomVerification := len(args.GetValidationData()) > 0
+
 	// Create a helper to check if a gas allowance results in an executable txs
 	executable := func(gas uint64) (vmError bool, rsp *txs.MsgEthereumTxResponse, err error) {
+		// need to create a cache context here to avoid state change affecting each other
+		tmpCtx, _ := ctx.CacheContext()
+		// Aspect Runtime Context Lifecycle: create aspect context.
+		// This marks the beginning of running an aspect of EstimateGas, creating the aspect context,
+		// and establishing the link with the SDK context.
+		cosmosCtx, aspectCtx := k.WithAspectContext(tmpCtx, txMsg.AsTransaction(), cfg,
+			artelatypes.NewEthBlockContextFromQuery(tmpCtx, k.clientContext))
+		defer aspectCtx.Destroy()
+
 		// update the message with the new gas value
 		msg.GasLimit = gas
 		// pass false to not commit StateDB
-		rsp, err = k.ApplyMessageWithConfig(ctx, aspectCtx, msg, nil, false, cfg, txConfig)
+		rsp, err = k.ApplyMessageWithConfig(cosmosCtx, aspectCtx, msg, nil, false, cfg, txConfig, isCustomVerification)
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) {
 				return true, nil, nil // Special case, raise gas limit
@@ -430,20 +431,23 @@ func (k Keeper) TraceTx(c context.Context, req *txs.QueryTraceTxRequest) (*txs.Q
 		// and establishing the link with the SDK context.
 		ctx, aspectCtx := k.WithAspectContext(ctx, ethTx, cfg,
 			artelatypes.NewEthBlockContextFromQuery(ctx, k.clientContext))
-		defer aspectCtx.Destroy()
 
 		msg, err := txs.ToMessage(ethTx, signer, cfg.BaseFee)
 		if err != nil {
+			aspectCtx.Destroy()
 			continue
 		}
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
 
-		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig)
+		isCustomVerification := k.isCustomizedVerification(ethTx)
+		rsp, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, txs.NewNoOpTracer(), true, cfg, txConfig, isCustomVerification)
 		if err != nil {
+			aspectCtx.Destroy()
 			continue
 		}
 
+		aspectCtx.Destroy()
 		txConfig.LogIndex += uint(len(rsp.Logs))
 	}
 
@@ -579,7 +583,7 @@ func (k *Keeper) traceTx(
 	}
 
 	if traceConfig.Overrides != nil {
-		overrides = traceConfig.Overrides.EthereumConfig(cfg.ChainConfig.ChainID)
+		overrides = traceConfig.Overrides.EthereumConfig(ctx.BlockHeight(), cfg.ChainConfig.ChainID)
 	}
 
 	logConfig := logger.Config{
@@ -624,7 +628,8 @@ func (k *Keeper) traceTx(
 		}
 	}()
 
-	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig)
+	isCustomVerification := k.isCustomizedVerification(tx)
+	res, err := k.ApplyMessageWithConfig(ctx, aspectCtx, msg, tracer, commitMessage, cfg, txConfig, isCustomVerification)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}
@@ -642,7 +647,7 @@ func (k Keeper) BaseFee(c context.Context, _ *txs.QueryBaseFeeRequest) (*txs.Que
 	ctx := cosmos.UnwrapSDKContext(c)
 
 	params := k.GetParams(ctx)
-	ethCfg := params.ChainConfig.EthereumConfig(k.eip155ChainID)
+	ethCfg := params.ChainConfig.EthereumConfig(ctx.BlockHeight(), k.eip155ChainID)
 	baseFee := k.GetBaseFee(ctx, ethCfg)
 
 	res := &txs.QueryBaseFeeResponse{}

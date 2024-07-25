@@ -70,7 +70,6 @@ func (m *memEventBus) RemoveTopic(name string) {
 	m.topicsMux.Lock()
 	defer m.topicsMux.Unlock()
 	delete(m.topics, name)
-
 }
 
 func (m *memEventBus) Subscribe(name string) (<-chan coretypes.ResultEvent, UnsubscribeFunc, error) {

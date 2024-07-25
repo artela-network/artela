@@ -23,7 +23,19 @@ command -v jq >/dev/null 2>&1 || {
 }
 
 # remove existing daemon and client
-rm -rf ~/.artelad*
+folder_path="$HOME/.artelad"
+echo folder_path
+if [ -d "$folder_path" ]; then
+  read -p "Are you sure you want to delete the folder '$folder_path' ? (y/n): " confirm
+
+  if [ "$confirm" == "y" ]; then
+    rm -rf "$folder_path"
+    echo "The folder has been deleted."
+  else
+    echo "Operation canceled."
+    exit 1
+  fi
+fi
 
 echo artelad config keyring-backend $KEYRING
 artelad config keyring-backend $KEYRING
@@ -44,6 +56,7 @@ artelad init $MONIKER --chain-id $CHAINID
 cat $HOME/.artelad/config/genesis.json | jq '.app_state["staking"]["params"]["bond_denom"]="uart"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
 cat $HOME/.artelad/config/genesis.json | jq '.app_state["crisis"]["constant_fee"]["denom"]="uart"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
 cat $HOME/.artelad/config/genesis.json | jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="uart"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
+cat $HOME/.artelad/config/genesis.json | jq '.app_state["gov"]["params"]["min_deposit"][0]["denom"]="uart"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
 cat $HOME/.artelad/config/genesis.json | jq '.app_state["mint"]["params"]["mint_denom"]="uart"' >$HOME/.artelad/config/tmp_genesis.json && mv $HOME/.artelad/config/tmp_genesis.json $HOME/.artelad/config/genesis.json
 
 # Set gas limit in genesis
@@ -103,6 +116,9 @@ else
 
     # set snapshot options
     sed -i 's/snapshot-interval = 0/snapshot-interval = 2000/g' $HOME/.artelad/config/app.toml
+    sed -i 's/enable = false/enable = true/g' $HOME/.artelad/config/app.toml
+    sed -i 's/prometheus = false/prometheus = true/' $HOME/.artelad/config/config.toml
+    sed -i 's/timeout_commit = "5s"/timeout_commit = "500ms"/' $HOME/.artelad/config/config.toml
 fi
 
 if [[ $1 == "pending" ]]; then

@@ -7,10 +7,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/artela-network/artela/ethereum/crypto/codec"
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
-	cryptohd "github.com/artela-network/artela/ethereum/crypto/hd"
-
 	"github.com/cosmos/go-bip39"
 	"github.com/spf13/cobra"
 
@@ -23,6 +19,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/artela-network/artela/ethereum/crypto/codec"
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	cryptohd "github.com/artela-network/artela/ethereum/crypto/hd"
 )
 
 const (

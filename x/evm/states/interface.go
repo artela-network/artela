@@ -1,9 +1,10 @@
 package states
 
 import (
-	"github.com/artela-network/artela-evm/vm"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/artela-network/artela-evm/vm"
 )
 
 // ExtStateDB defines an extension to the interface provided by the go-ethereum

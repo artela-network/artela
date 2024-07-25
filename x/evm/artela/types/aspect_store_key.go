@@ -6,10 +6,12 @@ import (
 	"math"
 	"strings"
 
-	artela "github.com/artela-network/aspect-core/types"
 	"github.com/emirpasic/gods/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	artela "github.com/artela-network/aspect-core/types"
 )
 
 var _ binary.ByteOrder
@@ -22,18 +24,14 @@ const (
 	ContractBindKeyPrefix      = "AspectStore/ContractBind/"
 	VerifierBindingKeyPrefix   = "AspectStore/VerifierBind/"
 	AspectRefKeyPrefix         = "AspectStore/AspectRef/"
-	AspectBlockKeyPrefix       = "AspectStore/Block/"
 	AspectStateKeyPrefix       = "AspectStore/State/"
 
 	AspectJoinPointRunKeyPrefix = "AspectStore/JoinPointRun/"
 
-	AspectIdMapKey = "aspectId"
+	AspectIDMapKey = "aspectId"
 	VersionMapKey  = "version"
 	PriorityMapKey = "priority"
 
-	AspectStateBeginBlock      = "State/BeginBlock"
-	AspectStateDeliverTxState  = "State/DeliverTx"
-	AspectStateEndBlock        = "State/EndBlock"
 	AspectAccountKey           = "Aspect_@Acount@_"
 	AspectProofKey             = "Aspect_@Proof@_"
 	AspectRunJoinPointKey      = "Aspect_@Run@JoinPoint@_"
@@ -47,22 +45,6 @@ var (
 	PathSeparatorLen = len(PathSeparator)
 )
 
-func GetAspectStatePoint(point string) string {
-	if strings.EqualFold(point, string(artela.ON_BLOCK_INITIALIZE_METHOD)) {
-		return AspectStateBeginBlock
-	} else if strings.EqualFold(point, string(artela.ON_BLOCK_FINALIZE_METHOD)) {
-		return AspectStateEndBlock
-	} else if strings.EqualFold(point, string(artela.POST_TX_COMMIT)) ||
-		strings.EqualFold(point, string(artela.PRE_TX_EXECUTE_METHOD)) ||
-		strings.EqualFold(point, string(artela.POST_TX_EXECUTE_METHOD)) ||
-		strings.EqualFold(point, string(artela.PRE_CONTRACT_CALL_METHOD)) ||
-		strings.EqualFold(point, string(artela.POST_CONTRACT_CALL_METHOD)) ||
-		strings.EqualFold(point, string(artela.OPERATION_METHOD)) {
-		return AspectStateDeliverTxState
-	}
-	return ""
-}
-
 func AspectArrayKey(keys ...[]byte) []byte {
 	var key []byte
 	for _, b := range keys {
@@ -74,12 +56,12 @@ func AspectArrayKey(keys ...[]byte) []byte {
 
 // AspectCodeStoreKey returns the store key to retrieve a AspectCodeStore from the index fields
 func AspectPropertyKey(
-	aspectId []byte,
+	aspectID []byte,
 	propertyKey []byte,
 ) []byte {
-	key := make([]byte, 0, len(aspectId)+PathSeparatorLen*2+len(propertyKey))
+	key := make([]byte, 0, len(aspectID)+PathSeparatorLen*2+len(propertyKey))
 
-	key = append(key, aspectId...)
+	key = append(key, aspectID...)
 	key = append(key, PathSeparator...)
 	key = append(key, propertyKey...)
 	key = append(key, PathSeparator...)
@@ -88,12 +70,12 @@ func AspectPropertyKey(
 }
 
 func AspectVersionKey(
-	aspectId []byte,
+	aspectID []byte,
 	version []byte,
 ) []byte {
-	key := make([]byte, 0, len(aspectId)+PathSeparatorLen*2+len(version))
+	key := make([]byte, 0, len(aspectID)+PathSeparatorLen*2+len(version))
 
-	key = append(key, aspectId...)
+	key = append(key, aspectID...)
 	key = append(key, PathSeparator...)
 	key = append(key, version...)
 	key = append(key, PathSeparator...)
@@ -101,11 +83,11 @@ func AspectVersionKey(
 	return key
 }
 
-func AspectIdKey(
-	aspectId []byte,
+func AspectIDKey(
+	aspectID []byte,
 ) []byte {
-	key := make([]byte, 0, len(aspectId)+PathSeparatorLen)
-	key = append(key, aspectId...)
+	key := make([]byte, 0, len(aspectID)+PathSeparatorLen)
+	key = append(key, aspectID...)
 	key = append(key, PathSeparator...)
 
 	return key

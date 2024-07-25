@@ -25,7 +25,6 @@ import (
 	"github.com/artela-network/artela/ethereum/crypto/hd"
 	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
 	"github.com/artela-network/artela/ethereum/rpc/types"
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/ethereum/utils"
 	"github.com/artela-network/artela/x/evm/txs"
@@ -131,7 +130,11 @@ func (b *BackendImpl) SignTransaction(args *ethapi2.TransactionArgs) (*ethtypes.
 		return nil, err
 	}
 
-	signer := ethtypes.MakeSigner(b.ChainConfig(), new(big.Int).SetUint64(uint64(bn)), bt)
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil, err
+	}
+	signer := ethtypes.MakeSigner(cfg, new(big.Int).SetUint64(uint64(bn)), bt)
 
 	// LegacyTx derives chainID from the signature. To make sure the msg.ValidateBasic makes
 	// the corresponding chainID validation, we need to sign the transaction before calling it
@@ -166,18 +169,20 @@ func (b *BackendImpl) GetTransactionCount(address common.Address, blockNrOrHash 
 	if err != nil {
 		return &n, err
 	}
-	currentHeight := b.CurrentHeader().Number
-	if height.Int64() > currentHeight.Int64() {
+	header, err := b.CurrentHeader()
+	if err != nil {
+		return &n, err
+	}
+	if height.Int64() > header.Number.Int64() {
 		return &n, fmt.Errorf(
 			"cannot query with height in the future (current: %d, queried: %d); please provide a valid height",
-			currentHeight, height)
+			header.Number, height)
 	}
 	// Get nonce (sequence) from account
 	from := sdktypes.AccAddress(address.Bytes())
 	accRet := b.clientCtx.AccountRetriever
 
-	err = accRet.EnsureExists(b.clientCtx, from)
-	if err != nil {
+	if err = accRet.EnsureExists(b.clientCtx, from); err != nil {
 		// account doesn't exist yet, return 0
 		b.logger.Info("GetTransactionCount faild, return 0. Account doesn't exist yet", "account", address.Hex(), "error", err)
 		return &n, nil
@@ -263,7 +268,7 @@ func (b *BackendImpl) GetBalance(address common.Address, blockNrOrHash rpc.Block
 		return nil, err
 	}
 
-	res, err := b.queryClient.Balance(rpctypes.ContextWithHeight(blockNum.Int64()), req)
+	res, err := b.queryClient.Balance(types.ContextWithHeight(blockNum.Int64()), req)
 	if err != nil {
 		return nil, err
 	}

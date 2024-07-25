@@ -3,18 +3,16 @@ package evm
 import (
 	"math"
 
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 
 	anteutils "github.com/artela-network/artela/app/ante/utils"
 	"github.com/artela-network/artela/app/interfaces"
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/evm/txs"
 )
 
 // NewDynamicFeeChecker returns a `TxFeeChecker` that applies a dynamic fee to
@@ -34,7 +32,7 @@ func NewDynamicFeeChecker(k interfaces.DynamicFeeEVMKeeper) anteutils.TxFeeCheck
 
 		params := k.GetParams(ctx)
 		denom := params.EvmDenom
-		ethCfg := params.ChainConfig.EthereumConfig(k.ChainID())
+		ethCfg := params.ChainConfig.EthereumConfig(ctx.BlockHeight(), k.ChainID())
 
 		baseFee := k.GetBaseFee(ctx, ethCfg)
 		if baseFee == nil {

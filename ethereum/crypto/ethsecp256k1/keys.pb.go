@@ -32,41 +32,41 @@ type PubKey struct {
 	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 }
 
-func (m *PubKey) Reset()      { *m = PubKey{} }
+func (pubKey *PubKey) Reset() { *pubKey = PubKey{} }
 func (*PubKey) ProtoMessage() {}
 func (*PubKey) Descriptor() ([]byte, []int) {
 	return fileDescriptor_56b55ddbae0a9542, []int{0}
 }
-func (m *PubKey) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+func (pubKey *PubKey) XXX_Unmarshal(b []byte) error {
+	return pubKey.Unmarshal(b)
 }
-func (m *PubKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (pubKey *PubKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_PubKey.Marshal(b, m, deterministic)
+		return xxx_messageInfo_PubKey.Marshal(b, pubKey, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := pubKey.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *PubKey) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PubKey.Merge(m, src)
+func (pubKey *PubKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PubKey.Merge(pubKey, src)
 }
-func (m *PubKey) XXX_Size() int {
-	return m.Size()
+func (pubKey *PubKey) XXX_Size() int {
+	return pubKey.Size()
 }
-func (m *PubKey) XXX_DiscardUnknown() {
-	xxx_messageInfo_PubKey.DiscardUnknown(m)
+func (pubKey *PubKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_PubKey.DiscardUnknown(pubKey)
 }
 
 var xxx_messageInfo_PubKey proto.InternalMessageInfo
 
-func (m *PubKey) GetKey() []byte {
-	if m != nil {
-		return m.Key
+func (pubKey *PubKey) GetKey() []byte {
+	if pubKey != nil {
+		return pubKey.Key
 	}
 	return nil
 }
@@ -78,42 +78,42 @@ type PrivKey struct {
 	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 }
 
-func (m *PrivKey) Reset()         { *m = PrivKey{} }
-func (m *PrivKey) String() string { return proto.CompactTextString(m) }
-func (*PrivKey) ProtoMessage()    {}
+func (privKey *PrivKey) Reset()         { *privKey = PrivKey{} }
+func (privKey *PrivKey) String() string { return proto.CompactTextString(privKey) }
+func (*PrivKey) ProtoMessage()          {}
 func (*PrivKey) Descriptor() ([]byte, []int) {
 	return fileDescriptor_56b55ddbae0a9542, []int{1}
 }
-func (m *PrivKey) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+func (privKey *PrivKey) XXX_Unmarshal(b []byte) error {
+	return privKey.Unmarshal(b)
 }
-func (m *PrivKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (privKey *PrivKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_PrivKey.Marshal(b, m, deterministic)
+		return xxx_messageInfo_PrivKey.Marshal(b, privKey, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := privKey.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *PrivKey) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PrivKey.Merge(m, src)
+func (privKey *PrivKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PrivKey.Merge(privKey, src)
 }
-func (m *PrivKey) XXX_Size() int {
-	return m.Size()
+func (privKey *PrivKey) XXX_Size() int {
+	return privKey.Size()
 }
-func (m *PrivKey) XXX_DiscardUnknown() {
-	xxx_messageInfo_PrivKey.DiscardUnknown(m)
+func (privKey *PrivKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_PrivKey.DiscardUnknown(privKey)
 }
 
 var xxx_messageInfo_PrivKey proto.InternalMessageInfo
 
-func (m *PrivKey) GetKey() []byte {
-	if m != nil {
-		return m.Key
+func (privKey *PrivKey) GetKey() []byte {
+	if privKey != nil {
+		return privKey.Key
 	}
 	return nil
 }
@@ -144,60 +144,60 @@ var fileDescriptor_56b55ddbae0a9542 = []byte{
 	0x00, 0x00, 0xff, 0xff, 0x8e, 0xb4, 0xc3, 0x6c, 0x02, 0x01, 0x00, 0x00,
 }
 
-func (m *PubKey) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
+func (pubKey *PubKey) Marshal() (dAtA []byte, err error) {
+	size := pubKey.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := pubKey.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *PubKey) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+func (pubKey *PubKey) MarshalTo(dAtA []byte) (int, error) {
+	size := pubKey.Size()
+	return pubKey.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *PubKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (pubKey *PubKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintKeys(dAtA, i, uint64(len(m.Key)))
+	if len(pubKey.Key) > 0 {
+		i -= len(pubKey.Key)
+		copy(dAtA[i:], pubKey.Key)
+		i = encodeVarintKeys(dAtA, i, uint64(len(pubKey.Key)))
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *PrivKey) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
+func (privKey *PrivKey) Marshal() (dAtA []byte, err error) {
+	size := privKey.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := privKey.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *PrivKey) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+func (privKey *PrivKey) MarshalTo(dAtA []byte) (int, error) {
+	size := privKey.Size()
+	return privKey.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *PrivKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (privKey *PrivKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintKeys(dAtA, i, uint64(len(m.Key)))
+	if len(privKey.Key) > 0 {
+		i -= len(privKey.Key)
+		copy(dAtA[i:], privKey.Key)
+		i = encodeVarintKeys(dAtA, i, uint64(len(privKey.Key)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -215,26 +215,26 @@ func encodeVarintKeys(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *PubKey) Size() (n int) {
-	if m == nil {
+func (pubKey *PubKey) Size() (n int) {
+	if pubKey == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Key)
+	l = len(pubKey.Key)
 	if l > 0 {
 		n += 1 + l + sovKeys(uint64(l))
 	}
 	return n
 }
 
-func (m *PrivKey) Size() (n int) {
-	if m == nil {
+func (privKey *PrivKey) Size() (n int) {
+	if privKey == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Key)
+	l = len(privKey.Key)
 	if l > 0 {
 		n += 1 + l + sovKeys(uint64(l))
 	}
@@ -247,7 +247,7 @@ func sovKeys(x uint64) (n int) {
 func sozKeys(x uint64) (n int) {
 	return sovKeys(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *PubKey) Unmarshal(dAtA []byte) error {
+func (pubKey *PubKey) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -305,9 +305,9 @@ func (m *PubKey) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Key = append(m.Key[:0], dAtA[iNdEx:postIndex]...)
-			if m.Key == nil {
-				m.Key = []byte{}
+			pubKey.Key = append(pubKey.Key[:0], dAtA[iNdEx:postIndex]...)
+			if pubKey.Key == nil {
+				pubKey.Key = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -331,7 +331,7 @@ func (m *PubKey) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *PrivKey) Unmarshal(dAtA []byte) error {
+func (privKey *PrivKey) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -389,9 +389,9 @@ func (m *PrivKey) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Key = append(m.Key[:0], dAtA[iNdEx:postIndex]...)
-			if m.Key == nil {
-				m.Key = []byte{}
+			privKey.Key = append(privKey.Key[:0], dAtA[iNdEx:postIndex]...)
+			if privKey.Key == nil {
+				privKey.Key = []byte{}
 			}
 			iNdEx = postIndex
 		default:

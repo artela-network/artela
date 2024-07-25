@@ -3,15 +3,16 @@ package api
 import (
 	"context"
 	"errors"
-	"github.com/emirpasic/gods/sets/hashset"
 	"sort"
 
-	"github.com/artela-network/artela-evm/vm"
-	artelatypes "github.com/artela-network/aspect-core/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/protobuf/proto"
+	"github.com/emirpasic/gods/sets/hashset"
+	"google.golang.org/protobuf/proto"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/x/evm/artela/types"
+	artelatypes "github.com/artela-network/aspect-core/types"
 )
 
 var (
@@ -64,11 +65,9 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 	}
 
 	var result proto.Message
-	// nolint:gosimple
-	switch storageChanges.(type) {
-	// nolint:gosimple
+	switch sc := storageChanges.(type) {
 	case *vm.StorageChanges:
-		changes := storageChanges.(*vm.StorageChanges).Changes()
+		changes := sc.Changes()
 		ethStateChanges := &artelatypes.EthStateChanges{
 			All: make([]*artelatypes.EthStateChange, 0, len(changes)),
 		}
@@ -95,11 +94,9 @@ func (a *aspectTraceHostAPI) QueryStateChange(ctx *artelatypes.RunnerContext, qu
 			}
 		}
 		result = ethStateChanges
-	// nolint:gosimple
 	case [][]byte:
-		indices := storageChanges.([][]byte)
 		ethStateChangeIndices := &artelatypes.EthStateChangeIndices{
-			Indices: indices,
+			Indices: sc,
 		}
 
 		result = ethStateChangeIndices
@@ -120,9 +117,6 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 		return []byte{}, errors.New("cannot query call tree in current join point")
 	}
 
-	if ctx == nil {
-		return []byte{}, nil
-	}
 	txContext := a.aspectRuntimeContext.EthTxContext()
 
 	if txContext == nil || txContext.VmTracer() == nil || txContext.VmTracer().CallTree() == nil {
@@ -135,8 +129,11 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 	callTree := tracer.CallTree()
 	if query.CallIdx == nil || *query.CallIdx < 0 {
 		// for negative numbers we return the entire call tree
-		ethCallTree := &artelatypes.EthCallTree{Calls: make(map[uint64]*artelatypes.EthCallMessage)}
+		ethCallTree := &artelatypes.EthCallTree{Calls: make([]*artelatypes.EthCallMessage, 0, tracer.CurrentCallIndex())}
 		traverseEVMCallTree(callTree.Root(), ethCallTree)
+		sort.Slice(ethCallTree.Calls, func(i, j int) bool {
+			return *ethCallTree.Calls[i].Index < *ethCallTree.Calls[j].Index
+		})
 		result = ethCallTree
 	} else {
 		call := tracer.CallTree().FindCall(uint64(*query.CallIdx))
@@ -153,14 +150,11 @@ func (a *aspectTraceHostAPI) QueryCallTree(ctx *artelatypes.RunnerContext, query
 }
 
 func traverseEVMCallTree(ethCall *vm.Call, evmCallTree *artelatypes.EthCallTree) {
-	if evmCallTree == nil {
-		evmCallTree = &artelatypes.EthCallTree{Calls: make(map[uint64]*artelatypes.EthCallMessage)}
-	}
 	if ethCall == nil {
 		return
 	}
 
-	evmCallTree.GetCalls()[ethCall.Index] = callToTrace(ethCall)
+	evmCallTree.Calls = append(evmCallTree.Calls, callToTrace(ethCall))
 
 	children := ethCall.Children
 	if children == nil {

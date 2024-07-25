@@ -2,10 +2,10 @@ package fee
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	"github.com/artela-network/artela/x/fee/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cosmos "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/artela-network/artela/x/fee/keeper"
 	"github.com/artela-network/artela/x/fee/types"
 )
 

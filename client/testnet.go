@@ -10,22 +10,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
-	"github.com/artela-network/artela/ethereum/crypto/hd"
-	"github.com/artela-network/artela/ethereum/server/config"
-	srvflags "github.com/artela-network/artela/ethereum/server/flags"
-	types2 "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/txs"
-	"github.com/artela-network/artela/x/evm/txs/support"
-
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/spf13/cobra"
 
 	tmconfig "github.com/cometbft/cometbft/config"
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
-	"github.com/spf13/cobra"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -45,8 +35,16 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	mintypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
+	"github.com/artela-network/artela/ethereum/server/config"
+	srvflags "github.com/artela-network/artela/ethereum/server/flags"
+	types2 "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/testutil/network"
+	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
@@ -414,7 +412,7 @@ func initGenFiles(
 	var govGenState govv1.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
 
-	// nolint:staticcheck
+	//nolint:staticcheck
 	govGenState.DepositParams.MinDeposit[0].Denom = coinDenom
 	appGenState[govtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&govGenState)
 

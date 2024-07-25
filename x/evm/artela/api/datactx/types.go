@@ -1,8 +1,9 @@
 package datactx
 
 import (
-	artelatypes "github.com/artela-network/aspect-core/types"
 	"math/big"
+
+	artelatypes "github.com/artela-network/aspect-core/types"
 )
 
 type ContextLoader func(ctx *artelatypes.RunnerContext) ([]byte, error)

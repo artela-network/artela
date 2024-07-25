@@ -1,10 +1,11 @@
 package keyring
 
 import (
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
-	"github.com/artela-network/artela/ethereum/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/crypto/types"
+
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
 )
 
 // AppName defines the Ledger app used for signing. Artela uses the Ethereum app

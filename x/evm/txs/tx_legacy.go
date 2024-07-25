@@ -1,16 +1,16 @@
 package txs
 
 import (
-	"github.com/artela-network/artela/ethereum/utils"
-	"github.com/artela-network/aspect-core/djpm"
 	"math/big"
-
-	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/ethereum/go-ethereum/common"
 	ethereum "github.com/ethereum/go-ethereum/core/types"
+
+	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/ethereum/utils"
+	"github.com/artela-network/artela/x/evm/types"
+	"github.com/artela-network/aspect-core/djpm"
 )
 
 func newLegacyTx(tx *ethereum.Transaction) (*LegacyTx, error) {
