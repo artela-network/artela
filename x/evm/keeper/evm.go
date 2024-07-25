@@ -15,6 +15,7 @@ import (
 
 	artcore "github.com/artela-network/artela-evm/core"
 	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/artela/common/aspect"
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/artela/contract"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
@@ -200,7 +201,7 @@ func (k *Keeper) ApplyTransaction(ctx cosmos.Context, tx *ethereum.Transaction) 
 	res.CumulativeGasUsed = cumulativeGasUsed
 
 	var contractAddr common.Address
-	if msg.To == nil {
+	if msg.To == nil || aspect.IsAspectDeploy(msg.To, msg.Data) {
 		contractAddr = crypto.CreateAddress(msg.From, msg.Nonce)
 	}
 

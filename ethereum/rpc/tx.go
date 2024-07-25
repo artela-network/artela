@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/artela-network/artela/common/aspect"
 	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
@@ -310,7 +311,7 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 	}
 
 	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
-	if txData.GetTo() == nil {
+	if txData.GetTo() == nil || aspect.IsAspectDeploy(txData.GetTo(), txData.GetData()) {
 		receipt["contractAddress"] = crypto.CreateAddress(common.HexToAddress(res.Sender), txData.GetNonce())
 	}
 
