@@ -3,15 +3,16 @@ package contract
 import (
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/libs/log"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/ethereum/go-ethereum/core"
 
-	errorsmod "cosmossdk.io/errors"
 	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/common"
-	"github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/common/aspect"
 	"github.com/artela-network/artela/x/evm/states"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
@@ -68,7 +69,7 @@ func (c *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, 
 }
 
 func (c *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, gas uint64, commit bool) (ret []byte, remainingGas uint64, err error) {
-	method, parameters, err := types.ParseMethod(msg.Data)
+	method, parameters, err := aspect.ParseMethod(msg.Data)
 	if err != nil {
 		return nil, 0, err
 	}

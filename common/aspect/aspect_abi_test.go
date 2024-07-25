@@ -1,4 +1,4 @@
-package types
+package aspect
 
 import (
 	"encoding/hex"
@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 func TestAbi(t *testing.T) {
@@ -102,32 +104,32 @@ func TestPack(t *testing.T) {
 
 func TestAspectsOfPack(t *testing.T) {
 	ma := make(map[string]interface{}, 2)
-	ma[AspectIDMapKey] = "1111"
-	ma[VersionMapKey] = 0
-	ma[PriorityMapKey] = 1
+	ma[types.AspectIDMapKey] = "1111"
+	ma[types.VersionMapKey] = 0
+	ma[types.PriorityMapKey] = 1
 	mb := make(map[string]interface{}, 2)
-	mb[AspectIDMapKey] = "2222"
-	mb[VersionMapKey] = 1
-	mb[PriorityMapKey] = -10
+	mb[types.AspectIDMapKey] = "2222"
+	mb[types.VersionMapKey] = 1
+	mb[types.PriorityMapKey] = -10
 	mc := make(map[string]interface{}, 2)
-	mc[AspectIDMapKey] = "3333"
-	mc[VersionMapKey] = 2
-	mc[PriorityMapKey] = 3
+	mc[types.AspectIDMapKey] = "3333"
+	mc[types.VersionMapKey] = 2
+	mc[types.PriorityMapKey] = 3
 
-	queue := pq.NewWith(ByMapKeyPriority) // empty
-	queue.Enqueue(ma)                     // {a 1}
-	queue.Enqueue(mb)                     // {c 3}, {a 1}
+	queue := pq.NewWith(types.ByMapKeyPriority) // empty
+	queue.Enqueue(ma)                           // {a 1}
+	queue.Enqueue(mb)                           // {c 3}, {a 1}
 	queue.Enqueue(mc)
 
-	outputs := make([]AspectMeta, 0)
+	outputs := make([]types.AspectMeta, 0)
 	iterator := queue.Iterator()
 
 	for iterator.Next() {
 		m := iterator.Value().(map[string]interface{})
-		e := AspectMeta{
-			Id:       common.HexToAddress(m[AspectIDMapKey].(string)),
-			Priority: int64(m[PriorityMapKey].(int)),
-			Version:  uint256.NewInt(m[VersionMapKey].(uint64)),
+		e := types.AspectMeta{
+			Id:       common.HexToAddress(m[types.AspectIDMapKey].(string)),
+			Priority: int64(m[types.PriorityMapKey].(int)),
+			Version:  uint256.NewInt(m[types.VersionMapKey].(uint64)),
 		}
 		outputs = append(outputs, e)
 	}

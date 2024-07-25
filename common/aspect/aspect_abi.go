@@ -1,11 +1,15 @@
-package types
+package aspect
 
 import (
 	"encoding/hex"
 
 	errorsmod "cosmossdk.io/errors"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/artela-network/aspect-core/types"
 )
 
 var (
@@ -110,11 +114,19 @@ var AbiMap = func() map[string]string {
 	return abiIndex
 }
 
-func ParseMethod(callData []byte) (*abi.Method, map[string]interface{}, error) {
+func GetMethodName(callData []byte) (string, error) {
 	methodID := hex.EncodeToString(callData[:4])
 	methodName, ok := methodsLookup[methodID]
 	if !ok {
-		return nil, nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "method with id %s not found", methodID)
+		return "", errorsmod.Wrapf(errortypes.ErrInvalidRequest, "method with id %s not found", methodID)
+	}
+	return methodName, nil
+}
+
+func ParseMethod(callData []byte) (*abi.Method, map[string]interface{}, error) {
+	methodName, err := GetMethodName(callData)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	method, ok := methods[methodName]
@@ -145,4 +157,13 @@ func ParseInput(tx []byte) (*abi.Method, map[string]interface{}, error) {
 	}
 
 	return &method, argsMap, nil
+}
+
+func IsAspectDeploy(to *common.Address, callData []byte) bool {
+	if !types.IsAspectContractAddr(to) {
+		return false
+	}
+
+	methodName, err := GetMethodName(callData)
+	return err == nil && methodName == "deploy"
 }
