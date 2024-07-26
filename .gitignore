@@ -27,3 +27,5 @@ _testnet
 .vscode
 testnet
 *.log
+
+**/.DS_Store
