@@ -177,6 +177,11 @@ func (s *metaStore) getLatestVersion(aspectID common.Address) (uint64, error) {
 func (s *metaStore) GetProperty(key string) ([]byte, error) {
 	aspectID := s.ctx.AspectID
 	codeStore := s.newPrefixStore(V0AspectPropertyKeyPrefix)
+	if _, ok := reservedPropertyKeys[key]; ok {
+		// for reserved key, we return empty value
+		return nil, nil
+	}
+
 	aspectPropertyKey := AspectPropertyKey(
 		aspectID.Bytes(),
 		[]byte(key),
