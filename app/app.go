@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/artela-network/artela/x/aspect/provider"
+	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
+	aspectmodule "github.com/artela-network/artela/x/evm/artela/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -134,6 +137,10 @@ import (
 
 	// do not remove this, this will register the native evm tracers
 	_ "github.com/artela-network/artela-evm/tracers/native"
+
+	// aspect related imports
+	_ "github.com/artela-network/artela/x/aspect/store/v0"
+	_ "github.com/artela-network/artela/x/aspect/store/v1"
 )
 
 const (
@@ -324,6 +331,7 @@ func NewArtela(
 		evmmoduletypes.StoreKey,
 		feemoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
+		aspectmoduletypes.StoreKey,
 	)
 	tkeys := cosmos.NewTransientStoreKeys(paramsmodule.TStoreKey, evmmoduletypes.TransientKey, feemoduletypes.TransientKey)
 	memKeys := cosmos.NewMemoryStoreKeys(capabilitymodule.MemStoreKey)
@@ -554,10 +562,12 @@ func NewArtela(
 	)
 	feeModule := feemodule.NewAppModule(app.FeeKeeper, app.GetSubspace(feemoduletypes.ModuleName))
 
+	aspectmodule.InitStoreKeys(keys[evmmoduletypes.StoreKey], keys[aspectmoduletypes.StoreKey])
+	aspect := provider.NewArtelaProvider(keys[evmmoduletypes.StoreKey], keys[aspectmoduletypes.StoreKey], app.LastBlockHeight)
 	app.EvmKeeper = evmmodulekeeper.NewKeeper(
 		appCodec, keys[evmmoduletypes.StoreKey], tkeys[evmmoduletypes.TransientKey], authmodule.NewModuleAddress(govmodule.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeKeeper,
-		"1", app.GetSubspace(evmmoduletypes.ModuleName), bApp, logger,
+		aspect, "1", app.GetSubspace(evmmoduletypes.ModuleName), bApp, logger,
 	)
 	evmModule := evmmodule.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmmoduletypes.ModuleName))
 

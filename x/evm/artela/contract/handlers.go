@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	asptool "github.com/artela-network/artela/x/aspect/common"
+	"github.com/artela-network/artela/x/aspect/store"
+	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"math/big"
 	"time"
 
@@ -14,7 +18,7 @@ import (
 	"github.com/holiman/uint256"
 
 	"github.com/artela-network/artela-evm/vm"
-	common2 "github.com/artela-network/artela/common"
+	arttool "github.com/artela-network/artela/common"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/aspect-core/djpm/contract"
@@ -35,11 +39,13 @@ type HandlerContext struct {
 	from       common.Address
 	parameters map[string]interface{}
 	commit     bool
-	service    *AspectService
 	logger     runtimeTypes.Logger
 	evmState   *states.StateDB
 	evm        *vm.EVM
 	abi        *abi.Method
+
+	evmStoreKey    storetypes.StoreKey
+	aspectStoreKey storetypes.StoreKey
 
 	rawInput  []byte
 	nonce     uint64
@@ -57,40 +63,72 @@ type Handler interface {
 type DeployHandler struct{}
 
 func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, error) {
-	aspectId, code, initData, properties, joinPoint, err := h.decodeAndValidate(ctx)
+	aspectID, code, initData, properties, joinPoint, paymaster, proof, err := h.decodeAndValidate(ctx)
 	if err != nil {
 		ctx.logger.Error("deploy aspect failed", "error", err, "from", ctx.from, "gasLimit", ctx.gasLimit)
 		return nil, 0, err
 	}
 
-	store := ctx.service.aspectStore
-	newVersion, gas, err := store.BumpAspectVersion(ctx.cosmosCtx, aspectId, gas)
+	// we can ignore the new store here, since new deployed aspect should not have that
+	metaStore, _, err := store.GetAspectMetaStore(buildAspectStoreCtx(ctx, aspectID, gas))
 	if err != nil {
-		ctx.logger.Error("bump aspect version failed", "error", err)
-		return nil, gas, err
+		return nil, 0, err
 	}
 
-	gas, err = store.StoreAspectCode(ctx.cosmosCtx, aspectId, code, newVersion, gas)
+	// check duplicate deployment
+	var latestVersion uint64
+	if latestVersion, err = metaStore.GetLatestVersion(); err != nil {
+		return nil, 0, err
+	} else if latestVersion > 0 {
+		return nil, 0, errors.New("aspect already deployed")
+	}
+
+	if err := metaStore.Init(); err != nil {
+		ctx.logger.Error("init aspect meta failed", "error", err)
+		return nil, 0, err
+	}
+
+	newVersion, err := metaStore.BumpVersion()
 	if err != nil {
+		ctx.logger.Error("bump aspect version failed", "error", err)
+		return nil, 0, err
+	}
+
+	if err = metaStore.StoreCode(newVersion, code); err != nil {
 		ctx.logger.Error("store aspect code failed", "error", err)
-		return nil, gas, err
+		return nil, 0, err
 	}
 
 	// join point might be nil, since there are some operation only Aspects
-	if joinPoint != nil {
-		store.StoreAspectJP(ctx.cosmosCtx, aspectId, *newVersion, joinPoint)
+	if err = metaStore.StoreVersionMeta(newVersion, &aspectmoduletypes.VersionMeta{
+		JoinPoint: joinPoint.Uint64(),
+		CodeHash:  crypto.Keccak256Hash(code),
+	}); err != nil {
+		ctx.logger.Error("store aspect meta failed", "error", err)
+		return nil, 0, err
+	}
+
+	if err = metaStore.StoreMeta(&aspectmoduletypes.AspectMeta{
+		Proof:     proof,
+		PayMaster: paymaster,
+	}); err != nil {
+		ctx.logger.Error("store aspect meta failed", "error", err)
+		return nil, 0, err
 	}
 
 	if len(properties) > 0 {
-		gas, err = store.StoreAspectProperty(ctx.cosmosCtx, aspectId, properties, gas)
-		if err != nil {
+		if err = metaStore.StoreProperties(properties); err != nil {
 			ctx.logger.Error("store aspect property failed", "error", err)
+			return nil, 0, err
 		}
 	}
 
+	// get remaining gas after updating store
+	gas = metaStore.Gas()
+
 	// initialize aspect
 	aspectCtx := mustGetAspectContext(ctx.cosmosCtx)
-	runner, err := run.NewRunner(aspectCtx, ctx.logger, aspectId.String(), newVersion.Uint64(), code, ctx.commit)
+	runner, err := run.NewRunner(aspectCtx, ctx.logger, aspectID.String(), newVersion, code, ctx.commit)
 	if err != nil {
 		ctx.logger.Error("failed to create aspect runner", "error", err)
 		return nil, 0, err
@@ -106,10 +144,10 @@ func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, 
 	height := ctx.cosmosCtx.BlockHeight()
 	heightU64 := uint64(height)
 
-	return runner.JoinPoint(artelasdkType.INIT_METHOD, gas, height, aspectId, &artelasdkType.InitInput{
+	return runner.JoinPoint(artelasdkType.INIT_METHOD, gas, height, aspectID, &artelasdkType.InitInput{
 		Tx: &artelasdkType.WithFromTxInput{
 			Hash: txHash,
-			To:   aspectId.Bytes(),
+			To:   aspectID.Bytes(),
 			From: ctx.from.Bytes(),
 		},
 		Block:    &artelasdkType.BlockInput{Number: &heightU64},
@@ -121,7 +159,15 @@ func (h DeployHandler) Method() string {
 	return "deploy"
 }
 
-func (h DeployHandler) decodeAndValidate(ctx *HandlerContext) (aspectId common.Address, code, initData []byte, properties []types.Property, joinPoint *big.Int, err error) {
+func (h DeployHandler) decodeAndValidate(ctx *HandlerContext) (
+	aspectId common.Address,
+	code,
+	initData []byte,
+	properties []aspectmoduletypes.Property,
+	joinPoint *big.Int,
+	paymaster common.Address,
+	proof []byte,
+	err error) {
 	// input validations
 	code = ctx.parameters["code"].([]byte)
 	if len(code) == 0 {
@@ -138,50 +184,26 @@ func (h DeployHandler) decodeAndValidate(ctx *HandlerContext) (aspectId common.A
 
 	for i := range propertiesArr {
 		s := propertiesArr[i]
-		if types.AspectProofKey == s.Key || types.AspectAccountKey == s.Key {
-			// Block query of account and Proof
-			err = errors.New("using reserved aspect property key")
-			return
-		}
-
-		properties = append(properties, types.Property{
+		properties = append(properties, aspectmoduletypes.Property{
 			Key:   s.Key,
 			Value: s.Value,
 		})
 	}
 
-	account := ctx.parameters["account"].(common.Address)
-	if bytes.Equal(account.Bytes(), ctx.from.Bytes()) {
-		accountProperty := types.Property{
-			Key:   types.AspectAccountKey,
-			Value: account.Bytes(),
-		}
-		properties = append(properties, accountProperty)
-	} else {
+	paymaster = ctx.parameters["account"].(common.Address)
+	if !bytes.Equal(paymaster.Bytes(), ctx.from.Bytes()) {
 		err = errors.New("account verification fail")
 		return
 	}
 
-	proof := ctx.parameters["proof"].([]byte)
-	proofProperty := types.Property{
-		Key:   types.AspectProofKey,
-		Value: proof,
-	}
-	properties = append(properties, proofProperty)
+	proof = ctx.parameters["proof"].([]byte)
 
 	joinPoint = ctx.parameters["joinPoints"].(*big.Int)
 	if joinPoint == nil {
-		err = errors.New("unable to decode join point")
-		return
+		joinPoint = big.NewInt(0)
 	}
 
 	aspectId = crypto.CreateAddress(ctx.from, ctx.nonce)
-
-	// check duplicate deployment
-	if isAspectDeployed(ctx.cosmosCtx, ctx.service.aspectStore, aspectId) {
-		err = errors.New("aspect already deployed")
-		return
-	}
 
 	// validate aspect code
 	code, err = validateCode(ctx.cosmosCtx, code)
@@ -191,45 +213,85 @@ func (h DeployHandler) decodeAndValidate(ctx *HandlerContext) (aspectId common.A
 type UpgradeHandler struct{}
 
 func (h UpgradeHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, error) {
-	aspectId, code, properties, joinPoint, gas, err := h.decodeAndValidate(ctx, gas)
+	aspectID, code, properties, joinPoint, err := h.decodeAndValidate(ctx)
 	if err != nil {
-		return nil, gas, err
+		return nil, 0, err
 	}
 
-	store := ctx.service.aspectStore
-	newVersion, gas, err := store.BumpAspectVersion(ctx.cosmosCtx, aspectId, gas)
+	// check deployment
+	storeCtx := buildAspectStoreCtx(ctx, aspectID, gas)
+	currentStore, _, err := store.GetAspectMetaStore(storeCtx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// check deployment
+	var latestVersion uint64
+	if latestVersion, err = currentStore.GetLatestVersion(); err != nil {
+		return nil, 0, err
+	} else if latestVersion == 0 {
+		return nil, 0, errors.New("aspect not deployed")
+	}
+
+	// check aspect owner
+	var currentCode []byte
+	currentCode, err = currentStore.GetCode(latestVersion)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var ok bool
+	ok, gas, err = checkAspectOwner(ctx.cosmosCtx, aspectID, ctx.from, storeCtx.Gas(), currentCode, latestVersion, ctx.commit)
+	if err != nil || !ok {
+		err = errors.New("aspect ownership validation failed")
+		return nil, 0, err
+	}
+	storeCtx.UpdateGas(gas)
+
+	// bump version
+	newVersion, err := currentStore.BumpVersion()
 	if err != nil {
 		ctx.logger.Error("bump aspect version failed", "error", err)
 		return nil, gas, err
 	}
 
-	if gas, err = store.StoreAspectCode(ctx.cosmosCtx, aspectId, code, newVersion, gas); err != nil {
+	if err = currentStore.StoreCode(newVersion, code); err != nil {
 		ctx.logger.Error("store aspect code failed", "error", err)
-		return nil, gas, err
+		return nil, 0, err
 	}
 
 	// join point might be nil, since there are some operation only Aspects
 	if joinPoint != nil {
-		store.StoreAspectJP(ctx.cosmosCtx, aspectId, *newVersion, joinPoint)
+		if err = currentStore.StoreVersionMeta(newVersion, &aspectmoduletypes.VersionMeta{
+			JoinPoint: joinPoint.Uint64(),
+		}); err != nil {
+			ctx.logger.Error("store aspect meta failed", "error", err)
+			return nil, 0, err
+		}
 	}
 
+	// save properties if any
 	if len(properties) > 0 {
-		gas, err = store.StoreAspectProperty(ctx.cosmosCtx, aspectId, properties, gas)
+		if err = currentStore.StoreProperties(properties); err != nil {
+			ctx.logger.Error("store aspect property failed", "error", err)
+			return nil, 0, err
+		}
 	}
 
-	return nil, gas, err
+	return nil, storeCtx.Gas(), err
 }
 
 func (h UpgradeHandler) Method() string {
 	return "upgrade"
 }
 
-func (h UpgradeHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (aspectId common.Address,
+func (h UpgradeHandler) decodeAndValidate(ctx *HandlerContext) (
+	aspectID common.Address,
 	code []byte,
-	properties []types.Property,
-	joinPoint *big.Int, leftover uint64, err error) {
-	aspectId = ctx.parameters["aspectId"].(common.Address)
-	if bytes.Equal(emptyAddr.Bytes(), aspectId.Bytes()) {
+	properties []aspectmoduletypes.Property,
+	joinPoint *big.Int, err error) {
+	aspectID = ctx.parameters["aspectId"].(common.Address)
+	if bytes.Equal(emptyAddr.Bytes(), aspectID.Bytes()) {
 		err = errors.New("aspectId not specified")
 		return
 	}
@@ -246,40 +308,16 @@ func (h UpgradeHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (aspe
 		Value []byte `json:"value"`
 	})
 
-	for i := range propertiesArr {
-		s := propertiesArr[i]
-		if types.AspectProofKey == s.Key || types.AspectAccountKey == s.Key {
-			// Block query of account and Proof
-			err = errors.New("using reserved aspect property key")
-			return
-		}
-
-		properties = append(properties, types.Property{
-			Key:   s.Key,
-			Value: s.Value,
+	for _, prop := range propertiesArr {
+		properties = append(properties, aspectmoduletypes.Property{
+			Key:   prop.Key,
+			Value: prop.Value,
 		})
 	}
 
 	joinPoint = ctx.parameters["joinPoints"].(*big.Int)
 	if joinPoint == nil {
 		joinPoint = big.NewInt(0)
-	}
-
-	// check deployment
-	store := ctx.service.aspectStore
-	if !isAspectDeployed(ctx.cosmosCtx, store, aspectId) {
-		err = errors.New("aspect not deployed")
-		return
-	}
-
-	// check aspect owner
-	currentCode, version := store.GetAspectCode(ctx.cosmosCtx, aspectId, nil)
-
-	var ok bool
-	ok, leftover, err = checkAspectOwner(ctx.cosmosCtx, aspectId, ctx.from, gas, currentCode, version, ctx.commit)
-	if err != nil || !ok {
-		err = errors.New("aspect ownership validation failed")
-		return
 	}
 
 	// validate aspect code
@@ -290,20 +328,41 @@ func (h UpgradeHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (aspe
 type BindHandler struct{}
 
 func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, account, aspectVersion, priority, isContract, leftover, err := b.decodeAndValidate(ctx, gas)
+	aspectID, account, aspectVersion, priority, isContract, leftover, err := b.decodeAndValidate(ctx, gas)
 	if err != nil {
-		return nil, leftover, err
+		return nil, 0, err
 	}
 
-	// check aspect types
-	store := ctx.service.aspectStore
-	aspectJP, err := store.GetAspectJP(ctx.cosmosCtx, aspectId, aspectVersion)
+	// no need to get new version store, since we only do auto migration during aspect upgrade
+	metaStore, _, err := store.GetAspectMetaStore(buildAspectStoreCtx(ctx, aspectID, leftover))
 	if err != nil {
-		return nil, leftover, err
+		return nil, 0, err
 	}
 
-	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
-	txVerifier := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
+	// get latest version if aspect version is empty
+	latestVersion, err := metaStore.GetLatestVersion()
+	if err != nil {
+		return nil, 0, err
+	}
+	if latestVersion == 0 {
+		return nil, 0, errors.New("aspect not deployed")
+	}
+
+	if aspectVersion == 0 {
+		// use latest if not specified
+		aspectVersion = latestVersion
+	} else if aspectVersion > latestVersion {
+		return nil, 0, errors.New("aspect version not deployed")
+	}
+
+	meta, err := metaStore.GetVersionMeta(aspectVersion)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	i64JP := int64(meta.JoinPoint)
+	txAspect := artelasdkType.CheckIsTransactionLevel(i64JP)
+	txVerifier := artelasdkType.CheckIsTxVerifier(i64JP)
 
 	if !txAspect && !txVerifier {
 		return nil, 0, errors.New("aspect is either for tx or verifier")
@@ -314,28 +373,34 @@ func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remain
 		return nil, 0, errors.New("only verifier aspect can be bound with eoa")
 	}
 
-	// bind tx processing aspect if account is a contract
-	if txAspect && isContract {
-		if err := store.BindTxAspect(ctx.cosmosCtx, account, aspectId, aspectVersion, priority); err != nil {
-			ctx.logger.Error("bind tx aspect failed", "aspect", aspectId.Hex(), "version", aspectVersion.Uint64(), "contract", account.Hex(), "error", err)
-			return nil, 0, err
-		}
-	}
-
-	// bind tx verifier aspect
-	if txVerifier {
-		if err := store.BindVerificationAspect(ctx.cosmosCtx, account, aspectId, aspectVersion, priority, isContract); err != nil {
-			ctx.logger.Error("bind verifier aspect failed", "aspect", aspectId.Hex(), "version", aspectVersion.Uint64(), "account", account.Hex(), "error", err)
-			return nil, 0, err
-		}
-	}
-
-	// save reverse index
-	if err := store.StoreAspectRefValue(ctx.cosmosCtx, account, aspectId); err != nil {
+	// save aspect -> contract bindings
+	if err := metaStore.StoreBinding(account, aspectVersion, priority); err != nil {
 		return nil, 0, err
 	}
 
-	return nil, leftover, nil
+	// init account store
+	accountStore, _, err := store.GetAccountStore(buildAccountStoreCtx(ctx, account, metaStore.Gas()))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// check if used
+	if used, err := accountStore.Used(); err != nil {
+		return nil, 0, err
+	} else if !used {
+		// init if not used
+		if err := accountStore.Init(); err != nil {
+			return nil, 0, err
+		}
+	}
+
+	// save account -> contract bindings
+	if err := accountStore.StoreBinding(aspectID, aspectVersion, meta.JoinPoint, priority, isContract); err != nil {
+		ctx.logger.Error("bind tx aspect failed", "aspect", aspectID.Hex(), "version", aspectVersion, "contract", account.Hex(), "error", err)
+		return nil, 0, err
+	}
+
+	return nil, accountStore.Gas(), nil
 }
 
 func (b BindHandler) Method() string {
@@ -345,7 +410,7 @@ func (b BindHandler) Method() string {
 func (b BindHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
 	aspectId common.Address,
 	account common.Address,
-	aspectVersion *uint256.Int,
+	aspectVersion uint64,
 	priority int8,
 	isContract bool,
 	leftover uint64,
@@ -360,6 +425,10 @@ func (b BindHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
 	if version != nil && version.Sign() < 0 {
 		err = errors.New("aspectVersion is negative")
 		return
+	} else if version == nil {
+		aspectVersion = 0
+	} else {
+		aspectVersion = version.Uint64()
 	}
 
 	account = ctx.parameters["contract"].(common.Address)
@@ -369,12 +438,6 @@ func (b BindHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
 	}
 
 	priority = ctx.parameters["priority"].(int8)
-
-	store := ctx.service.aspectStore
-	if !isAspectDeployed(ctx.cosmosCtx, store, aspectId) {
-		err = errors.New("aspect not deployed")
-		return
-	}
 
 	isContract = len(ctx.evmState.GetCode(account)) > 0
 	if isContract {
@@ -391,41 +454,65 @@ func (b BindHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
 		leftover = gas
 	}
 
-	aspectVersion, _ = uint256.FromBig(version)
-
-	// overwrite aspect version, just in case if aspect version is 0 which means we will need to overwrite
-	// it to latest
-	if aspectVersion == nil || aspectVersion.Cmp(zero) <= 0 {
-		aspectVersion = ctx.service.aspectStore.GetAspectLastVersion(ctx.cosmosCtx, aspectId)
-	}
-
 	return
 }
 
 type UnbindHandler struct{}
 
 func (u UnbindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, account, isContract, leftover, err := u.decodeAndValidate(ctx, gas)
+	aspectID, account, isContract, leftover, err := u.decodeAndValidate(ctx, gas)
 	if err != nil {
 		return nil, leftover, err
 	}
 
-	store := ctx.service.aspectStore
-
-	if err := store.UnBindVerificationAspect(ctx.cosmosCtx, account, aspectId); err != nil {
-		return nil, leftover, err
+	// init account store
+	accountStore, _, err := store.GetAccountStore(buildAccountStoreCtx(ctx, account, leftover))
+	if err != nil {
+		return nil, 0, err
 	}
-	if isContract {
-		if err := store.UnBindContractAspects(ctx.cosmosCtx, account, aspectId); err != nil {
-			return nil, leftover, err
+
+	bindings, err := accountStore.LoadAccountBoundAspects(isContract)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// looking for binding info
+	version := uint64(0)
+	for _, binding := range bindings {
+		if binding.Account == account {
+			version = binding.Version
+			break
 		}
 	}
 
-	if err := store.UnbindAspectRefValue(ctx.cosmosCtx, account, aspectId); err != nil {
-		return nil, leftover, err
+	if version == 0 {
+		// not bound
+		return nil, accountStore.Gas(), nil
 	}
 
-	return nil, leftover, nil
+	// init aspect meta store
+	metaStore, _, err := store.GetAspectMetaStore(buildAspectStoreCtx(ctx, aspectID, accountStore.Gas()))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// remove account from aspect bound list
+	if err := metaStore.RemoveBinding(account); err != nil {
+		return nil, 0, err
+	}
+	// load aspect join point
+	meta, err := metaStore.GetVersionMeta(version)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// remove aspect from account bound list
+	accountStore.TransferGasFrom(metaStore)
+	if err := accountStore.RemoveBinding(aspectID, meta.JoinPoint, isContract); err != nil {
+		return nil, 0, err
+	}
+
+	return nil, accountStore.Gas(), nil
 }
 
 func (u UnbindHandler) decodeAndValidate(ctx *HandlerContext, gas uint64) (
@@ -469,30 +556,67 @@ func (u UnbindHandler) Method() string {
 type ChangeVersionHandler struct{}
 
 func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, account, version, isContract, leftover, err := c.decodeAndValidate(ctx, gas)
+	aspectID, account, version, isContract, leftover, err := c.decodeAndValidate(ctx, gas)
 	if err != nil {
 		return nil, leftover, err
 	}
 
-	aspectJP, err := ctx.service.aspectStore.GetAspectJP(ctx.cosmosCtx, aspectId, uint256.NewInt(version))
+	// init account store
+	accountStore, _, err := store.GetAccountStore(buildAccountStoreCtx(ctx, account, leftover))
 	if err != nil {
-		return nil, leftover, err
+		return nil, 0, err
 	}
 
-	txAspect := artelasdkType.CheckIsTransactionLevel(aspectJP.Int64())
-	verifierAspect := artelasdkType.CheckIsTxVerifier(aspectJP.Int64())
-
-	if !txAspect && !verifierAspect {
-		return nil, leftover, errors.New("aspect is either for tx or verifier")
+	bindings, err := accountStore.LoadAccountBoundAspects(isContract)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	if !verifierAspect && !isContract {
-		return nil, 0, errors.New("only verifier aspect can be bound with eoa")
+	// looking for binding info
+	var bindingInfo *aspectmoduletypes.Binding
+	for _, binding := range bindings {
+		if binding.Account == account {
+			bindingInfo = binding
+			break
+		}
 	}
 
-	err = ctx.service.aspectStore.ChangeBoundAspectVersion(ctx.cosmosCtx, account, aspectId, version, isContract, verifierAspect, txAspect)
-	remainingGas = leftover
-	return
+	if bindingInfo == nil {
+		// not bound
+		return nil, 0, errors.New("aspect not bound")
+	}
+
+	// init aspect meta store
+	metaStoreCtx := buildAspectStoreCtx(ctx, aspectID, accountStore.Gas())
+	metaStore, _, err := store.GetAspectMetaStore(metaStoreCtx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// load current bound version aspect meta
+	currentVersionMeta, err := metaStore.GetVersionMeta(bindingInfo.Version)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// load new aspect meta
+	newVersionMeta, err := metaStore.GetVersionMeta(version)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// remove old version aspect from account bound list
+	accountStore.TransferGasFrom(metaStore)
+	if err := accountStore.RemoveBinding(aspectID, currentVersionMeta.JoinPoint, isContract); err != nil {
+		return nil, 0, err
+	}
+
+	// update new binding in account store
+	if err := accountStore.StoreBinding(aspectID, version, newVersionMeta.JoinPoint, bindingInfo.Priority, isContract); err != nil {
+		return nil, 0, err
+	}
+
+	return nil, accountStore.Gas(), nil
 }
 
 func (c ChangeVersionHandler) Method() string {
@@ -519,19 +643,7 @@ func (c ChangeVersionHandler) decodeAndValidate(ctx *HandlerContext, gas uint64)
 		return
 	}
 
-	// should check whether expected version is greater than
-	// the latest version we have, if so, the designated aspect
-	// does not exist yet
 	version = ctx.parameters["version"].(uint64)
-	store := ctx.service.aspectStore
-	latestVersion := store.GetAspectLastVersion(ctx.cosmosCtx, aspectId)
-	if latestVersion == nil || latestVersion.Cmp(zero) == 0 || latestVersion.Uint64() < version {
-		err = errors.New("given version of aspect does not exist")
-		return
-	}
-	if version == 0 {
-		version = latestVersion.Uint64()
-	}
 
 	if isContract = len(ctx.evmState.GetCode(account)) > 0; isContract {
 		var isOwner bool
@@ -550,19 +662,28 @@ func (c ChangeVersionHandler) decodeAndValidate(ctx *HandlerContext, gas uint64)
 type GetVersionHandler struct{}
 
 func (g GetVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, err := g.decodeAndValidate(ctx)
+	aspectID, err := g.decodeAndValidate(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	version := ctx.service.aspectStore.GetAspectLastVersion(ctx.cosmosCtx, aspectId)
+	// no need to get new version store, since we only do auto migration during aspect upgrade
+	metaStore, _, err := store.GetAspectMetaStore(buildAspectStoreCtx(ctx, aspectID, gas))
+	if err != nil {
+		return nil, 0, err
+	}
 
-	ret, err = ctx.abi.Outputs.Pack(version.Uint64())
+	version, err := metaStore.GetLatestVersion()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	ret, err = ctx.abi.Outputs.Pack(version)
 	if err != nil {
 		return nil, gas, err
 	}
 
-	return ret, gas, nil
+	return ret, metaStore.Gas(), nil
 }
 
 func (g GetVersionHandler) Method() string {
@@ -587,49 +708,29 @@ func (g GetBindingHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, 
 		return nil, 0, err
 	}
 
-	aspectInfo := make([]types.AspectInfo, 0)
-	deduplicationMap := make(map[common.Address]struct{})
-
-	accountVerifiers, err := ctx.service.aspectStore.GetVerificationAspects(ctx.cosmosCtx, account)
+	// init account store
+	accountStore, _, err := store.GetAccountStore(buildAccountStoreCtx(ctx, account, gas))
 	if err != nil {
 		return nil, 0, err
 	}
 
-	for _, aspect := range accountVerifiers {
-		if _, exist := deduplicationMap[aspect.Id]; exist {
-			continue
-		}
-		deduplicationMap[aspect.Id] = struct{}{}
+	bindings, err := accountStore.LoadAccountBoundAspects(isContract)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	aspectInfo := make([]types.AspectInfo, 0)
+	for _, binding := range bindings {
 		info := types.AspectInfo{
-			AspectId: aspect.Id,
-			Version:  aspect.Version.Uint64(),
-			Priority: int8(aspect.Priority),
+			AspectId: binding.Account,
+			Version:  binding.Version,
+			Priority: binding.Priority,
 		}
 		aspectInfo = append(aspectInfo, info)
 	}
 
-	if isContract {
-		txLevelAspects, err := ctx.service.aspectStore.GetTxLevelAspects(ctx.cosmosCtx, account)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		for _, aspect := range txLevelAspects {
-			if _, exist := deduplicationMap[aspect.Id]; exist {
-				continue
-			}
-			deduplicationMap[aspect.Id] = struct{}{}
-			info := types.AspectInfo{
-				AspectId: aspect.Id,
-				Version:  aspect.Version.Uint64(),
-				Priority: int8(aspect.Priority),
-			}
-			aspectInfo = append(aspectInfo, info)
-		}
-	}
-
 	ret, err = ctx.abi.Outputs.Pack(aspectInfo)
-	return ret, gas, err
+	return ret, accountStore.Gas(), err
 }
 
 func (g GetBindingHandler) Method() string {
@@ -650,21 +751,32 @@ func (g GetBindingHandler) decodeAndValidate(ctx *HandlerContext) (account commo
 type GetBoundAddressHandler struct{}
 
 func (g GetBoundAddressHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, err := g.decodeAndValidate(ctx)
+	aspectID, err := g.decodeAndValidate(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	value, err := ctx.service.GetAspectOf(ctx.cosmosCtx, aspectId)
+	// init account store
+	metaStore, _, err := store.GetAspectMetaStore(buildAspectStoreCtx(ctx, aspectID, gas))
 	if err != nil {
 		return nil, 0, err
 	}
+
+	// check deployment
+	if latestVersion, err := metaStore.GetLatestVersion(); err != nil {
+		return nil, 0, err
+	} else if latestVersion == 0 {
+		return nil, 0, errors.New("aspect not deployed")
+	}
+
+	bindings, err := metaStore.LoadAspectBoundAccounts()
+	if err != nil {
+		return nil, 0, err
+	}
+
 	addressArr := make([]common.Address, 0)
-	if value != nil {
-		for _, data := range value.Values() {
-			contractAddr := common.HexToAddress(data.(string))
-			addressArr = append(addressArr, contractAddr)
-		}
+	for _, binding := range bindings {
+		addressArr = append(addressArr, binding.Account)
 	}
 
 	ret, err = ctx.abi.Outputs.Pack(addressArr)
@@ -682,26 +794,38 @@ func (g GetBoundAddressHandler) decodeAndValidate(ctx *HandlerContext) (aspectId
 		return
 	}
 
-	if !isAspectDeployed(ctx.cosmosCtx, ctx.service.aspectStore, aspectId) {
-		err = errors.New("aspect not deployed")
-	}
-
 	return
 }
 
 type OperationHandler struct{}
 
 func (o OperationHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remainingGas uint64, err error) {
-	aspectId, args, err := o.decodeAndValidate(ctx)
+	aspectID, args, err := o.decodeAndValidate(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	lastHeight := ctx.cosmosCtx.BlockHeight()
-	code, version := ctx.service.GetAspectCode(ctx.cosmosCtx, aspectId, nil)
+	metaStore, _, err := store.GetAspectMetaStore(buildAspectStoreCtx(ctx, aspectID, gas))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// check deployment
+	latestVersion, err := metaStore.GetLatestVersion()
+	if err != nil {
+		return nil, 0, err
+	} else if latestVersion == 0 {
+		return nil, 0, errors.New("aspect not deployed")
+	}
+
+	code, err := metaStore.GetCode(latestVersion)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	aspectCtx := mustGetAspectContext(ctx.cosmosCtx)
-	runner, err := run.NewRunner(aspectCtx, ctx.logger, aspectId.String(), version.Uint64(), code, ctx.commit)
+	runner, err := run.NewRunner(aspectCtx, ctx.logger, aspectID.String(), latestVersion, code, ctx.commit)
 	if err != nil {
 		ctx.logger.Error("failed to create aspect runner", "error", err)
 		return nil, 0, err
@@ -714,10 +838,10 @@ func (o OperationHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, r
 		txHash = ethTxCtx.TxContent().Hash().Bytes()
 	}
 	height := uint64(lastHeight)
-	ret, remainingGas, err = runner.JoinPoint(artelasdkType.OPERATION_METHOD, gas, lastHeight, aspectId, &artelasdkType.OperationInput{
+	ret, remainingGas, err = runner.JoinPoint(artelasdkType.OPERATION_METHOD, gas, lastHeight, aspectID, &artelasdkType.OperationInput{
 		Tx: &artelasdkType.WithFromTxInput{
 			Hash: txHash,
-			To:   aspectId.Bytes(),
+			To:   aspectID.Bytes(),
 			From: ctx.from.Bytes(),
 		},
 		Block:    &artelasdkType.BlockInput{Number: &height},
@@ -744,29 +868,20 @@ func (o OperationHandler) decodeAndValidate(ctx *HandlerContext) (aspectId commo
 		return
 	}
 
-	if !isAspectDeployed(ctx.cosmosCtx, ctx.service.aspectStore, aspectId) {
-		err = errors.New("aspect not deployed")
-		return
-	}
-
 	args = ctx.parameters["optArgs"].([]byte)
 	return
 }
 
-func isAspectDeployed(ctx sdk.Context, store *AspectStore, aspectId common.Address) bool {
-	return store.GetAspectLastVersion(ctx, aspectId).Cmp(zero) > 0
-}
-
 func validateCode(ctx sdk.Context, aspectCode []byte) ([]byte, error) {
 	startTime := time.Now()
-	validator, err := runtime.NewValidator(ctx, common2.WrapLogger(ctx.Logger()), runtime.WASM)
+	validator, err := runtime.NewValidator(ctx, arttool.WrapLogger(ctx.Logger()), runtime.WASM)
 	if err != nil {
 		return nil, err
 	}
 	ctx.Logger().Info("validated aspect bytecode", "duration", time.Since(startTime).String())
 
 	startTime = time.Now()
-	parsed, err := ParseByteCode(aspectCode)
+	parsed, err := asptool.ParseByteCode(aspectCode)
 	if err != nil {
 		return nil, err
 	}
@@ -813,9 +928,9 @@ func checkContractOwner(ctx *HandlerContext, contractAddr common.Address, gas ui
 	return result, leftover
 }
 
-func checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, gas uint64, code []byte, version *uint256.Int, commit bool) (bool, uint64, error) {
+func checkAspectOwner(ctx sdk.Context, aspectId common.Address, sender common.Address, gas uint64, code []byte, version uint64, commit bool) (bool, uint64, error) {
 	aspectCtx := mustGetAspectContext(ctx)
-	runner, err := run.NewRunner(aspectCtx, common2.WrapLogger(ctx.Logger()), aspectId.String(), version.Uint64(), code, commit)
+	runner, err := run.NewRunner(aspectCtx, arttool.WrapLogger(ctx.Logger()), aspectId.String(), version, code, commit)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create runner: %v", err))
 	}
@@ -832,4 +947,18 @@ func mustGetAspectContext(ctx sdk.Context) *types.AspectRuntimeContext {
 	}
 
 	return aspectCtx
+}
+
+func buildAspectStoreCtx(ctx *HandlerContext, aspectID common.Address, gas uint64) *aspectmoduletypes.AspectStoreContext {
+	return &aspectmoduletypes.AspectStoreContext{
+		StoreContext: aspectmoduletypes.NewStoreContext(ctx.cosmosCtx, ctx.aspectStoreKey, ctx.evmStoreKey, gas),
+		AspectID:     aspectID,
+	}
+}
+
+func buildAccountStoreCtx(ctx *HandlerContext, account common.Address, gas uint64) *aspectmoduletypes.AccountStoreContext {
+	return &aspectmoduletypes.AccountStoreContext{
+		StoreContext: aspectmoduletypes.NewStoreContext(ctx.cosmosCtx, ctx.aspectStoreKey, ctx.evmStoreKey, gas),
+		Account:      account,
+	}
 }

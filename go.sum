@@ -255,8 +255,6 @@ github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc8 h1:O5/yuEheEYS36a
 github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc8/go.mod h1:fyykf4Hf4k3QoVBCSnnsULuDRwwfXpLDi90s0PriD4M=
 github.com/artela-network/artela-evm v0.4.8-rc8 h1:4saDqBKnVmaEvSBEveVwRi/vnXVERz5YvRXr3gAzB3E=
 github.com/artela-network/artela-evm v0.4.8-rc8/go.mod h1:eYeoqd8pOAX/HcKVKnqxqwJki0qyIoQwSGgYTyFZQ/M=
-github.com/artela-network/aspect-core v0.4.8-rc8 h1:7KSb/NcD3HhOTirVg7mVPmknxSO1xQooNjPHe4bryZc=
-github.com/artela-network/aspect-core v0.4.8-rc8/go.mod h1:hve/4ibuIgt0HaAQrBYez1O8BQGceK8O8rGeyHoMAwg=
 github.com/artela-network/aspect-runtime v0.4.8-rc8 h1:48dbWs+4wUAL52U6JUN+hPQ7u7lDTkajoI0EcZYtwL4=
 github.com/artela-network/aspect-runtime v0.4.8-rc8/go.mod h1:GiDB2+LUbl2b2Z8+v/83LFbUKs5DqQ3ACxLUWY8zMdU=
 github.com/artela-network/cosmos-db v1.0.2-048-rc8 h1:pAC/94oLbFVE8sTP3szkliTJcR9EKtHibRI7BQliEKA=
