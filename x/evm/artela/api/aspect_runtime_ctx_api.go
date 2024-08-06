@@ -91,7 +91,6 @@ func (a *aspectRuntimeContextHostAPI) Register() {
 	blockCtx := datactx.NewBlockContext(a.aspectRuntimeContext)
 	a.execMap[aspctx.BlockHeaderParentHash] = blockCtx.ValueLoader(aspctx.BlockHeaderParentHash)
 	a.execMap[aspctx.BlockHeaderMiner] = blockCtx.ValueLoader(aspctx.BlockHeaderMiner)
-	a.execMap[aspctx.BlockHeaderTransactionsRoot] = blockCtx.ValueLoader(aspctx.BlockHeaderTransactionsRoot)
 	a.execMap[aspctx.BlockHeaderNumber] = blockCtx.ValueLoader(aspctx.BlockHeaderNumber)
 	a.execMap[aspctx.BlockHeaderTimestamp] = blockCtx.ValueLoader(aspctx.BlockHeaderTimestamp)
 

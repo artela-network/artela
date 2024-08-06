@@ -42,7 +42,7 @@ func (c *TxContext) registerLoaders() {
 		return &artelatypes.UintData{Data: &txType}
 	}
 	loaders[aspctx.TxChainId] = func(_ *types.EthTxContext, tx *ethereum.Transaction) proto.Message {
-		if tx.ChainId() != nil {
+		if v, _, _ := tx.RawSignatureValues(); v.Cmp(big.NewInt(0)) != 0 && tx.ChainId() != nil {
 			return &artelatypes.BytesData{Data: tx.ChainId().Bytes()}
 		}
 		return &artelatypes.BytesData{Data: []byte{}}

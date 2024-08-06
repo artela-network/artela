@@ -34,9 +34,6 @@ func (c *BlockContext) registerLoaders() {
 	loaders[context.BlockHeaderMiner] = func(blockCtx *types.EthBlockContext) proto.Message {
 		return &artelatypes.BytesData{Data: blockCtx.BlockHeader().Coinbase.Bytes()}
 	}
-	loaders[context.BlockHeaderTransactionsRoot] = func(blockCtx *types.EthBlockContext) proto.Message {
-		return &artelatypes.BytesData{Data: blockCtx.BlockHeader().TxHash.Bytes()}
-	}
 	loaders[context.BlockHeaderNumber] = func(blockCtx *types.EthBlockContext) proto.Message {
 		number := blockCtx.BlockHeader().Number.Uint64()
 		return &artelatypes.UintData{Data: &number}
