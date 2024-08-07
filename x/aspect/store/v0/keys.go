@@ -38,7 +38,7 @@ func AspectArrayKey(keys ...[]byte) []byte {
 	return key
 }
 
-// AspectCodeStoreKey returns the store key to retrieve a AspectCodeStore from the index fields
+// AspectCodeStoreKey returns the Store key to retrieve a AspectCodeStore from the index fields
 func AspectPropertyKey(
 	aspectID []byte,
 	propertyKey []byte,

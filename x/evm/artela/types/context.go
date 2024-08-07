@@ -167,7 +167,7 @@ func (c *AspectRuntimeContext) CreateStateObject() {
 	c.aspectState = NewAspectState(*c.cosmosCtx, c.logger)
 }
 
-func (c *AspectRuntimeContext) GetAspectProperty(ctx *artelatypes.RunnerContext, key string) []byte {
+func (c *AspectRuntimeContext) GetAspectProperty(ctx *artelatypes.RunnerContext, version uint64, key string) []byte {
 	metaStore, _, err := store.GetAspectMetaStore(&types.AspectStoreContext{
 		StoreContext: types.NewGasFreeStoreContext(*c.cosmosCtx, cachedAspectStoreKey, cachedEVMStoreKey),
 		AspectID:     ctx.AspectId,
@@ -176,7 +176,7 @@ func (c *AspectRuntimeContext) GetAspectProperty(ctx *artelatypes.RunnerContext,
 		panic(err)
 	}
 
-	data, err := metaStore.GetProperty(key)
+	data, err := metaStore.GetProperty(version, key)
 	if err != nil {
 		panic(err)
 	}

@@ -16,8 +16,9 @@ import (
 var _ store.AspectMetaStore = (*metaStore)(nil)
 
 var reservedPropertyKeys = map[string]struct{}{
-	V0AspectAccountKey: {},
-	V0AspectProofKey:   {},
+	V0AspectAccountKey:           {},
+	V0AspectProofKey:             {},
+	V0AspectPropertyAllKeyPrefix: {},
 }
 
 // metaStore is the version 0 aspect meta, this is no longer maintained.
@@ -26,17 +27,18 @@ var reservedPropertyKeys = map[string]struct{}{
 type metaStore struct {
 	BaseStore
 
-	ctx *types.AspectStoreContext
+	latestVersionCache uint64
+	ctx                *types.AspectStoreContext
 }
 
-// NewAspectMetaStore creates a new instance of aspect meta store.
+// NewAspectMetaStore creates a new instance of aspect meta Store.
 // Deprecated
-func NewAspectMetaStore(ctx *types.AspectStoreContext) store.AspectMetaStore {
+func NewAspectMetaStore(ctx *types.AspectStoreContext, _ []byte) store.AspectMetaStore {
 	var meter GasMeter
 	if ctx.ChargeGas() {
-		meter = newGasMeter(ctx)
+		meter = NewGasMeter(ctx)
 	} else {
-		meter = newNoOpGasMeter(ctx)
+		meter = NewNoOpGasMeter(ctx)
 	}
 
 	return &metaStore{
@@ -45,16 +47,8 @@ func NewAspectMetaStore(ctx *types.AspectStoreContext) store.AspectMetaStore {
 	}
 }
 
-func (s *metaStore) TransferGasFrom(store store.GasMeteredStore) {
-	s.ctx.UpdateGas(store.Gas())
-}
-
-func (s *metaStore) Gas() uint64 {
-	return s.ctx.Gas()
-}
-
 func (s *metaStore) StoreMeta(meta *types.AspectMeta) error {
-	// v0 store saves paymaster and proof as aspect properties
+	// v0 Store saves paymaster and proof as aspect properties
 	paymaster := types.Property{
 		Key:   V0AspectAccountKey,
 		Value: meta.PayMaster.Bytes(),
@@ -67,11 +61,11 @@ func (s *metaStore) StoreMeta(meta *types.AspectMeta) error {
 }
 
 func (s *metaStore) GetMeta() (*types.AspectMeta, error) {
-	paymaster, err := s.GetProperty(V0AspectAccountKey)
+	paymaster, err := s.GetProperty(0, V0AspectAccountKey)
 	if err != nil {
 		return nil, err
 	}
-	proof, err := s.GetProperty(V0AspectProofKey)
+	proof, err := s.GetProperty(0, V0AspectProofKey)
 	if err != nil {
 		return nil, err
 	}
@@ -83,17 +77,17 @@ func (s *metaStore) GetMeta() (*types.AspectMeta, error) {
 }
 
 // StoreBinding stores the binding of the aspect with the given ID to the account.
-func (s *metaStore) StoreBinding(account common.Address, _ uint64, _ int8) error {
-	return s.saveAspectRef(s.newPrefixStore(V0AspectRefKeyPrefix), s.ctx.AspectID, account)
+func (s *metaStore) StoreBinding(account common.Address, _ uint64, _ uint64, _ int8) error {
+	return s.saveAspectRef(s.NewPrefixStore(V0AspectRefKeyPrefix), s.ctx.AspectID, account)
 }
 
 // RemoveBinding removes the binding of the aspect with the given ID from the account.
 func (s *metaStore) RemoveBinding(account common.Address) error {
-	return s.removeAspectRef(s.newPrefixStore(V0AspectRefKeyPrefix), account)
+	return s.removeAspectRef(s.NewPrefixStore(V0AspectRefKeyPrefix), account)
 }
 
 func (s *metaStore) MigrateFrom(_ store.AspectMetaStore) error {
-	panic("cannot migrate to store v0")
+	panic("cannot migrate to Store v0")
 }
 
 func (s *metaStore) Used() (bool, error) {
@@ -105,7 +99,7 @@ func (s *metaStore) Used() (bool, error) {
 }
 
 func (s *metaStore) Init() error {
-	// for v0 store, we do not need to init anything
+	// for v0 Store, we do not need to init anything
 	return nil
 }
 
@@ -116,7 +110,7 @@ func (s *metaStore) GetCode(version uint64) ([]byte, error) {
 	if version == 0 || aspectID == emptyAddress {
 		return nil, store.ErrCodeNotFound
 	}
-	prefixStore := s.newPrefixStore(V0AspectCodeKeyPrefix)
+	prefixStore := s.NewPrefixStore(V0AspectCodeKeyPrefix)
 	storeKey := AspectVersionKey(aspectID.Bytes(), uint256.NewInt(version).Bytes())
 
 	// we do not charge gas for code loading
@@ -133,19 +127,19 @@ func (s *metaStore) GetVersionMeta(version uint64) (*types.VersionMeta, error) {
 
 func (s *metaStore) getMeta(aspectID common.Address, version uint64) (*types.VersionMeta, error) {
 	u256Version := uint256.NewInt(version)
-	prefixStore := s.newPrefixStore(V0AspectJoinPointRunKeyPrefix)
+	prefixStore := s.NewPrefixStore(V0AspectJoinPointRunKeyPrefix)
 	storeKey := AspectArrayKey(
 		aspectID.Bytes(),
 		u256Version.Bytes(),
 		[]byte(V0AspectRunJoinPointKey),
 	)
 
-	joinPoint, err := s.load(prefixStore, storeKey)
+	joinPoint, err := s.Load(prefixStore, storeKey)
 	if err != nil {
 		return nil, err
 	}
 
-	// for v0 pay master / store / code hash is not stored
+	// for v0 pay master / Store / code hash is not stored
 	return &types.VersionMeta{
 		JoinPoint: big.NewInt(0).SetBytes(joinPoint).Uint64(),
 	}, nil
@@ -157,12 +151,16 @@ func (s *metaStore) GetLatestVersion() (uint64, error) {
 
 // GetLatestVersion returns the latest version of the aspect with the given ID.
 func (s *metaStore) getLatestVersion(aspectID common.Address) (uint64, error) {
-	prefixStore := s.newPrefixStore(V0AspectCodeVersionKeyPrefix)
+	if s.latestVersionCache > 0 {
+		return s.latestVersionCache, nil
+	}
+
+	prefixStore := s.NewPrefixStore(V0AspectCodeVersionKeyPrefix)
 	storeKey := AspectIDKey(aspectID.Bytes())
 
-	// v0 aspect store uses uint256 to store version
+	// v0 aspect Store uses uint256 to Store version
 	version := uint256.NewInt(0)
-	versionBytes, err := s.load(prefixStore, storeKey)
+	versionBytes, err := s.Load(prefixStore, storeKey)
 	if err != nil {
 		return 0, err
 	}
@@ -170,13 +168,14 @@ func (s *metaStore) getLatestVersion(aspectID common.Address) (uint64, error) {
 		version.SetBytes(versionBytes)
 	}
 
-	return version.Uint64(), nil
+	s.latestVersionCache = version.Uint64()
+	return s.latestVersionCache, nil
 }
 
 // GetProperty returns the property of the aspect with the given ID and key.
-func (s *metaStore) GetProperty(key string) ([]byte, error) {
+func (s *metaStore) GetProperty(_ uint64, key string) ([]byte, error) {
 	aspectID := s.ctx.AspectID
-	codeStore := s.newPrefixStore(V0AspectPropertyKeyPrefix)
+	codeStore := s.NewPrefixStore(V0AspectPropertyKeyPrefix)
 	if _, ok := reservedPropertyKeys[key]; ok {
 		// for reserved key, we return empty value
 		return nil, nil
@@ -187,11 +186,11 @@ func (s *metaStore) GetProperty(key string) ([]byte, error) {
 		[]byte(key),
 	)
 
-	return s.load(codeStore, aspectPropertyKey)
+	return s.Load(codeStore, aspectPropertyKey)
 }
 
 // BumpVersion bumps the version of the aspect with the given ID.
-func (s *metaStore) BumpVersion() (uint64, error) {
+func (s *metaStore) BumpVersion() (v uint64, err error) {
 	aspectID := s.ctx.AspectID
 	version, err := s.GetLatestVersion()
 	if err != nil {
@@ -201,10 +200,16 @@ func (s *metaStore) BumpVersion() (uint64, error) {
 
 	newVersionU64 := version + 1
 	newVersion := uint256.NewInt(newVersionU64)
-	prefixStore := s.newPrefixStore(V0AspectCodeVersionKeyPrefix)
+	prefixStore := s.NewPrefixStore(V0AspectCodeVersionKeyPrefix)
 	storeKey := AspectIDKey(aspectID.Bytes())
 
-	return newVersionU64, s.store(prefixStore, storeKey, newVersion.Bytes())
+	defer func() {
+		if err == nil {
+			s.latestVersionCache = newVersionU64
+		}
+	}()
+
+	return newVersionU64, s.Store(prefixStore, storeKey, newVersion.Bytes())
 }
 
 // StoreVersionMeta stores the meta of the aspect with the given ID and version.
@@ -218,27 +223,28 @@ func (s *metaStore) StoreVersionMeta(version uint64, meta *types.VersionMeta) er
 			joinPointBig.SetUint64(meta.JoinPoint)
 		}
 
-		prefixStore := s.newPrefixStore(V0AspectJoinPointRunKeyPrefix)
+		prefixStore := s.NewPrefixStore(V0AspectJoinPointRunKeyPrefix)
 		storeKey := AspectArrayKey(aspectID.Bytes(), u256Version.Bytes(), []byte(V0AspectRunJoinPointKey))
-		if err := s.store(prefixStore, storeKey, joinPointBig.Bytes()); err != nil {
+		if err := s.Store(prefixStore, storeKey, joinPointBig.Bytes()); err != nil {
 			return err
 		}
 	}
 
-	// for v0 pay master / store / code hash is not stored
+	// for v0 pay master / proof is stored with property
+	// code hash is not stored
 	return nil
 }
 
 // StoreCode stores the code of the aspect with the given ID and version.
 func (s *metaStore) StoreCode(version uint64, code []byte) error {
 	aspectID := s.ctx.AspectID
-	prefixStore := s.newPrefixStore(V0AspectCodeKeyPrefix)
+	prefixStore := s.NewPrefixStore(V0AspectCodeKeyPrefix)
 	storeKey := AspectVersionKey(aspectID.Bytes(), uint256.NewInt(version).Bytes())
-	return s.store(prefixStore, storeKey, code)
+	return s.Store(prefixStore, storeKey, code)
 }
 
 // StoreProperties stores the properties of the aspect with the given ID.
-func (s *metaStore) StoreProperties(properties []types.Property) error {
+func (s *metaStore) StoreProperties(_ uint64, properties []types.Property) error {
 	if len(properties) == 0 {
 		return nil
 	}
@@ -255,10 +261,10 @@ func (s *metaStore) storeProperties(properties []types.Property) error {
 	}
 
 	aspectID := s.ctx.AspectID
-	prefixStore := s.newPrefixStore(V0AspectPropertyKeyPrefix)
+	prefixStore := s.NewPrefixStore(V0AspectPropertyKeyPrefix)
 	propertyKeysKey := AspectPropertyKey(aspectID.Bytes(), []byte(V0AspectPropertyAllKeyPrefix))
 
-	propertyAllKey, err := s.load(prefixStore, propertyKeysKey)
+	propertyAllKey, err := s.Load(prefixStore, propertyKeysKey)
 	if err != nil {
 		return err
 	}
@@ -282,26 +288,26 @@ func (s *metaStore) storeProperties(properties []types.Property) error {
 		return store.ErrTooManyProperties
 	}
 
-	// store property key
+	// Store property key
 	for i := range properties {
 		key := properties[i].Key
 		value := properties[i].Value
 
-		// store
+		// Store
 		aspectPropertyKey := AspectPropertyKey(
 			aspectID.Bytes(),
 			[]byte(key),
 		)
 
-		if err := s.store(prefixStore, aspectPropertyKey, value); err != nil {
-			s.ctx.Logger().Error("failed to store aspect property", "aspect", aspectID.Hex(), "key", key, "err", err)
+		if err := s.Store(prefixStore, aspectPropertyKey, value); err != nil {
+			s.ctx.Logger().Error("failed to Store aspect property", "aspect", aspectID.Hex(), "key", key, "err", err)
 			return err
 		}
 
 		s.ctx.Logger().Debug("aspect property updated", "aspect", aspectID.Hex(), "key", key)
 	}
 
-	// store AspectPropertyAllKey
+	// Store AspectPropertyAllKey
 	keyAry := make([]string, keySet.Size())
 	for i, key := range keySet.Values() {
 		keyAry[i] = key.(string)
@@ -311,7 +317,7 @@ func (s *metaStore) storeProperties(properties []types.Property) error {
 		aspectID.Bytes(),
 		[]byte(V0AspectPropertyAllKeyPrefix),
 	)
-	if err := s.store(prefixStore, allKeysKey, []byte(allKeys)); err != nil {
+	if err := s.Store(prefixStore, allKeysKey, []byte(allKeys)); err != nil {
 		return err
 	}
 
@@ -319,18 +325,18 @@ func (s *metaStore) storeProperties(properties []types.Property) error {
 }
 
 // LoadAspectBoundAccounts loads all accounts bound to the given aspect.
-func (s *metaStore) LoadAspectBoundAccounts() ([]*types.Binding, error) {
-	prefixStore := s.newPrefixStore(V0AspectRefKeyPrefix)
+func (s *metaStore) LoadAspectBoundAccounts() ([]types.Binding, error) {
+	prefixStore := s.NewPrefixStore(V0AspectRefKeyPrefix)
 	set, err := s.loadAspectRef(prefixStore)
 	if err != nil {
 		return nil, err
 	}
 
-	bindings := make([]*types.Binding, 0)
+	bindings := make([]types.Binding, 0)
 	if set != nil {
 		for _, data := range set.Values() {
 			contractAddr := common.HexToAddress(data.(string))
-			bindings = append(bindings, &types.Binding{
+			bindings = append(bindings, types.Binding{
 				Account: contractAddr,
 			})
 		}
@@ -358,7 +364,7 @@ func (s *metaStore) saveAspectRef(prefixStore prefix.Store, aspectID common.Addr
 		return err
 	}
 
-	return s.store(prefixStore, storeKey, rawJSON)
+	return s.Store(prefixStore, storeKey, rawJSON)
 }
 
 func (s *metaStore) removeAspectRef(prefixStore prefix.Store, account common.Address) error {
@@ -381,14 +387,14 @@ func (s *metaStore) removeAspectRef(prefixStore prefix.Store, account common.Add
 		return err
 	}
 
-	return s.store(prefixStore, storeKey, rawJSON)
+	return s.Store(prefixStore, storeKey, rawJSON)
 }
 
 func (s *metaStore) loadAspectRef(prefixStore prefix.Store) (*treeset.Set, error) {
 	aspectID := s.ctx.AspectID
 	storeKey := AspectIDKey(aspectID.Bytes())
 
-	rawTree, err := s.load(prefixStore, storeKey)
+	rawTree, err := s.Load(prefixStore, storeKey)
 	if err != nil {
 		return nil, err
 	}

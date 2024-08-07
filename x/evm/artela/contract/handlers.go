@@ -116,11 +116,9 @@ func (h DeployHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64, 
 		return nil, 0, err
 	}
 
-	if len(properties) > 0 {
-		if err = metaStore.StoreProperties(properties); err != nil {
-			ctx.logger.Error("store aspect property failed", "error", err)
-			return nil, 0, err
-		}
+	if err = metaStore.StoreProperties(newVersion, properties); err != nil {
+		ctx.logger.Error("store aspect property failed", "error", err)
+		return nil, 0, err
 	}
 
 	// get remaining gas after updating store
@@ -261,21 +259,23 @@ func (h UpgradeHandler) Handle(ctx *HandlerContext, gas uint64) ([]byte, uint64,
 	}
 
 	// join point might be nil, since there are some operation only Aspects
+	var jpU64 uint64
 	if joinPoint != nil {
-		if err = currentStore.StoreVersionMeta(newVersion, &aspectmoduletypes.VersionMeta{
-			JoinPoint: joinPoint.Uint64(),
-		}); err != nil {
-			ctx.logger.Error("store aspect meta failed", "error", err)
-			return nil, 0, err
-		}
+		jpU64 = joinPoint.Uint64()
+	}
+
+	if err = currentStore.StoreVersionMeta(newVersion, &aspectmoduletypes.VersionMeta{
+		JoinPoint: jpU64,
+		CodeHash:  common.BytesToHash(crypto.Keccak256(code)),
+	}); err != nil {
+		ctx.logger.Error("store aspect meta failed", "error", err)
+		return nil, 0, err
 	}
 
 	// save properties if any
-	if len(properties) > 0 {
-		if err = currentStore.StoreProperties(properties); err != nil {
-			ctx.logger.Error("store aspect property failed", "error", err)
-			return nil, 0, err
-		}
+	if err = currentStore.StoreProperties(newVersion, properties); err != nil {
+		ctx.logger.Error("store aspect property failed", "error", err)
+		return nil, 0, err
 	}
 
 	return nil, storeCtx.Gas(), err
@@ -374,7 +374,7 @@ func (b BindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, remain
 	}
 
 	// save aspect -> contract bindings
-	if err := metaStore.StoreBinding(account, aspectVersion, priority); err != nil {
+	if err := metaStore.StoreBinding(account, aspectVersion, meta.JoinPoint, priority); err != nil {
 		return nil, 0, err
 	}
 
@@ -471,7 +471,7 @@ func (u UnbindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, rema
 		return nil, 0, err
 	}
 
-	bindings, err := accountStore.LoadAccountBoundAspects(isContract)
+	bindings, err := accountStore.LoadAccountBoundAspects(aspectmoduletypes.NewDefaultFilter(isContract))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -567,7 +567,7 @@ func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byt
 		return nil, 0, err
 	}
 
-	bindings, err := accountStore.LoadAccountBoundAspects(isContract)
+	bindings, err := accountStore.LoadAccountBoundAspects(aspectmoduletypes.NewDefaultFilter(isContract))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -576,7 +576,7 @@ func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byt
 	var bindingInfo *aspectmoduletypes.Binding
 	for _, binding := range bindings {
 		if binding.Account == account {
-			bindingInfo = binding
+			bindingInfo = &binding
 			break
 		}
 	}
@@ -714,7 +714,7 @@ func (g GetBindingHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, 
 		return nil, 0, err
 	}
 
-	bindings, err := accountStore.LoadAccountBoundAspects(isContract)
+	bindings, err := accountStore.LoadAccountBoundAspects(aspectmoduletypes.NewDefaultFilter(isContract))
 	if err != nil {
 		return nil, 0, err
 	}

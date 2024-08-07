@@ -14,7 +14,7 @@ import (
 
 var _ store.AccountStore = (*accountStore)(nil)
 
-// accountStore is the version 0 account store, this is no longer maintained.
+// accountStore is the version 0 account Store, this is no longer maintained.
 // Deprecated.
 type accountStore struct {
 	BaseStore
@@ -22,14 +22,14 @@ type accountStore struct {
 	ctx *types.AccountStoreContext
 }
 
-// NewAccountStore creates a new instance of account store.
+// NewAccountStore creates a new instance of account Store.
 // Deprecated
 func NewAccountStore(ctx *types.AccountStoreContext) store.AccountStore {
 	var meter GasMeter
 	if ctx.ChargeGas() {
-		meter = newGasMeter(ctx)
+		meter = NewGasMeter(ctx)
 	} else {
-		meter = newNoOpGasMeter(ctx)
+		meter = NewNoOpGasMeter(ctx)
 	}
 
 	return &accountStore{
@@ -38,23 +38,15 @@ func NewAccountStore(ctx *types.AccountStoreContext) store.AccountStore {
 	}
 }
 
-func (s *accountStore) Gas() uint64 {
-	return s.ctx.Gas()
-}
-
-func (s *accountStore) TransferGasFrom(store store.GasMeteredStore) {
-	s.ctx.UpdateGas(store.Gas())
-}
-
 func (s *accountStore) Used() (bool, error) {
-	// check all binding keys, if any of them is not empty, then the account store is used
+	// check all binding keys, if any of them is not empty, then the account Store is used
 	bindingKeys := []string{V0VerifierBindingKeyPrefix, V0ContractBindKeyPrefix}
 	account := s.ctx.Account
 	used := false
 	for _, bindingKey := range bindingKeys {
-		prefixStore := s.newPrefixStore(bindingKey)
+		prefixStore := s.NewPrefixStore(bindingKey)
 		storeKey := AccountKey(account.Bytes())
-		rawJSON, err := s.load(prefixStore, storeKey)
+		rawJSON, err := s.Load(prefixStore, storeKey)
 		if err != nil {
 			return false, err
 		}
@@ -67,7 +59,7 @@ func (s *accountStore) Used() (bool, error) {
 }
 
 func (s *accountStore) MigrateFrom(old store.AccountStore) error {
-	panic("cannot migrate to v0 store")
+	panic("cannot migrate to v0 Store")
 }
 
 func (s *accountStore) Init() error {
@@ -122,9 +114,9 @@ func (s *accountStore) StoreBinding(aspectID common.Address, version uint64, joi
 
 	account := s.ctx.Account
 	for _, bindingKeyAndLimit := range bindingKeysAndLimit {
-		prefixStore := s.newPrefixStore(bindingKeyAndLimit.key)
+		prefixStore := s.NewPrefixStore(bindingKeyAndLimit.key)
 		storeKey := AccountKey(account.Bytes())
-		rawJSON, err := s.load(prefixStore, storeKey)
+		rawJSON, err := s.Load(prefixStore, storeKey)
 		if err != nil {
 			return err
 		}
@@ -165,7 +157,7 @@ func (s *accountStore) StoreBinding(aspectID common.Address, version uint64, joi
 			return err
 		}
 
-		if err := s.store(prefixStore, storeKey, bindingJSON); err != nil {
+		if err := s.Store(prefixStore, storeKey, bindingJSON); err != nil {
 			return err
 		}
 
@@ -187,9 +179,9 @@ func (s *accountStore) RemoveBinding(aspectID common.Address, joinPoint uint64, 
 
 	account := s.ctx.Account
 	for _, bindingKeyAndLimit := range bindingKeysAndLimit {
-		prefixStore := s.newPrefixStore(bindingKeyAndLimit.key)
+		prefixStore := s.NewPrefixStore(bindingKeyAndLimit.key)
 		storeKey := AccountKey(account.Bytes())
-		rawJSON, err := s.load(prefixStore, storeKey)
+		rawJSON, err := s.Load(prefixStore, storeKey)
 		if err != nil {
 			return err
 		}
@@ -220,7 +212,7 @@ func (s *accountStore) RemoveBinding(aspectID common.Address, joinPoint uint64, 
 			return err
 		}
 
-		if err := s.store(prefixStore, storeKey, bindingJSON); err != nil {
+		if err := s.Store(prefixStore, storeKey, bindingJSON); err != nil {
 			return err
 		}
 
@@ -234,19 +226,30 @@ func (s *accountStore) RemoveBinding(aspectID common.Address, joinPoint uint64, 
 }
 
 // LoadAccountBoundAspects loads all aspects bound to the given account.
-func (s *accountStore) LoadAccountBoundAspects(forceLoadAll ...bool) ([]*types.Binding, error) {
-	bindingKeys := []string{V0VerifierBindingKeyPrefix}
-	if len(forceLoadAll) == 0 || (len(forceLoadAll) > 0 && forceLoadAll[0]) {
+func (s *accountStore) LoadAccountBoundAspects(filter types.BindingFilter) ([]types.Binding, error) {
+	bindingKeys := make([]string, 0, 1)
+	if filter.JoinPoint != nil {
+		joinPoint := *filter.JoinPoint
+		if string(joinPoint) == artelasdkType.JoinPointRunType_VerifyTx.String() {
+			bindingKeys = append(bindingKeys, V0VerifierBindingKeyPrefix)
+		} else {
+			bindingKeys = append(bindingKeys, V0ContractBindKeyPrefix)
+		}
+	} else if filter.VerifierOnly {
+		bindingKeys = append(bindingKeys, V0VerifierBindingKeyPrefix)
+	} else if filter.TxLevelOnly {
 		bindingKeys = append(bindingKeys, V0ContractBindKeyPrefix)
+	} else {
+		bindingKeys = append(bindingKeys, V0VerifierBindingKeyPrefix, V0ContractBindKeyPrefix)
 	}
 
 	account := s.ctx.Account
 	bindingSet := make(map[common.Address]struct{})
-	bindings := make([]*types.Binding, 0)
+	bindings := make([]types.Binding, 0)
 	for _, bindingKey := range bindingKeys {
-		prefixStore := s.newPrefixStore(bindingKey)
+		prefixStore := s.NewPrefixStore(bindingKey)
 		storeKey := AccountKey(account.Bytes())
-		rawJSON, err := s.load(prefixStore, storeKey)
+		rawJSON, err := s.Load(prefixStore, storeKey)
 		if err != nil {
 			return nil, err
 		}
@@ -262,7 +265,7 @@ func (s *accountStore) LoadAccountBoundAspects(forceLoadAll ...bool) ([]*types.B
 			if _, ok := bindingSet[aspectMeta.Id]; ok {
 				continue
 			}
-			bindings = append(bindings, &types.Binding{
+			bindings = append(bindings, types.Binding{
 				Account:  aspectMeta.Id,
 				Version:  aspectMeta.Version.Uint64(),
 				Priority: int8(aspectMeta.Priority),

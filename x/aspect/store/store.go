@@ -8,11 +8,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+const (
+	ProtocolVersionLen = 2
+	ProtocolInfoLen    = 4
+)
+
 type ProtocolVersion uint16
 
-func (p *ProtocolVersion) MarshalText() ([]byte, error) {
+func (p ProtocolVersion) MarshalText() ([]byte, error) {
 	bytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(bytes, uint16(*p))
+	binary.BigEndian.PutUint16(bytes, uint16(p))
 	return bytes, nil
 }
 
@@ -26,24 +31,31 @@ func (p *ProtocolVersion) UnmarshalText(text []byte) error {
 	return nil
 }
 
-type AspectInfo struct {
-	MetaVersion   ProtocolVersion
-	StateVersion  ProtocolVersion
-	AspectVersion uint64
+func (p *ProtocolVersion) Offset() uint64 {
+	if *p == 0 {
+		return 0
+	} else {
+		return ProtocolVersionLen
+	}
 }
 
-func (a *AspectInfo) MarshalText() ([]byte, error) {
-	bytes := make([]byte, 14)
-	// first 2 bytes saves protocol info version
-	protocolVersion := ProtocolVersion(1)
-	version, _ := protocolVersion.MarshalText()
-	copy(bytes, version)
+type AspectInfo struct {
+	MetaVersion  ProtocolVersion
+	StateVersion ProtocolVersion
+
+	offset uint64
+}
+
+func (a *AspectInfo) Offset() uint64 {
+	return a.offset
+}
+
+func (a AspectInfo) MarshalText() ([]byte, error) {
+	bytes := make([]byte, ProtocolInfoLen)
 	// next 2 bytes saves meta version
-	binary.BigEndian.PutUint16(bytes[2:4], uint16(a.MetaVersion))
+	binary.BigEndian.PutUint16(bytes[0:2], uint16(a.MetaVersion))
 	// next 2 bytes saves state version
-	binary.BigEndian.PutUint16(bytes[4:6], uint16(a.StateVersion))
-	// next 8 bytes saves aspect version
-	binary.BigEndian.PutUint64(bytes[6:14], a.AspectVersion)
+	binary.BigEndian.PutUint16(bytes[2:4], uint16(a.StateVersion))
 	return bytes, nil
 }
 
@@ -51,30 +63,24 @@ func (a *AspectInfo) UnmarshalText(text []byte) error {
 	if len(text) == 0 {
 		// v0 store does not have aspect info, so we just return nil here
 		// so that all versions of aspect info is 0, which is compatible with v0 store
+		a.offset = 0
 		return nil
 	}
 
-	var version ProtocolVersion
-	if err := version.UnmarshalText(text); err != nil {
-		return err
-	}
-	if version == 0 {
-		return ErrInvalidProtocolInfo
-	}
-	if len(text) < 14 {
+	if len(text) < ProtocolInfoLen {
 		return ErrInvalidProtocolInfo
 	}
 
-	a.MetaVersion = ProtocolVersion(binary.BigEndian.Uint16(text[2:4]))
-	a.StateVersion = ProtocolVersion(binary.BigEndian.Uint16(text[4:6]))
-	a.AspectVersion = binary.BigEndian.Uint64(text[6:14])
+	a.MetaVersion = ProtocolVersion(binary.BigEndian.Uint16(text[0:2]))
+	a.StateVersion = ProtocolVersion(binary.BigEndian.Uint16(text[2:4]))
+	a.offset = ProtocolInfoLen
 
 	return nil
 }
 
 type (
 	AspectStateStoreConstructor = func(ctx *aspectmoduletypes.AspectStoreContext) AspectStateStore
-	AspectMetaStoreConstructor  = func(ctx *aspectmoduletypes.AspectStoreContext) AspectMetaStore
+	AspectMetaStoreConstructor  = func(ctx *aspectmoduletypes.AspectStoreContext, protocolExtension []byte) AspectMetaStore
 	AccountStoreConstructor     = func(ctx *aspectmoduletypes.AccountStoreContext) AccountStore
 )
 
@@ -106,8 +112,8 @@ type GasMeteredStore interface {
 
 // AccountStore is the store for each account that using aspect
 type AccountStore interface {
-	// LoadAccountBoundAspects returns the aspects bound to the account
-	LoadAccountBoundAspects(isCA ...bool) ([]*aspectmoduletypes.Binding, error)
+	// LoadAccountBoundAspects returns the aspects bound to the account,
+	LoadAccountBoundAspects(filter aspectmoduletypes.BindingFilter) ([]aspectmoduletypes.Binding, error)
 	// StoreBinding adds the binding of the given aspect to the account
 	StoreBinding(aspectID common.Address, version uint64, joinPoint uint64, priority int8, isCA bool) error
 	// RemoveBinding removes the binding of the given aspect from the account
@@ -146,9 +152,9 @@ type AspectMetaStore interface {
 	// GetLatestVersion returns the latest version of the aspect
 	GetLatestVersion() (uint64, error)
 	// GetProperty returns the properties for the given version
-	GetProperty(key string) ([]byte, error)
+	GetProperty(version uint64, key string) ([]byte, error)
 	// LoadAspectBoundAccounts returns the accounts bound to the aspect
-	LoadAspectBoundAccounts() ([]*aspectmoduletypes.Binding, error)
+	LoadAspectBoundAccounts() ([]aspectmoduletypes.Binding, error)
 
 	// BumpVersion bumps the version of the aspect
 	BumpVersion() (uint64, error)
@@ -159,9 +165,9 @@ type AspectMetaStore interface {
 	// StoreCode stores the code for the given version
 	StoreCode(version uint64, code []byte) error
 	// StoreProperties stores the properties for the given version
-	StoreProperties(properties []aspectmoduletypes.Property) error
+	StoreProperties(version uint64, properties []aspectmoduletypes.Property) error
 	// StoreBinding stores the binding for the given account
-	StoreBinding(account common.Address, version uint64, priority int8) error
+	StoreBinding(account common.Address, version uint64, joinPoint uint64, priority int8) error
 	// RemoveBinding removes the binding for the given account
 	RemoveBinding(account common.Address) error
 
@@ -201,7 +207,7 @@ func loadProtocolInfo(ctx aspectmoduletypes.StoreContext) (ProtocolVersion, []by
 		return 0, protoInfo, err
 	}
 
-	return protocolVersion, protoInfo, nil
+	return protocolVersion, protoInfo[protocolVersion.Offset():], nil
 }
 
 // parseAspectInfo parses
@@ -282,17 +288,14 @@ func GetAspectMetaStore(ctx *aspectmoduletypes.AspectStoreContext) (current Aspe
 }
 
 func getAspectMetaStore(ctx *aspectmoduletypes.AspectStoreContext, protocolVersion ProtocolVersion, rawAspectInfo []byte) (current AspectMetaStore, new AspectMetaStore, err error) {
-	metaVersion := ProtocolVersion(0)
-	if protocolVersion > 0 {
-		// load aspect info if protocol version is not 0
-		aspectInfo, err := parseAspectInfo(rawAspectInfo)
-		if err != nil {
-			ctx.Logger().Error("parse aspect info failed", "aspectId", ctx.AspectID.Hex())
-			return nil, nil, err
-		}
-		metaVersion = aspectInfo.MetaVersion
-		ctx.LatestVersion = aspectInfo.AspectVersion
+	// load aspect info if protocol version is not 0
+	aspectInfo, err := parseAspectInfo(rawAspectInfo)
+	if err != nil {
+		ctx.Logger().Error("parse aspect info failed", "aspectId", ctx.AspectID.Hex())
+		return nil, nil, err
 	}
+	protocolExtension := rawAspectInfo[aspectInfo.Offset():]
+	metaVersion := aspectInfo.MetaVersion
 
 	// load protocol storage constructor
 	constructor, ok := aspectMetaStoreRegistry[metaVersion]
@@ -308,7 +311,7 @@ func getAspectMetaStore(ctx *aspectmoduletypes.AspectStoreContext, protocolVersi
 	latestVersion := latestStoreVersion(aspectMetaStoreRegistry)
 	if latestVersion > protocolVersion {
 		// init the latest store version
-		latestStore = aspectMetaStoreRegistry[latestVersion](ctx)
+		latestStore = aspectMetaStoreRegistry[latestVersion](ctx, protocolExtension)
 	}
 
 	// if this protocol version is 0, we have 2 cases here:
@@ -316,7 +319,7 @@ func getAspectMetaStore(ctx *aspectmoduletypes.AspectStoreContext, protocolVersi
 	// 2. the aspect is deployed at protocol version 0, but not migrated to the new version
 	if protocolVersion == 0 {
 		// init v0 store first
-		v0Store := constructor(ctx)
+		v0Store := constructor(ctx, protocolExtension)
 		// so first we need to check whether this account has used aspect before
 		if used, err := v0Store.Used(); err != nil {
 			// check fail
@@ -336,7 +339,7 @@ func getAspectMetaStore(ctx *aspectmoduletypes.AspectStoreContext, protocolVersi
 	}
 
 	// build the aspect store
-	return constructor(ctx), latestStore, nil
+	return constructor(ctx, protocolExtension), latestStore, nil
 }
 
 func GetAspectStateStore(ctx *aspectmoduletypes.AspectStoreContext) (AspectStateStore, error) {
@@ -355,7 +358,6 @@ func GetAspectStateStore(ctx *aspectmoduletypes.AspectStoreContext) (AspectState
 	}
 
 	stateVersion := aspectInfo.StateVersion
-	ctx.LatestVersion = aspectInfo.AspectVersion
 
 	// load protocol state constructor
 	constructor, ok := aspectStateStoreRegistry[stateVersion]

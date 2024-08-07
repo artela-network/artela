@@ -61,7 +61,7 @@ func (j *ArtelaProvider) getCodes(ctx context.Context, address common.Address, p
 		return nil, err
 	}
 
-	bindings, err := accountStore.LoadAccountBoundAspects()
+	bindings, err := accountStore.LoadAccountBoundAspects(aspectmoduletypes.NewJoinPointFilter(point))
 	if err != nil {
 		return nil, err
 	}
@@ -76,20 +76,29 @@ func (j *ArtelaProvider) getCodes(ctx context.Context, address common.Address, p
 		if err != nil {
 			return nil, err
 		}
-		meta, err := metaStore.GetVersionMeta(binding.Version)
-		if err != nil {
-			return nil, err
+
+		var isExpectedJP bool
+		if binding.JoinPoint == 0 {
+			meta, err := metaStore.GetVersionMeta(binding.Version)
+			if err != nil {
+				return nil, err
+			}
+			isExpectedJP = asptypes.CanExecPoint(int64(meta.JoinPoint), point)
+		} else {
+			isExpectedJP = asptypes.CanExecPoint(int64(binding.JoinPoint), point)
 		}
 
 		// filter matched aspect with given join point
-		if ok := asptypes.CanExecPoint(int64(meta.JoinPoint), point); ok {
-			codes = append(codes, &asptypes.AspectCode{
-				AspectId: binding.Account.Hex(),
-				Version:  binding.Version,
-				Priority: binding.Priority,
-				Code:     code,
-			})
+		if !isExpectedJP {
+			continue
 		}
+
+		codes = append(codes, &asptypes.AspectCode{
+			AspectId: binding.Account.Hex(),
+			Version:  binding.Version,
+			Priority: binding.Priority,
+			Code:     code,
+		})
 	}
 
 	// sort the codes by priority

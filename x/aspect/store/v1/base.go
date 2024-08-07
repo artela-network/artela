@@ -1,9 +1,8 @@
-package v0
+package v1
 
 import (
 	"github.com/artela-network/artela/x/aspect/store"
-	evmtypes "github.com/artela-network/artela/x/evm/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	v0 "github.com/artela-network/artela/x/aspect/store/v0"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"math"
@@ -14,25 +13,24 @@ var emptyAddress common.Address
 const (
 	maxAspectBoundLimit           = math.MaxUint8
 	maxContractVerifierBoundLimit = uint8(1)
-	protocolVersion               = store.ProtocolVersion(0)
+	protocolVersion               = store.ProtocolVersion(1)
 )
 
 // BaseStore defines a shared base store which can be implemented by all other stores
 type BaseStore interface {
-	NewPrefixStore(prefixKey string) prefix.Store
-	Load(prefixStore prefix.Store, key []byte) ([]byte, error)
-	Store(prefixStore prefix.Store, key, value []byte) error
+	Load(key []byte) ([]byte, error)
+	Store(key, value []byte) error
 	Version() store.ProtocolVersion
 
 	store.GasMeteredStore
 }
 
 type baseStore struct {
-	gasMeter GasMeter
+	gasMeter v0.GasMeter
 	kvStore  sdk.KVStore
 }
 
-func NewBaseStore(gasMeter GasMeter, kvStore sdk.KVStore) BaseStore {
+func NewBaseStore(gasMeter v0.GasMeter, kvStore sdk.KVStore) BaseStore {
 	return &baseStore{
 		gasMeter: gasMeter,
 		kvStore:  kvStore,
@@ -44,18 +42,13 @@ func (s *baseStore) Version() store.ProtocolVersion {
 	return protocolVersion
 }
 
-// NewPrefixStore creates an instance of prefix Store,
-func (s *baseStore) NewPrefixStore(prefixKey string) prefix.Store {
-	return prefix.NewStore(s.kvStore, evmtypes.KeyPrefix(prefixKey))
-}
-
 // Load loads the value from the given Store and do gas metering for the given operation
-func (s *baseStore) Load(prefixStore prefix.Store, key []byte) ([]byte, error) {
+func (s *baseStore) Load(key []byte) ([]byte, error) {
 	if key == nil {
 		return nil, store.ErrInvalidStorageKey
 	}
 
-	value := prefixStore.Get(key)
+	value := s.kvStore.Get(key)
 
 	// gas metering after Load, since we are not like EVM, the data length is not known before Load
 	if err := s.gasMeter.MeasureStorageLoad(len(key) + len(value)); err != nil {
@@ -66,16 +59,21 @@ func (s *baseStore) Load(prefixStore prefix.Store, key []byte) ([]byte, error) {
 }
 
 // Store stores the value to the given store and do gas metering for the given operation
-func (s *baseStore) Store(prefixStore prefix.Store, key, value []byte) error {
+func (s *baseStore) Store(key, value []byte) error {
 	if key == nil {
 		return store.ErrInvalidStorageKey
 	}
 
-	if err := s.gasMeter.MeasureStorageStore(len(key) + len(value)); err != nil {
-		return err
-	}
+	if len(value) == 0 {
+		// if value is nil, we just delete the key, this will not charge gas
+		s.kvStore.Delete(key)
+	} else {
+		if err := s.gasMeter.MeasureStorageStore(len(key) + len(value)); err != nil {
+			return err
+		}
 
-	prefixStore.Set(key, value)
+		s.kvStore.Set(key, value)
+	}
 	return nil
 }
 

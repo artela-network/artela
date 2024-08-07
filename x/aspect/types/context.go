@@ -109,14 +109,12 @@ func (a *AccountStoreContext) Clone() AccountStoreContext {
 
 type AspectStoreContext struct {
 	StoreContext
-	AspectID      common.Address
-	LatestVersion uint64
+	AspectID common.Address
 }
 
 func (a *AspectStoreContext) Clone() AspectStoreContext {
 	return AspectStoreContext{
-		StoreContext:  a.StoreContext.clone(),
-		AspectID:      a.AspectID,
-		LatestVersion: a.LatestVersion,
+		StoreContext: a.StoreContext.clone(),
+		AspectID:     a.AspectID,
 	}
 }

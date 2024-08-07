@@ -14,7 +14,7 @@ type aspectPropertyHostAPI struct {
 }
 
 func (a *aspectPropertyHostAPI) Get(ctx *asptypes.RunnerContext, key string) (ret []byte, err error) {
-	ret = a.aspectRuntimeContext.GetAspectProperty(ctx, key)
+	ret = a.aspectRuntimeContext.GetAspectProperty(ctx, ctx.AspectVersion, key)
 	return
 }
 

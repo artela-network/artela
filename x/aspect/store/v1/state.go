@@ -1,14 +1,14 @@
-package v0
+package v1
 
 import (
 	"github.com/artela-network/artela/x/aspect/store"
+	v0 "github.com/artela-network/artela/x/aspect/store/v0"
 	"github.com/artela-network/artela/x/aspect/types"
 )
 
 var _ store.AspectStateStore = (*stateStore)(nil)
 
-// stateStore is the version 0 state Store, this is no longer maintained.
-// Deprecated.
+// stateStore is the version 1 state Store
 type stateStore struct {
 	BaseStore
 
@@ -16,12 +16,11 @@ type stateStore struct {
 }
 
 // NewStateStore creates a new instance of account state.
-// Deprecated
 func NewStateStore(ctx *types.AspectStoreContext) store.AspectStateStore {
 	// for state Store, we have already charged gas in host api,
 	// so no need to charge it again in the Store
 	return &stateStore{
-		BaseStore: NewBaseStore(NewNoOpGasMeter(ctx), ctx.CosmosContext().KVStore(ctx.EVMStoreKey())),
+		BaseStore: NewBaseStore(v0.NewNoOpGasMeter(ctx), ctx.CosmosContext().KVStore(ctx.AspectStoreKey())),
 		ctx:       ctx,
 	}
 }
@@ -29,18 +28,17 @@ func NewStateStore(ctx *types.AspectStoreContext) store.AspectStateStore {
 // SetState sets the state of the aspect with the given ID and key.
 func (s *stateStore) SetState(key []byte, value []byte) {
 	aspectID := s.ctx.AspectID
-	prefixStore := s.NewPrefixStore(V0AspectStateKeyPrefix)
-	storeKey := AspectArrayKey(aspectID.Bytes(), key)
-	if len(value) == 0 {
-		prefixStore.Delete(storeKey)
-	}
-	prefixStore.Set(storeKey, value)
+	stateKey := NewKeyBuilder(V1AspectStateKeyPrefix).AppendBytes(aspectID.Bytes()).AppendBytes(key).Build()
+	// no need to check error here, since we are using noop gas meter in state store
+	_ = s.Store(stateKey, value)
+	return
 }
 
 // GetState returns the state of the aspect with the given ID and key.
 func (s *stateStore) GetState(key []byte) []byte {
 	aspectID := s.ctx.AspectID
-	prefixStore := s.NewPrefixStore(V0AspectStateKeyPrefix)
-	storeKey := AspectArrayKey(aspectID.Bytes(), key)
-	return prefixStore.Get(storeKey)
+	stateKey := NewKeyBuilder(V1AspectStateKeyPrefix).AppendBytes(aspectID.Bytes()).AppendBytes(key).Build()
+	// no need to check error here, since we are using noop gas meter in state store
+	data, _ := s.Load(stateKey)
+	return data
 }
