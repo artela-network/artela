@@ -12,13 +12,12 @@ import (
 var _ store.AspectMetaStore = (*metaStore)(nil)
 
 const (
-	bindingSlotSize      = 120
-	bindingInfoLength    = 32
-	bindingSlotTotalSize = bindingSlotSize * bindingInfoLength
-	bindingDataLength    = 8
-	filterMaxSize        = 3840
-	filterActualLimit    = bindingSlotTotalSize * 9 / 10 // assume load factor of filter is 90%
-	filterManagedSlots   = filterActualLimit / bindingSlotSize
+	bindingSlotSize    = 120
+	bindingInfoLength  = 32
+	bindingDataLength  = 8
+	filterMaxSize      = 2047
+	filterActualLimit  = filterMaxSize * 9 / 10 // assume load factor of filter is 90%
+	filterManagedSlots = filterActualLimit / bindingSlotSize
 )
 
 type metaStore struct {
@@ -477,7 +476,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 func (m *metaStore) LoadAspectBoundAccounts() ([]types.Binding, error) {
 	// key format {5B codePrefix}{8B version}{20B aspectID}
 	key := store.NewKeyBuilder(V1AspectBindingKeyPrefix).
-		AppendBytes(m.ctx.AspectID.Bytes())
+		AppendBytes(m.ctx.AspectID.Bytes()).AppendByte(V1AspectBindingDataKeyPrefix)
 
 	firstSlot, err := m.Load(key.AppendUint64(0).Build())
 	if err != nil {
@@ -485,17 +484,17 @@ func (m *metaStore) LoadAspectBoundAccounts() ([]types.Binding, error) {
 	}
 
 	var length DataLength
-	if err := length.UnmarshalText(firstSlot[:8]); err != nil {
+	if err := length.UnmarshalText(firstSlot); err != nil {
 		return nil, err
 	}
 
 	// binding format for first slot {8B Length}{256B Bloom}{32B Binding}{32B Binding}...
 	// each slot will save maximum 120 binding info, which is 3840 bytes
 	bindingData := firstSlot[bindingDataLength:]
-	bindings := make([]types.Binding, length)
-	for i := uint64(bindingSlotSize); i < uint64(length); i += bindingSlotSize {
-		for j := 0; j < len(bindingData); j += 32 {
-			data := bindingData[j : j+32]
+	bindings := make([]types.Binding, 0, length)
+	for i := uint64(0); i < uint64(length); i += bindingSlotSize {
+		for j := 0; j < len(bindingData); j += bindingInfoLength {
+			data := bindingData[j : j+bindingInfoLength]
 			var binding Binding
 			if err := binding.UnmarshalText(data); err != nil {
 				return nil, err
@@ -588,8 +587,8 @@ func (m *metaStore) RemoveBinding(account common.Address) error {
 				}
 			}
 			// search in the slot
-			for k := 0; k < len(bindingDataInSlot); k += 32 {
-				data := bindingDataInSlot[k : k+32]
+			for k := 0; k < len(bindingDataInSlot); k += bindingInfoLength {
+				data := bindingDataInSlot[k : k+bindingInfoLength]
 				var binding Binding
 				if err := binding.UnmarshalText(data); err != nil {
 					return err
@@ -614,8 +613,10 @@ BindingFound:
 	// remove the binding from the slot
 	if *bindingSlot == lastSlot {
 		// only first slot used, or binding in last slot, we can just remove the binding from the slot
-		copy(bindingSlotData[*bindingSlotOffset:], bindingSlotData[*bindingSlotOffset+32:])
-		bindingSlotData = bindingSlotData[:len(bindingSlotData)-32]
+		if len(bindingSlotData) > bindingInfoLength {
+			copy(bindingSlotData[*bindingSlotOffset:], bindingSlotData[*bindingSlotOffset+bindingInfoLength:])
+		}
+		bindingSlotData = bindingSlotData[:len(bindingSlotData)-bindingInfoLength]
 		if *bindingSlot > 0 {
 			// if not the first slot we just save the data
 			if err := m.Store(bindingSlotKey.AppendUint64(*bindingSlot).Build(), bindingSlotData); err != nil {
@@ -623,7 +624,7 @@ BindingFound:
 			}
 		} else {
 			// for the first slot we just need update the first slot data
-			copy(firstSlot[bindingDataLength:], bindingSlotData)
+			firstSlot = append(firstSlot[:bindingDataLength], bindingSlotData...)
 		}
 
 		// remove the account from the filter, and update filter
@@ -646,11 +647,11 @@ BindingFound:
 		if err != nil {
 			return err
 		}
-		lastBindingBytes := lastSlotData[len(lastSlotData)-32:]
+		lastBindingBytes := lastSlotData[len(lastSlotData)-bindingInfoLength:]
 
 		// replace delete binding with the last binding
 		copy(bindingSlotData[*bindingSlotOffset:], lastBindingBytes)
-		lastSlotData = lastSlotData[:len(lastSlotData)-32]
+		lastSlotData = lastSlotData[:len(lastSlotData)-bindingInfoLength]
 
 		// update last slot
 		if err := m.Store(lastSlotKey, lastSlotData); err != nil {

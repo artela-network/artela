@@ -479,7 +479,7 @@ func (u UnbindHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byte, rema
 	// looking for binding info
 	version := uint64(0)
 	for _, binding := range bindings {
-		if binding.Account == account {
+		if binding.Account == aspectID {
 			version = binding.Version
 			break
 		}

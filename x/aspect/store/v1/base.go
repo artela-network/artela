@@ -60,7 +60,11 @@ func (s *baseStore) Load(key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return value, nil
+	// copy values to avoid unexpected modification
+	result := make([]byte, len(value))
+	copy(result, value)
+
+	return result, nil
 }
 
 // Store stores the value to the given store and do gas metering for the given operation

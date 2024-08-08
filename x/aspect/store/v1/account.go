@@ -112,7 +112,7 @@ func (a *accountStore) getAllBindings() ([]Binding, error) {
 		return nil, err
 	}
 
-	result := make([]Binding, len(bindings)/32)
+	result := make([]Binding, 0, len(bindings)/32)
 	for i := 0; i < len(bindings); i += 32 {
 		data := bindings[i : i+32]
 		if common.Hash(data) == emptyHash {
