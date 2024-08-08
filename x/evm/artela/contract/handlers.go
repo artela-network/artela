@@ -575,7 +575,7 @@ func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byt
 	// looking for binding info
 	var bindingInfo *aspectmoduletypes.Binding
 	for _, binding := range bindings {
-		if binding.Account == account {
+		if binding.Account == aspectID {
 			bindingInfo = &binding
 			break
 		}
