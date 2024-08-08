@@ -1,8 +1,10 @@
 package v1
 
 import (
+	"encoding/hex"
 	"github.com/artela-network/artela/x/aspect/store"
 	v0 "github.com/artela-network/artela/x/aspect/store/v0"
+	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"math"
@@ -28,12 +30,14 @@ type BaseStore interface {
 type baseStore struct {
 	gasMeter v0.GasMeter
 	kvStore  sdk.KVStore
+	logger   log.Logger
 }
 
-func NewBaseStore(gasMeter v0.GasMeter, kvStore sdk.KVStore) BaseStore {
+func NewBaseStore(logger log.Logger, gasMeter v0.GasMeter, kvStore sdk.KVStore) BaseStore {
 	return &baseStore{
 		gasMeter: gasMeter,
 		kvStore:  kvStore,
+		logger:   logger,
 	}
 }
 
@@ -50,6 +54,7 @@ func (s *baseStore) Load(key []byte) ([]byte, error) {
 
 	value := s.kvStore.Get(key)
 
+	s.logger.Info("========= load from aspect store", "key", abbreviateHex(key), "data", abbreviateHex(value))
 	// gas metering after Load, since we are not like EVM, the data length is not known before Load
 	if err := s.gasMeter.MeasureStorageLoad(len(key) + len(value)); err != nil {
 		return nil, err
@@ -66,12 +71,14 @@ func (s *baseStore) Store(key, value []byte) error {
 
 	if len(value) == 0 {
 		// if value is nil, we just delete the key, this will not charge gas
+		s.logger.Info("========= deleting from aspect store", "key", abbreviateHex(key))
 		s.kvStore.Delete(key)
 	} else {
 		if err := s.gasMeter.MeasureStorageStore(len(key) + len(value)); err != nil {
 			return err
 		}
 
+		s.logger.Info("========= saving to aspect store", "key", abbreviateHex(key), "data", abbreviateHex(value))
 		s.kvStore.Set(key, value)
 	}
 	return nil
@@ -83,4 +90,11 @@ func (s *baseStore) TransferGasFrom(store store.GasMeteredStore) {
 
 func (s *baseStore) Gas() uint64 {
 	return s.gasMeter.RemainingGas()
+}
+
+func abbreviateHex(data []byte) string {
+	if len(data) > 100 {
+		return hex.EncodeToString(data[:100]) + "..."
+	}
+	return hex.EncodeToString(data)
 }

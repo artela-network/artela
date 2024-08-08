@@ -42,7 +42,6 @@ func (s *accountStore) Used() (bool, error) {
 	// check all binding keys, if any of them is not empty, then the account Store is used
 	bindingKeys := []string{V0VerifierBindingKeyPrefix, V0ContractBindKeyPrefix}
 	account := s.ctx.Account
-	used := false
 	for _, bindingKey := range bindingKeys {
 		prefixStore := s.NewPrefixStore(bindingKey)
 		storeKey := AccountKey(account.Bytes())
@@ -51,11 +50,11 @@ func (s *accountStore) Used() (bool, error) {
 			return false, err
 		}
 		if len(rawJSON) > 0 {
-			used = true
+			return true, nil
 		}
 	}
 
-	return used, nil
+	return false, nil
 }
 
 func (s *accountStore) MigrateFrom(old store.AccountStore) error {

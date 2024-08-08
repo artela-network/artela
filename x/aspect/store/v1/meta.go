@@ -45,7 +45,7 @@ func NewAspectMetaStore(ctx *types.AspectStoreContext, protocolExtension []byte)
 	}
 
 	return &metaStore{
-		BaseStore:       NewBaseStore(meter, ctx.CosmosContext().KVStore(ctx.AspectStoreKey())),
+		BaseStore:       NewBaseStore(ctx.CosmosContext().Logger(), meter, ctx.CosmosContext().KVStore(ctx.AspectStoreKey())),
 		ctx:             ctx,
 		ext:             ext,
 		propertiesCache: make(map[uint64]map[string][]byte),
@@ -54,7 +54,7 @@ func NewAspectMetaStore(ctx *types.AspectStoreContext, protocolExtension []byte)
 
 func (m *metaStore) GetCode(version uint64) ([]byte, error) {
 	// key format {5B codePrefix}{8B version}{20B aspectID}
-	key := NewKeyBuilder(V1AspectCodeKeyPrefix).
+	key := store.NewKeyBuilder(V1AspectCodeKeyPrefix).
 		AppendUint64(version).
 		AppendBytes(m.ctx.AspectID.Bytes()).
 		Build()
@@ -63,7 +63,7 @@ func (m *metaStore) GetCode(version uint64) ([]byte, error) {
 
 func (m *metaStore) GetVersionMeta(version uint64) (*types.VersionMeta, error) {
 	// key format {5B metaPrefix}{8B version}{20B aspectID}
-	key := NewKeyBuilder(V1AspectMetaKeyPrefix).
+	key := store.NewKeyBuilder(V1AspectMetaKeyPrefix).
 		AppendUint64(version).
 		AppendBytes(m.ctx.AspectID.Bytes()).
 		Build()
@@ -100,7 +100,7 @@ func (m *metaStore) getProperties(version uint64) (properties map[string][]byte,
 	}
 
 	// key format {5B propertyPrefix}{8B version}{20B aspectID}
-	key := NewKeyBuilder(V1AspectPropertiesKeyPrefix).
+	key := store.NewKeyBuilder(V1AspectPropertiesKeyPrefix).
 		AppendUint64(version).
 		AppendBytes(m.ctx.AspectID.Bytes()).
 		Build()
@@ -142,7 +142,7 @@ func (m *metaStore) GetProperty(version uint64, propKey string) ([]byte, error) 
 }
 
 func (m *metaStore) BumpVersion() (ver uint64, err error) {
-	key := NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).Build()
+	key := store.NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).AppendBytes(m.ctx.AspectID.Bytes()).Build()
 	raw, err := m.Load(key)
 	if err != nil {
 		return 0, err
@@ -171,7 +171,7 @@ func (m *metaStore) BumpVersion() (ver uint64, err error) {
 
 func (m *metaStore) StoreVersionMeta(version uint64, meta *types.VersionMeta) error {
 	// key format {5B metaPrefix}{8B version}{20B aspectID}
-	key := NewKeyBuilder(V1AspectMetaKeyPrefix).
+	key := store.NewKeyBuilder(V1AspectMetaKeyPrefix).
 		AppendUint64(version).
 		AppendBytes(m.ctx.AspectID.Bytes()).
 		Build()
@@ -204,7 +204,7 @@ func (m *metaStore) StoreMeta(meta *types.AspectMeta) (err error) {
 		return err
 	}
 
-	key := NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).Build()
+	key := store.NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).AppendBytes(m.ctx.AspectID.Bytes()).Build()
 	raw, err := m.Load(key)
 	if err != nil {
 		return err
@@ -215,12 +215,12 @@ func (m *metaStore) StoreMeta(meta *types.AspectMeta) (err error) {
 	result = append(result, raw[:extensionOffset]...)
 	result = append(result, marshaled...)
 
-	return m.Store(key, marshaled)
+	return m.Store(key, result)
 }
 
 func (m *metaStore) StoreCode(version uint64, code []byte) error {
 	// key format {5B codePrefix}{8B version}{20B aspectID}
-	key := NewKeyBuilder(V1AspectCodeKeyPrefix).
+	key := store.NewKeyBuilder(V1AspectCodeKeyPrefix).
 		AppendUint64(version).
 		AppendBytes(m.ctx.AspectID.Bytes()).
 		Build()
@@ -260,7 +260,7 @@ func (m *metaStore) StoreProperties(version uint64, properties []types.Property)
 	}
 
 	// key format {5B propertyPrefix}{8B version}{20B aspectID}
-	key := NewKeyBuilder(V1AspectPropertiesKeyPrefix).
+	key := store.NewKeyBuilder(V1AspectPropertiesKeyPrefix).
 		AppendUint64(version).
 		AppendBytes(m.ctx.AspectID.Bytes()).
 		Build()
@@ -284,7 +284,7 @@ func (m *metaStore) StoreProperties(version uint64, properties []types.Property)
 
 func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoint uint64, priority int8) error {
 	// bindingKey format {5B codePrefix}{8B version}{20B aspectID}
-	bindingKey := NewKeyBuilder(V1AspectBindingKeyPrefix).
+	bindingKey := store.NewKeyBuilder(V1AspectBindingKeyPrefix).
 		AppendBytes(m.ctx.AspectID.Bytes())
 
 	// load first slot
@@ -323,7 +323,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 		filter := cuckoo.NewFilter(filterMaxSize)
 		// insert {aspectId}:{filterManagedSlotOffset 0-27} into cuckoo filter
 		// each filter will manage 28 binding slots
-		filter.Insert(NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
+		filter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
 		filterData := filter.Encode()
 		// save filter
 		if err := m.Store(filterKey.AppendUint8(0).Build(), filterData); err != nil {
@@ -365,7 +365,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 			lastFilter = filter
 		}
 
-		accountKey := NewKeyBuilder(account.Bytes())
+		accountKey := store.NewKeyBuilder(account.Bytes())
 		for j := uint8(0); i < filterManagedSlots; j++ {
 			if !filter.Lookup(accountKey.AppendUint8(i).Build()) {
 				// filter test fail, continue searching
@@ -406,7 +406,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 			filter := cuckoo.NewFilter(filterMaxSize)
 			// insert {aspectId}:{filterManagedSlotOffset 0-27} into cuckoo filter
 			// each filter will manage 28 binding slots
-			filter.Insert(NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
+			filter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
 			filterData := filter.Encode()
 			// save filter
 			if err := m.Store(filterKey.AppendUint8(lastFilterSlot+1).Build(), filterData); err != nil {
@@ -434,7 +434,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 				return err
 			}
 		}
-		lastFilter.Insert(NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
+		lastFilter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
 		filterData := lastFilter.Encode()
 		if err := m.Store(lastFilterKey, filterData); err != nil {
 			return err
@@ -476,7 +476,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 
 func (m *metaStore) LoadAspectBoundAccounts() ([]types.Binding, error) {
 	// key format {5B codePrefix}{8B version}{20B aspectID}
-	key := NewKeyBuilder(V1AspectBindingKeyPrefix).
+	key := store.NewKeyBuilder(V1AspectBindingKeyPrefix).
 		AppendBytes(m.ctx.AspectID.Bytes())
 
 	firstSlot, err := m.Load(key.AppendUint64(0).Build())
@@ -519,7 +519,7 @@ func (m *metaStore) LoadAspectBoundAccounts() ([]types.Binding, error) {
 
 func (m *metaStore) RemoveBinding(account common.Address) error {
 	// bindingKey format {5B codePrefix}{8B version}{20B aspectID}
-	bindingKey := NewKeyBuilder(V1AspectBindingKeyPrefix).
+	bindingKey := store.NewKeyBuilder(V1AspectBindingKeyPrefix).
 		AppendBytes(m.ctx.AspectID.Bytes())
 
 	// load first slot
@@ -567,7 +567,7 @@ func (m *metaStore) RemoveBinding(account common.Address) error {
 			lastFilter = filter
 		}
 
-		accountKey := NewKeyBuilder(account.Bytes())
+		accountKey := store.NewKeyBuilder(account.Bytes())
 		for j := uint8(0); j < filterManagedSlots; j++ {
 			if !filter.Lookup(accountKey.AppendUint8(j).Build()) {
 				// filter test fail, continue searching
@@ -628,7 +628,7 @@ BindingFound:
 
 		// remove the account from the filter, and update filter
 		filterSlot := uint8(*bindingSlot / filterManagedSlots)
-		bindingFilter.Delete(NewKeyBuilder(account.Bytes()).AppendUint8(filterSlot).Build())
+		bindingFilter.Delete(store.NewKeyBuilder(account.Bytes()).AppendUint8(filterSlot).Build())
 		// if there is nothing in the filter, delete it
 		var updatedFilter []byte
 		if bindingFilter.Count() > 0 {
@@ -685,7 +685,7 @@ BindingFound:
 		if lastSlot/filterManagedSlots == *bindingSlot/filterManagedSlots {
 			// if the last slot and the binding slot are in the same filter, we just need to update the filter
 			filterOffSetKey := uint8(*bindingSlot % filterManagedSlots)
-			lastFilter.Delete(NewKeyBuilder(account.Bytes()).AppendUint8(filterOffSetKey).Build())
+			lastFilter.Delete(store.NewKeyBuilder(account.Bytes()).AppendUint8(filterOffSetKey).Build())
 			// if there is nothing in the filter, delete it
 			var updatedFilter []byte
 			if lastFilter.Count() > 0 {
@@ -706,7 +706,7 @@ BindingFound:
 
 			// remove the moved binding account from the last slot filter, and update filter
 			var updatedFilter []byte
-			lastFilter.Delete(NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
+			lastFilter.Delete(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
 			if lastFilter.Count() > 0 {
 				updatedFilter = lastFilter.Encode()
 			}
@@ -716,8 +716,8 @@ BindingFound:
 
 			// remove the account from the binding slot filter, and update filter
 			bindingFilterOffset := uint8(*bindingSlot % filterManagedSlots)
-			bindingFilter.Delete(NewKeyBuilder(account.Bytes()).AppendUint8(bindingFilterOffset).Build())
-			bindingFilter.Insert(NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(bindingFilterOffset).Build())
+			bindingFilter.Delete(store.NewKeyBuilder(account.Bytes()).AppendUint8(bindingFilterOffset).Build())
+			bindingFilter.Insert(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(bindingFilterOffset).Build())
 			if err := m.Store(filterKey.AppendUint8(uint8(*bindingSlot/filterManagedSlots)).Build(), bindingFilter.Encode()); err != nil {
 				return err
 			}
@@ -765,15 +765,21 @@ func (m *metaStore) Init() error {
 		return err
 	}
 
-	key := NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).Build()
-	raw, err := m.Load(key)
+	extension := &Extension{
+		AspectVersion: 0,
+		PayMaster:     common.Address{},
+		Proof:         nil,
+	}
+	extBytes, err := extension.MarshalText()
 	if err != nil {
 		return err
 	}
 
-	result := make([]byte, len(raw))
-	copy(result, versionBytes)
-	copy(result[store.ProtocolVersionLen:], infoBytes)
+	key := store.NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).AppendBytes(m.ctx.AspectID.Bytes()).Build()
+	result := make([]byte, 0, len(versionBytes)+len(infoBytes)+len(extBytes))
+	result = append(result, versionBytes...)
+	result = append(result, infoBytes...)
+	result = append(result, extBytes...)
 
 	return m.Store(key, result)
 }

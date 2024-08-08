@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	storageLoadCost     = 50
-	storageStoreCost    = 20000
+	storageLoadCost     = 10
+	storageStoreCost    = 1000
 	storageSaveCodeCost = 1000
-	storageUpdateCost   = 5000
+	storageUpdateCost   = 1000
 )
 
 type GasMeter interface {

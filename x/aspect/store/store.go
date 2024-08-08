@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -31,8 +30,8 @@ func (p *ProtocolVersion) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (p *ProtocolVersion) Offset() uint64 {
-	if *p == 0 {
+func (p ProtocolVersion) Offset() uint64 {
+	if p == 0 {
 		return 0
 	} else {
 		return ProtocolVersionLen
@@ -185,8 +184,7 @@ type AspectMetaStore interface {
 
 // loadProtocolInfo loads the protocol info for the given address
 func loadProtocolInfo(ctx aspectmoduletypes.StoreContext) (ProtocolVersion, []byte, error) {
-	aspectKV := ctx.CosmosContext().KVStore(ctx.AspectStoreKey())
-	store := prefix.NewStore(aspectKV, AspectProtocolInfoKeyPrefix)
+	store := ctx.CosmosContext().KVStore(ctx.AspectStoreKey())
 
 	var address common.Address
 	switch ctx := ctx.(type) {
@@ -198,7 +196,8 @@ func loadProtocolInfo(ctx aspectmoduletypes.StoreContext) (ProtocolVersion, []by
 		return 0, nil, ErrInvalidStoreContext
 	}
 
-	protoInfo := store.Get(address.Bytes())
+	key := NewKeyBuilder(AspectProtocolInfoKeyPrefix).AppendBytes(address.Bytes()).Build()
+	protoInfo := store.Get(key)
 
 	var protocolVersion ProtocolVersion
 	if err := protocolVersion.UnmarshalText(protoInfo); err != nil {

@@ -26,7 +26,7 @@ func NewAccountStore(ctx *types.AccountStoreContext) store.AccountStore {
 	}
 
 	return &accountStore{
-		BaseStore: NewBaseStore(meter, ctx.CosmosContext().KVStore(ctx.AspectStoreKey())),
+		BaseStore: NewBaseStore(ctx.CosmosContext().Logger(), meter, ctx.CosmosContext().KVStore(ctx.AspectStoreKey())),
 		ctx:       ctx,
 	}
 }
@@ -96,7 +96,7 @@ func (a *accountStore) StoreBinding(aspectID common.Address, version uint64, joi
 	}
 	allBindings = append(allBindings, newBinding)
 
-	key := NewKeyBuilder(V1AccountBindingKeyPrefix).AppendBytes(a.ctx.Account.Bytes()).Build()
+	key := store.NewKeyBuilder(V1AccountBindingKeyPrefix).AppendBytes(a.ctx.Account.Bytes()).Build()
 	bindingsBytes, err := Bindings(allBindings).MarshalText()
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func (a *accountStore) StoreBinding(aspectID common.Address, version uint64, joi
 }
 
 func (a *accountStore) getAllBindings() ([]Binding, error) {
-	key := NewKeyBuilder(V1AccountBindingKeyPrefix).AppendBytes(a.ctx.Account.Bytes()).Build()
+	key := store.NewKeyBuilder(V1AccountBindingKeyPrefix).AppendBytes(a.ctx.Account.Bytes()).Build()
 	bindings, err := a.Load(key)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (a *accountStore) getAllBindings() ([]Binding, error) {
 }
 
 func (a *accountStore) RemoveBinding(aspectID common.Address, _ uint64, _ bool) error {
-	key := NewKeyBuilder(V1AccountBindingKeyPrefix).AppendBytes(a.ctx.Account.Bytes()).Build()
+	key := store.NewKeyBuilder(V1AccountBindingKeyPrefix).AppendBytes(a.ctx.Account.Bytes()).Build()
 	allBindings, err := a.getAllBindings()
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (a *accountStore) RemoveBinding(aspectID common.Address, _ uint64, _ bool) 
 }
 
 func (a *accountStore) Used() (bool, error) {
-	key := NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).Build()
+	key := store.NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).AppendBytes(a.ctx.Account.Bytes()).Build()
 	protocol, err := a.Load(key)
 	if err != nil {
 		return false, err
@@ -183,6 +183,6 @@ func (a *accountStore) Init() error {
 		return err
 	}
 
-	key := NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).Build()
+	key := store.NewKeyBuilder(store.AspectProtocolInfoKeyPrefix).AppendBytes(a.ctx.Account.Bytes()).Build()
 	return a.Store(key, versionBytes)
 }

@@ -62,14 +62,7 @@ func (c *AspectNativeContract) register(handler Handler) {
 }
 
 func (c *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, gas uint64, commit bool) (ret []byte, remainingGas uint64, err error) {
-	var writeCacheFunc func()
-	ctx, writeCacheFunc = ctx.CacheContext()
-	ret, remainingGas, err = c.applyMsg(ctx, msg, gas, commit)
-	if err == nil && commit {
-		writeCacheFunc()
-	}
-
-	return ret, remainingGas, err
+	return c.applyMsg(ctx, msg, gas, commit)
 }
 
 func (c *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, gas uint64, commit bool) (ret []byte, remainingGas uint64, err error) {
