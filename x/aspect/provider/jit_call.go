@@ -5,8 +5,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/aspect-core/integration"
+
+	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 var _ integration.AspectProtocol = (*AspectProtocolProvider)(nil)

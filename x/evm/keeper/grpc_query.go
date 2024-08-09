@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/artela-network/artela/x/aspect/provider"
 	"math/big"
 	"time"
 
@@ -23,7 +24,6 @@ import (
 	"github.com/artela-network/artela-evm/tracers/logger"
 	"github.com/artela-network/artela-evm/vm"
 	artela "github.com/artela-network/artela/ethereum/types"
-	"github.com/artela-network/artela/x/evm/artela/provider"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"

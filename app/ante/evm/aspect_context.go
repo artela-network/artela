@@ -2,6 +2,7 @@ package evm
 
 import (
 	"fmt"
+	"github.com/artela-network/artela/x/aspect/provider"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/artela-network/artela/app/interfaces"
-	"github.com/artela-network/artela/x/evm/artela/provider"
 	"github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"

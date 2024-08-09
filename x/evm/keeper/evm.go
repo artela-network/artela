@@ -384,8 +384,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 	lastHeight := uint64(ctx.BlockHeight())
 	// if transaction is Aspect operational, short the circuit and skip the processes
 	if isAspectOpTx := asptypes.IsAspectContractAddr(msg.To); isAspectOpTx {
-		nativeContract := contract.NewAspectNativeContract(k.storeKey, evm,
-			ctx.BlockHeight, stateDB, k.logger)
+		nativeContract := contract.NewAspectNativeContract(aspectCtx.EVMStoreKey(), aspectCtx.AspectStoreKey(), evm, stateDB, k.logger)
 		nativeContract.Init()
 		ret, leftoverGas, vmErr = nativeContract.ApplyMessage(ctx, msg, leftoverGas, commit)
 	} else if contractCreation {

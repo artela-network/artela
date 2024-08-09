@@ -1,11 +1,11 @@
 package contract
 
 import (
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/libs/log"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/ethereum/go-ethereum/core"
@@ -18,26 +18,30 @@ import (
 )
 
 type AspectNativeContract struct {
-	aspectService *AspectService
-	evmState      *states.StateDB
-	evm           *vm.EVM
+	evmState *states.StateDB
+	evm      *vm.EVM
 
 	logger   log.Logger
 	handlers map[string]Handler
+
+	evmStoreKey    storetypes.StoreKey
+	aspectStoreKey storetypes.StoreKey
 }
 
-func NewAspectNativeContract(storeKey storetypes.StoreKey,
+func NewAspectNativeContract(
+	evmStoreKey storetypes.StoreKey,
+	aspectStoreKey storetypes.StoreKey,
 	evm *vm.EVM,
-	getBlockHeight func() int64,
 	evmState *states.StateDB,
 	logger log.Logger,
 ) *AspectNativeContract {
 	return &AspectNativeContract{
-		aspectService: NewAspectService(storeKey, getBlockHeight, logger),
-		evm:           evm,
-		evmState:      evmState,
-		logger:        logger,
-		handlers:      make(map[string]Handler),
+		evmStoreKey:    evmStoreKey,
+		aspectStoreKey: aspectStoreKey,
+		evm:            evm,
+		evmState:       evmState,
+		logger:         logger,
+		handlers:       make(map[string]Handler),
 	}
 }
 
@@ -58,14 +62,7 @@ func (c *AspectNativeContract) register(handler Handler) {
 }
 
 func (c *AspectNativeContract) ApplyMessage(ctx sdk.Context, msg *core.Message, gas uint64, commit bool) (ret []byte, remainingGas uint64, err error) {
-	var writeCacheFunc func()
-	ctx, writeCacheFunc = ctx.CacheContext()
-	ret, remainingGas, err = c.applyMsg(ctx, msg, gas, commit)
-	if err == nil && commit {
-		writeCacheFunc()
-	}
-
-	return ret, remainingGas, err
+	return c.applyMsg(ctx, msg, gas, commit)
 }
 
 func (c *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, gas uint64, commit bool) (ret []byte, remainingGas uint64, err error) {
@@ -84,11 +81,12 @@ func (c *AspectNativeContract) applyMsg(ctx sdk.Context, msg *core.Message, gas 
 		msg.From,
 		parameters,
 		commit,
-		c.aspectService,
 		common.WrapLogger(c.logger.With("module", "aspect-system-contract")),
 		c.evmState,
 		c.evm,
 		method,
+		c.evmStoreKey,
+		c.aspectStoreKey,
 		msg.Data,
 		msg.Nonce,
 		msg.GasLimit,
