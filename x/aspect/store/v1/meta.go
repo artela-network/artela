@@ -321,7 +321,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 	}
 
 	// check max binding amount, an aspect can bind with at most 459000 accounts
-	if length > maxBindingSize {
+	if length >= maxBindingSize {
 		return store.ErrBindingLimitExceeded
 	}
 
