@@ -365,7 +365,15 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 		}
 
 		accountKey := store.NewKeyBuilder(account.Bytes())
-		for j := uint8(0); i < filterManagedSlots; j++ {
+
+		// if total slot is less than managed, just test all slots, otherwise test managed
+		slotsToTest := uint8(filterManagedSlots)
+		if filterManagedSlots > length {
+			slotsToTest = uint8(length)
+		}
+
+		// check aspect is already bound
+		for j := uint8(0); j < slotsToTest; j++ {
 			if !filter.Lookup(accountKey.AppendUint8(i).Build()) {
 				// filter test fail, continue searching
 				continue

@@ -202,7 +202,7 @@ func (k Keeper) EmitBlockBloomEvent(ctx cosmos.Context, bloom ethereum.Bloom) {
 	encodedBloom := base64.StdEncoding.EncodeToString(bloom.Bytes())
 
 	sprintf := fmt.Sprintf("emit block event %d bloom %s header %d, ", len(bloom.Bytes()), encodedBloom, ctx.BlockHeight())
-	k.Logger(ctx).Info(sprintf)
+	k.Logger(ctx).Debug(sprintf)
 
 	ctx.EventManager().EmitEvent(
 		cosmos.NewEvent(
