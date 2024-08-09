@@ -3,15 +3,16 @@ package provider
 import (
 	"context"
 	"errors"
+	"slices"
+
+	asptypes "github.com/artela-network/aspect-core/types"
+
 	"github.com/artela-network/artela/x/aspect/store"
 	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
-	"slices"
+	"github.com/artela-network/artela/x/evm/artela/types"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/artela-network/artela/x/evm/artela/types"
-	asptypes "github.com/artela-network/aspect-core/types"
 )
 
 var _ asptypes.AspectProvider = (*ArtelaProvider)(nil)

@@ -2,8 +2,10 @@ package v1
 
 import (
 	"encoding/binary"
-	"github.com/artela-network/artela/x/aspect/store"
+
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/artela-network/artela/x/aspect/store"
 )
 
 var emptyHash = common.Hash{}

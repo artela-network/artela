@@ -3,8 +3,10 @@ package store
 import (
 	"encoding/binary"
 	"encoding/hex"
-	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
+
 	"github.com/ethereum/go-ethereum/common"
+
+	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
 )
 
 const (

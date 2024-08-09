@@ -1,11 +1,12 @@
 package v1
 
 import (
+	aspect "github.com/artela-network/aspect-core/types"
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/artela-network/artela/x/aspect/store"
 	v0 "github.com/artela-network/artela/x/aspect/store/v0"
 	"github.com/artela-network/artela/x/aspect/types"
-	aspect "github.com/artela-network/aspect-core/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 var _ store.AccountStore = (*accountStore)(nil)

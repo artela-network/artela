@@ -1,16 +1,18 @@
 package v0
 
 import (
-	aspectutils "github.com/artela-network/artela/x/aspect/common"
-	"github.com/artela-network/artela/x/aspect/store"
-	"github.com/artela-network/artela/x/aspect/types"
+	"math/big"
+	"strings"
+
 	artelasdkType "github.com/artela-network/aspect-core/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"math/big"
-	"strings"
+
+	aspectutils "github.com/artela-network/artela/x/aspect/common"
+	"github.com/artela-network/artela/x/aspect/store"
+	"github.com/artela-network/artela/x/aspect/types"
 )
 
 var _ store.AspectMetaStore = (*metaStore)(nil)
