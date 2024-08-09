@@ -699,32 +699,31 @@ BindingFound:
 			}
 		}
 
+		lastBinding := new(Binding)
+		if err := lastBinding.UnmarshalText(lastBindingBytes); err != nil {
+			return err
+		}
+
 		// remove the binding from the filters
 		if lastSlot/filterManagedSlots == *bindingSlot/filterManagedSlots {
-			// if the last slot and the binding slot are in the same filter, we just need to update the filter
-			filterOffSetKey := uint8(*bindingSlot % filterManagedSlots)
-			lastFilter.Delete(store.NewKeyBuilder(account.Bytes()).AppendUint8(filterOffSetKey).Build())
-			// if there is nothing in the filter, delete it
-			var updatedFilter []byte
-			if lastFilter.Count() > 0 {
-				// otherwise we update it
-				updatedFilter = lastFilter.Encode()
-			}
+			bindingFilterOffsetKey := uint8(*bindingSlot % filterManagedSlots)
+			lastFilterOffsetKey := uint8(lastSlot % filterManagedSlots)
+			// need to remove both last binding and the unbound one from their old position
+			// and add last one to the new position
+			lastFilter.Delete(store.NewKeyBuilder(account.Bytes()).AppendUint8(bindingFilterOffsetKey).Build())
+			lastFilter.Delete(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(lastFilterOffsetKey).Build())
+			lastFilter.Insert(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(bindingFilterOffsetKey).Build())
+
 			// update last filter
-			if err := m.Store(filterKey.AppendUint8(lastFilterSlot).Build(), updatedFilter); err != nil {
+			if err := m.Store(filterKey.AppendUint8(lastFilterSlot).Build(), lastFilter.Encode()); err != nil {
 				return err
 			}
 		} else {
 			// if the last slot and the binding slot are in different filters, we need to update both filters
-			// remove the account from the filter, and update filter
-			lastBinding := new(Binding)
-			if err := lastBinding.UnmarshalText(lastBindingBytes); err != nil {
-				return err
-			}
-
 			// remove the moved binding account from the last slot filter, and update filter
+			lastFilterOffsetKey := uint8(lastSlot % filterManagedSlots)
+			lastFilter.Delete(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(lastFilterOffsetKey).Build())
 			var updatedFilter []byte
-			lastFilter.Delete(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
 			if lastFilter.Count() > 0 {
 				updatedFilter = lastFilter.Encode()
 			}
