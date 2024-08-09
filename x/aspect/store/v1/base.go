@@ -6,16 +6,12 @@ import (
 	v0 "github.com/artela-network/artela/x/aspect/store/v0"
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
 	"math"
 )
 
-var emptyAddress common.Address
-
 const (
-	maxAspectBoundLimit           = math.MaxUint8
-	maxContractVerifierBoundLimit = uint8(1)
-	protocolVersion               = store.ProtocolVersion(1)
+	maxAspectBoundLimit = math.MaxUint8
+	protocolVersion     = store.ProtocolVersion(1)
 )
 
 // BaseStore defines a shared base store which can be implemented by all other stores
