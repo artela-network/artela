@@ -132,6 +132,11 @@ func (m *metaStore) getProperties(version uint64) (properties map[string][]byte,
 }
 
 func (m *metaStore) GetProperty(version uint64, propKey string) ([]byte, error) {
+	if version == 0 {
+		// for non-exist version property, return nil
+		return nil, nil
+	}
+
 	allProps, err := m.getProperties(version)
 	if err != nil {
 		return nil, err

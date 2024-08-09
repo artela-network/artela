@@ -599,10 +599,35 @@ func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byt
 		return nil, 0, err
 	}
 
+	if version == 0 {
+		// use latest if not specified
+		version, err = metaStore.GetLatestVersion()
+		if err != nil {
+			return nil, 0, err
+		}
+
+		if version == 0 {
+			return nil, 0, errors.New("aspect not deployed")
+		}
+	}
+
 	// load new aspect meta
 	newVersionMeta, err := metaStore.GetVersionMeta(version)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	i64JP := int64(newVersionMeta.JoinPoint)
+	txAspect := artelasdkType.CheckIsTransactionLevel(i64JP)
+	txVerifier := artelasdkType.CheckIsTxVerifier(i64JP)
+
+	if !txAspect && !txVerifier {
+		return nil, 0, errors.New("aspect is either for tx or verifier")
+	}
+
+	// EoA can only bind with tx verifier
+	if !txVerifier && !isContract {
+		return nil, 0, errors.New("only verifier aspect can be bound with eoa")
 	}
 
 	// remove old version aspect from account bound list

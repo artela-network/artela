@@ -69,6 +69,11 @@ func (a *accountStore) StoreBinding(aspectID common.Address, version uint64, joi
 
 	i64JP := int64(joinPoint)
 	isTxVerifier := aspect.CheckIsTxVerifier(i64JP)
+	isTxLevel := aspect.CheckIsTransactionLevel(i64JP)
+
+	if !isTxLevel && !isTxVerifier {
+		return store.ErrNoJoinPoint
+	}
 
 	if !isCA && !isTxVerifier {
 		return store.ErrBoundNonVerifierWithEOA
