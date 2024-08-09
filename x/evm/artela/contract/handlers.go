@@ -599,16 +599,18 @@ func (c ChangeVersionHandler) Handle(ctx *HandlerContext, gas uint64) (ret []byt
 		return nil, 0, err
 	}
 
+	latestVersion, err := metaStore.GetLatestVersion()
+	if latestVersion == 0 {
+		return nil, 0, errors.New("aspect not deployed")
+	}
+
+	if version > latestVersion {
+		return nil, 0, errors.New("given version of aspect does not exist")
+	}
+
 	if version == 0 {
 		// use latest if not specified
-		version, err = metaStore.GetLatestVersion()
-		if err != nil {
-			return nil, 0, err
-		}
-
-		if version == 0 {
-			return nil, 0, errors.New("aspect not deployed")
-		}
+		version = latestVersion
 	}
 
 	// load new aspect meta

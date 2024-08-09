@@ -54,7 +54,7 @@ func (s *baseStore) Load(key []byte) ([]byte, error) {
 
 	value := s.kvStore.Get(key)
 
-	s.logger.Info("========= load from aspect store", "key", abbreviateHex(key), "data", abbreviateHex(value))
+	s.logger.Debug("load from aspect store", "key", abbreviateHex(key), "data", abbreviateHex(value))
 	// gas metering after Load, since we are not like EVM, the data length is not known before Load
 	if err := s.gasMeter.MeasureStorageLoad(len(key) + len(value)); err != nil {
 		return nil, err
@@ -75,14 +75,14 @@ func (s *baseStore) Store(key, value []byte) error {
 
 	if len(value) == 0 {
 		// if value is nil, we just delete the key, this will not charge gas
-		s.logger.Info("========= deleting from aspect store", "key", abbreviateHex(key))
+		s.logger.Debug("deleting from aspect store", "key", abbreviateHex(key))
 		s.kvStore.Delete(key)
 	} else {
 		if err := s.gasMeter.MeasureStorageStore(len(key) + len(value)); err != nil {
 			return err
 		}
 
-		s.logger.Info("========= saving to aspect store", "key", abbreviateHex(key), "data", abbreviateHex(value))
+		s.logger.Debug("saving to aspect store", "key", abbreviateHex(key), "data", abbreviateHex(value))
 		s.kvStore.Set(key, value)
 	}
 	return nil

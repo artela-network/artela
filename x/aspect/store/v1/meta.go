@@ -548,7 +548,8 @@ func (m *metaStore) RemoveBinding(account common.Address) error {
 	}
 
 	if length == 0 {
-		return store.ErrNotBound
+		// if not bound, just pass
+		return nil
 	}
 
 	lastSlot := uint64(length / bindingSlotSize)
@@ -620,7 +621,8 @@ func (m *metaStore) RemoveBinding(account common.Address) error {
 
 BindingFound:
 	if bindingSlotData == nil || bindingSlot == nil || bindingFilter == nil {
-		return store.ErrNotBound
+		// if not bound, just pass
+		return nil
 	}
 
 	// remove the binding from the slot

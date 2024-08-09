@@ -151,7 +151,8 @@ func (a *accountStore) RemoveBinding(aspectID common.Address, _ uint64, _ bool) 
 	}
 
 	if toDelete < 0 {
-		return store.ErrNotBound
+		// if not bind, return nil
+		return nil
 	}
 
 	allBindings = append(allBindings[:toDelete], allBindings[toDelete+1:]...)

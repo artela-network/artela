@@ -13,7 +13,6 @@ var (
 	ErrNoJoinPoint             = errors.New("cannot bind with no-joinpoint aspect")
 	ErrBindingLimitExceeded    = errors.New("binding limit exceeded")
 	ErrAlreadyBound            = errors.New("aspect already bound")
-	ErrNotBound                = errors.New("aspect not bound")
 	ErrInvalidStoreContext     = errors.New("invalid store context")
 	ErrPropertyReserved        = errors.New("property key reserved")
 	ErrInvalidExtension        = errors.New("invalid extension")
