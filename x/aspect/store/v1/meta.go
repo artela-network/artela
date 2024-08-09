@@ -396,8 +396,8 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 					return err
 				}
 			}
-			for k := 0; k < len(bindingDataInSlot); k += 32 {
-				data := bindingDataInSlot[k : k+32]
+			for k := 0; k < len(bindingDataInSlot); k += bindingInfoLength {
+				data := bindingDataInSlot[k : k+bindingInfoLength]
 				var binding Binding
 				if err := binding.UnmarshalText(data); err != nil {
 					return err
