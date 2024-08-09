@@ -2,6 +2,7 @@ package v1
 
 import (
 	"encoding/json"
+	"math"
 
 	"github.com/ethereum/go-ethereum/common"
 	cuckoo "github.com/seiflotfy/cuckoofilter"
@@ -20,6 +21,7 @@ const (
 	filterMaxSize      = 2047
 	filterActualLimit  = filterMaxSize * 9 / 10 // assume load factor of filter is 90%
 	filterManagedSlots = filterActualLimit / bindingSlotSize
+	maxBindingSize     = filterManagedSlots * math.MaxUint8 * bindingSlotSize
 )
 
 type metaStore struct {
@@ -316,6 +318,11 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 	var length DataLength
 	if err := length.UnmarshalText(firstSlot); err != nil {
 		return err
+	}
+
+	// check max binding amount, an aspect can bind with at most 459000 accounts
+	if length > maxBindingSize {
+		return store.ErrBindingLimitExceeded
 	}
 
 	filterKey := bindingKey.AppendByte(V1AspectBindingFilterKeyPrefix)
