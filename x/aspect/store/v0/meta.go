@@ -218,9 +218,9 @@ func (s *metaStore) StoreVersionMeta(version uint64, meta *types.VersionMeta) er
 	// Store join point
 	if meta.JoinPoint > 0 {
 		u256Version := uint256.NewInt(version)
-		joinPointBig := big.NewInt(0)
-		if _, ok := artelasdkType.CheckIsJoinPoint(joinPointBig); ok {
-			joinPointBig.SetUint64(meta.JoinPoint)
+		joinPointBig := big.NewInt(0).SetUint64(meta.JoinPoint)
+		if _, ok := artelasdkType.CheckIsJoinPoint(joinPointBig); !ok {
+			joinPointBig.SetUint64(0)
 		}
 
 		prefixStore := s.NewPrefixStore(V0AspectJoinPointRunKeyPrefix)
@@ -249,10 +249,6 @@ func (s *metaStore) StoreProperties(_ uint64, properties []types.Property) error
 		return nil
 	}
 
-	return s.storeProperties(properties)
-}
-
-func (s *metaStore) storeProperties(properties []types.Property) error {
 	// check reserved keys
 	for _, prop := range properties {
 		if _, ok := reservedPropertyKeys[prop.Key]; ok {
@@ -260,6 +256,10 @@ func (s *metaStore) storeProperties(properties []types.Property) error {
 		}
 	}
 
+	return s.storeProperties(properties)
+}
+
+func (s *metaStore) storeProperties(properties []types.Property) error {
 	aspectID := s.ctx.AspectID
 	prefixStore := s.NewPrefixStore(V0AspectPropertyKeyPrefix)
 	propertyKeysKey := AspectPropertyKey(aspectID.Bytes(), []byte(V0AspectPropertyAllKeyPrefix))
@@ -355,7 +355,7 @@ func (s *metaStore) saveAspectRef(prefixStore prefix.Store, aspectID common.Addr
 	accountHex := account.Hex()
 	if set.Contains(accountHex) {
 		// already exist
-		return nil
+		return store.ErrAlreadyBound
 	}
 
 	set.Add(accountHex)

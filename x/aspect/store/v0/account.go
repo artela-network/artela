@@ -192,10 +192,6 @@ func (s *accountStore) RemoveBinding(aspectID common.Address, joinPoint uint64, 
 			}
 		}
 
-		if len(bindings) >= int(bindingKeyAndLimit.limit) {
-			return store.ErrBindingLimitExceeded
-		}
-
 		toDelete := slices.IndexFunc(bindings, func(meta *evmtypes.AspectMeta) bool {
 			return meta.Id == aspectID
 		})
