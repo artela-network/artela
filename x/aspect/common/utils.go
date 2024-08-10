@@ -1,4 +1,4 @@
-package contract
+package common
 
 import (
 	"bytes"

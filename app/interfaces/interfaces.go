@@ -32,7 +32,6 @@ type EVMKeeper interface {
 	VerifySig(ctx cosmos.Context, tx *ethereum.Transaction) (common.Address, []byte, error)
 	EVMConfigFromCtx(ctx cosmos.Context) (*states.EVMConfig, error)
 	GetBlockContext() *artvmtype.EthBlockContext
-	GetAspectRuntimeContext() *artvmtype.AspectRuntimeContext
 	MakeSigner(ctx cosmos.Context, tx *ethereum.Transaction, config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) ethereum.Signer
 }
 
