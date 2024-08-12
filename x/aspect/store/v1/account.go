@@ -62,7 +62,7 @@ func (a *accountStore) LoadAccountBoundAspects(filter types.BindingFilter) ([]ty
 	return result, nil
 }
 
-func (a *accountStore) StoreBinding(aspectID common.Address, version uint64, joinPoint uint64, priority int8, isCA bool) error {
+func (a *accountStore) StoreBinding(aspectID common.Address, version uint64, joinPoint uint64, priority int8, isCA bool) (err error) {
 	allBindings, err := a.getAllBindings()
 	if err != nil {
 		return err
