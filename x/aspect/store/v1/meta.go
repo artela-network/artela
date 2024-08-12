@@ -290,7 +290,7 @@ func (m *metaStore) StoreProperties(version uint64, properties []types.Property)
 	return m.Store(key, bytes)
 }
 
-func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoint uint64, priority int8) error {
+func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoint uint64, priority int8) (err error) {
 	// bindingKey format {5B codePrefix}{8B version}{20B aspectID}
 	bindingKey := store.NewKeyBuilder(V1AspectBindingKeyPrefix).
 		AppendBytes(m.ctx.AspectID.Bytes())
@@ -368,6 +368,11 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 		if err != nil {
 			return err
 		}
+		if len(filterData) == 0 {
+			// reached the end of the filter
+			break
+		}
+
 		filter, err := cuckoo.Decode(filterData)
 		if err != nil {
 			return err
@@ -557,7 +562,7 @@ func (m *metaStore) LoadAspectBoundAccounts() ([]types.Binding, error) {
 	return bindings, nil
 }
 
-func (m *metaStore) RemoveBinding(account common.Address) error {
+func (m *metaStore) RemoveBinding(account common.Address) (err error) {
 	// bindingKey format {5B codePrefix}{8B version}{20B aspectID}
 	bindingKey := store.NewKeyBuilder(V1AspectBindingKeyPrefix).
 		AppendBytes(m.ctx.AspectID.Bytes())
@@ -581,6 +586,9 @@ func (m *metaStore) RemoveBinding(account common.Address) error {
 	}
 
 	lastSlot := uint64(length / bindingSlotSize)
+	if length%bindingSlotSize == 0 {
+		lastSlot = lastSlot - 1
+	}
 	lastFilterSlot := uint8(lastSlot / filterManagedSlots)
 
 	var (
@@ -598,6 +606,11 @@ func (m *metaStore) RemoveBinding(account common.Address) error {
 		if err != nil {
 			return err
 		}
+		if len(filterData) == 0 {
+			// reached last filter
+			break
+		}
+
 		filter, err := cuckoo.Decode(filterData)
 		if err != nil {
 			return err
@@ -648,7 +661,7 @@ func (m *metaStore) RemoveBinding(account common.Address) error {
 	}
 
 BindingFound:
-	if bindingSlotData == nil || bindingSlot == nil || bindingFilter == nil {
+	if bindingSlotData == nil || bindingSlot == nil || bindingFilter == nil || bindingSlotOffset == nil {
 		// if not bound, just pass
 		return nil
 	}
