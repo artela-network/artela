@@ -382,13 +382,13 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 
 		// if total slot is less than managed, just test all slots, otherwise test managed
 		slotsToTest := uint8(filterManagedSlots)
-		if filterManagedSlots > length {
-			slotsToTest = uint8(length)
+		if filterManagedSlots > lastSlot {
+			slotsToTest = uint8(lastSlot + 1)
 		}
 
 		// check aspect is already bound
 		for j := uint8(0); j < slotsToTest; j++ {
-			if !filter.Lookup(accountKey.AppendUint8(i).Build()) {
+			if !filter.Lookup(accountKey.AppendUint8(j).Build()) {
 				// filter test fail, continue searching
 				continue
 			}
@@ -421,7 +421,6 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 	// check if the last slot is full
 	if length%bindingSlotSize == 0 {
 		// last slot is full, check if we need create a new filter
-		lastSlot++
 		if lastSlot%filterManagedSlots == 0 {
 			// create a new filter
 			filter := cuckoo.NewFilter(filterMaxSize)
@@ -430,11 +429,31 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 			filter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
 			filterData := filter.Encode()
 			// save filter
-			if err := m.Store(filterKey.AppendUint8(lastFilterSlot+1).Build(), filterData); err != nil {
+			if err := m.Store(filterKey.AppendUint8(lastFilterSlot).Build(), filterData); err != nil {
+				return err
+			}
+		} else {
+			// update filter data
+			lastFilterKey := filterKey.AppendUint8(lastFilterSlot).Build()
+			if lastFilter == nil {
+				// if last filter is not loaded for some reason, load and decode
+				filterData, err := m.Load(lastFilterKey)
+				if err != nil {
+					return err
+				}
+
+				lastFilter, err = cuckoo.Decode(filterData)
+				if err != nil {
+					return err
+				}
+			}
+			lastFilter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
+			filterData := lastFilter.Encode()
+			if err := m.Store(lastFilterKey, filterData); err != nil {
 				return err
 			}
 		}
-		// no need to create filter, just create a new slot
+		// create a new slot
 		newSlotKey := bindingSlotKey.AppendUint64(lastSlot).Build()
 		if err := m.Store(newSlotKey, newBindingBytes); err != nil {
 			return err
@@ -529,7 +548,7 @@ func (m *metaStore) LoadAspectBoundAccounts() ([]types.Binding, error) {
 		}
 
 		// load next slot
-		bindingData, err = m.Load(key.AppendUint64(i / bindingSlotSize).Build())
+		bindingData, err = m.Load(key.AppendUint64((i / bindingSlotSize) + 1).Build())
 		if err != nil {
 			return nil, err
 		}
