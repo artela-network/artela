@@ -530,7 +530,7 @@ func (b *BackendImpl) GetProof(address common.Address, storageKeys []string, blo
 	_, err = b.CosmosBlockByNumber(blockNum)
 	if err != nil {
 		// the error message imitates geth behavior
-		return nil, errors.New("header not found")
+		return nil, fmt.Errorf("block not valid, %v", err)
 	}
 	ctx := rpctypes.ContextWithHeight(height)
 
