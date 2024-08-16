@@ -56,7 +56,15 @@ func (s *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 
 // MaxPriorityFeePerGas returns a suggestion for a gas tip cap for dynamic fee transactions.
 func (s *EthereumAPI) MaxPriorityFeePerGas(_ context.Context) (*hexutil.Big, error) {
-	return nil, errors.New("MaxPriorityFeePerGas is not implemented")
+	head, err := s.b.CurrentHeader()
+	if err != nil {
+		return nil, err
+	}
+	tipcap, err := s.b.SuggestGasTipCap(head.BaseFee)
+	if err != nil {
+		return nil, err
+	}
+	return (*hexutil.Big)(tipcap), nil
 }
 
 // FeeHistory returns the fee market history.
