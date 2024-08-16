@@ -2,8 +2,9 @@ package types
 
 // Constants to match up protocol versions and messages
 const (
-	eth65 = 65
+	eth68 = 68
 
 	// ProtocolVersion is the latest supported version of the eth protocol.
-	ProtocolVersion = eth65
+	// ethereum 1.12 match to 68
+	ProtocolVersion = eth68
 )
