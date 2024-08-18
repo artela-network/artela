@@ -939,9 +939,17 @@ func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.H
 }
 
 // GetRawTransactionByHash returns the bytes of the transaction for the given hash.
-func (s *TransactionAPI) GetRawTransactionByHash(_ context.Context, _ common.Hash) (hexutil.Bytes, error) {
-	// TODO
-	return nil, errors.New("GetRawTransactionByHash is not implemented")
+func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
+	msg, err := s.b.GetTxMsg(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	if msg == nil {
+		return nil, nil
+	}
+
+	return msg.AsTransaction().MarshalBinary()
 }
 
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.

@@ -53,6 +53,7 @@ type Backend interface {
 	// Transaction pool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
 	GetTransaction(ctx context.Context, txHash common.Hash) (*RPCTransaction, error)
+	GetTxMsg(ctx context.Context, txHash common.Hash) (*txs.MsgEthereumTx, error)
 	SignTransaction(args *TransactionArgs) (*types.Transaction, error)
 	GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error)
 	RPCTxFeeCap() float64
