@@ -1080,8 +1080,22 @@ func (s *TransactionAPI) SignTransaction(ctx context.Context, args TransactionAr
 // PendingTransactions returns the transactions that are in the transaction pool
 // and have a from address that is one of the accounts this node manages.
 func (s *TransactionAPI) PendingTransactions() ([]*RPCTransaction, error) {
-	// TODO
-	return nil, errors.New("PendingTransactions is not implemented")
+	pendingTxs, err := s.b.PendingTransactions()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*RPCTransaction, 0, len(pendingTxs))
+	for _, tx := range pendingTxs {
+		for _, msg := range (*tx).GetMsgs() {
+			if ethMsg, ok := msg.(*txs.MsgEthereumTx); ok {
+				rpctx := NewTransactionFromMsg(ethMsg, common.Hash{}, uint64(0), uint64(0), nil, s.b.ChainConfig())
+				result = append(result, rpctx)
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // Resend accepts an existing transaction and a new gas price and limit. It will remove

@@ -400,7 +400,21 @@ func (b *BackendImpl) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int
 }
 
 func (b *BackendImpl) PendingTransactions() ([]*sdktypes.Tx, error) {
-	return nil, errors.New("PendingTransactions is not implemented")
+	res, err := b.clientCtx.Client.UnconfirmedTxs(b.ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*sdktypes.Tx, 0, len(res.Txs))
+	for _, txBz := range res.Txs {
+		tx, err := b.clientCtx.TxConfig.TxDecoder()(txBz)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &tx)
+	}
+
+	return result, nil
 }
 
 func (b *BackendImpl) GasPrice(ctx context.Context) (*hexutil.Big, error) {

@@ -60,6 +60,7 @@ type Backend interface {
 	UnprotectedAllowed() bool
 	EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error)
 	DoCall(args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error)
+	PendingTransactions() ([]*sdk.Tx, error)
 
 	ChainConfig() *params.ChainConfig
 	Engine() consensus.Engine
