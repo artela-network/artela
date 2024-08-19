@@ -98,15 +98,15 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 			Data:                 (*hexutil.Bytes)(&data),
 			AccessList:           args.AccessList,
 		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		// estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		// if err != nil {
-		// 	return err
-		// }
-		// args.Gas = &estimated
-		// TODO set gas
-		_ = callArgs
-		_ = pendingBlockNr
+
+		latestBlockNumber := rpc.LatestBlockNumber
+		estimated, err := b.EstimateGas(ctx, callArgs, &rpc.BlockNumberOrHash{
+			BlockNumber: &latestBlockNumber,
+		})
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
 
 		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
 	}
