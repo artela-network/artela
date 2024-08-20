@@ -9,7 +9,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -56,7 +55,15 @@ func (s *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 
 // MaxPriorityFeePerGas returns a suggestion for a gas tip cap for dynamic fee transactions.
 func (s *EthereumAPI) MaxPriorityFeePerGas(_ context.Context) (*hexutil.Big, error) {
-	return nil, errors.New("MaxPriorityFeePerGas is not implemented")
+	head, err := s.b.CurrentHeader()
+	if err != nil {
+		return nil, err
+	}
+	tipcap, err := s.b.SuggestGasTipCap(head.BaseFee)
+	if err != nil {
+		return nil, err
+	}
+	return (*hexutil.Big)(tipcap), nil
 }
 
 // FeeHistory returns the fee market history.
@@ -312,8 +319,14 @@ func (s *BlockChainAPI) ChainId() *hexutil.Big {
 	return (*hexutil.Big)(s.b.ChainConfig().ChainID)
 }
 
-func (s *BlockChainAPI) Coinbase() (sdktypes.AccAddress, error) {
-	return s.b.GetCoinbase()
+func (s *BlockChainAPI) Coinbase() (common.Address, error) {
+	// coinbase return the operator address of the validator node
+	coinbase, err := s.b.GetCoinbase()
+	if err != nil {
+		return common.Address{}, err
+	}
+	ethAddr := common.BytesToAddress(coinbase.Bytes())
+	return ethAddr, nil
 }
 
 // BlockNumber returns the block number of the chain head.
@@ -931,9 +944,17 @@ func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.H
 }
 
 // GetRawTransactionByHash returns the bytes of the transaction for the given hash.
-func (s *TransactionAPI) GetRawTransactionByHash(_ context.Context, _ common.Hash) (hexutil.Bytes, error) {
-	// TODO
-	return nil, errors.New("GetRawTransactionByHash is not implemented")
+func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
+	msg, err := s.b.GetTxMsg(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	if msg == nil {
+		return nil, nil
+	}
+
+	return msg.AsTransaction().MarshalBinary()
 }
 
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
@@ -1064,15 +1085,41 @@ func (s *TransactionAPI) SignTransaction(ctx context.Context, args TransactionAr
 // PendingTransactions returns the transactions that are in the transaction pool
 // and have a from address that is one of the accounts this node manages.
 func (s *TransactionAPI) PendingTransactions() ([]*RPCTransaction, error) {
-	// TODO
-	return nil, errors.New("PendingTransactions is not implemented")
+	pendingTxs, err := s.b.PendingTransactions()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*RPCTransaction, 0, len(pendingTxs))
+	for _, tx := range pendingTxs {
+		for _, msg := range (*tx).GetMsgs() {
+			if ethMsg, ok := msg.(*txs.MsgEthereumTx); ok {
+				rpctx := NewTransactionFromMsg(ethMsg, common.Hash{}, uint64(0), uint64(0), nil, s.b.ChainConfig())
+				result = append(result, rpctx)
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // Resend accepts an existing transaction and a new gas price and limit. It will remove
 // the given transaction from the pool and reinsert it with the new gas price and limit.
-func (s *TransactionAPI) Resend(_ context.Context, _ TransactionArgs, _ *hexutil.Big, _ *hexutil.Uint64) (common.Hash, error) {
-	// TODO
-	return common.Hash{}, errors.New("Resend is not implemented")
+func (s *TransactionAPI) Resend(ctx context.Context, args TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (common.Hash, error) {
+	if args.Nonce == nil {
+		return common.Hash{}, fmt.Errorf("missing transaction nonce in transaction spec")
+	}
+
+	if err := args.setDefaults(ctx, s.b); err != nil {
+		return common.Hash{}, err
+	}
+
+	fixedArgs, err := s.b.GetResendArgs(args, gasPrice, gasLimit)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	return s.SendTransaction(ctx, fixedArgs)
 }
 
 // DebugAPI is the collection of Ethereum APIs exposed over the debugging

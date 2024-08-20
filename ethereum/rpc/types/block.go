@@ -77,8 +77,11 @@ func EthBlockToBlock(block *ethtypes.Block) *Block {
 type BlockNumber int64
 
 const (
-	EthPendingBlockNumber  = BlockNumber(-2)
-	EthLatestBlockNumber   = BlockNumber(-1)
+	// adjust the order to match ethereum
+	// the order was changed in ethereum at:
+	// https://github.com/ethereum/go-ethereum/pull/27219/files#diff-064c12cf00b0f549b40fa9dff4231b1d1d3c143a2e47cd051a87f5b04d429949R68
+	EthLatestBlockNumber   = BlockNumber(-2)
+	EthPendingBlockNumber  = BlockNumber(-1)
 	EthEarliestBlockNumber = BlockNumber(0)
 )
 

@@ -78,6 +78,16 @@ func (b *BackendImpl) SendTx(ctx context.Context, signedTx *ethtypes.Transaction
 }
 
 func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*ethapi.RPCTransaction, error) {
+	_, tx, err := b.getTransaction(ctx, txHash)
+	return tx, err
+}
+
+func (b *BackendImpl) GetTxMsg(ctx context.Context, txHash common.Hash) (*txs.MsgEthereumTx, error) {
+	msg, _, err := b.getTransaction(ctx, txHash)
+	return msg, err
+}
+
+func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*txs.MsgEthereumTx, *ethapi.RPCTransaction, error) {
 	res, err := b.GetTxByEthHash(txHash)
 	hexTx := txHash.Hex()
 
@@ -88,25 +98,25 @@ func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*
 
 	block, err := b.CosmosBlockByNumber(rpc.BlockNumber(res.Height))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	tx, err := b.clientCtx.TxConfig.TxDecoder()(block.Block.Txs[res.TxIndex])
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// the `res.MsgIndex` is inferred from tx index, should be within the bound.
 	msg, ok := tx.GetMsgs()[res.MsgIndex].(*txs.MsgEthereumTx)
 	if !ok {
-		return nil, errors.New("invalid ethereum tx")
+		return nil, nil, errors.New("invalid ethereum tx")
 	}
 	msg.From = res.Sender
 
 	blockRes, err := b.CosmosBlockResultByNumber(&block.Block.Height)
 	if err != nil {
 		b.logger.Debug("block result not found", "height", block.Block.Height, "error", err.Error())
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	if res.EthTxIndex == -1 {
@@ -121,7 +131,7 @@ func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*
 	}
 	// if we still unable to find the eth tx index, return error, shouldn't happen.
 	if res.EthTxIndex == -1 {
-		return nil, errors.New("can't find index of ethereum tx")
+		return msg, nil, errors.New("can't find index of ethereum tx")
 	}
 
 	baseFee, err := b.BaseFee(blockRes)
@@ -132,10 +142,10 @@ func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*
 
 	cfg, err := b.chainConfig()
 	if err != nil {
-		return nil, err
+		return msg, nil, err
 	}
 
-	return ethapi.NewTransactionFromMsg(
+	return msg, ethapi.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.BlockID.Hash.Bytes()),
 		uint64(res.Height),
@@ -351,13 +361,13 @@ func (b *BackendImpl) queryCosmosTxIndexer(query string, txGetter func(*rpctypes
 }
 
 // getTransactionByHashPending find pending tx from mempool
-func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.RPCTransaction, error) {
+func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgEthereumTx, *ethapi.RPCTransaction, error) {
 	hexTx := txHash.Hex()
 	// try to find tx in mempool
 	ptxs, err := b.PendingTransactions()
 	if err != nil {
-		b.logger.Debug("tx not found", "hash", hexTx, "error", err.Error())
-		return nil, nil
+		b.logger.Debug("pending tx not found", "hash", hexTx, "error", err.Error())
+		return nil, nil, nil
 	}
 
 	for _, tx := range ptxs {
@@ -369,7 +379,7 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.R
 
 		cfg, err := b.chainConfig()
 		if err != nil {
-			return nil, err
+			return msg, nil, err
 		}
 		if msg.Hash == hexTx {
 			// use zero block values since it's not included in a block yet
@@ -381,12 +391,12 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*ethapi.R
 				nil,
 				cfg,
 			)
-			return rpctx, nil
+			return msg, rpctx, nil
 		}
 	}
 
 	b.logger.Debug("tx not found", "hash", hexTx)
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (b *BackendImpl) EstimateGas(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
