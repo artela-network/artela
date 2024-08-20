@@ -389,7 +389,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 
 	var grpcClient *grpc.ClientConn
 	var apiSrv *api.Server
-	// alwasy start the api server, becase aspect static calls rely on it.
+	// always start the api server, becase aspect static calls rely on it.
 	// TODO: remove the aspect static calls rely on
 	// if config.API.Enable {
 	{
