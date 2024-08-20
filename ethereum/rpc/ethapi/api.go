@@ -9,7 +9,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -320,8 +319,14 @@ func (s *BlockChainAPI) ChainId() *hexutil.Big {
 	return (*hexutil.Big)(s.b.ChainConfig().ChainID)
 }
 
-func (s *BlockChainAPI) Coinbase() (sdktypes.AccAddress, error) {
-	return s.b.GetCoinbase()
+func (s *BlockChainAPI) Coinbase() (common.Address, error) {
+	// coinbase return the operator address of the validator node
+	coinbase, err := s.b.GetCoinbase()
+	if err != nil {
+		return common.Address{}, err
+	}
+	ethAddr := common.BytesToAddress(coinbase.Bytes())
+	return ethAddr, nil
 }
 
 // BlockNumber returns the block number of the chain head.
@@ -1100,9 +1105,21 @@ func (s *TransactionAPI) PendingTransactions() ([]*RPCTransaction, error) {
 
 // Resend accepts an existing transaction and a new gas price and limit. It will remove
 // the given transaction from the pool and reinsert it with the new gas price and limit.
-func (s *TransactionAPI) Resend(_ context.Context, _ TransactionArgs, _ *hexutil.Big, _ *hexutil.Uint64) (common.Hash, error) {
-	// TODO
-	return common.Hash{}, errors.New("Resend is not implemented")
+func (s *TransactionAPI) Resend(ctx context.Context, args TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (common.Hash, error) {
+	if args.Nonce == nil {
+		return common.Hash{}, fmt.Errorf("missing transaction nonce in transaction spec")
+	}
+
+	if err := args.setDefaults(ctx, s.b); err != nil {
+		return common.Hash{}, err
+	}
+
+	fixedArgs, err := s.b.GetResendArgs(args, gasPrice, gasLimit)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	return s.SendTransaction(ctx, fixedArgs)
 }
 
 // DebugAPI is the collection of Ethereum APIs exposed over the debugging

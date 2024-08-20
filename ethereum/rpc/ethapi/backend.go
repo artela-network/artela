@@ -61,6 +61,7 @@ type Backend interface {
 	EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error)
 	DoCall(args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error)
 	PendingTransactions() ([]*sdk.Tx, error)
+	GetResendArgs(args TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (TransactionArgs, error)
 
 	ChainConfig() *params.ChainConfig
 	Engine() consensus.Engine

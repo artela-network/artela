@@ -32,13 +32,16 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela/ethereum/rpc/api"
+	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	ethapi2 "github.com/artela-network/artela/ethereum/rpc/ethapi"
 	"github.com/artela-network/artela/ethereum/rpc/filters"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/ethereum/server/config"
+	"github.com/artela-network/artela/ethereum/types"
 	ethereumtypes "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	feetypes "github.com/artela-network/artela/x/fee/types"
 )
@@ -415,6 +418,76 @@ func (b *BackendImpl) PendingTransactions() ([]*sdktypes.Tx, error) {
 	}
 
 	return result, nil
+}
+
+func (b *BackendImpl) GetResendArgs(args ethapi.TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (ethapi.TransactionArgs, error) {
+	chainID, err := types.ParseChainID(b.clientCtx.ChainID)
+	if err != nil {
+		return ethapi.TransactionArgs{}, err
+	}
+
+	cfg := b.ChainConfig()
+	if cfg == nil {
+		header, err := b.CurrentHeader()
+		if err != nil {
+			return ethapi.TransactionArgs{}, err
+		}
+		cfg = support.DefaultChainConfig().EthereumConfig(header.Number.Int64(), chainID)
+	}
+
+	// use the latest signer for the new tx
+	signer := ethtypes.LatestSigner(cfg)
+
+	matchTx := args.ToTransaction()
+
+	// Before replacing the old transaction, ensure the _new_ transaction fee is reasonable.
+	price := matchTx.GasPrice()
+	if gasPrice != nil {
+		price = gasPrice.ToInt()
+	}
+	gas := matchTx.Gas()
+	if gasLimit != nil {
+		gas = uint64(*gasLimit)
+	}
+	if err := rpctypes.CheckTxFee(price, gas, b.RPCTxFeeCap()); err != nil {
+		return ethapi.TransactionArgs{}, err
+	}
+
+	pending, err := b.PendingTransactions()
+	if err != nil {
+		return ethapi.TransactionArgs{}, err
+	}
+
+	for _, tx := range pending {
+		wantSigHash := signer.Hash(matchTx)
+
+		// TODO, wantSigHash?
+		msg, err := txs.UnwrapEthereumMsg(tx, wantSigHash)
+		if err != nil {
+			// not ethereum tx
+			continue
+		}
+
+		pendingTx := msg.AsTransaction()
+		pFrom, err := ethtypes.Sender(signer, pendingTx)
+		if err != nil {
+			continue
+		}
+
+		if pFrom == *args.From && signer.Hash(pendingTx) == wantSigHash {
+			// Match. Re-sign and send the transaction.
+			if gasPrice != nil && (*big.Int)(gasPrice).Sign() != 0 {
+				args.GasPrice = gasPrice
+			}
+			if gasLimit != nil && *gasLimit != 0 {
+				args.Gas = gasLimit
+			}
+
+			return args, nil
+		}
+	}
+
+	return ethapi.TransactionArgs{}, fmt.Errorf("transaction %s not found", matchTx.Hash().String())
 }
 
 func (b *BackendImpl) GasPrice(ctx context.Context) (*hexutil.Big, error) {

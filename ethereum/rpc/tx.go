@@ -87,7 +87,7 @@ func (b *BackendImpl) GetTxMsg(ctx context.Context, txHash common.Hash) (*txs.Ms
 	return msg, err
 }
 
-func (b *BackendImpl) getTransaction(ctx context.Context, txHash common.Hash) (*txs.MsgEthereumTx, *ethapi.RPCTransaction, error) {
+func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*txs.MsgEthereumTx, *ethapi.RPCTransaction, error) {
 	res, err := b.GetTxByEthHash(txHash)
 	hexTx := txHash.Hex()
 
@@ -396,7 +396,7 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgE
 	}
 
 	b.logger.Debug("tx not found", "hash", hexTx)
-	return nil, nil, errors.New("pending tx not found")
+	return nil, nil, nil
 }
 
 func (b *BackendImpl) EstimateGas(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
