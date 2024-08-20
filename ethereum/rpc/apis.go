@@ -25,7 +25,7 @@ func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.
 			Service:   ethapi.NewTransactionAPI(apiBackend, logger, nonceLock),
 		}, {
 			Namespace: "txpool",
-			Service:   ethapi.NewTxPoolAPI(apiBackend),
+			Service:   ethapi.NewTxPoolAPI(apiBackend, logger),
 		}, {
 			Namespace: "debug",
 			Service:   ethapi.NewDebugAPI(apiBackend),

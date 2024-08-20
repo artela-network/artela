@@ -32,6 +32,7 @@ type Backend interface {
 	ImportRawKey(privkey, password string) (common.Address, error)
 	GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error)
 	GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error)
+	GetSender(msg *txs.MsgEthereumTx, chainID *big.Int) (from common.Address, err error)
 
 	// Blockchain API
 	HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)
@@ -61,6 +62,7 @@ type Backend interface {
 	EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error)
 	DoCall(args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error)
 	PendingTransactions() ([]*sdk.Tx, error)
+	PendingTransactionsCount() (int, error)
 	GetResendArgs(args TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (TransactionArgs, error)
 
 	ChainConfig() *params.ChainConfig

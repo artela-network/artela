@@ -420,6 +420,14 @@ func (b *BackendImpl) PendingTransactions() ([]*sdktypes.Tx, error) {
 	return result, nil
 }
 
+func (b *BackendImpl) PendingTransactionsCount() (int, error) {
+	res, err := b.clientCtx.Client.UnconfirmedTxs(b.ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	return res.Total, nil
+}
+
 func (b *BackendImpl) GetResendArgs(args ethapi.TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (ethapi.TransactionArgs, error) {
 	chainID, err := types.ParseChainID(b.clientCtx.ChainID)
 	if err != nil {
