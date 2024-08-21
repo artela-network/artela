@@ -361,7 +361,7 @@ func (b *BackendImpl) PeerCount() hexutil.Uint {
 func (b *BackendImpl) ClientVersion() string {
 	return fmt.Sprintf(
 		"%s/%s/%s/%s",
-		version.AppName,
+		version.Name,
 		version.Version,
 		runtime.GOOS+"-"+runtime.GOARCH,
 		runtime.Version(),
