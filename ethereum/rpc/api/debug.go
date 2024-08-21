@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/user"
@@ -19,30 +20,17 @@ import (
 	stderrors "github.com/pkg/errors"
 
 	"github.com/cometbft/cometbft/libs/log"
-	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/artela-network/artela/ethereum/rpc/backend"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"
 )
-
-type DebugBackend interface {
-	TraceTransaction(hash common.Hash, config *evmsupport.TraceConfig) (interface{}, error)
-	TraceBlock(height rpc.BlockNumber,
-		config *evmsupport.TraceConfig,
-		block *tmrpctypes.ResultBlock,
-	) ([]*evmtxs.TxTraceResult, error)
-	CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error)
-	CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.ResultBlock, error)
-	HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*ethtypes.Header, error)
-	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*ethtypes.Block, error)
-}
 
 // HandlerT keeps track of the cpu profiler and trace execution
 type HandlerT struct {
@@ -57,24 +45,98 @@ type HandlerT struct {
 type DebugAPI struct {
 	ctx     *server.Context
 	logger  log.Logger
-	backend DebugBackend
+	b       backend.DebugBackend
 	handler *HandlerT
 }
 
 // NewDebugAPI creates a new DebugAPI definition for the tracing methods of the Ethereum service.
 func NewDebugAPI(
-	backend DebugBackend,
+	backend backend.DebugBackend,
 ) *DebugAPI {
 	return &DebugAPI{
-		backend: backend,
+		b:       backend,
 		handler: new(HandlerT),
 	}
+}
+
+// GetRawHeader retrieves the RLP encoding for a single header.
+func (api *DebugAPI) GetRawHeader(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	var hash common.Hash
+	if h, ok := blockNrOrHash.Hash(); ok {
+		hash = h
+	} else {
+		block, err := api.b.BlockByNumberOrHash(ctx, blockNrOrHash)
+		if err != nil {
+			return nil, err
+		}
+		hash = block.Hash()
+	}
+	header, _ := api.b.HeaderByHash(ctx, hash)
+	if header == nil {
+		return nil, fmt.Errorf("header #%d not found", hash)
+	}
+	return rlp.EncodeToBytes(header)
+}
+
+// GetRawBlock retrieves the RLP encoded for a single block.
+func (api *DebugAPI) GetRawBlock(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	var hash common.Hash
+	if h, ok := blockNrOrHash.Hash(); ok {
+		hash = h
+	} else {
+		block, err := api.b.BlockByNumberOrHash(ctx, blockNrOrHash)
+		if err != nil {
+			return nil, err
+		}
+		hash = block.Hash()
+	}
+	block, _ := api.b.BlockByHash(ctx, hash)
+	if block == nil {
+		return nil, fmt.Errorf("block #%d not found", hash)
+	}
+	return rlp.EncodeToBytes(block)
+}
+
+// GetRawReceipts retrieves the binary-encoded receipts of a single block.
+func (api *DebugAPI) GetRawReceipts(_ context.Context, _ rpc.BlockNumberOrHash) ([]hexutil.Bytes, error) {
+	return nil, errors.New("GetRawReceipts is not implemented")
+}
+
+// GetRawTransaction returns the bytes of the transaction for the given hash.
+func (api *DebugAPI) GetRawTransaction(_ context.Context, _ common.Hash) (hexutil.Bytes, error) {
+	// TODO
+	return hexutil.Bytes{}, errors.New("GetRawTransaction is not implemented")
+}
+
+// PrintBlock retrieves a block and returns its pretty printed form.
+func (api *DebugAPI) PrintBlock(ctx context.Context, number uint64) (string, error) {
+	block, _ := api.b.ArtBlockByNumber(ctx, rpc.BlockNumber(number))
+	if block == nil {
+		return "", fmt.Errorf("block #%d not found", number)
+	}
+	return spew.Sdump(block), nil
+}
+
+// ChaindbProperty returns leveldb properties of the key-value database.
+func (api *DebugAPI) ChaindbProperty(_ string) (string, error) {
+	return "", errors.New("ChaindbProperty is not implemented")
+}
+
+// ChaindbCompact flattens the entire key-value database into a single level,
+// removing all unused slots and merging all keys.
+func (api *DebugAPI) ChaindbCompact() error {
+	return errors.New("ChaindbCompact is not implemented")
+}
+
+// SetHead rewinds the head of the blockchain to a previous block.
+func (api *DebugAPI) SetHead(_ hexutil.Uint64) {
+	// TODO
 }
 
 // TraceTransaction returns the structured logs created during the execution of EVM
 // and returns them as a JSON object.
 func (a *DebugAPI) TraceTransaction(hash common.Hash, config evmsupport.TraceConfig) (interface{}, error) {
-	return a.backend.TraceTransaction(hash, &config)
+	return a.b.TraceTransaction(hash, &config)
 }
 
 // TraceBlockByNumber returns the structured logs created during the execution of
@@ -85,13 +147,13 @@ func (a *DebugAPI) TraceBlockByNumber(height rpc.BlockNumber, config evmsupport.
 		return nil, errors.New("genesis is not traceable")
 	}
 	// Get Tendermint Block
-	resBlock, err := a.backend.CosmosBlockByNumber(height)
+	resBlock, err := a.b.CosmosBlockByNumber(height)
 	if err != nil {
 		a.logger.Debug("get block failed", "height", height, "error", err.Error())
 		return nil, err
 	}
 
-	return a.backend.TraceBlock(rpc.BlockNumber(resBlock.Block.Height), &config, resBlock)
+	return a.b.TraceBlock(rpc.BlockNumber(resBlock.Block.Height), &config, resBlock)
 }
 
 // TraceBlockByHash returns the structured logs created during the execution of
@@ -99,7 +161,7 @@ func (a *DebugAPI) TraceBlockByNumber(height rpc.BlockNumber, config evmsupport.
 func (a *DebugAPI) TraceBlockByHash(hash common.Hash, config evmsupport.TraceConfig) ([]*evmtxs.TxTraceResult, error) {
 	a.logger.Debug("debug_traceBlockByHash", "hash", hash)
 	// Get Tendermint Block
-	resBlock, err := a.backend.CosmosBlockByHash(hash)
+	resBlock, err := a.b.CosmosBlockByHash(hash)
 	if err != nil {
 		a.logger.Debug("get block failed", "hash", hash.Hex(), "error", err.Error())
 		return nil, err
@@ -110,7 +172,7 @@ func (a *DebugAPI) TraceBlockByHash(hash common.Hash, config evmsupport.TraceCon
 		return nil, errors.New("block not found")
 	}
 
-	return a.backend.TraceBlock(rpc.BlockNumber(resBlock.Block.Height), &config, resBlock)
+	return a.b.TraceBlock(rpc.BlockNumber(resBlock.Block.Height), &config, resBlock)
 }
 
 // BlockProfile turns on goroutine profiling for nsec seconds and writes profile data to
@@ -299,7 +361,7 @@ func (a *DebugAPI) SetGCPercent(v int) int {
 
 // GetHeaderRlp retrieves the RLP encoded for of a single header.
 func (a *DebugAPI) GetHeaderRlp(number uint64) (hexutil.Bytes, error) {
-	header, err := a.backend.HeaderByNumber(context.TODO(), rpc.BlockNumber(number))
+	header, err := a.b.HeaderByNumber(context.TODO(), rpc.BlockNumber(number))
 	if err != nil {
 		return nil, err
 	}
@@ -309,22 +371,12 @@ func (a *DebugAPI) GetHeaderRlp(number uint64) (hexutil.Bytes, error) {
 
 // GetBlockRlp retrieves the RLP encoded for of a single block.
 func (a *DebugAPI) GetBlockRlp(number uint64) (hexutil.Bytes, error) {
-	block, err := a.backend.BlockByNumber(context.TODO(), rpc.BlockNumber(number))
+	block, err := a.b.BlockByNumber(context.TODO(), rpc.BlockNumber(number))
 	if err != nil {
 		return nil, err
 	}
 
 	return rlp.EncodeToBytes(block)
-}
-
-// PrintBlock retrieves a block and returns its pretty printed form.
-func (a *DebugAPI) PrintBlock(number uint64) (string, error) {
-	block, err := a.backend.BlockByNumber(context.TODO(), rpc.BlockNumber(number))
-	if err != nil {
-		return "", err
-	}
-
-	return spew.Sdump(block), nil
 }
 
 // SeedHash retrieves the seed hash of a block.
