@@ -81,7 +81,7 @@ func (api *DebugAPI) GetRawBlock(ctx context.Context, blockNrOrHash rpc.BlockNum
 	if block == nil {
 		return nil, fmt.Errorf("block not found")
 	}
-	return rlp.EncodeToBytes(block)
+	return rlp.EncodeToBytes(block.EthBlock())
 }
 
 func (api *DebugAPI) GetReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (types.Receipts, error) {
