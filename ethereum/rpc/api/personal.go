@@ -95,10 +95,16 @@ func (s *PersonalAccountAPI) LockAccount(_ common.Address) bool {
 // signTransaction sets defaults and signs the given transaction
 // NOTE: the caller needs to ensure that the nonceLock is held, if applicable,
 // and release it after the transaction has been submitted to the tx pool
-func (s *PersonalAccountAPI) signTransaction(_ context.Context, args *backend.TransactionArgs, passwd string) (*types.Transaction, error) {
-	// return s.b.SignTransaction(args, passwd)
-	// TODO
-	return nil, fmt.Errorf("signTransaction is not implemented, args: %v, passwd: %s", args, passwd)
+func (s *PersonalAccountAPI) signTransaction(ctx context.Context, args *backend.TransactionArgs, _ string) (*types.Transaction, error) {
+	if err := args.SetDefaults(ctx, s.b); err != nil {
+		return nil, err
+	}
+	signed, err := s.b.SignTransaction(args)
+	if err != nil {
+		log.Warn("Failed transaction send attempt", "from", args.FromAddr(), "to", args.To, "value", args.Value.ToInt(), "err", err)
+		return nil, err
+	}
+	return signed, err
 }
 
 // SendTransaction will create a transaction from the given arguments and
@@ -111,6 +117,7 @@ func (s *PersonalAccountAPI) SendTransaction(ctx context.Context, args backend.T
 		s.nonceLock.LockAddr(args.FromAddr())
 		defer s.nonceLock.UnlockAddr(args.FromAddr())
 	}
+
 	signed, err := s.signTransaction(ctx, &args, passwd)
 	if err != nil {
 		log.Warn("Failed transaction send attempt", "from", args.FromAddr(), "to", args.To, "value", args.Value.ToInt(), "err", err)
@@ -123,9 +130,17 @@ func (s *PersonalAccountAPI) SendTransaction(ctx context.Context, args backend.T
 // tries to sign it with the key associated with args.From. If the given passwd isn't
 // able to decrypt the key it fails. The transaction is returned in RLP-form, not broadcast
 // to other nodes
-func (s *PersonalAccountAPI) SignTransaction(_ context.Context, args backend.TransactionArgs, passwd string) (*SignTransactionResult, error) {
-	// TODO
-	return nil, fmt.Errorf("SignTransaction is not implemented, args: %v, passwd: %s", args, passwd)
+func (s *PersonalAccountAPI) SignTransaction(ctx context.Context, args backend.TransactionArgs, passwd string) (*SignTransactionResult, error) {
+	signed, err := s.signTransaction(ctx, &args, passwd)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := signed.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return &SignTransactionResult{data, signed}, nil
 }
 
 // Sign calculates an Ethereum ECDSA signature for:
@@ -137,9 +152,8 @@ func (s *PersonalAccountAPI) SignTransaction(_ context.Context, args backend.Tra
 // The key used to calculate the signature is decrypted with the given password.
 //
 // https://github.com/ethereum/go-ethereum/wiki/Management-APIs#personal_sign
-func (s *PersonalAccountAPI) Sign(_ context.Context, _ hexutil.Bytes, _ common.Address, _ string) (hexutil.Bytes, error) {
-	// TODO
-	return nil, errors.New("Sign is not implemented")
+func (s *PersonalAccountAPI) Sign(_ context.Context, data hexutil.Bytes, addr common.Address, _ string) (hexutil.Bytes, error) {
+	return s.b.Sign(addr, data)
 }
 
 // EcRecover returns the address for the account that was used to create the signature.
