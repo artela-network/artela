@@ -249,14 +249,28 @@ func (b *BackendImpl) HeaderByNumber(_ context.Context, number rpc.BlockNumber) 
 	return ethHeader, nil
 }
 
-func (b *BackendImpl) HeaderByHash(_ context.Context, hash common.Hash) (*ethtypes.Header, error) {
-	return nil, nil
+func (b *BackendImpl) HeaderByHash(ctx context.Context, hash common.Hash) (*ethtypes.Header, error) {
+	block, err := b.BlockByHash(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	if block == nil {
+		return nil, errors.New("block not found")
+	}
+	return block.Header(), nil
 }
 
 func (b *BackendImpl) HeaderByNumberOrHash(ctx context.Context,
 	blockNrOrHash rpc.BlockNumberOrHash,
 ) (*ethtypes.Header, error) {
-	return nil, errors.New("HeaderByNumberOrHash is not implemented")
+	block, err := b.ArtBlockByNumberOrHash(ctx, blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+	if block == nil {
+		return nil, errors.New("block not found")
+	}
+	return block.Header(), nil
 }
 
 func (b *BackendImpl) CurrentBlock() *rpctypes.Block {
@@ -264,16 +278,13 @@ func (b *BackendImpl) CurrentBlock() *rpctypes.Block {
 	return block
 }
 
-func (b *BackendImpl) BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
-	block, err := b.ArtBlockByNumber(ctx, number)
+func (b *BackendImpl) ArtBlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
 	if err != nil {
 		return nil, err
 	}
-	return block.EthBlock(), nil
-}
 
-func (b *BackendImpl) BlockByNumberOrHash(_ context.Context, _ rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
-	return nil, errors.New("BlockByNumberOrHash is not implemented")
+	return b.ArtBlockByNumber(ctx, blockNum)
 }
 
 func (b *BackendImpl) CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error) {
@@ -415,14 +426,45 @@ func (b *BackendImpl) currentBlock() (*rpctypes.Block, error) {
 	return block, nil
 }
 
-func (b *BackendImpl) PendingBlockAndReceipts() (*ethtypes.Block, ethtypes.Receipts) {
-	b.logger.Error("PendingBlockAndReceipts is not implemented")
-	return nil, nil
-}
-
 // GetReceipts get receipts by block hash
-func (b *BackendImpl) GetReceipts(_ context.Context, _ common.Hash) (ethtypes.Receipts, error) {
-	return nil, errors.New("GetReceipts is not implemented")
+func (b *BackendImpl) GetReceipts(ctx context.Context, hash common.Hash) (ethtypes.Receipts, error) {
+	resBlock, err := b.CosmosBlockByHash(hash)
+	if err != nil || resBlock == nil {
+		return nil, fmt.Errorf("query block failed, block hash %s, %w", hash.String(), err)
+	}
+
+	receipts := make([]*ethtypes.Receipt, 0, len(resBlock.Block.Txs))
+	for _, tx := range resBlock.Block.Txs {
+		receipt, err := b.GetTransactionReceipt(ctx, common.Hash(tx.Hash()))
+		if err != nil {
+			// might be not a eth tx, skip it
+			continue
+		}
+		var contractAddress common.Address
+		if receipt["contractAddress"] != nil {
+			contractAddress = receipt["contractAddress"].(common.Address)
+		}
+		var effectiveGasPrice big.Int
+		if receipt["effectiveGasPrice"] != nil {
+			effectiveGasPrice = big.Int(receipt["effectiveGasPrice"].(hexutil.Big))
+		}
+		receipts = append(receipts, &ethtypes.Receipt{
+			Type:              uint8(receipt["type"].(hexutil.Uint)),
+			PostState:         []byte{},
+			Status:            uint64(receipt["status"].(hexutil.Uint)),
+			CumulativeGasUsed: uint64(receipt["cumulativeGasUsed"].(hexutil.Uint64)),
+			Bloom:             receipt["logsBloom"].(ethtypes.Bloom),
+			Logs:              receipt["logs"].([]*ethtypes.Log),
+			TxHash:            receipt["transactionHash"].(common.Hash),
+			ContractAddress:   contractAddress,
+			GasUsed:           uint64(receipt["gasUsed"].(hexutil.Uint64)),
+			EffectiveGasPrice: &effectiveGasPrice,
+			BlockHash:         common.BytesToHash(resBlock.BlockID.Hash.Bytes()),
+			BlockNumber:       big.NewInt(resBlock.Block.Height),
+			TransactionIndex:  uint(receipt["transactionIndex"].(hexutil.Uint64)),
+		})
+	}
+	return receipts, nil
 }
 
 func (b *BackendImpl) GetTd(_ context.Context, _ common.Hash) *big.Int {
@@ -566,12 +608,8 @@ func (b *BackendImpl) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blo
 	ethHeader.GasLimit = uint64(gasLimit)
 
 	blockHash := common.BytesToHash(block.Hash().Bytes())
-	receipts, err := b.GetReceipts(context.Background(), blockHash)
-	if err != nil {
-		b.logger.Debug(fmt.Sprintf("failed to fetch receipts, block hash %s, block number %d", blockHash.Hex(), height))
-	}
 
-	ethBlock := ethtypes.NewBlock(ethHeader, txs, nil, receipts, trie.NewStackTrie(nil))
+	ethBlock := ethtypes.NewBlock(ethHeader, txs, nil, nil, trie.NewStackTrie(nil))
 	res := rpctypes.EthBlockToBlock(ethBlock)
 	res.SetHash(blockHash)
 	return res, nil
@@ -617,7 +655,7 @@ func (b *BackendImpl) BlockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethty
 }
 
 func (b *BackendImpl) GetBlockByNumber(blockNum rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
-	block, err := b.BlockByNumber(context.Background(), blockNum)
+	block, err := b.ArtBlockByNumber(context.Background(), blockNum)
 	if err != nil {
 		return nil, err
 	}

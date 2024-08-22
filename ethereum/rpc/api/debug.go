@@ -24,6 +24,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 
@@ -61,45 +62,63 @@ func NewDebugAPI(
 
 // GetRawHeader retrieves the RLP encoding for a single header.
 func (api *DebugAPI) GetRawHeader(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	var hash common.Hash
-	if h, ok := blockNrOrHash.Hash(); ok {
-		hash = h
-	} else {
-		block, err := api.b.BlockByNumberOrHash(ctx, blockNrOrHash)
-		if err != nil {
-			return nil, err
-		}
-		hash = block.Hash()
+	header, err := api.b.HeaderByNumberOrHash(ctx, blockNrOrHash)
+	if err != nil {
+		return nil, err
 	}
-	header, _ := api.b.HeaderByHash(ctx, hash)
 	if header == nil {
-		return nil, fmt.Errorf("header #%d not found", hash)
+		return nil, fmt.Errorf("block not found")
 	}
 	return rlp.EncodeToBytes(header)
 }
 
 // GetRawBlock retrieves the RLP encoded for a single block.
 func (api *DebugAPI) GetRawBlock(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	var hash common.Hash
-	if h, ok := blockNrOrHash.Hash(); ok {
-		hash = h
-	} else {
-		block, err := api.b.BlockByNumberOrHash(ctx, blockNrOrHash)
-		if err != nil {
-			return nil, err
-		}
-		hash = block.Hash()
+	block, err := api.b.ArtBlockByNumberOrHash(ctx, blockNrOrHash)
+	if err != nil {
+		return nil, err
 	}
-	block, _ := api.b.BlockByHash(ctx, hash)
 	if block == nil {
-		return nil, fmt.Errorf("block #%d not found", hash)
+		return nil, fmt.Errorf("block not found")
 	}
 	return rlp.EncodeToBytes(block)
 }
 
+func (api *DebugAPI) GetReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (types.Receipts, error) {
+	block, err := api.b.ArtBlockByNumberOrHash(ctx, blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+	if block == nil {
+		return nil, fmt.Errorf("block not found")
+	}
+
+	return api.b.GetReceipts(ctx, block.Hash())
+}
+
 // GetRawReceipts retrieves the binary-encoded receipts of a single block.
-func (api *DebugAPI) GetRawReceipts(_ context.Context, _ rpc.BlockNumberOrHash) ([]hexutil.Bytes, error) {
-	return nil, errors.New("GetRawReceipts is not implemented")
+func (api *DebugAPI) GetRawReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]hexutil.Bytes, error) {
+	block, err := api.b.ArtBlockByNumberOrHash(ctx, blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+	if block == nil {
+		return nil, fmt.Errorf("block not found")
+	}
+
+	receipts, err := api.b.GetReceipts(ctx, block.Hash())
+	if err != nil {
+		return nil, err
+	}
+	result := make([]hexutil.Bytes, len(receipts))
+	for i, receipt := range receipts {
+		b, err := receipt.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		result[i] = b
+	}
+	return result, nil
 }
 
 // GetRawTransaction returns the bytes of the transaction for the given hash.
@@ -371,11 +390,13 @@ func (a *DebugAPI) GetHeaderRlp(number uint64) (hexutil.Bytes, error) {
 
 // GetBlockRlp retrieves the RLP encoded for of a single block.
 func (a *DebugAPI) GetBlockRlp(number uint64) (hexutil.Bytes, error) {
-	block, err := a.b.BlockByNumber(context.TODO(), rpc.BlockNumber(number))
+	block, err := a.b.ArtBlockByNumber(context.TODO(), rpc.BlockNumber(number))
 	if err != nil {
 		return nil, err
 	}
+	block.Hash()
 
+	// not able to marshal this block, because the block hash is not match to ethereum block
 	return rlp.EncodeToBytes(block)
 }
 

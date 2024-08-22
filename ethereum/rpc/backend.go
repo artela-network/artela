@@ -75,7 +75,7 @@ type BackendImpl struct {
 }
 
 func (b *BackendImpl) CurrentHeader() (*ethtypes.Header, error) {
-	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
+	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -173,11 +173,6 @@ func (b *BackendImpl) ChainConfig() *params.ChainConfig {
 		return nil
 	}
 	return cfg
-}
-
-func (b *BackendImpl) EthBlockByNumber(blockNum rpc.BlockNumber) (*ethtypes.Block, error) {
-	// TODO implement me
-	panic("implement me")
 }
 
 // NewBackend create the backend instance

@@ -58,8 +58,7 @@ type (
 		HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
 		HeaderByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Header, error)
 		CurrentBlock() *rpctypes.Block
-		BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
-		BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error)
+		ArtBlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error)
 		CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error)
 		CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.ResultBlock, error)
 		StateAndHeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*state.StateDB, *types.Header, error)
@@ -98,6 +97,7 @@ type (
 			config *evmsupport.TraceConfig,
 			block *tmrpctypes.ResultBlock,
 		) ([]*evmtxs.TxTraceResult, error)
+		GetReceipts(ctx context.Context, hash common.Hash) (types.Receipts, error)
 	}
 
 	PersonalBackend interface {

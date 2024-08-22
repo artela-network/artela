@@ -247,7 +247,7 @@ func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Has
 	}
 
 	if logs == nil {
-		receipt["logs"] = [][]*ethtypes.Log{}
+		receipt["logs"] = []*ethtypes.Log{}
 	}
 
 	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
