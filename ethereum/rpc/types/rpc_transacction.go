@@ -1,4 +1,4 @@
-package backend
+package types
 
 import (
 	"math/big"
@@ -127,7 +127,7 @@ func NewRPCPendingTransaction(tx *types.Transaction, current *types.Header, conf
 }
 
 // newRPCTransactionFromBlockIndex returns a transaction that will serialize to the RPC representation.
-func newRPCTransactionFromBlockIndex(b *types.Block, blockHash common.Hash, index uint64, config *params.ChainConfig) *RPCTransaction {
+func NewRPCTransactionFromBlockIndex(b *types.Block, blockHash common.Hash, index uint64, config *params.ChainConfig) *RPCTransaction {
 	txs := b.Transactions()
 	if index >= uint64(len(txs)) {
 		return nil
@@ -136,7 +136,7 @@ func newRPCTransactionFromBlockIndex(b *types.Block, blockHash common.Hash, inde
 }
 
 // newRPCRawTransactionFromBlockIndex returns the bytes of a transaction given a block and a transaction index.
-func newRPCRawTransactionFromBlockIndex(b *types.Block, index uint64) hexutil.Bytes {
+func NewRPCRawTransactionFromBlockIndex(b *types.Block, index uint64) hexutil.Bytes {
 	txs := b.Transactions()
 	if index >= uint64(len(txs)) {
 		return nil

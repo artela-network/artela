@@ -1,17 +1,17 @@
 package api
 
 import (
-	"github.com/artela-network/artela/ethereum/rpc/backend"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // NetAPI offers network related RPC methods.
 type NetAPI struct {
-	b backend.NetBackend
+	b rpctypes.NetBackend
 }
 
 // NewNetAPI creates a new net DebugAPI instance.
-func NewNetAPI(b backend.NetBackend) *NetAPI {
+func NewNetAPI(b rpctypes.NetBackend) *NetAPI {
 	return &NetAPI{b}
 }
 

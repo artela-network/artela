@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/artela-network/artela/ethereum/rpc/backend"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -13,19 +13,19 @@ import (
 
 // TxPoolAPI offers and API for the transaction pool. It only operates on data that is non-confidential.
 type TxPoolAPI struct {
-	b      backend.TxPoolBackend
+	b      rpctypes.TxPoolBackend
 	logger log.Logger
 }
 
 // NewTxPoolAPI creates a new tx pool service that gives information about the transaction pool.
-func NewTxPoolAPI(b backend.TxPoolBackend, logger log.Logger) *TxPoolAPI {
+func NewTxPoolAPI(b rpctypes.TxPoolBackend, logger log.Logger) *TxPoolAPI {
 	return &TxPoolAPI{b, logger}
 }
 
 // Content returns the transactions contained within the transaction pool.
-func (s *TxPoolAPI) Content() map[string]map[string]map[string]*RPCTransaction {
-	content := map[string]map[string]map[string]*RPCTransaction{
-		"pending": make(map[string]map[string]*RPCTransaction),
+func (s *TxPoolAPI) Content() map[string]map[string]map[string]*rpctypes.RPCTransaction {
+	content := map[string]map[string]map[string]*rpctypes.RPCTransaction{
+		"pending": make(map[string]map[string]*rpctypes.RPCTransaction),
 		"queued":  s.getPendingContent(common.Address{}),
 	}
 
@@ -33,7 +33,7 @@ func (s *TxPoolAPI) Content() map[string]map[string]map[string]*RPCTransaction {
 }
 
 // ContentFrom returns the transactions contained within the transaction pool.
-func (s *TxPoolAPI) ContentFrom(address common.Address) map[string]map[string]*RPCTransaction {
+func (s *TxPoolAPI) ContentFrom(address common.Address) map[string]map[string]*rpctypes.RPCTransaction {
 	return s.getPendingContent(address)
 }
 
@@ -59,7 +59,7 @@ func (s *TxPoolAPI) Inspect() map[string]map[string]map[string]string {
 	pending := s.getPendingContent(common.Address{})
 
 	// Define a formatter to flatten a transaction into a string
-	var format = func(tx *RPCTransaction) string {
+	var format = func(tx *rpctypes.RPCTransaction) string {
 		if to := tx.To; to != nil {
 			return fmt.Sprintf("%s: %v wei + %v gas × %v wei", tx.To.Hex(), tx.Value, tx.Gas, tx.GasPrice)
 		}
@@ -76,8 +76,8 @@ func (s *TxPoolAPI) Inspect() map[string]map[string]map[string]string {
 	return content
 }
 
-func (s *TxPoolAPI) getPendingContent(addr common.Address) map[string]map[string]*RPCTransaction {
-	pendingContent := make(map[string]map[string]*RPCTransaction)
+func (s *TxPoolAPI) getPendingContent(addr common.Address) map[string]map[string]*rpctypes.RPCTransaction {
+	pendingContent := make(map[string]map[string]*rpctypes.RPCTransaction)
 	pendingTxs, err := s.b.PendingTransactions()
 	if err != nil {
 		s.logger.Debug("txpool_context, get pending transactions failed", "err", err.Error())
@@ -108,9 +108,9 @@ func (s *TxPoolAPI) getPendingContent(addr common.Address) map[string]map[string
 					continue
 				}
 
-				rpctx := NewTransactionFromMsg(ethMsg, common.Hash{}, uint64(0), uint64(0), nil, cfg)
+				rpctx := rpctypes.NewTransactionFromMsg(ethMsg, common.Hash{}, uint64(0), uint64(0), nil, cfg)
 				if pendingContent[sender.String()] == nil {
-					pendingContent[sender.String()] = make(map[string]*RPCTransaction)
+					pendingContent[sender.String()] = make(map[string]*rpctypes.RPCTransaction)
 				}
 				pendingContent[sender.String()][strconv.FormatUint(txData.GetNonce(), 10)] = rpctx
 			}

@@ -26,7 +26,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/artela-network/artela/ethereum/rpc/backend"
 	"github.com/artela-network/artela/ethereum/rpc/filters"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/server/config"
@@ -39,15 +38,15 @@ var (
 	_ gasprice.OracleBackend = (*BackendImpl)(nil)
 	_ filters.Backend        = (*BackendImpl)(nil)
 
-	_ backend.Backend             = (*BackendImpl)(nil)
-	_ backend.EthereumBackend     = (*BackendImpl)(nil)
-	_ backend.BlockChainBackend   = (*BackendImpl)(nil)
-	_ backend.TrancsactionBackend = (*BackendImpl)(nil)
-	_ backend.DebugBackend        = (*BackendImpl)(nil)
-	_ backend.PersonalBackend     = (*BackendImpl)(nil)
-	_ backend.TxPoolBackend       = (*BackendImpl)(nil)
-	_ backend.NetBackend          = (*BackendImpl)(nil)
-	_ backend.Web3Backend         = (*BackendImpl)(nil)
+	_ rpctypes.Backend             = (*BackendImpl)(nil)
+	_ rpctypes.EthereumBackend     = (*BackendImpl)(nil)
+	_ rpctypes.BlockChainBackend   = (*BackendImpl)(nil)
+	_ rpctypes.TrancsactionBackend = (*BackendImpl)(nil)
+	_ rpctypes.DebugBackend        = (*BackendImpl)(nil)
+	_ rpctypes.PersonalBackend     = (*BackendImpl)(nil)
+	_ rpctypes.TxPoolBackend       = (*BackendImpl)(nil)
+	_ rpctypes.NetBackend          = (*BackendImpl)(nil)
+	_ rpctypes.Web3Backend         = (*BackendImpl)(nil)
 )
 
 // backend represents the backend for the JSON-RPC service.

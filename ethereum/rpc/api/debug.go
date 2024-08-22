@@ -28,7 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/artela-network/artela/ethereum/rpc/backend"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"
 )
@@ -46,13 +46,13 @@ type HandlerT struct {
 type DebugAPI struct {
 	ctx     *server.Context
 	logger  log.Logger
-	b       backend.DebugBackend
+	b       rpctypes.DebugBackend
 	handler *HandlerT
 }
 
 // NewDebugAPI creates a new DebugAPI definition for the tracing methods of the Ethereum service.
 func NewDebugAPI(
-	backend backend.DebugBackend,
+	backend rpctypes.DebugBackend,
 ) *DebugAPI {
 	return &DebugAPI{
 		b:       backend,

@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/artela-network/artela/common/aspect"
-	"github.com/artela-network/artela/ethereum/rpc/backend"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	rpcutils "github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/ethereum/types"
@@ -82,7 +81,7 @@ func (b *BackendImpl) SendTx(ctx context.Context, signedTx *ethtypes.Transaction
 	return nil
 }
 
-func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*backend.RPCTransaction, error) {
+func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*rpctypes.RPCTransaction, error) {
 	_, tx, err := b.getTransaction(ctx, txHash)
 	return tx, err
 }
@@ -127,7 +126,7 @@ func (b *BackendImpl) GetTxMsg(ctx context.Context, txHash common.Hash) (*txs.Ms
 	return msg, err
 }
 
-func (b *BackendImpl) SignTransaction(args *backend.TransactionArgs) (*ethtypes.Transaction, error) {
+func (b *BackendImpl) SignTransaction(args *rpctypes.TransactionArgs) (*ethtypes.Transaction, error) {
 	_, err := b.clientCtx.Keyring.KeyByAddress(sdktypes.AccAddress(args.From.Bytes()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to find key in the node's keyring; %s; %s", keystore.ErrNoMatch, err.Error())
@@ -294,17 +293,17 @@ func (b *BackendImpl) PendingTransactions() ([]*sdktypes.Tx, error) {
 	return result, nil
 }
 
-func (b *BackendImpl) GetResendArgs(args backend.TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (backend.TransactionArgs, error) {
+func (b *BackendImpl) GetResendArgs(args rpctypes.TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (rpctypes.TransactionArgs, error) {
 	chainID, err := types.ParseChainID(b.clientCtx.ChainID)
 	if err != nil {
-		return backend.TransactionArgs{}, err
+		return rpctypes.TransactionArgs{}, err
 	}
 
 	cfg := b.ChainConfig()
 	if cfg == nil {
 		header, err := b.CurrentHeader()
 		if err != nil {
-			return backend.TransactionArgs{}, err
+			return rpctypes.TransactionArgs{}, err
 		}
 		cfg = support.DefaultChainConfig().EthereumConfig(header.Number.Int64(), chainID)
 	}
@@ -324,12 +323,12 @@ func (b *BackendImpl) GetResendArgs(args backend.TransactionArgs, gasPrice *hexu
 		gas = uint64(*gasLimit)
 	}
 	if err := rpctypes.CheckTxFee(price, gas, b.RPCTxFeeCap()); err != nil {
-		return backend.TransactionArgs{}, err
+		return rpctypes.TransactionArgs{}, err
 	}
 
 	pending, err := b.PendingTransactions()
 	if err != nil {
-		return backend.TransactionArgs{}, err
+		return rpctypes.TransactionArgs{}, err
 	}
 
 	for _, tx := range pending {
@@ -361,7 +360,7 @@ func (b *BackendImpl) GetResendArgs(args backend.TransactionArgs, gasPrice *hexu
 		}
 	}
 
-	return backend.TransactionArgs{}, fmt.Errorf("transaction %s not found", matchTx.Hash().String())
+	return rpctypes.TransactionArgs{}, fmt.Errorf("transaction %s not found", matchTx.Hash().String())
 }
 
 // Sign signs the provided data using the private key of address via Geth's signature standard.
@@ -416,7 +415,7 @@ func (b *BackendImpl) GetSender(msg *txs.MsgEthereumTx, chainID *big.Int) (from 
 	return from, nil
 }
 
-func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*txs.MsgEthereumTx, *backend.RPCTransaction, error) {
+func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*txs.MsgEthereumTx, *rpctypes.RPCTransaction, error) {
 	res, err := b.GetTxByEthHash(txHash)
 	hexTx := txHash.Hex()
 
@@ -474,7 +473,7 @@ func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*tx
 		return msg, nil, err
 	}
 
-	return msg, backend.NewTransactionFromMsg(
+	return msg, rpctypes.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.BlockID.Hash.Bytes()),
 		uint64(res.Height),
@@ -485,7 +484,7 @@ func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*tx
 }
 
 func (b *BackendImpl) GetPoolTransactions() (ethtypes.Transactions, error) {
-	b.logger.Debug("called eth.rpc.backend.GetPoolTransactions")
+	b.logger.Debug("called eth.rpc.rpctypes.GetPoolTransactions")
 	return nil, errors.New("GetPoolTransactions is not implemented")
 }
 
@@ -527,7 +526,7 @@ func (b *BackendImpl) version() (string, error) {
 	}
 
 	if cfg.ChainID == nil {
-		b.logger.Error("eth.rpc.backend.Version", "ChainID is nil")
+		b.logger.Error("eth.rpc.rpctypes.Version", "ChainID is nil")
 		return "", errors.New("chain id is not valid")
 	}
 	return cfg.ChainID.String(), nil
@@ -575,7 +574,7 @@ func (b *BackendImpl) queryCosmosTxIndexer(query string, txGetter func(*rpctypes
 }
 
 // getTransactionByHashPending find pending tx from mempool
-func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgEthereumTx, *backend.RPCTransaction, error) {
+func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgEthereumTx, *rpctypes.RPCTransaction, error) {
 	hexTx := txHash.Hex()
 	// try to find tx in mempool
 	ptxs, err := b.PendingTransactions()
@@ -597,7 +596,7 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgE
 		}
 		if msg.Hash == hexTx {
 			// use zero block values since it's not included in a block yet
-			rpctx := backend.NewTransactionFromMsg(
+			rpctx := rpctypes.NewTransactionFromMsg(
 				msg,
 				common.Hash{},
 				uint64(0),

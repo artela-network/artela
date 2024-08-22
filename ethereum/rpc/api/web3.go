@@ -1,18 +1,18 @@
 package api
 
 import (
-	"github.com/artela-network/artela/ethereum/rpc/backend"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // web3Api offers network related RPC methods.
 type Web3API struct {
-	b backend.Web3Backend
+	b rpctypes.Web3Backend
 }
 
 // NewWeb3API creates a new web3 DebugAPI instance.
-func NewWeb3API(b backend.Web3Backend) backend.Web3Backend {
+func NewWeb3API(b rpctypes.Web3Backend) rpctypes.Web3Backend {
 	return &Web3API{b}
 }
 

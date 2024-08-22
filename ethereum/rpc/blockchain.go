@@ -32,7 +32,6 @@ import (
 
 	"github.com/artela-network/artela-evm/vm"
 	"github.com/artela-network/artela/ethereum/rpc/api"
-	"github.com/artela-network/artela/ethereum/rpc/backend"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/x/evm/txs"
@@ -128,7 +127,7 @@ func (b *BackendImpl) GetProof(address common.Address, storageKeys []string, blo
 	}, nil
 }
 
-func (b *BackendImpl) DoCall(args backend.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error) {
+func (b *BackendImpl) DoCall(args rpctypes.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error) {
 	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
 	if err != nil {
 		return nil, err
@@ -185,7 +184,7 @@ func (b *BackendImpl) DoCall(args backend.TransactionArgs, blockNrOrHash rpc.Blo
 	return res, nil
 }
 
-func (b *BackendImpl) EstimateGas(ctx context.Context, args backend.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
+func (b *BackendImpl) EstimateGas(ctx context.Context, args rpctypes.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
 	blockNum := rpc.LatestBlockNumber
 	if blockNrOrHash != nil {
 		blockNum, _ = b.blockNumberFromCosmos(*blockNrOrHash)
@@ -477,12 +476,12 @@ func (b *BackendImpl) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subsc
 }
 
 func (b *BackendImpl) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
-	b.logger.Debug("called eth.rpc.backend.SubscribeChainHeadEvent", "ch", ch)
+	b.logger.Debug("called eth.rpc.rpctypes.SubscribeChainHeadEvent", "ch", ch)
 	return b.scope.Track(b.chainHeadFeed.Subscribe(ch))
 }
 
 func (b *BackendImpl) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
-	b.logger.Debug("called eth.rpc.backend.SubscribeChainSideEvent", "ch", ch)
+	b.logger.Debug("called eth.rpc.rpctypes.SubscribeChainSideEvent", "ch", ch)
 	return b.scope.Track(b.chainSideFeed.Subscribe(ch))
 }
 

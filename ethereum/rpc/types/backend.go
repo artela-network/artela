@@ -1,4 +1,4 @@
-package backend
+package types
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela-evm/vm"
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"
@@ -29,8 +28,8 @@ type (
 
 		Accounts() []common.Address
 		GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error)
-		ArtBlockByNumber(ctx context.Context, number rpc.BlockNumber) (*rpctypes.Block, error)
-		BlockByHash(ctx context.Context, hash common.Hash) (*rpctypes.Block, error)
+		ArtBlockByNumber(ctx context.Context, number rpc.BlockNumber) (*Block, error)
+		BlockByHash(ctx context.Context, hash common.Hash) (*Block, error)
 		ChainConfig() *params.ChainConfig
 	}
 
@@ -40,7 +39,7 @@ type (
 
 		SuggestGasTipCap(baseFee *big.Int) (*big.Int, error)
 		GasPrice(ctx context.Context) (*hexutil.Big, error)
-		FeeHistory(blockCount uint64, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*rpctypes.FeeHistoryResult, error)
+		FeeHistory(blockCount uint64, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*FeeHistoryResult, error)
 
 		Engine() consensus.Engine
 		Syncing() (interface{}, error)
@@ -50,15 +49,15 @@ type (
 	BlockChainBackend interface {
 		Backend
 
-		GetProof(address common.Address, storageKeys []string, blockNrOrHash rpctypes.BlockNumberOrHash) (*rpctypes.AccountResult, error)
+		GetProof(address common.Address, storageKeys []string, blockNrOrHash BlockNumberOrHash) (*AccountResult, error)
 		DoCall(args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error)
 		EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error)
 
 		HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)
 		HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
 		HeaderByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Header, error)
-		CurrentBlock() *rpctypes.Block
-		ArtBlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error)
+		CurrentBlock() *Block
+		ArtBlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*Block, error)
 		CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error)
 		CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes.ResultBlock, error)
 		StateAndHeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*state.StateDB, *types.Header, error)

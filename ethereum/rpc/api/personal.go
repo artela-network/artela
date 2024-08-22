@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/artela-network/artela/ethereum/rpc/backend"
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -20,11 +20,11 @@ import (
 type PersonalAccountAPI struct {
 	nonceLock *AddrLocker
 	logger    log.Logger
-	b         backend.PersonalBackend
+	b         rpctypes.PersonalBackend
 }
 
 // NewPersonalAccountAPI create a new PersonalAccountAPI.
-func NewPersonalAccountAPI(b backend.PersonalBackend, logger log.Logger, nonceLock *AddrLocker) *PersonalAccountAPI {
+func NewPersonalAccountAPI(b rpctypes.PersonalBackend, logger log.Logger, nonceLock *AddrLocker) *PersonalAccountAPI {
 	return &PersonalAccountAPI{
 		nonceLock: nonceLock,
 		logger:    logger,
@@ -95,7 +95,7 @@ func (s *PersonalAccountAPI) LockAccount(_ common.Address) bool {
 // signTransaction sets defaults and signs the given transaction
 // NOTE: the caller needs to ensure that the nonceLock is held, if applicable,
 // and release it after the transaction has been submitted to the tx pool
-func (s *PersonalAccountAPI) signTransaction(ctx context.Context, args *backend.TransactionArgs, _ string) (*types.Transaction, error) {
+func (s *PersonalAccountAPI) signTransaction(ctx context.Context, args *rpctypes.TransactionArgs, _ string) (*types.Transaction, error) {
 	if err := args.SetDefaults(ctx, s.b); err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (s *PersonalAccountAPI) signTransaction(ctx context.Context, args *backend.
 // SendTransaction will create a transaction from the given arguments and
 // tries to sign it with the key associated with args.From. If the given
 // passwd isn't able to decrypt the key it fails.
-func (s *PersonalAccountAPI) SendTransaction(ctx context.Context, args backend.TransactionArgs, passwd string) (common.Hash, error) {
+func (s *PersonalAccountAPI) SendTransaction(ctx context.Context, args rpctypes.TransactionArgs, passwd string) (common.Hash, error) {
 	if args.Nonce == nil {
 		// Hold the mutex around signing to prevent concurrent assignment of
 		// the same nonce to multiple accounts.
@@ -130,7 +130,7 @@ func (s *PersonalAccountAPI) SendTransaction(ctx context.Context, args backend.T
 // tries to sign it with the key associated with args.From. If the given passwd isn't
 // able to decrypt the key it fails. The transaction is returned in RLP-form, not broadcast
 // to other nodes
-func (s *PersonalAccountAPI) SignTransaction(ctx context.Context, args backend.TransactionArgs, passwd string) (*SignTransactionResult, error) {
+func (s *PersonalAccountAPI) SignTransaction(ctx context.Context, args rpctypes.TransactionArgs, passwd string) (*SignTransactionResult, error) {
 	signed, err := s.signTransaction(ctx, &args, passwd)
 	if err != nil {
 		return nil, err
