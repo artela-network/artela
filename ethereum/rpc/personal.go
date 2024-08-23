@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
-	"github.com/artela-network/artela/ethereum/crypto/hd"
-	types2 "github.com/artela-network/artela/ethereum/types"
 	sdkcrypto "github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/artela-network/artela/ethereum/crypto/ethsecp256k1"
+	"github.com/artela-network/artela/ethereum/crypto/hd"
+	types2 "github.com/artela-network/artela/ethereum/types"
 )
 
 func (b *BackendImpl) NewAccount(password string) (common.AddressEIP55, error) {

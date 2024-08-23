@@ -1,8 +1,9 @@
 package api
 
 import (
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 )
 
 // NetAPI offers network related RPC methods.

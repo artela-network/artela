@@ -1,9 +1,10 @@
 package api
 
 import (
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 )
 
 // web3Api offers network related RPC methods.

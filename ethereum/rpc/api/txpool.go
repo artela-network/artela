@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
+
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 )
 
 // TxPoolAPI offers and API for the transaction pool. It only operates on data that is non-confidential.

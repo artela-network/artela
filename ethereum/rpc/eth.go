@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
-	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
-	feetypes "github.com/artela-network/artela/x/fee/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	feetypes "github.com/artela-network/artela/x/fee/types"
 )
 
 func (b *BackendImpl) SuggestGasTipCap(baseFee *big.Int) (*big.Int, error) {
