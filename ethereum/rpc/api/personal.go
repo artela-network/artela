@@ -58,13 +58,13 @@ func (s *PersonalAccountAPI) ListWallets() []rawWallet {
 // the method may return an extra challenge requiring a second open (e.g. the
 // Trezor PIN matrix challenge).
 func (s *PersonalAccountAPI) OpenWallet(_ string, _ *string) error {
-	return errors.New("OpenWallet is not implemented")
+	return errors.New("OpenWallet is not valid")
 }
 
 // DeriveAccount requests an HD wallet to derive a new account, optionally pinning
 // it for later reuse.
 func (s *PersonalAccountAPI) DeriveAccount(url string, path string, pin *bool) (accounts.Account, error) {
-	return accounts.Account{}, errors.New("DeriveAccount is not implemented")
+	return accounts.Account{}, errors.New("DeriveAccount is not valid")
 }
 
 // NewAccount will create a new account and returns the address for the new account.
@@ -83,7 +83,7 @@ func (s *PersonalAccountAPI) ImportRawKey(privkey string, password string) (comm
 // default of 300 seconds. It returns an indication if the account was unlocked.
 func (s *PersonalAccountAPI) UnlockAccount(_ context.Context, _ common.Address, _ string, duration *uint64) (bool, error) {
 	// not implemented
-	return false, errors.New("UnlockAccount is not implemented")
+	return false, errors.New("UnlockAccount is not valid")
 }
 
 // LockAccount will lock the account associated with the given address when it's unlocked.
@@ -184,10 +184,10 @@ func (s *PersonalAccountAPI) EcRecover(_ context.Context, data, sig hexutil.Byte
 
 // InitializeWallet initializes a new wallet at the provided URL, by generating and returning a new private key.
 func (s *PersonalAccountAPI) InitializeWallet(_ context.Context, _ string) (string, error) {
-	return "", errors.New("InitializeWallet is not implemented")
+	return "", errors.New("InitializeWallet is not valid")
 }
 
 // Unpair deletes a pairing between wallet and geth.
 func (s *PersonalAccountAPI) Unpair(_ context.Context, _ string, _ string) error {
-	return errors.New("unpair is not implemented")
+	return errors.New("unpair is not valid")
 }

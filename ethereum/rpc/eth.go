@@ -158,7 +158,8 @@ func (b *BackendImpl) FeeHistory(blockCount uint64, lastBlock rpc.BlockNumber,
 }
 
 func (b *BackendImpl) Engine() consensus.Engine {
-	b.logger.Error("Engine is not implemented")
+	// only for ethereum, pow -> pos
+	b.logger.Error("Engine is not valid")
 	return nil
 }
 

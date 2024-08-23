@@ -20,7 +20,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -325,26 +324,6 @@ func (b *BackendImpl) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes
 	return resBlock, nil
 }
 
-func (b *BackendImpl) StateAndHeaderByNumber(
-	_ context.Context, number rpc.BlockNumber,
-) (*state.StateDB, *ethtypes.Header, error) {
-	return nil, nil, errors.New("StateAndHeaderByNumber is not implemented")
-}
-
-func (b *BackendImpl) StateAndHeaderByNumberOrHash(
-	_ context.Context, _ rpc.BlockNumberOrHash,
-) (*state.StateDB, *ethtypes.Header, error) {
-	return nil, nil, errors.New("invalid arguments; neither block nor hash specified")
-}
-
-func (b *BackendImpl) GetEVM(_ context.Context, _ *core.Message, _ *state.StateDB,
-	_ *ethtypes.Header, _ *vm.Config, _ *vm.BlockContext,
-) (*vm.EVM, func() error) {
-	return nil, func() error {
-		return errors.New("GetEVM is not impelemted")
-	}
-}
-
 func (b *BackendImpl) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
 	if err != nil {
@@ -408,14 +387,6 @@ func (b *BackendImpl) GetCoinbase() (sdktypes.AccAddress, error) {
 	return address, nil
 }
 
-// /////////////////////////////////////////////////
-// /////////////////////////////////////////////////
-// /////////////////////////////////////////////////
-// /////////////////////////////////////////////////
-func (b *BackendImpl) SetHead(_ uint64) {
-	b.logger.Error("SetHead is not implemented")
-}
-
 func (b *BackendImpl) currentBlock() (*rpctypes.Block, error) {
 	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
 	if err != nil {
@@ -423,11 +394,6 @@ func (b *BackendImpl) currentBlock() (*rpctypes.Block, error) {
 		return nil, err
 	}
 	return block, nil
-}
-
-func (b *BackendImpl) GetTd(_ context.Context, _ common.Hash) *big.Int {
-	b.logger.Error("GetTd is not implemented")
-	return nil
 }
 
 func (b *BackendImpl) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {

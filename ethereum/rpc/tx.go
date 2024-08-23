@@ -483,38 +483,6 @@ func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*tx
 	), nil
 }
 
-func (b *BackendImpl) GetPoolTransactions() (ethtypes.Transactions, error) {
-	b.logger.Debug("called eth.rpc.rpctypes.GetPoolTransactions")
-	return nil, errors.New("GetPoolTransactions is not implemented")
-}
-
-func (b *BackendImpl) GetPoolTransaction(txHash common.Hash) *ethtypes.Transaction {
-	b.logger.Error("GetPoolTransaction is not implemented")
-	return nil
-}
-
-func (b *BackendImpl) GetPoolNonce(_ context.Context, addr common.Address) (uint64, error) {
-	return 0, errors.New("GetPoolNonce is not implemented")
-}
-
-func (b *BackendImpl) Stats() (int, int) {
-	b.logger.Error("Stats is not implemented")
-	return 0, 0
-}
-
-func (b *BackendImpl) TxPoolContent() (
-	map[common.Address]ethtypes.Transactions, map[common.Address]ethtypes.Transactions,
-) {
-	b.logger.Error("TxPoolContent is not implemented")
-	return nil, nil
-}
-
-func (b *BackendImpl) TxPoolContentFrom(addr common.Address) (
-	ethtypes.Transactions, ethtypes.Transactions,
-) {
-	return nil, nil
-}
-
 func (b *BackendImpl) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Subscription {
 	return b.scope.Track(b.newTxsFeed.Subscribe(ch))
 }
