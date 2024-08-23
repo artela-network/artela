@@ -472,7 +472,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 
 		tmEndpoint := "/websocket"
 		tmRPCAddr := cfg.RPC.ListenAddress
-		jsonrpcSrv, err = CreateJSONRPC(ctx, clientCtx, tmRPCAddr, tmEndpoint, &config)
+		jsonrpcSrv, err = CreateJSONRPC(ctx, clientCtx, tmRPCAddr, tmEndpoint, &config, db)
 		if err != nil {
 			return err
 		}

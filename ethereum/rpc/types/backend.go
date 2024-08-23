@@ -90,6 +90,7 @@ type (
 
 	DebugBackend interface {
 		BlockChainBackend
+		TrancsactionBackend
 
 		TraceTransaction(hash common.Hash, config *evmsupport.TraceConfig) (interface{}, error)
 		TraceBlock(height rpc.BlockNumber,
@@ -97,6 +98,9 @@ type (
 			block *tmrpctypes.ResultBlock,
 		) ([]*evmtxs.TxTraceResult, error)
 		GetReceipts(ctx context.Context, hash common.Hash) (types.Receipts, error)
+
+		DBProperty(property string) (string, error)
+		DBCompact(start []byte, limit []byte) error
 	}
 
 	PersonalBackend interface {

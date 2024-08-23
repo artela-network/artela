@@ -9,6 +9,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	db "github.com/cometbft/cometbft-db"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -71,6 +72,49 @@ type BackendImpl struct {
 	ctx         context.Context
 	clientCtx   client.Context
 	queryClient *rpctypes.QueryClient
+
+	db db.DB
+}
+
+// NewBackend create the backend implements
+func NewBackend(
+	ctx *server.Context,
+	clientCtx client.Context,
+	artela *ArtelaService,
+	extRPCEnabled bool,
+	cfg *Config,
+	logger log.Logger,
+	db db.DB,
+) *BackendImpl {
+	b := &BackendImpl{
+		ctx:           context.Background(),
+		extRPCEnabled: extRPCEnabled,
+		artela:        artela,
+		cfg:           cfg,
+		logger:        logger,
+		clientCtx:     clientCtx,
+		queryClient:   rpctypes.NewQueryClient(clientCtx),
+
+		scope: event.SubscriptionScope{},
+		db:    db,
+	}
+
+	var err error
+	b.appConf, err = config.GetConfig(ctx.Viper)
+	if err != nil {
+		panic(err)
+	}
+
+	b.chainID, err = ethereumtypes.ParseChainID(clientCtx.ChainID)
+	if err != nil {
+		panic(err)
+	}
+
+	if cfg.GPO.Default == nil {
+		panic("cfg.GPO.Default is nil")
+	}
+	b.gpo = gasprice.NewOracle(b, *cfg.GPO)
+	return b
 }
 
 func (b *BackendImpl) CurrentHeader() (*ethtypes.Header, error) {
@@ -172,45 +216,6 @@ func (b *BackendImpl) ChainConfig() *params.ChainConfig {
 		return nil
 	}
 	return cfg
-}
-
-// NewBackend create the backend instance
-func NewBackend(
-	ctx *server.Context,
-	clientCtx client.Context,
-	artela *ArtelaService,
-	extRPCEnabled bool,
-	cfg *Config,
-	logger log.Logger,
-) *BackendImpl {
-	b := &BackendImpl{
-		ctx:           context.Background(),
-		extRPCEnabled: extRPCEnabled,
-		artela:        artela,
-		cfg:           cfg,
-		logger:        logger,
-		clientCtx:     clientCtx,
-		queryClient:   rpctypes.NewQueryClient(clientCtx),
-
-		scope: event.SubscriptionScope{},
-	}
-
-	var err error
-	b.appConf, err = config.GetConfig(ctx.Viper)
-	if err != nil {
-		panic(err)
-	}
-
-	b.chainID, err = ethereumtypes.ParseChainID(clientCtx.ChainID)
-	if err != nil {
-		panic(err)
-	}
-
-	if cfg.GPO.Default == nil {
-		panic("cfg.GPO.Default is nil")
-	}
-	b.gpo = gasprice.NewOracle(b, *cfg.GPO)
-	return b
 }
 
 // General Ethereum DebugAPI

@@ -425,47 +425,6 @@ func (b *BackendImpl) currentBlock() (*rpctypes.Block, error) {
 	return block, nil
 }
 
-// GetReceipts get receipts by block hash
-func (b *BackendImpl) GetReceipts(ctx context.Context, hash common.Hash) (ethtypes.Receipts, error) {
-	resBlock, err := b.CosmosBlockByHash(hash)
-	if err != nil || resBlock == nil {
-		return nil, fmt.Errorf("query block failed, block hash %s, %w", hash.String(), err)
-	}
-
-	receipts := make([]*ethtypes.Receipt, 0, len(resBlock.Block.Txs))
-	for _, tx := range resBlock.Block.Txs {
-		receipt, err := b.GetTransactionReceipt(ctx, common.Hash(tx.Hash()))
-		if err != nil {
-			// might be not a eth tx, skip it
-			continue
-		}
-		var contractAddress common.Address
-		if receipt["contractAddress"] != nil {
-			contractAddress = receipt["contractAddress"].(common.Address)
-		}
-		var effectiveGasPrice big.Int
-		if receipt["effectiveGasPrice"] != nil {
-			effectiveGasPrice = big.Int(receipt["effectiveGasPrice"].(hexutil.Big))
-		}
-		receipts = append(receipts, &ethtypes.Receipt{
-			Type:              uint8(receipt["type"].(hexutil.Uint)),
-			PostState:         []byte{},
-			Status:            uint64(receipt["status"].(hexutil.Uint)),
-			CumulativeGasUsed: uint64(receipt["cumulativeGasUsed"].(hexutil.Uint64)),
-			Bloom:             receipt["logsBloom"].(ethtypes.Bloom),
-			Logs:              receipt["logs"].([]*ethtypes.Log),
-			TxHash:            receipt["transactionHash"].(common.Hash),
-			ContractAddress:   contractAddress,
-			GasUsed:           uint64(receipt["gasUsed"].(hexutil.Uint64)),
-			EffectiveGasPrice: &effectiveGasPrice,
-			BlockHash:         common.BytesToHash(resBlock.BlockID.Hash.Bytes()),
-			BlockNumber:       big.NewInt(resBlock.Block.Height),
-			TransactionIndex:  uint(receipt["transactionIndex"].(hexutil.Uint64)),
-		})
-	}
-	return receipts, nil
-}
-
 func (b *BackendImpl) GetTd(_ context.Context, _ common.Hash) *big.Int {
 	b.logger.Error("GetTd is not implemented")
 	return nil

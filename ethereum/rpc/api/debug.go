@@ -19,16 +19,17 @@ import (
 
 	stderrors "github.com/pkg/errors"
 
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
+	"github.com/artela-network/artela/x/evm/txs"
 	evmtxs "github.com/artela-network/artela/x/evm/txs"
 	evmsupport "github.com/artela-network/artela/x/evm/txs/support"
 )
@@ -53,10 +54,14 @@ type DebugAPI struct {
 // NewDebugAPI creates a new DebugAPI definition for the tracing methods of the Ethereum service.
 func NewDebugAPI(
 	backend rpctypes.DebugBackend,
+	logger log.Logger,
+	ctx *server.Context,
 ) *DebugAPI {
 	return &DebugAPI{
 		b:       backend,
 		handler: new(HandlerT),
+		logger:  logger,
+		ctx:     ctx,
 	}
 }
 
@@ -81,6 +86,9 @@ func (api *DebugAPI) GetRawBlock(ctx context.Context, blockNrOrHash rpc.BlockNum
 	if block == nil {
 		return nil, fmt.Errorf("block not found")
 	}
+
+	// marshal the eth block, be care that the block hash is not matched to
+	// what was saved in cosmos db.
 	return rlp.EncodeToBytes(block.EthBlock())
 }
 
@@ -122,9 +130,33 @@ func (api *DebugAPI) GetRawReceipts(ctx context.Context, blockNrOrHash rpc.Block
 }
 
 // GetRawTransaction returns the bytes of the transaction for the given hash.
-func (api *DebugAPI) GetRawTransaction(_ context.Context, _ common.Hash) (hexutil.Bytes, error) {
-	// TODO
-	return hexutil.Bytes{}, errors.New("GetRawTransaction is not implemented")
+func (api *DebugAPI) GetRawTransaction(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
+	txMsg, err := api.b.GetTxMsg(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	if txMsg == nil {
+		pendingTxs, err := api.b.PendingTransactions()
+		if err != nil {
+			return nil, nil
+		}
+
+		cfg := api.b.ChainConfig()
+		if cfg == nil {
+			return nil, nil
+		}
+
+		for _, pendingTx := range pendingTxs {
+			for _, msg := range (*pendingTx).GetMsgs() {
+				if ethMsg, ok := msg.(*txs.MsgEthereumTx); ok {
+					if ethMsg.AsTransaction().Hash() == hash {
+						txMsg = ethMsg
+					}
+				}
+			}
+		}
+	}
+	return txMsg.AsTransaction().MarshalBinary()
 }
 
 // PrintBlock retrieves a block and returns its pretty printed form.
@@ -137,19 +169,26 @@ func (api *DebugAPI) PrintBlock(ctx context.Context, number uint64) (string, err
 }
 
 // ChaindbProperty returns leveldb properties of the key-value database.
-func (api *DebugAPI) ChaindbProperty(_ string) (string, error) {
-	return "", errors.New("ChaindbProperty is not implemented")
+func (api *DebugAPI) ChaindbProperty(property string) (string, error) {
+	return api.b.DBProperty(property)
 }
 
 // ChaindbCompact flattens the entire key-value database into a single level,
 // removing all unused slots and merging all keys.
 func (api *DebugAPI) ChaindbCompact() error {
-	return errors.New("ChaindbCompact is not implemented")
+	for b := byte(0); b < 255; b++ {
+		api.logger.Info("Compacting chain database", "range", fmt.Sprintf("0x%0.2X-0x%0.2X", b, b+1))
+		if err := api.b.DBCompact([]byte{b}, []byte{b + 1}); err != nil {
+			api.logger.Error("Database compaction failed", "err", err)
+			return err
+		}
+	}
+	return nil
 }
 
 // SetHead rewinds the head of the blockchain to a previous block.
 func (api *DebugAPI) SetHead(_ hexutil.Uint64) {
-	// TODO
+	// not support, for a cosmos chain, use rollback instead
 }
 
 // TraceTransaction returns the structured logs created during the execution of EVM
@@ -394,15 +433,15 @@ func (a *DebugAPI) GetBlockRlp(number uint64) (hexutil.Bytes, error) {
 	if err != nil {
 		return nil, err
 	}
-	block.Hash()
 
-	// not able to marshal this block, because the block hash is not match to ethereum block
-	return rlp.EncodeToBytes(block)
+	// marshal the eth block, be care that the block hash is not matched to
+	// what was saved in cosmos db.
+	return rlp.EncodeToBytes(block.EthBlock())
 }
 
 // SeedHash retrieves the seed hash of a block.
 func (a *DebugAPI) SeedHash(_ uint64) (string, error) {
-	return "", errors.New("SeedHash is not implemented")
+	return "", errors.New("SeedHash is not valid")
 }
 
 // IntermediateRoots executes a block, and returns a list

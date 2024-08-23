@@ -3,6 +3,7 @@ package rpc
 import (
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/artela-network/artela/ethereum/rpc/filters"
 )
 
-func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.Logger, apiBackend *BackendImpl) []rpc.API {
+func GetAPIs(clientCtx client.Context, serverCtx *server.Context, wsClient *rpcclient.WSClient, logger log.Logger, apiBackend *BackendImpl) []rpc.API {
 	nonceLock := new(api.AddrLocker)
 	return []rpc.API{
 		{
@@ -27,7 +28,7 @@ func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.
 			Service:   api.NewTxPoolAPI(apiBackend, logger),
 		}, {
 			Namespace: "debug",
-			Service:   api.NewDebugAPI(apiBackend),
+			Service:   api.NewDebugAPI(apiBackend, logger, serverCtx),
 		}, {
 			Namespace: "eth",
 			Service:   api.NewEthereumAccountAPI(apiBackend),
