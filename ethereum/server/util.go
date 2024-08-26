@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	db "github.com/cometbft/cometbft-db"
 	dbm "github.com/cometbft/cometbft-db"
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
@@ -61,6 +62,7 @@ func CreateJSONRPC(ctx *sdkserver.Context,
 	tmRPCAddr,
 	tmEndpoint string,
 	config *config.Config,
+	db db.DB,
 ) (*ethrpc.ArtelaService, error) {
 	cfg := getRpcConfig(config)
 
@@ -76,7 +78,7 @@ func CreateJSONRPC(ctx *sdkserver.Context,
 
 	wsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, nodeCfg.Logger)
 
-	serv := ethrpc.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, nodeCfg.Logger)
+	serv := ethrpc.NewArtelaService(ctx, clientCtx, wsClient, cfg, stack, nodeCfg.Logger, db)
 
 	// allocate separate WS connection to Tendermint
 	tmWsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, nodeCfg.Logger)

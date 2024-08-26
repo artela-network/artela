@@ -1,9 +1,12 @@
 package rpc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/big"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -11,6 +14,8 @@ import (
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
@@ -209,4 +214,77 @@ func (b *BackendImpl) TraceBlock(height rpc.BlockNumber,
 	}
 
 	return decodedResults, nil
+}
+
+// GetReceipts get receipts by block hash
+func (b *BackendImpl) GetReceipts(ctx context.Context, hash common.Hash) (ethtypes.Receipts, error) {
+	resBlock, err := b.CosmosBlockByHash(hash)
+	if err != nil || resBlock == nil || resBlock.Block == nil {
+		return nil, fmt.Errorf("query block failed, block hash %s, %w", hash.String(), err)
+	}
+
+	blockRes, err := b.CosmosBlockResultByNumber(&resBlock.Block.Height)
+	if err != nil {
+		b.logger.Debug("GetTransactionReceipt failed", "error", err)
+		return nil, nil
+	}
+
+	msgs := b.EthMsgsFromCosmosBlock(resBlock, blockRes)
+
+	receipts := make([]*ethtypes.Receipt, 0, len(msgs))
+	for _, msg := range msgs {
+		receipt, err := b.GetTransactionReceipt(ctx, common.HexToHash(msg.Hash))
+		if err != nil || receipt == nil {
+			errMsg := ""
+			if err != nil {
+				errMsg = err.Error()
+			}
+			b.logger.Error("eth_getReceipts failed", "error", errMsg, "txHash", msg.Hash)
+			continue
+		}
+		var contractAddress common.Address
+		if receipt["contractAddress"] != nil {
+			contractAddress = receipt["contractAddress"].(common.Address)
+		}
+		var effectiveGasPrice big.Int
+		if receipt["effectiveGasPrice"] != nil {
+			effectiveGasPrice = big.Int(receipt["effectiveGasPrice"].(hexutil.Big))
+		}
+		receipts = append(receipts, &ethtypes.Receipt{
+			Type:              uint8(receipt["type"].(hexutil.Uint)),
+			PostState:         []byte{},
+			Status:            uint64(receipt["status"].(hexutil.Uint)),
+			CumulativeGasUsed: uint64(receipt["cumulativeGasUsed"].(hexutil.Uint64)),
+			Bloom:             receipt["logsBloom"].(ethtypes.Bloom),
+			Logs:              receipt["logs"].([]*ethtypes.Log),
+			TxHash:            receipt["transactionHash"].(common.Hash),
+			ContractAddress:   contractAddress,
+			GasUsed:           uint64(receipt["gasUsed"].(hexutil.Uint64)),
+			EffectiveGasPrice: &effectiveGasPrice,
+			BlockHash:         common.BytesToHash(resBlock.BlockID.Hash.Bytes()),
+			BlockNumber:       big.NewInt(resBlock.Block.Height),
+			TransactionIndex:  uint(receipt["transactionIndex"].(hexutil.Uint64)),
+		})
+	}
+	return receipts, nil
+}
+
+func (b *BackendImpl) DBProperty(property string) (string, error) {
+	if b.db == nil || b.db.Stats() == nil {
+		return "", errors.New("property is not valid")
+	}
+	if property == "" {
+		property = "leveldb.stats"
+	} else if !strings.HasPrefix(property, "leveldb.") {
+		property = "leveldb." + property
+	}
+
+	return (b.db.Stats())[property], nil
+}
+
+func (b *BackendImpl) DBCompact(start []byte, limit []byte) error {
+	if b.db == nil {
+		return errors.New("compact is not valid")
+	}
+	return b.db.ForceCompact(start, limit)
 }

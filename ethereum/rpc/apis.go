@@ -3,41 +3,38 @@ package rpc
 import (
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela/ethereum/rpc/api"
-	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	"github.com/artela-network/artela/ethereum/rpc/filters"
 )
 
-func GetAPIs(clientCtx client.Context, wsClient *rpcclient.WSClient, logger log.Logger, apiBackend *BackendImpl) []rpc.API {
-	nonceLock := new(ethapi.AddrLocker)
+func GetAPIs(clientCtx client.Context, serverCtx *server.Context, wsClient *rpcclient.WSClient, logger log.Logger, apiBackend *BackendImpl) []rpc.API {
+	nonceLock := new(api.AddrLocker)
 	return []rpc.API{
 		{
 			Namespace: "eth",
-			Service:   ethapi.NewEthereumAPI(apiBackend, logger),
+			Service:   api.NewEthereumAPI(apiBackend, logger),
 		}, {
 			Namespace: "eth",
-			Service:   ethapi.NewBlockChainAPI(apiBackend, logger),
+			Service:   api.NewBlockChainAPI(apiBackend, logger),
 		}, {
 			Namespace: "eth",
-			Service:   ethapi.NewTransactionAPI(apiBackend, logger, nonceLock),
+			Service:   api.NewTransactionAPI(apiBackend, logger, nonceLock),
 		}, {
 			Namespace: "txpool",
-			Service:   ethapi.NewTxPoolAPI(apiBackend),
+			Service:   api.NewTxPoolAPI(apiBackend, logger),
 		}, {
 			Namespace: "debug",
-			Service:   ethapi.NewDebugAPI(apiBackend),
-		}, {
-			Namespace: "debug",
-			Service:   api.NewDebugAPI(apiBackend),
+			Service:   api.NewDebugAPI(apiBackend, logger, serverCtx),
 		}, {
 			Namespace: "eth",
-			Service:   ethapi.NewEthereumAccountAPI(apiBackend),
+			Service:   api.NewEthereumAccountAPI(apiBackend),
 		}, {
 			Namespace: "personal",
-			Service:   ethapi.NewPersonalAccountAPI(apiBackend, logger, nonceLock),
+			Service:   api.NewPersonalAccountAPI(apiBackend, logger, nonceLock),
 		}, {
 			Namespace: "net",
 			Service:   api.NewNetAPI(apiBackend),

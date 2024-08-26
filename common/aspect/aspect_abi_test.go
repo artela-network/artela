@@ -6,17 +6,13 @@ import (
 	"reflect"
 	"testing"
 
-	pq "github.com/emirpasic/gods/queues/priorityqueue"
 	"github.com/emirpasic/gods/sets/treeset"
-	"github.com/holiman/uint256"
 	jsoniter "github.com/json-iterator/go"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-
-	"github.com/artela-network/artela/x/evm/artela/types"
 )
 
 func TestAbi(t *testing.T) {
@@ -100,55 +96,6 @@ func TestPack(t *testing.T) {
 		fmt.Println(hex.EncodeToString(s.Key), hex.EncodeToString(s.Value))
 	}
 	fmt.Println(properties)
-}
-
-func TestAspectsOfPack(t *testing.T) {
-	ma := make(map[string]interface{}, 2)
-	ma[types.AspectIDMapKey] = "1111"
-	ma[types.VersionMapKey] = 0
-	ma[types.PriorityMapKey] = 1
-	mb := make(map[string]interface{}, 2)
-	mb[types.AspectIDMapKey] = "2222"
-	mb[types.VersionMapKey] = 1
-	mb[types.PriorityMapKey] = -10
-	mc := make(map[string]interface{}, 2)
-	mc[types.AspectIDMapKey] = "3333"
-	mc[types.VersionMapKey] = 2
-	mc[types.PriorityMapKey] = 3
-
-	queue := pq.NewWith(types.ByMapKeyPriority) // empty
-	queue.Enqueue(ma)                           // {a 1}
-	queue.Enqueue(mb)                           // {c 3}, {a 1}
-	queue.Enqueue(mc)
-
-	outputs := make([]types.AspectMeta, 0)
-	iterator := queue.Iterator()
-
-	for iterator.Next() {
-		m := iterator.Value().(map[string]interface{})
-		e := types.AspectMeta{
-			Id:       common.HexToAddress(m[types.AspectIDMapKey].(string)),
-			Priority: int64(m[types.PriorityMapKey].(int)),
-			Version:  uint256.NewInt(m[types.VersionMapKey].(uint64)),
-		}
-		outputs = append(outputs, e)
-	}
-	pack, err := methods["AspectsOf"].Outputs.Pack(outputs)
-	if err != nil {
-		fmt.Println("pack error", err)
-	}
-	maps := make(map[string]interface{}, 0)
-	err2 := methods["AspectsOf"].Outputs.UnpackIntoMap(maps, pack)
-	if err2 != nil {
-		fmt.Println("pack error", err2)
-	}
-	fmt.Println("unpack==", maps)
-	aspects := maps["aspectBoundInfo"].([]struct {
-		AspectId common.Address `json:"AspectId"`
-		Version  uint64         `json:"Version"`
-		Priority int8           `json:"Priority"`
-	})
-	fmt.Println(aspects)
 }
 
 func TestContractOfPack(t *testing.T) {

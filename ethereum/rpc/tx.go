@@ -2,32 +2,36 @@ package rpc
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/artela-network/artela/common/aspect"
-	"github.com/artela-network/artela/ethereum/rpc/ethapi"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
-	"github.com/artela-network/artela/ethereum/rpc/utils"
+	rpcutils "github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/ethereum/utils"
 	"github.com/artela-network/artela/x/evm/txs"
+	"github.com/artela-network/artela/x/evm/txs/support"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 )
 
-// Transaction pool API
+// Transaction API
 
 func (b *BackendImpl) SendTx(ctx context.Context, signedTx *ethtypes.Transaction) error {
 	// verify the ethereum tx
@@ -77,9 +81,44 @@ func (b *BackendImpl) SendTx(ctx context.Context, signedTx *ethtypes.Transaction
 	return nil
 }
 
-func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*ethapi.RPCTransaction, error) {
+func (b *BackendImpl) GetTransaction(ctx context.Context, txHash common.Hash) (*rpctypes.RPCTransaction, error) {
 	_, tx, err := b.getTransaction(ctx, txHash)
 	return tx, err
+}
+
+func (b *BackendImpl) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
+	n := hexutil.Uint64(0)
+	height, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return &n, err
+	}
+	header, err := b.CurrentHeader()
+	if err != nil {
+		return &n, err
+	}
+	if height.Int64() > header.Number.Int64() {
+		return &n, fmt.Errorf(
+			"cannot query with height in the future (current: %d, queried: %d); please provide a valid height",
+			header.Number, height)
+	}
+	// Get nonce (sequence) from account
+	from := sdktypes.AccAddress(address.Bytes())
+	accRet := b.clientCtx.AccountRetriever
+
+	if err = accRet.EnsureExists(b.clientCtx, from); err != nil {
+		// account doesn't exist yet, return 0
+		b.logger.Info("GetTransactionCount faild, return 0. Account doesn't exist yet", "account", address.Hex(), "error", err)
+		return &n, nil
+	}
+
+	includePending := height == rpc.PendingBlockNumber
+	nonce, err := b.getAccountNonce(address, includePending, height.Int64())
+	if err != nil {
+		return nil, err
+	}
+
+	n = hexutil.Uint64(nonce)
+	return &n, nil
 }
 
 func (b *BackendImpl) GetTxMsg(ctx context.Context, txHash common.Hash) (*txs.MsgEthereumTx, error) {
@@ -87,7 +126,296 @@ func (b *BackendImpl) GetTxMsg(ctx context.Context, txHash common.Hash) (*txs.Ms
 	return msg, err
 }
 
-func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*txs.MsgEthereumTx, *ethapi.RPCTransaction, error) {
+func (b *BackendImpl) SignTransaction(args *rpctypes.TransactionArgs) (*ethtypes.Transaction, error) {
+	_, err := b.clientCtx.Keyring.KeyByAddress(sdktypes.AccAddress(args.From.Bytes()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to find key in the node's keyring; %s; %s", keystore.ErrNoMatch, err.Error())
+	}
+
+	if args.ChainID != nil && (b.chainID).Cmp((*big.Int)(args.ChainID)) != 0 {
+		return nil, fmt.Errorf("chainId does not match node's (have=%v, want=%v)", args.ChainID, (*hexutil.Big)(b.chainID))
+	}
+
+	bn, err := b.BlockNumber()
+	if err != nil {
+		return nil, err
+	}
+
+	bt, err := b.BlockTimeByNumber(int64(bn))
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := b.chainConfig()
+	if err != nil {
+		return nil, err
+	}
+	signer := ethtypes.MakeSigner(cfg, new(big.Int).SetUint64(uint64(bn)), bt)
+
+	// LegacyTx derives chainID from the signature. To make sure the msg.ValidateBasic makes
+	// the corresponding chainID validation, we need to sign the transaction before calling it
+
+	// Sign transaction
+	msg := args.ToEVMTransaction()
+	return msg.SignEthereumTx(signer, b.clientCtx.Keyring)
+}
+
+// GetTransactionReceipt get receipt by transaction hash
+func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
+	res, err := b.GetTxByEthHash(hash)
+	if err != nil {
+		b.logger.Debug("GetTransactionReceipt failed", "error", err)
+		return nil, nil
+	}
+	resBlock, err := b.CosmosBlockByNumber(rpc.BlockNumber(res.Height))
+	if err != nil {
+		b.logger.Debug("GetTransactionReceipt failed", "error", err)
+		return nil, nil
+	}
+	tx, err := b.clientCtx.TxConfig.TxDecoder()(resBlock.Block.Txs[res.TxIndex])
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode tx: %w", err)
+	}
+	ethMsg := tx.GetMsgs()[res.MsgIndex].(*txs.MsgEthereumTx)
+
+	txData, err := txs.UnpackTxData(ethMsg.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	cumulativeGasUsed := uint64(0)
+	blockRes, err := b.CosmosBlockResultByNumber(&res.Height)
+	if err != nil {
+		b.logger.Debug("GetTransactionReceipt failed", "error", err)
+		return nil, nil
+	}
+	for _, txResult := range blockRes.TxsResults[0:res.TxIndex] {
+		cumulativeGasUsed += uint64(txResult.GasUsed)
+	}
+	cumulativeGasUsed += res.CumulativeGasUsed
+
+	var status hexutil.Uint
+	if res.Failed {
+		status = hexutil.Uint(ethtypes.ReceiptStatusFailed)
+	} else {
+		status = hexutil.Uint(ethtypes.ReceiptStatusSuccessful)
+	}
+
+	// parse tx logs from events
+	msgIndex := int(res.MsgIndex)
+	logs, _ := rpcutils.TxLogsFromEvents(blockRes.TxsResults[res.TxIndex].Events, msgIndex)
+
+	if res.EthTxIndex == -1 {
+		// Fallback to find tx index by iterating all valid eth transactions
+		msgs := b.EthMsgsFromCosmosBlock(resBlock, blockRes)
+		for i := range msgs {
+			if msgs[i].Hash == hash.Hex() {
+				res.EthTxIndex = int32(i) // #nosec G701
+				break
+			}
+		}
+	}
+	// return error if still unable to find the eth tx index
+	if res.EthTxIndex == -1 {
+		return nil, errors.New("can't find index of ethereum tx")
+	}
+
+	receipt := map[string]interface{}{
+		// Consensus fields: These fields are defined by the Yellow Paper
+		"status":            status,
+		"cumulativeGasUsed": hexutil.Uint64(cumulativeGasUsed),
+		"logsBloom":         ethtypes.BytesToBloom(ethtypes.LogsBloom(logs)),
+		"logs":              logs,
+
+		// Implementation fields: These fields are added by geth when processing a transaction.
+		// They are stored in the chain database.
+		"transactionHash": hash,
+		"contractAddress": nil,
+		"gasUsed":         hexutil.Uint64(res.GasUsed),
+
+		// Inclusion information: These fields provide information about the inclusion of the
+		// transaction corresponding to this receipt.
+		"blockHash":        common.BytesToHash(resBlock.Block.Header.Hash()).Hex(),
+		"blockNumber":      hexutil.Uint64(res.Height),
+		"transactionIndex": hexutil.Uint64(res.EthTxIndex),
+
+		// sender and receiver (contract or EOA) addreses
+		"from": res.Sender,
+		"to":   txData.GetTo(),
+		"type": hexutil.Uint(ethMsg.AsTransaction().Type()),
+	}
+
+	if logs == nil {
+		receipt["logs"] = []*ethtypes.Log{}
+	}
+
+	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
+	if txData.GetTo() == nil || aspect.IsAspectDeploy(txData.GetTo(), txData.GetData()) {
+		receipt["contractAddress"] = crypto.CreateAddress(common.HexToAddress(res.Sender), txData.GetNonce())
+	}
+
+	if dynamicTx, ok := txData.(*txs.DynamicFeeTx); ok {
+		baseFee, err := b.BaseFee(blockRes)
+		if err == nil {
+			receipt["effectiveGasPrice"] = hexutil.Big(*dynamicTx.EffectiveGasPrice(baseFee))
+		}
+	}
+
+	return receipt, nil
+}
+
+func (b *BackendImpl) RPCTxFeeCap() float64 {
+	return b.cfg.RPCTxFeeCap
+}
+
+func (b *BackendImpl) UnprotectedAllowed() bool {
+	if b.cfg.AppCfg == nil {
+		return false
+	}
+	return b.cfg.AppCfg.JSONRPC.AllowUnprotectedTxs
+}
+
+func (b *BackendImpl) PendingTransactions() ([]*sdktypes.Tx, error) {
+	res, err := b.clientCtx.Client.UnconfirmedTxs(b.ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*sdktypes.Tx, 0, len(res.Txs))
+	for _, txBz := range res.Txs {
+		tx, err := b.clientCtx.TxConfig.TxDecoder()(txBz)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &tx)
+	}
+
+	return result, nil
+}
+
+func (b *BackendImpl) GetResendArgs(args rpctypes.TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (rpctypes.TransactionArgs, error) {
+	chainID, err := types.ParseChainID(b.clientCtx.ChainID)
+	if err != nil {
+		return rpctypes.TransactionArgs{}, err
+	}
+
+	cfg := b.ChainConfig()
+	if cfg == nil {
+		header, err := b.CurrentHeader()
+		if err != nil {
+			return rpctypes.TransactionArgs{}, err
+		}
+		cfg = support.DefaultChainConfig().EthereumConfig(header.Number.Int64(), chainID)
+	}
+
+	// use the latest signer for the new tx
+	signer := ethtypes.LatestSigner(cfg)
+
+	matchTx := args.ToTransaction()
+
+	// Before replacing the old transaction, ensure the _new_ transaction fee is reasonable.
+	price := matchTx.GasPrice()
+	if gasPrice != nil {
+		price = gasPrice.ToInt()
+	}
+	gas := matchTx.Gas()
+	if gasLimit != nil {
+		gas = uint64(*gasLimit)
+	}
+	if err := rpctypes.CheckTxFee(price, gas, b.RPCTxFeeCap()); err != nil {
+		return rpctypes.TransactionArgs{}, err
+	}
+
+	pending, err := b.PendingTransactions()
+	if err != nil {
+		return rpctypes.TransactionArgs{}, err
+	}
+
+	for _, tx := range pending {
+		wantSigHash := signer.Hash(matchTx)
+
+		// TODO, wantSigHash?
+		msg, err := txs.UnwrapEthereumMsg(tx, wantSigHash)
+		if err != nil {
+			// not ethereum tx
+			continue
+		}
+
+		pendingTx := msg.AsTransaction()
+		pFrom, err := ethtypes.Sender(signer, pendingTx)
+		if err != nil {
+			continue
+		}
+
+		if pFrom == *args.From && signer.Hash(pendingTx) == wantSigHash {
+			// Match. Re-sign and send the transaction.
+			if gasPrice != nil && (*big.Int)(gasPrice).Sign() != 0 {
+				args.GasPrice = gasPrice
+			}
+			if gasLimit != nil && *gasLimit != 0 {
+				args.Gas = gasLimit
+			}
+
+			return args, nil
+		}
+	}
+
+	return rpctypes.TransactionArgs{}, fmt.Errorf("transaction %s not found", matchTx.Hash().String())
+}
+
+// Sign signs the provided data using the private key of address via Geth's signature standard.
+func (b *BackendImpl) Sign(address common.Address, data hexutil.Bytes) (hexutil.Bytes, error) {
+	from := sdktypes.AccAddress(address.Bytes())
+
+	_, err := b.clientCtx.Keyring.KeyByAddress(from)
+	if err != nil {
+		return nil, fmt.Errorf("%s; %s", keystore.ErrNoMatch, err.Error())
+	}
+
+	// Sign the requested hash with the wallet
+	signature, _, err := b.clientCtx.Keyring.SignByAddress(from, data)
+	if err != nil {
+		return nil, err
+	}
+
+	signature[crypto.RecoveryIDOffset] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
+	return signature, nil
+}
+
+// GetSender extracts the sender address from the signature values using the latest signer for the given chainID.
+func (b *BackendImpl) GetSender(msg *txs.MsgEthereumTx, chainID *big.Int) (from common.Address, err error) {
+	if msg.From != "" {
+		return common.HexToAddress(msg.From), nil
+	}
+
+	tx := msg.AsTransaction()
+	// retrieve sender info from aspect if tx is not signed
+	if utils.IsCustomizedVerification(tx) {
+		bn, err := b.BlockNumber()
+		if err != nil {
+			return common.Address{}, err
+		}
+		ctx := rpctypes.ContextWithHeight(int64(bn))
+
+		res, err := b.queryClient.GetSender(ctx, msg)
+		if err != nil {
+			return common.Address{}, err
+		}
+
+		from = common.HexToAddress(res.Sender)
+	} else {
+		signer := ethtypes.LatestSignerForChainID(chainID)
+		from, err = signer.Sender(tx)
+		if err != nil {
+			return common.Address{}, err
+		}
+	}
+
+	msg.From = from.Hex()
+	return from, nil
+}
+
+func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*txs.MsgEthereumTx, *rpctypes.RPCTransaction, error) {
 	res, err := b.GetTxByEthHash(txHash)
 	hexTx := txHash.Hex()
 
@@ -145,7 +473,7 @@ func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*tx
 		return msg, nil, err
 	}
 
-	return msg, ethapi.NewTransactionFromMsg(
+	return msg, rpctypes.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.BlockID.Hash.Bytes()),
 		uint64(res.Height),
@@ -155,46 +483,8 @@ func (b *BackendImpl) getTransaction(_ context.Context, txHash common.Hash) (*tx
 	), nil
 }
 
-func (b *BackendImpl) GetPoolTransactions() (ethtypes.Transactions, error) {
-	b.logger.Debug("called eth.rpc.backend.GetPoolTransactions")
-	return nil, errors.New("GetPoolTransactions is not implemented")
-}
-
-func (b *BackendImpl) GetPoolTransaction(txHash common.Hash) *ethtypes.Transaction {
-	b.logger.Error("GetPoolTransaction is not implemented")
-	return nil
-}
-
-func (b *BackendImpl) GetPoolNonce(_ context.Context, addr common.Address) (uint64, error) {
-	return 0, errors.New("GetPoolNonce is not implemented")
-}
-
-func (b *BackendImpl) Stats() (int, int) {
-	b.logger.Error("Stats is not implemented")
-	return 0, 0
-}
-
-func (b *BackendImpl) TxPoolContent() (
-	map[common.Address]ethtypes.Transactions, map[common.Address]ethtypes.Transactions,
-) {
-	b.logger.Error("TxPoolContent is not implemented")
-	return nil, nil
-}
-
-func (b *BackendImpl) TxPoolContentFrom(addr common.Address) (
-	ethtypes.Transactions, ethtypes.Transactions,
-) {
-	return nil, nil
-}
-
 func (b *BackendImpl) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Subscription {
 	return b.scope.Track(b.newTxsFeed.Subscribe(ch))
-}
-
-// Version returns the current ethereum protocol version.
-func (b *BackendImpl) Version() string {
-	v, _ := b.version()
-	return v
 }
 
 func (b *BackendImpl) version() (string, error) {
@@ -204,15 +494,10 @@ func (b *BackendImpl) version() (string, error) {
 	}
 
 	if cfg.ChainID == nil {
-		b.logger.Error("eth.rpc.backend.Version", "ChainID is nil")
+		b.logger.Error("eth.rpc.rpctypes.Version", "ChainID is nil")
 		return "", errors.New("chain id is not valid")
 	}
 	return cfg.ChainID.String(), nil
-}
-
-func (b *BackendImpl) Engine() consensus.Engine {
-	b.logger.Error("Engine is not implemented")
-	return nil
 }
 
 func (b *BackendImpl) GetTxByEthHash(hash common.Hash) (*types.TxResult, error) {
@@ -229,110 +514,6 @@ func (b *BackendImpl) GetTxByEthHash(hash common.Hash) (*types.TxResult, error) 
 		return nil, fmt.Errorf("GetTxByEthHash %s, %w", hash.Hex(), err)
 	}
 	return txResult, nil
-}
-
-// GetTransactionReceipt get receipt by transaction hash
-func (b *BackendImpl) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
-	res, err := b.GetTxByEthHash(hash)
-	if err != nil {
-		b.logger.Debug("GetTransactionReceipt failed", "error", err)
-		return nil, nil
-	}
-	resBlock, err := b.CosmosBlockByNumber(rpc.BlockNumber(res.Height))
-	if err != nil {
-		b.logger.Debug("GetTransactionReceipt failed", "error", err)
-		return nil, nil
-	}
-	tx, err := b.clientCtx.TxConfig.TxDecoder()(resBlock.Block.Txs[res.TxIndex])
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode tx: %w", err)
-	}
-	ethMsg := tx.GetMsgs()[res.MsgIndex].(*txs.MsgEthereumTx)
-
-	txData, err := txs.UnpackTxData(ethMsg.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	cumulativeGasUsed := uint64(0)
-	blockRes, err := b.CosmosBlockResultByNumber(&res.Height)
-	if err != nil {
-		b.logger.Debug("GetTransactionReceipt failed", "error", err)
-		return nil, nil
-	}
-	for _, txResult := range blockRes.TxsResults[0:res.TxIndex] {
-		cumulativeGasUsed += uint64(txResult.GasUsed)
-	}
-	cumulativeGasUsed += res.CumulativeGasUsed
-
-	var status hexutil.Uint
-	if res.Failed {
-		status = hexutil.Uint(ethtypes.ReceiptStatusFailed)
-	} else {
-		status = hexutil.Uint(ethtypes.ReceiptStatusSuccessful)
-	}
-
-	// parse tx logs from events
-	msgIndex := int(res.MsgIndex)
-	logs, _ := utils.TxLogsFromEvents(blockRes.TxsResults[res.TxIndex].Events, msgIndex)
-
-	if res.EthTxIndex == -1 {
-		// Fallback to find tx index by iterating all valid eth transactions
-		msgs := b.EthMsgsFromCosmosBlock(resBlock, blockRes)
-		for i := range msgs {
-			if msgs[i].Hash == hash.Hex() {
-				res.EthTxIndex = int32(i) // #nosec G701
-				break
-			}
-		}
-	}
-	// return error if still unable to find the eth tx index
-	if res.EthTxIndex == -1 {
-		return nil, errors.New("can't find index of ethereum tx")
-	}
-
-	receipt := map[string]interface{}{
-		// Consensus fields: These fields are defined by the Yellow Paper
-		"status":            status,
-		"cumulativeGasUsed": hexutil.Uint64(cumulativeGasUsed),
-		"logsBloom":         ethtypes.BytesToBloom(ethtypes.LogsBloom(logs)),
-		"logs":              logs,
-
-		// Implementation fields: These fields are added by geth when processing a transaction.
-		// They are stored in the chain database.
-		"transactionHash": hash,
-		"contractAddress": nil,
-		"gasUsed":         hexutil.Uint64(res.GasUsed),
-
-		// Inclusion information: These fields provide information about the inclusion of the
-		// transaction corresponding to this receipt.
-		"blockHash":        common.BytesToHash(resBlock.Block.Header.Hash()).Hex(),
-		"blockNumber":      hexutil.Uint64(res.Height),
-		"transactionIndex": hexutil.Uint64(res.EthTxIndex),
-
-		// sender and receiver (contract or EOA) addreses
-		"from": res.Sender,
-		"to":   txData.GetTo(),
-		"type": hexutil.Uint(ethMsg.AsTransaction().Type()),
-	}
-
-	if logs == nil {
-		receipt["logs"] = [][]*ethtypes.Log{}
-	}
-
-	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
-	if txData.GetTo() == nil || aspect.IsAspectDeploy(txData.GetTo(), txData.GetData()) {
-		receipt["contractAddress"] = crypto.CreateAddress(common.HexToAddress(res.Sender), txData.GetNonce())
-	}
-
-	if dynamicTx, ok := txData.(*txs.DynamicFeeTx); ok {
-		baseFee, err := b.BaseFee(blockRes)
-		if err == nil {
-			receipt["effectiveGasPrice"] = hexutil.Big(*dynamicTx.EffectiveGasPrice(baseFee))
-		}
-	}
-
-	return receipt, nil
 }
 
 func (b *BackendImpl) queryCosmosTxIndexer(query string, txGetter func(*rpctypes.ParsedTxs) *rpctypes.ParsedTx) (*types.TxResult, error) {
@@ -361,7 +542,7 @@ func (b *BackendImpl) queryCosmosTxIndexer(query string, txGetter func(*rpctypes
 }
 
 // getTransactionByHashPending find pending tx from mempool
-func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgEthereumTx, *ethapi.RPCTransaction, error) {
+func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgEthereumTx, *rpctypes.RPCTransaction, error) {
 	hexTx := txHash.Hex()
 	// try to find tx in mempool
 	ptxs, err := b.PendingTransactions()
@@ -383,7 +564,7 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgE
 		}
 		if msg.Hash == hexTx {
 			// use zero block values since it's not included in a block yet
-			rpctx := ethapi.NewTransactionFromMsg(
+			rpctx := rpctypes.NewTransactionFromMsg(
 				msg,
 				common.Hash{},
 				uint64(0),
@@ -399,36 +580,57 @@ func (b *BackendImpl) getTransactionByHashPending(txHash common.Hash) (*txs.MsgE
 	return nil, nil, nil
 }
 
-func (b *BackendImpl) EstimateGas(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
-	blockNum := rpc.LatestBlockNumber
-	if blockNrOrHash != nil {
-		blockNum, _ = b.blockNumberFromCosmos(*blockNrOrHash)
-	}
-
-	bz, err := json.Marshal(&args)
+func (b *BackendImpl) getAccountNonce(accAddr common.Address, pending bool, height int64) (uint64, error) {
+	queryClient := authtypes.NewQueryClient(b.clientCtx)
+	adr := sdktypes.AccAddress(accAddr.Bytes()).String()
+	ctx := rpctypes.ContextWithHeight(height)
+	res, err := queryClient.Account(ctx, &authtypes.QueryAccountRequest{Address: adr})
 	if err != nil {
+		st, ok := status.FromError(err)
+		// treat as account doesn't exist yet
+		if ok && st.Code() == codes.NotFound {
+			b.logger.Info("getAccountNonce faild, account not found", "error", err)
+			return 0, nil
+		}
+		return 0, err
+	}
+	var acc authtypes.AccountI
+	if err := b.clientCtx.InterfaceRegistry.UnpackAny(res.Account, &acc); err != nil {
 		return 0, err
 	}
 
-	header, err := b.CosmosBlockByNumber(blockNum)
-	if err != nil {
-		// the error message imitates geth behavior
-		return 0, errors.New("header not found")
+	nonce := acc.GetSequence()
+
+	if !pending {
+		return nonce, nil
 	}
 
-	req := txs.EthCallRequest{
-		Args:            bz,
-		GasCap:          b.RPCGasCap(),
-		ProposerAddress: sdktypes.ConsAddress(header.Block.ProposerAddress),
-		ChainId:         b.chainID.Int64(),
+	// the account retriever doesn't include the uncommitted transactions on the nonce so we need to
+	// to manually add them.
+	pendingTxs, err := b.PendingTransactions()
+	if err != nil {
+		return nonce, nil
 	}
 
-	// From ContextWithHeight: if the provided height is 0,
-	// it will return an empty context and the gRPC query will use
-	// the latest block height for querying.
-	res, err := b.queryClient.EstimateGas(rpctypes.ContextWithHeight(blockNum.Int64()), &req)
-	if err != nil {
-		return 0, err
+	// add the uncommitted txs to the nonce counter
+	// only supports `MsgEthereumTx` style tx
+	for _, tx := range pendingTxs {
+		for _, msg := range (*tx).GetMsgs() {
+			ethMsg, ok := msg.(*txs.MsgEthereumTx)
+			if !ok {
+				// not ethereum tx
+				break
+			}
+
+			sender, err := b.GetSender(ethMsg, b.chainID)
+			if err != nil {
+				continue
+			}
+			if sender == accAddr {
+				nonce++
+			}
+		}
 	}
-	return hexutil.Uint64(res.Gas), nil
+
+	return nonce, nil
 }

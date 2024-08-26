@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/artela-network/artela/x/aspect/provider"
-	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
-	aspectmodule "github.com/artela-network/artela/x/evm/artela/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -134,10 +131,14 @@ import (
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/aspect/provider"
+	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
+	aspectmodule "github.com/artela-network/artela/x/evm/artela/types"
 	aspecttypes "github.com/artela-network/aspect-core/types"
 
 	// do not remove this, this will register the native evm tracers
 	_ "github.com/artela-network/artela-evm/tracers/native"
+	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
 
 	// aspect related imports
 	_ "github.com/artela-network/artela/x/aspect/store/v0"
