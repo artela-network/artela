@@ -690,7 +690,11 @@ func (api *pubSubAPI) subscribePendingTransactions(wsConn *wsConn, subID rpc.ID)
 		errCh := sub.Err()
 		for {
 			select {
-			case ev := <-txsCh:
+			case ev, ok := <-txsCh:
+				if !ok {
+					return
+				}
+
 				data, ok := ev.Data.(tmtypes.EventDataTx)
 				if !ok {
 					api.logger.Debug("event data type mismatch", "type", fmt.Sprintf("%T", ev.Data))
