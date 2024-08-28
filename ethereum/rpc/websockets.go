@@ -445,7 +445,6 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					}
 				}
 
-				// TODO: Eth TransactionsRoot unable to obtain ，now remove transactionsRoot，
 				result := map[string]interface{}{
 					"parentHash":      header.ParentHash,
 					"sha3Uncles":      header.UncleHash,
@@ -455,8 +454,8 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					"logsBloom":       bloom,
 					"difficulty":      header.Difficulty,
 					"number":          header.Number,
-					"gasLimit":        header.GasLimit,
-					"gasUsed":         header.GasUsed,
+					"gasLimit":        data.ResultEndBlock.ConsensusParamUpdates.Block.MaxGas,
+					"gasUsed":         header.GasUsed, // TODO emit the txs and calculte it.
 					"timestamp":       header.Time,
 					"extraData":       header.Extra,
 					"mixHash":         header.MixDigest,
@@ -465,7 +464,8 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 					"withdrawalsRoot": header.WithdrawalsHash,
 					"excessDataGas":   header.ExcessDataGas,
 					"hash":            hexutil.Encode(cosmosHash.Bytes()),
-					"size":            0,
+					"size":            0, // TODO calculted with total block, emit the txs and calculte it.
+					// "transactionRoot"  // TODO emit the txs and calculte it.
 				}
 
 				// write to ws conn
@@ -690,7 +690,11 @@ func (api *pubSubAPI) subscribePendingTransactions(wsConn *wsConn, subID rpc.ID)
 		errCh := sub.Err()
 		for {
 			select {
-			case ev := <-txsCh:
+			case ev, ok := <-txsCh:
+				if !ok {
+					return
+				}
+
 				data, ok := ev.Data.(tmtypes.EventDataTx)
 				if !ok {
 					api.logger.Debug("event data type mismatch", "type", fmt.Sprintf("%T", ev.Data))
