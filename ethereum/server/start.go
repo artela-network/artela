@@ -369,10 +369,8 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 		}
 	}
 
-	// Add the tx service to the gRPC router. We only need to register this
-	// service if API or gRPC is enabled, and avoid doing so in the general
-	// case, because it spawns a new local tendermint RPC client.
-	if (config.API.Enable || config.GRPC.Enable) && tmNode != nil {
+	// always register the services, since aspect estimatedGas and aspect context are rely on it.
+	if tmNode != nil {
 		// re-assign for making the client available below
 		// do not use := to avoid shadowing clientCtx
 		clientCtx = clientCtx.WithClient(local.New(tmNode))
@@ -389,10 +387,7 @@ func startInProcess(ctx *sdkserver.Context, clientCtx client.Context, appCreator
 
 	var grpcClient *grpc.ClientConn
 	var apiSrv *api.Server
-	// always start the api server, becase aspect static calls rely on it.
-	// TODO: remove the aspect static calls rely on
-	// if config.API.Enable {
-	{
+	if config.API.Enable {
 		genDoc, err := genDocProvider()
 		if err != nil {
 			return err

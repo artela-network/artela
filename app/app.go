@@ -953,8 +953,6 @@ func (app *Artela) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICon
 
 	// register app's OpenAPI routes.
 	docs.RegisterOpenAPIService(Name, apiSvr.Router)
-
-	app.EvmKeeper.SetClientContext(clientCtx)
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
@@ -970,6 +968,8 @@ func (app *Artela) RegisterTendermintService(clientCtx client.Context) {
 		app.interfaceRegistry,
 		app.Query,
 	)
+	// register the node service here, which is used in estimatedGas, eth_call, traceTx
+	app.EvmKeeper.SetClientContext(clientCtx)
 }
 
 // RegisterNodeService implements the Application.RegisterNodeService method.

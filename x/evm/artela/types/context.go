@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/artela-network/artela/x/aspect/store"
-	"github.com/artela-network/artela/x/aspect/types"
-
 	"math/big"
 	"sync"
 	"time"
@@ -22,6 +19,8 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/artela-network/artela-evm/vm"
+	"github.com/artela-network/artela/x/aspect/store"
+	"github.com/artela-network/artela/x/aspect/types"
 	statedb "github.com/artela-network/artela/x/evm/states"
 	inherent "github.com/artela-network/aspect-core/chaincoreext/jit_inherent"
 	artelatypes "github.com/artela-network/aspect-core/types"
