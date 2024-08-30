@@ -249,16 +249,16 @@ func (m *metaStore) StoreProperties(version uint64, properties []types.Property)
 		}
 
 		for key, value := range oldVersionProperties {
-			if index, ok := keySet[key]; ok {
-				// for exiting one, we need to replace the value
-				properties[index].Value = value
-			} else {
-				// for non-existing one, we need to append it
-				properties = append(properties, types.Property{
-					Key:   key,
-					Value: value,
-				})
+			if _, ok := keySet[key]; ok {
+				// for exiting one, ignore the old value
+				continue
 			}
+
+			// for non-existing one, we need to append it
+			properties = append(properties, types.Property{
+				Key:   key,
+				Value: value,
+			})
 		}
 	}
 
