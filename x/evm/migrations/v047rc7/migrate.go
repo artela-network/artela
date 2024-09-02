@@ -8,6 +8,6 @@ import (
 )
 
 func MigrateStore(_ sdk.Context, _ storetypes.StoreKey, _ codec.BinaryCodec, logger log.Logger) error {
-	logger.Error("v047rc7 Migrate Store is updating")
+	logger.Info("v047rc7 Migrate Store is updating")
 	return nil
 }
