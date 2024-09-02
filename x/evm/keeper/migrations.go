@@ -28,3 +28,9 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 func (m Migrator) Migrate6to7(ctx sdk.Context) error {
 	return v048rc8.MigrateStore(ctx, m.keeper.storeKey, m.keeper.cdc, m.keeper.logger)
 }
+
+// Migrate7to8 migrates the store from consensus version 7 to 8
+func (m Migrator) Migrate7to8(ctx sdk.Context) error {
+	// no historic data to migrate
+	return nil
+}
