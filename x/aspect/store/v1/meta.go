@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"math"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	cuckoo "github.com/seiflotfy/cuckoofilter"
@@ -266,6 +267,11 @@ func (m *metaStore) StoreProperties(version uint64, properties []types.Property)
 	if len(properties) > types.AspectPropertyLimit {
 		return store.ErrTooManyProperties
 	}
+
+	// sort the slice lexicographically
+	sort.Slice(properties, func(i, j int) bool {
+		return properties[i].Key < properties[j].Key
+	})
 
 	// key format {5B propertyPrefix}{8B version}{20B aspectID}
 	key := store.NewKeyBuilder(V1AspectPropertiesKeyPrefix).
