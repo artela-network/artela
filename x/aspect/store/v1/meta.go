@@ -5,6 +5,8 @@ import (
 	"math"
 	"sort"
 
+	"github.com/cometbft/cometbft/libs/log"
+
 	"github.com/ethereum/go-ethereum/common"
 	cuckoo "github.com/seiflotfy/cuckoofilter"
 
@@ -28,8 +30,9 @@ const (
 type metaStore struct {
 	BaseStore
 
-	ext *Extension
-	ctx *types.AspectStoreContext
+	ext    *Extension
+	ctx    *types.AspectStoreContext
+	logger log.Logger
 
 	propertiesCache map[uint64]map[string][]byte
 }
@@ -342,7 +345,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 		filter := NewLoggedFilter(m.ctx.Logger(), cuckoo.NewFilter(filterMaxSize))
 		// insert {aspectId}:{filterManagedSlotOffset 0-27} into cuckoo filter
 		// each filter will manage 28 binding slots
-		filter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
+		filter.InsertUnique(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
 		filterData := filter.Encode()
 		// save filter
 		if err := m.Store(filterKey.AppendUint8(0).Build(), filterData); err != nil {
@@ -442,7 +445,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 			filter := NewLoggedFilter(m.ctx.Logger(), cuckoo.NewFilter(filterMaxSize))
 			// insert {aspectId}:{filterManagedSlotOffset 0-27} into cuckoo filter
 			// each filter will manage 28 binding slots
-			filter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
+			filter.InsertUnique(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
 			filterData := filter.Encode()
 			// save filter
 			if err := m.Store(filterKey.AppendUint8(lastFilterSlot).Build(), filterData); err != nil {
@@ -465,7 +468,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 				}
 				lastFilter = NewLoggedFilter(m.ctx.Logger(), cuckooFilter)
 			}
-			lastFilter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
+			lastFilter.InsertUnique(store.NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
 			filterData := lastFilter.Encode()
 			if err := m.Store(lastFilterKey, filterData); err != nil {
 				return err
@@ -493,7 +496,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 			}
 			lastFilter = NewLoggedFilter(m.ctx.Logger(), cuckooFilter)
 		}
-		lastFilter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
+		lastFilter.InsertUnique(store.NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
 		filterData := lastFilter.Encode()
 		if err := m.Store(lastFilterKey, filterData); err != nil {
 			return err
@@ -765,7 +768,9 @@ BindingFound:
 			// and add last one to the new position
 			lastFilter.Delete(store.NewKeyBuilder(account.Bytes()).AppendUint8(bindingFilterOffsetKey).Build())
 			lastFilter.Delete(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(lastFilterOffsetKey).Build())
-			lastFilter.Insert(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(bindingFilterOffsetKey).Build())
+			data := store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(bindingFilterOffsetKey).Build()
+			m.logger.Debug("insert unique", "data", data)
+			lastFilter.InsertUnique(data)
 
 			// update last filter
 			if err := m.Store(filterKey.AppendUint8(lastFilterSlot).Build(), lastFilter.Encode()); err != nil {
@@ -787,7 +792,9 @@ BindingFound:
 			// remove the account from the binding slot filter, and update filter
 			bindingFilterOffset := uint8(*bindingSlot % filterManagedSlots)
 			bindingFilter.Delete(store.NewKeyBuilder(account.Bytes()).AppendUint8(bindingFilterOffset).Build())
-			bindingFilter.Insert(store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(bindingFilterOffset).Build())
+			data := store.NewKeyBuilder(lastBinding.Account.Bytes()).AppendUint8(bindingFilterOffset).Build()
+			m.logger.Debug("insert unique", "data", data)
+			bindingFilter.InsertUnique(data)
 			if err := m.Store(filterKey.AppendUint8(uint8(*bindingSlot/filterManagedSlots)).Build(), bindingFilter.Encode()); err != nil {
 				return err
 			}

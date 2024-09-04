@@ -8,6 +8,7 @@ import (
 type Filter interface {
 	Lookup(data []byte) bool
 	Insert(data []byte) bool
+	InsertUnique(data []byte) bool
 	Delete(data []byte) bool
 	Count() uint
 	Encode() []byte
@@ -34,6 +35,12 @@ func (lf *LoggedFilter) Lookup(data []byte) bool {
 func (lf *LoggedFilter) Insert(data []byte) bool {
 	res := lf.inner.Insert(data)
 	lf.logger.Debug("insert into filter", "data", hexutils.BytesToHex(data), "result", res)
+	return res
+}
+
+func (lf *LoggedFilter) InsertUnique(data []byte) bool {
+	res := lf.inner.InsertUnique(data)
+	lf.logger.Debug("insert unique into filter", "data", hexutils.BytesToHex(data), "result", res)
 	return res
 }
 
