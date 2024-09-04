@@ -40,6 +40,7 @@ func (lf *LoggedFilter) Insert(data []byte) bool {
 func (lf *LoggedFilter) Delete(data []byte) bool {
 	res := lf.inner.Delete(data)
 	lf.logger.Debug("delete from filter", "data", hexutils.BytesToHex(data), "result", res)
+	return res
 }
 
 func (lf *LoggedFilter) Count() uint {
