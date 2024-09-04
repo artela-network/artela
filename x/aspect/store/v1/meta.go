@@ -339,7 +339,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 		// each filter will manage 28 slots, which should be enough for a long time.
 
 		// first time this aspect is bound
-		filter := cuckoo.NewFilter(filterMaxSize)
+		filter := NewLoggedFilter(m.ctx.Logger(), cuckoo.NewFilter(filterMaxSize))
 		// insert {aspectId}:{filterManagedSlotOffset 0-27} into cuckoo filter
 		// each filter will manage 28 binding slots
 		filter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
@@ -366,7 +366,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 	lastSlot := uint64(length / bindingSlotSize)
 	lastFilterSlot := uint8(lastSlot / filterManagedSlots)
 
-	var lastFilter *cuckoo.Filter
+	var lastFilter Filter
 	// first use filter to check whether the account is already bound
 	for i := uint8(0); i <= lastFilterSlot; i++ {
 		key := filterKey.AppendUint8(i).Build()
@@ -376,13 +376,17 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 		}
 		if len(filterData) == 0 {
 			// reached the end of the filter
+			m.ctx.Logger().Debug("filter not found", "key", key)
 			break
 		}
 
-		filter, err := cuckoo.Decode(filterData)
+		cuckooFilter, err := cuckoo.Decode(filterData)
 		if err != nil {
+			m.ctx.Logger().Error("failed to decode filter", "err", err)
 			return err
 		}
+
+		filter := NewLoggedFilter(m.ctx.Logger(), cuckooFilter)
 
 		// cache the last filter
 		if i == lastFilterSlot {
@@ -401,6 +405,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 		for j := uint8(0); j < slotsToTest; j++ {
 			if !filter.Lookup(accountKey.AppendUint8(j).Build()) {
 				// filter test fail, continue searching
+				m.ctx.Logger().Debug("filter test failed", "account", account.Hex(), "slot", j)
 				continue
 			}
 
@@ -434,7 +439,7 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 		// last slot is full, check if we need create a new filter
 		if lastSlot%filterManagedSlots == 0 {
 			// create a new filter
-			filter := cuckoo.NewFilter(filterMaxSize)
+			filter := NewLoggedFilter(m.ctx.Logger(), cuckoo.NewFilter(filterMaxSize))
 			// insert {aspectId}:{filterManagedSlotOffset 0-27} into cuckoo filter
 			// each filter will manage 28 binding slots
 			filter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(0).Build())
@@ -453,10 +458,12 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 					return err
 				}
 
-				lastFilter, err = cuckoo.Decode(filterData)
+				cuckooFilter, err := cuckoo.Decode(filterData)
 				if err != nil {
+					m.ctx.Logger().Error("failed to decode filter", "err", err)
 					return err
 				}
+				lastFilter = NewLoggedFilter(m.ctx.Logger(), cuckooFilter)
 			}
 			lastFilter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
 			filterData := lastFilter.Encode()
@@ -480,10 +487,11 @@ func (m *metaStore) StoreBinding(account common.Address, version uint64, joinPoi
 				return err
 			}
 
-			lastFilter, err = cuckoo.Decode(filterData)
+			cuckooFilter, err := cuckoo.Decode(filterData)
 			if err != nil {
 				return err
 			}
+			lastFilter = NewLoggedFilter(m.ctx.Logger(), cuckooFilter)
 		}
 		lastFilter.Insert(store.NewKeyBuilder(account.Bytes()).AppendUint8(uint8(lastSlot % filterManagedSlots)).Build())
 		filterData := lastFilter.Encode()
