@@ -3,7 +3,6 @@ package cuckoo
 import (
 	"fmt"
 	"math/bits"
-	"math/rand"
 )
 
 const maxCuckooCount = 500
@@ -49,8 +48,8 @@ func (cf *Filter) Reset() {
 	cf.count = 0
 }
 
-func randi(i1, i2 uint) uint {
-	if rand.Intn(2) == 0 {
+func (cf *Filter) decide(i1, i2 uint) uint {
+	if cf.count%2 == 0 {
 		return i1
 	}
 	return i2
@@ -66,7 +65,7 @@ func (cf *Filter) Insert(data []byte) bool {
 	if cf.insert(fp, i2) {
 		return true
 	}
-	return cf.reinsert(fp, randi(i1, i2))
+	return cf.reinsert(fp, cf.decide(i1, i2))
 }
 
 // InsertUnique inserts data into the counter if not exists and returns true upon success
@@ -87,7 +86,7 @@ func (cf *Filter) insert(fp fingerprint, i uint) bool {
 
 func (cf *Filter) reinsert(fp fingerprint, i uint) bool {
 	for k := 0; k < maxCuckooCount; k++ {
-		j := rand.Intn(bucketSize)
+		j := cf.count % bucketSize
 		oldfp := fp
 		fp = cf.buckets[i][j]
 		cf.buckets[i][j] = oldfp
