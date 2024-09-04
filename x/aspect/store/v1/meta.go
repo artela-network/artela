@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
-	cuckoo "github.com/seiflotfy/cuckoofilter"
 
+	cuckoo "github.com/artela-network/artela/x/aspect/cuckoofilter"
 	"github.com/artela-network/artela/x/aspect/store"
 	v0 "github.com/artela-network/artela/x/aspect/store/v0"
 	"github.com/artela-network/artela/x/aspect/types"
