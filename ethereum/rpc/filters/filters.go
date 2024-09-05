@@ -138,6 +138,8 @@ func (f *Filter) Logs(_ context.Context, logLimit int, blockLimit int64) ([]*eth
 		f.criteria.ToBlock = big.NewInt(head)
 	} else if f.criteria.ToBlock.Int64() == 0 {
 		f.criteria.ToBlock = big.NewInt(1)
+	} else if f.criteria.ToBlock.Int64() > head {
+		f.criteria.ToBlock = big.NewInt(head)
 	}
 
 	if f.criteria.ToBlock.Int64()-f.criteria.FromBlock.Int64() > blockLimit {
