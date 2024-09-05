@@ -11,14 +11,15 @@ import (
 	"sort"
 	"strconv"
 
+	sdkmath "cosmossdk.io/math"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -29,7 +30,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/artela-network/artela-evm/vm"
-	"github.com/artela-network/artela/ethereum/rpc/ethapi"
+	"github.com/artela-network/artela/ethereum/rpc/api"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
 	"github.com/artela-network/artela/x/evm/txs"
@@ -38,8 +39,182 @@ import (
 
 // Blockchain API
 
-func (b *BackendImpl) SetHead(_ uint64) {
-	b.logger.Error("SetHead is not implemented")
+// GetProof returns an account object with proof and any storage proofs
+func (b *BackendImpl) GetProof(address common.Address, storageKeys []string, blockNrOrHash rpctypes.BlockNumberOrHash) (*rpctypes.AccountResult, error) {
+	numberOrHash := rpc.BlockNumberOrHash{
+		BlockNumber:      (*rpc.BlockNumber)(blockNrOrHash.BlockNumber),
+		BlockHash:        blockNrOrHash.BlockHash,
+		RequireCanonical: false,
+	}
+	blockNum, err := b.blockNumberFromCosmos(numberOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	height := blockNum.Int64()
+
+	_, err = b.CosmosBlockByNumber(blockNum)
+	if err != nil {
+		// the error message imitates geth behavior
+		return nil, fmt.Errorf("block not valid, %v", err)
+	}
+	ctx := rpctypes.ContextWithHeight(height)
+
+	// if the height is equal to zero, meaning the query condition of the block is either "pending" or "latest"
+	if height == 0 {
+		bn, err := b.BlockNumber()
+		if err != nil {
+			return nil, err
+		}
+
+		if bn > math.MaxInt64 {
+			return nil, fmt.Errorf("not able to query block number greater than MaxInt64")
+		}
+
+		height = int64(bn) // #nosec G701 -- checked for int overflow already
+	}
+
+	clientCtx := b.clientCtx.WithHeight(height)
+
+	// query storage proofs
+	storageProofs := make([]rpctypes.StorageResult, len(storageKeys))
+
+	for i, key := range storageKeys {
+		hexKey := common.HexToHash(key)
+		valueBz, proof, err := b.queryClient.GetProof(clientCtx, evmtypes.StoreKey, evmtypes.StateKey(address, hexKey.Bytes()))
+		if err != nil {
+			return nil, err
+		}
+
+		storageProofs[i] = rpctypes.StorageResult{
+			Key:   key,
+			Value: (*hexutil.Big)(new(big.Int).SetBytes(valueBz)),
+			Proof: utils.GetHexProofs(proof),
+		}
+	}
+
+	// query EVM account
+	req := &txs.QueryAccountRequest{
+		Address: address.String(),
+	}
+
+	res, err := b.queryClient.Account(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// query account proofs
+	accountKey := authtypes.AddressStoreKey(sdktypes.AccAddress(address.Bytes()))
+	_, proof, err := b.queryClient.GetProof(clientCtx, authtypes.StoreKey, accountKey)
+	if err != nil {
+		return nil, err
+	}
+
+	balance, ok := sdkmath.NewIntFromString(res.Balance)
+	if !ok {
+		return nil, errors.New("invalid balance")
+	}
+
+	return &rpctypes.AccountResult{
+		Address:      address,
+		AccountProof: utils.GetHexProofs(proof),
+		Balance:      (*hexutil.Big)(balance.BigInt()),
+		CodeHash:     common.HexToHash(res.CodeHash),
+		Nonce:        hexutil.Uint64(res.Nonce),
+		StorageHash:  common.Hash{}, // NOTE: Evmos doesn't have a storage hash. TODO: implement?
+		StorageProof: storageProofs,
+	}, nil
+}
+
+func (b *BackendImpl) DoCall(args rpctypes.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	bz, err := json.Marshal(&args)
+	if err != nil {
+		return nil, err
+	}
+	header, err := b.CosmosBlockByNumber(blockNum)
+	if err != nil {
+		// the error message imitates geth behavior
+		return nil, errors.New("header not found")
+	}
+
+	req := txs.EthCallRequest{
+		Args:            bz,
+		GasCap:          b.RPCGasCap(),
+		ProposerAddress: sdktypes.ConsAddress(header.Block.ProposerAddress),
+		ChainId:         b.chainID.Int64(),
+	}
+
+	// From ContextWithHeight: if the provided height is 0,
+	// it will return an empty context and the gRPC query will use
+	// the latest block height for querying.
+	ctx := rpctypes.ContextWithHeight(blockNum.Int64())
+	timeout := b.RPCEVMTimeout()
+
+	// Setup context so it may be canceled the call has completed
+	// or, in case of unmetered gas, setup a context with a timeout.
+	var cancel context.CancelFunc
+	if timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+	} else {
+		ctx, cancel = context.WithCancel(ctx)
+	}
+
+	// Make sure the context is canceled when the call has completed
+	// this makes sure resources are cleaned up.
+	defer cancel()
+
+	res, err := b.queryClient.EthCall(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.Failed() {
+		if res.VmError != vm.ErrExecutionReverted.Error() {
+			return nil, status.Error(codes.Internal, res.VmError)
+		}
+		return nil, evmtypes.NewExecErrorWithReason(res.Ret)
+	}
+
+	return res, nil
+}
+
+func (b *BackendImpl) EstimateGas(ctx context.Context, args rpctypes.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
+	blockNum := rpc.LatestBlockNumber
+	if blockNrOrHash != nil {
+		blockNum, _ = b.blockNumberFromCosmos(*blockNrOrHash)
+	}
+
+	bz, err := json.Marshal(&args)
+	if err != nil {
+		return 0, err
+	}
+
+	header, err := b.CosmosBlockByNumber(blockNum)
+	if err != nil {
+		// the error message imitates geth behavior
+		return 0, errors.New("header not found")
+	}
+
+	req := txs.EthCallRequest{
+		Args:            bz,
+		GasCap:          b.RPCGasCap(),
+		ProposerAddress: sdktypes.ConsAddress(header.Block.ProposerAddress),
+		ChainId:         b.chainID.Int64(),
+	}
+
+	// From ContextWithHeight: if the provided height is 0,
+	// it will return an empty context and the gRPC query will use
+	// the latest block height for querying.
+	res, err := b.queryClient.EstimateGas(rpctypes.ContextWithHeight(blockNum.Int64()), &req)
+	if err != nil {
+		return 0, err
+	}
+	return hexutil.Uint64(res.Gas), nil
 }
 
 func (b *BackendImpl) HeaderByNumber(_ context.Context, number rpc.BlockNumber) (*ethtypes.Header, error) {
@@ -72,23 +247,26 @@ func (b *BackendImpl) HeaderByNumber(_ context.Context, number rpc.BlockNumber) 
 	return ethHeader, nil
 }
 
-func (b *BackendImpl) HeaderByHash(_ context.Context, hash common.Hash) (*ethtypes.Header, error) {
-	return nil, nil
+func (b *BackendImpl) HeaderByHash(ctx context.Context, hash common.Hash) (*ethtypes.Header, error) {
+	block, err := b.BlockByHash(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	if block == nil {
+		return nil, errors.New("block not found")
+	}
+	return block.Header(), nil
 }
 
 func (b *BackendImpl) HeaderByNumberOrHash(ctx context.Context,
 	blockNrOrHash rpc.BlockNumberOrHash,
 ) (*ethtypes.Header, error) {
-	return nil, errors.New("HeaderByNumberOrHash is not implemented")
-}
-
-func (b *BackendImpl) CurrentHeader() (*ethtypes.Header, error) {
-	block, err := b.BlockByNumber(context.Background(), rpc.LatestBlockNumber)
+	block, err := b.ArtBlockByNumberOrHash(ctx, blockNrOrHash)
 	if err != nil {
 		return nil, err
 	}
-	if block == nil || block.Header() == nil {
-		return nil, errors.New("current block header not found")
+	if block == nil {
+		return nil, errors.New("block not found")
 	}
 	return block.Header(), nil
 }
@@ -98,102 +276,13 @@ func (b *BackendImpl) CurrentBlock() *rpctypes.Block {
 	return block
 }
 
-func (b *BackendImpl) currentBlock() (*rpctypes.Block, error) {
-	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
-	if err != nil {
-		b.logger.Error("get CurrentBlock failed", "error", err)
-		return nil, err
-	}
-	return block, nil
-}
-
-func (b *BackendImpl) BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*ethtypes.Block, error) {
-	block, err := b.ArtBlockByNumber(ctx, number)
+func (b *BackendImpl) ArtBlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
 	if err != nil {
 		return nil, err
 	}
-	return block.EthBlock(), nil
-}
 
-func (b *BackendImpl) ArtBlockByNumber(_ context.Context, number rpc.BlockNumber) (*rpctypes.Block, error) {
-	resBlock, err := b.CosmosBlockByNumber(number)
-	if err != nil || resBlock == nil {
-		return nil, fmt.Errorf("query block failed, block number %d, %w", number, err)
-	}
-
-	blockRes, err := b.CosmosBlockResultByNumber(&resBlock.Block.Height)
-	if err != nil {
-		return nil, fmt.Errorf("block result not found for height %d", resBlock.Block.Height)
-	}
-
-	return b.BlockFromCosmosBlock(resBlock, blockRes)
-}
-
-func (b *BackendImpl) BlockByHash(_ context.Context, hash common.Hash) (*rpctypes.Block, error) {
-	resBlock, err := b.CosmosBlockByHash(hash)
-	if err != nil || resBlock == nil {
-		return nil, fmt.Errorf("failed to get block by hash %s, %w", hash.Hex(), err)
-	}
-
-	blockRes, err := b.CosmosBlockResultByNumber(&resBlock.Block.Height)
-	if err != nil {
-		return nil, fmt.Errorf("block result not found for height %d", resBlock.Block.Height)
-	}
-
-	return b.BlockFromCosmosBlock(resBlock, blockRes)
-}
-
-func (b *BackendImpl) BlockByNumberOrHash(_ context.Context, _ rpc.BlockNumberOrHash) (*rpctypes.Block, error) {
-	return nil, errors.New("BlockByNumberOrHash is not implemented")
-}
-
-func (b *BackendImpl) StateAndHeaderByNumber(
-	_ context.Context, number rpc.BlockNumber,
-) (*state.StateDB, *ethtypes.Header, error) {
-	return nil, nil, errors.New("StateAndHeaderByNumber is not implemented")
-}
-
-func (b *BackendImpl) StateAndHeaderByNumberOrHash(
-	_ context.Context, _ rpc.BlockNumberOrHash,
-) (*state.StateDB, *ethtypes.Header, error) {
-	return nil, nil, errors.New("invalid arguments; neither block nor hash specified")
-}
-
-func (b *BackendImpl) PendingBlockAndReceipts() (*ethtypes.Block, ethtypes.Receipts) {
-	b.logger.Error("PendingBlockAndReceipts is not implemented")
-	return nil, nil
-}
-
-// GetReceipts get receipts by block hash
-func (b *BackendImpl) GetReceipts(_ context.Context, _ common.Hash) (ethtypes.Receipts, error) {
-	return nil, errors.New("GetReceipts is not implemented")
-}
-
-func (b *BackendImpl) GetTd(_ context.Context, _ common.Hash) *big.Int {
-	b.logger.Error("GetTd is not implemented")
-	return nil
-}
-
-func (b *BackendImpl) GetEVM(_ context.Context, _ *core.Message, _ *state.StateDB,
-	_ *ethtypes.Header, _ *vm.Config, _ *vm.BlockContext,
-) (*vm.EVM, func() error) {
-	return nil, func() error {
-		return errors.New("GetEVM is not impelemted")
-	}
-}
-
-func (b *BackendImpl) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
-	return b.scope.Track(b.chainFeed.Subscribe(ch))
-}
-
-func (b *BackendImpl) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
-	b.logger.Debug("called eth.rpc.backend.SubscribeChainHeadEvent", "ch", ch)
-	return b.scope.Track(b.chainHeadFeed.Subscribe(ch))
-}
-
-func (b *BackendImpl) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
-	b.logger.Debug("called eth.rpc.backend.SubscribeChainSideEvent", "ch", ch)
-	return b.scope.Track(b.chainSideFeed.Subscribe(ch))
+	return b.ArtBlockByNumber(ctx, blockNum)
 }
 
 func (b *BackendImpl) CosmosBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error) {
@@ -233,6 +322,92 @@ func (b *BackendImpl) CosmosBlockByNumber(blockNum rpc.BlockNumber) (*tmrpctypes
 	}
 
 	return resBlock, nil
+}
+
+func (b *BackendImpl) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &txs.QueryCodeRequest{
+		Address: address.String(),
+	}
+
+	res, err := b.queryClient.Code(rpctypes.ContextWithHeight(blockNum.Int64()), req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Code, nil
+}
+
+// GetStorageAt returns the contract storage at the given address, block number, and key.
+func (b *BackendImpl) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &txs.QueryStorageRequest{
+		Address: address.String(),
+		Key:     key,
+	}
+
+	res, err := b.queryClient.Storage(rpctypes.ContextWithHeight(blockNum.Int64()), req)
+	if err != nil {
+		return nil, err
+	}
+
+	value := common.HexToHash(res.Value)
+	return value.Bytes(), nil
+}
+
+func (b *BackendImpl) GetCoinbase() (sdktypes.AccAddress, error) {
+	node, err := b.clientCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := node.Status(b.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &txs.QueryValidatorAccountRequest{
+		ConsAddress: sdktypes.ConsAddress(status.ValidatorInfo.Address).String(),
+	}
+
+	res, err := b.queryClient.ValidatorAccount(b.ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	address, _ := sdktypes.AccAddressFromBech32(res.AccountAddress) // #nosec G703
+	return address, nil
+}
+
+func (b *BackendImpl) currentBlock() (*rpctypes.Block, error) {
+	block, err := b.ArtBlockByNumber(context.Background(), rpc.LatestBlockNumber)
+	if err != nil {
+		b.logger.Error("get CurrentBlock failed", "error", err)
+		return nil, err
+	}
+	return block, nil
+}
+
+func (b *BackendImpl) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
+	return b.scope.Track(b.chainFeed.Subscribe(ch))
+}
+
+func (b *BackendImpl) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
+	b.logger.Debug("called eth.rpc.rpctypes.SubscribeChainHeadEvent", "ch", ch)
+	return b.scope.Track(b.chainHeadFeed.Subscribe(ch))
+}
+
+func (b *BackendImpl) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
+	b.logger.Debug("called eth.rpc.rpctypes.SubscribeChainSideEvent", "ch", ch)
+	return b.scope.Track(b.chainSideFeed.Subscribe(ch))
 }
 
 // BlockNumberFromTendermint returns the BlockNumber from BlockNumberOrHash
@@ -297,45 +472,6 @@ func (b *BackendImpl) CosmosBlockResultByNumber(height *int64) (*tmrpctypes.Resu
 	return b.clientCtx.Client.BlockResults(b.ctx, height)
 }
 
-func (b *BackendImpl) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
-	if err != nil {
-		return nil, err
-	}
-
-	req := &txs.QueryCodeRequest{
-		Address: address.String(),
-	}
-
-	res, err := b.queryClient.Code(rpctypes.ContextWithHeight(blockNum.Int64()), req)
-	if err != nil {
-		return nil, err
-	}
-
-	return res.Code, nil
-}
-
-// GetStorageAt returns the contract storage at the given address, block number, and key.
-func (b *BackendImpl) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
-	if err != nil {
-		return nil, err
-	}
-
-	req := &txs.QueryStorageRequest{
-		Address: address.String(),
-		Key:     key,
-	}
-
-	res, err := b.queryClient.Storage(rpctypes.ContextWithHeight(blockNum.Int64()), req)
-	if err != nil {
-		return nil, err
-	}
-
-	value := common.HexToHash(res.Value)
-	return value.Bytes(), nil
-}
-
 // BlockBloom query block bloom filter from block results
 func (b *BackendImpl) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.Bloom, error) {
 	for _, event := range blockRes.EndBlockEvents {
@@ -396,12 +532,8 @@ func (b *BackendImpl) BlockFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, blo
 	ethHeader.GasLimit = uint64(gasLimit)
 
 	blockHash := common.BytesToHash(block.Hash().Bytes())
-	receipts, err := b.GetReceipts(context.Background(), blockHash)
-	if err != nil {
-		b.logger.Debug(fmt.Sprintf("failed to fetch receipts, block hash %s, block number %d", blockHash.Hex(), height))
-	}
 
-	ethBlock := ethtypes.NewBlock(ethHeader, txs, nil, receipts, trie.NewStackTrie(nil))
+	ethBlock := ethtypes.NewBlock(ethHeader, txs, nil, nil, trie.NewStackTrie(nil))
 	res := rpctypes.EthBlockToBlock(ethBlock)
 	res.SetHash(blockHash)
 	return res, nil
@@ -442,74 +574,17 @@ func (b *BackendImpl) EthMsgsFromCosmosBlock(resBlock *tmrpctypes.ResultBlock, b
 	return result
 }
 
-func (b *BackendImpl) DoCall(args ethapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash) (*txs.MsgEthereumTxResponse, error) {
-	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
-	if err != nil {
-		return nil, err
-	}
-
-	bz, err := json.Marshal(&args)
-	if err != nil {
-		return nil, err
-	}
-	header, err := b.CosmosBlockByNumber(blockNum)
-	if err != nil {
-		// the error message imitates geth behavior
-		return nil, errors.New("header not found")
-	}
-
-	req := txs.EthCallRequest{
-		Args:            bz,
-		GasCap:          b.RPCGasCap(),
-		ProposerAddress: sdktypes.ConsAddress(header.Block.ProposerAddress),
-		ChainId:         b.chainID.Int64(),
-	}
-
-	// From ContextWithHeight: if the provided height is 0,
-	// it will return an empty context and the gRPC query will use
-	// the latest block height for querying.
-	ctx := rpctypes.ContextWithHeight(blockNum.Int64())
-	timeout := b.RPCEVMTimeout()
-
-	// Setup context so it may be canceled the call has completed
-	// or, in case of unmetered gas, setup a context with a timeout.
-	var cancel context.CancelFunc
-	if timeout > 0 {
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-	} else {
-		ctx, cancel = context.WithCancel(ctx)
-	}
-
-	// Make sure the context is canceled when the call has completed
-	// this makes sure resources are cleaned up.
-	defer cancel()
-
-	res, err := b.queryClient.EthCall(ctx, &req)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.Failed() {
-		if res.VmError != vm.ErrExecutionReverted.Error() {
-			return nil, status.Error(codes.Internal, res.VmError)
-		}
-		return nil, evmtypes.NewExecErrorWithReason(res.Ret)
-	}
-
-	return res, nil
-}
-
 func (b *BackendImpl) BlockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.Bloom, error) {
 	return b.blockBloom(blockRes)
 }
 
 func (b *BackendImpl) GetBlockByNumber(blockNum rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
-	block, err := b.BlockByNumber(context.Background(), blockNum)
+	block, err := b.ArtBlockByNumber(context.Background(), blockNum)
 	if err != nil {
 		return nil, err
 	}
 
-	return ethapi.RPCMarshalHeader(block.Header(), block.Hash()), nil
+	return api.RPCMarshalHeader(block.Header(), block.Hash()), nil
 }
 
 func (b *BackendImpl) processBlock(

@@ -1,4 +1,4 @@
-package ethapi
+package types
 
 import (
 	"bytes"
@@ -43,7 +43,7 @@ type TransactionArgs struct {
 }
 
 // from retrieves the transaction sender address.
-func (args *TransactionArgs) from() common.Address {
+func (args *TransactionArgs) FromAddr() common.Address {
 	if args.From == nil {
 		return common.Address{}
 	}
@@ -62,7 +62,7 @@ func (args *TransactionArgs) data() []byte {
 }
 
 // setDefaults fills in default values for unspecified tx fields.
-func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
+func (args *TransactionArgs) SetDefaults(ctx context.Context, b TrancsactionBackend) error {
 	if err := args.setFeeDefaults(ctx, b); err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		args.Value = new(hexutil.Big)
 	}
 	if args.Nonce == nil {
-		nonce, err := b.GetTransactionCount(args.from(), rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
+		nonce, err := b.GetTransactionCount(args.FromAddr(), rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
 		if err != nil {
 			return err
 		}
@@ -98,15 +98,15 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 			Data:                 (*hexutil.Bytes)(&data),
 			AccessList:           args.AccessList,
 		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		// estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		// if err != nil {
-		// 	return err
-		// }
-		// args.Gas = &estimated
-		// TODO set gas
-		_ = callArgs
-		_ = pendingBlockNr
+
+		latestBlockNumber := rpc.LatestBlockNumber
+		estimated, err := b.EstimateGas(ctx, callArgs, &rpc.BlockNumberOrHash{
+			BlockNumber: &latestBlockNumber,
+		})
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
 
 		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
 	}
@@ -124,7 +124,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 }
 
 // setFeeDefaults fills in default fee values for unspecified tx fields.
-func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) error {
+func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b TrancsactionBackend) error {
 	// If both gasPrice and at least one of the EIP-1559 fee parameters are specified, error.
 	if args.GasPrice != nil && (args.MaxFeePerGas != nil || args.MaxPriorityFeePerGas != nil) {
 		return errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
@@ -166,7 +166,7 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 }
 
 // setLondonFeeDefaults fills in reasonable default fee values for unspecified fields.
-func (args *TransactionArgs) setLondonFeeDefaults(_ context.Context, head *types.Header, b Backend) error {
+func (args *TransactionArgs) setLondonFeeDefaults(_ context.Context, head *types.Header, b TrancsactionBackend) error {
 	// Set maxPriorityFeePerGas if it is missing.
 	if args.MaxPriorityFeePerGas == nil {
 		tip, err := b.SuggestGasTipCap(head.BaseFee)
@@ -202,7 +202,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (*
 		return nil, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
 	}
 	// Set sender address or use zero address if none specified.
-	addr := args.from()
+	addr := args.FromAddr()
 
 	// Set default gas & gas price if none were set
 	gas := globalGasCap

@@ -1,28 +1,20 @@
-package ethapi
+package api
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"math/big"
-	"time"
 
-	"github.com/davecgh/go-spew/spew"
-
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/artela-network/artela-evm/vm"
@@ -33,12 +25,12 @@ import (
 
 // EthereumAPI provides an API to access Ethereum related information.
 type EthereumAPI struct {
-	b      Backend
+	b      rpctypes.EthereumBackend
 	logger log.Logger
 }
 
 // NewEthereumAPI creates a new Ethereum protocol API.
-func NewEthereumAPI(b Backend, logger log.Logger) *EthereumAPI {
+func NewEthereumAPI(b rpctypes.EthereumBackend, logger log.Logger) *EthereumAPI {
 	return &EthereumAPI{b, logger}
 }
 
@@ -56,7 +48,15 @@ func (s *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 
 // MaxPriorityFeePerGas returns a suggestion for a gas tip cap for dynamic fee transactions.
 func (s *EthereumAPI) MaxPriorityFeePerGas(_ context.Context) (*hexutil.Big, error) {
-	return nil, errors.New("MaxPriorityFeePerGas is not implemented")
+	head, err := s.b.CurrentHeader()
+	if err != nil {
+		return nil, err
+	}
+	tipcap, err := s.b.SuggestGasTipCap(head.BaseFee)
+	if err != nil {
+		return nil, err
+	}
+	return (*hexutil.Big)(tipcap), nil
 }
 
 // FeeHistory returns the fee market history.
@@ -76,49 +76,14 @@ func (s *EthereumAPI) Syncing() (interface{}, error) {
 	return s.b.Syncing()
 }
 
-// TxPoolAPI offers and API for the transaction pool. It only operates on data that is non-confidential.
-type TxPoolAPI struct {
-	b Backend
-}
-
-// NewTxPoolAPI creates a new tx pool service that gives information about the transaction pool.
-func NewTxPoolAPI(b Backend) *TxPoolAPI {
-	return &TxPoolAPI{b}
-}
-
-// Content returns the transactions contained within the transaction pool.
-func (s *TxPoolAPI) Content() map[string]map[string]map[string]*RPCTransaction {
-	// not implemented
-	return nil
-}
-
-// ContentFrom returns the transactions contained within the transaction pool.
-func (s *TxPoolAPI) ContentFrom(_ common.Address) map[string]map[string]*RPCTransaction {
-	// not implemented
-	return nil
-}
-
-// Status returns the number of pending and queued transaction in the pool.
-func (s *TxPoolAPI) Status() map[string]hexutil.Uint {
-	// not implemented
-	return nil
-}
-
-// Inspect retrieves the content of the transaction pool and flattens it into an
-// easily inspectable list.
-func (s *TxPoolAPI) Inspect() map[string]map[string]map[string]string {
-	// not implemented
-	return nil
-}
-
 // EthereumAccountAPI provides an API to access accounts managed by this node.
 // It offers only methods that can retrieve accounts.
 type EthereumAccountAPI struct {
-	b Backend
+	b rpctypes.EthereumBackend
 }
 
 // NewEthereumAccountAPI creates a new EthereumAccountAPI.
-func NewEthereumAccountAPI(b Backend) *EthereumAccountAPI {
+func NewEthereumAccountAPI(b rpctypes.EthereumBackend) *EthereumAccountAPI {
 	return &EthereumAccountAPI{b}
 }
 
@@ -127,178 +92,14 @@ func (s *EthereumAccountAPI) Accounts() []common.Address {
 	return s.b.Accounts()
 }
 
-// PersonalAccountAPI provides an API to access accounts managed by this node.
-// It offers methods to create, (un)lock en list accounts. Some methods accept
-// passwords and are therefore considered private by default.
-type PersonalAccountAPI struct {
-	nonceLock *AddrLocker
-	logger    log.Logger
-	b         Backend
-}
-
-// NewPersonalAccountAPI create a new PersonalAccountAPI.
-func NewPersonalAccountAPI(b Backend, logger log.Logger, nonceLock *AddrLocker) *PersonalAccountAPI {
-	return &PersonalAccountAPI{
-		nonceLock: nonceLock,
-		logger:    logger,
-		b:         b,
-	}
-}
-
-// ListAccounts will return a list of addresses for accounts this node manages.
-func (s *PersonalAccountAPI) ListAccounts() []common.Address {
-	return s.b.Accounts()
-}
-
-// rawWallet is a JSON representation of an accounts.Wallet interface, with its
-// data contents extracted into plain fields.
-type rawWallet struct {
-	URL      string             `json:"url"`
-	Status   string             `json:"status"`
-	Failure  string             `json:"failure,omitempty"`
-	Accounts []accounts.Account `json:"accounts,omitempty"`
-}
-
-// ListWallets will return a list of wallets this node manages.
-func (s *PersonalAccountAPI) ListWallets() []rawWallet {
-	// not implemented
-	wallets := make([]rawWallet, 0) // return [] instead of nil if empty
-	return wallets
-}
-
-// OpenWallet initiates a hardware wallet opening procedure, establishing a USB
-// connection and attempting to authenticate via the provided passphrase. Note,
-// the method may return an extra challenge requiring a second open (e.g. the
-// Trezor PIN matrix challenge).
-func (s *PersonalAccountAPI) OpenWallet(_ string, _ *string) error {
-	return errors.New("OpenWallet is not implemented")
-}
-
-// DeriveAccount requests an HD wallet to derive a new account, optionally pinning
-// it for later reuse.
-func (s *PersonalAccountAPI) DeriveAccount(url string, path string, pin *bool) (accounts.Account, error) {
-	return accounts.Account{}, errors.New("DeriveAccount is not implemented")
-}
-
-// NewAccount will create a new account and returns the address for the new account.
-func (s *PersonalAccountAPI) NewAccount(password string) (common.AddressEIP55, error) {
-	return s.b.NewAccount(password)
-}
-
-// ImportRawKey stores the given hex encoded ECDSA key into the key directory,
-// encrypting it with the passphrase.
-func (s *PersonalAccountAPI) ImportRawKey(privkey string, password string) (common.Address, error) {
-	return s.b.ImportRawKey(privkey, password)
-}
-
-// UnlockAccount will unlock the account associated with the given address with
-// the given password for duration seconds. If duration is nil it will use a
-// default of 300 seconds. It returns an indication if the account was unlocked.
-func (s *PersonalAccountAPI) UnlockAccount(_ context.Context, _ common.Address, _ string, duration *uint64) (bool, error) {
-	// not implemented
-	return false, errors.New("UnlockAccount is not implemented")
-}
-
-// LockAccount will lock the account associated with the given address when it's unlocked.
-func (s *PersonalAccountAPI) LockAccount(_ common.Address) bool {
-	// not implemented"
-	return false
-}
-
-// signTransaction sets defaults and signs the given transaction
-// NOTE: the caller needs to ensure that the nonceLock is held, if applicable,
-// and release it after the transaction has been submitted to the tx pool
-func (s *PersonalAccountAPI) signTransaction(_ context.Context, args *TransactionArgs, passwd string) (*types.Transaction, error) {
-	// return s.b.SignTransaction(args, passwd)
-	// TODO
-	return nil, fmt.Errorf("signTransaction is not implemented, args: %v, passwd: %s", args, passwd)
-}
-
-// SendTransaction will create a transaction from the given arguments and
-// tries to sign it with the key associated with args.From. If the given
-// passwd isn't able to decrypt the key it fails.
-func (s *PersonalAccountAPI) SendTransaction(ctx context.Context, args TransactionArgs, passwd string) (common.Hash, error) {
-	if args.Nonce == nil {
-		// Hold the mutex around signing to prevent concurrent assignment of
-		// the same nonce to multiple accounts.
-		s.nonceLock.LockAddr(args.from())
-		defer s.nonceLock.UnlockAddr(args.from())
-	}
-	signed, err := s.signTransaction(ctx, &args, passwd)
-	if err != nil {
-		log.Warn("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
-		return common.Hash{}, err
-	}
-	return SubmitTransaction(ctx, s.logger, s.b, signed)
-}
-
-// SignTransaction will create a transaction from the given arguments and
-// tries to sign it with the key associated with args.From. If the given passwd isn't
-// able to decrypt the key it fails. The transaction is returned in RLP-form, not broadcast
-// to other nodes
-func (s *PersonalAccountAPI) SignTransaction(_ context.Context, args TransactionArgs, passwd string) (*SignTransactionResult, error) {
-	// TODO
-	return nil, fmt.Errorf("SignTransaction is not implemented, args: %v, passwd: %s", args, passwd)
-}
-
-// Sign calculates an Ethereum ECDSA signature for:
-// keccak256("\x19Ethereum Signed Message:\n" + len(message) + message))
-//
-// Note, the produced signature conforms to the secp256k1 curve R, S and V values,
-// where the V value will be 27 or 28 for legacy reasons.
-//
-// The key used to calculate the signature is decrypted with the given password.
-//
-// https://github.com/ethereum/go-ethereum/wiki/Management-APIs#personal_sign
-func (s *PersonalAccountAPI) Sign(_ context.Context, _ hexutil.Bytes, _ common.Address, _ string) (hexutil.Bytes, error) {
-	// TODO
-	return nil, errors.New("Sign is not implemented")
-}
-
-// EcRecover returns the address for the account that was used to create the signature.
-// Note, this function is compatible with eth_sign and personal_sign. As such it recovers
-// the address of:
-// hash = keccak256("\x19Ethereum Signed Message:\n"${message length}${message})
-// addr = ecrecover(hash, signature)
-//
-// Note, the signature must conform to the secp256k1 curve R, S and V values, where
-// the V value must be 27 or 28 for legacy reasons.
-//
-// https://github.com/ethereum/go-ethereum/wiki/Management-APIs#personal_ecRecover
-func (s *PersonalAccountAPI) EcRecover(_ context.Context, data, sig hexutil.Bytes) (common.Address, error) {
-	if len(sig) != crypto.SignatureLength {
-		return common.Address{}, fmt.Errorf("signature must be %d bytes long", crypto.SignatureLength)
-	}
-	if sig[crypto.RecoveryIDOffset] != 27 && sig[crypto.RecoveryIDOffset] != 28 {
-		return common.Address{}, errors.New("invalid Ethereum signature (V is not 27 or 28)")
-	}
-	sig[crypto.RecoveryIDOffset] -= 27 // Transform yellow paper V from 27/28 to 0/1
-
-	rpk, err := crypto.SigToPub(accounts.TextHash(data), sig)
-	if err != nil {
-		return common.Address{}, err
-	}
-	return crypto.PubkeyToAddress(*rpk), nil
-}
-
-// InitializeWallet initializes a new wallet at the provided URL, by generating and returning a new private key.
-func (s *PersonalAccountAPI) InitializeWallet(_ context.Context, _ string) (string, error) {
-	return "", errors.New("InitializeWallet is not implemented")
-}
-
-// Unpair deletes a pairing between wallet and geth.
-func (s *PersonalAccountAPI) Unpair(_ context.Context, _ string, _ string) error {
-	return errors.New("unpair is not implemented")
-}
-
 // BlockChainAPI provides an API to access Ethereum blockchain data.
 type BlockChainAPI struct {
 	logger log.Logger
-	b      Backend
+	b      rpctypes.BlockChainBackend
 }
 
 // NewBlockChainAPI creates a new Ethereum blockchain API.
-func NewBlockChainAPI(b Backend, logger log.Logger) *BlockChainAPI {
+func NewBlockChainAPI(b rpctypes.BlockChainBackend, logger log.Logger) *BlockChainAPI {
 	return &BlockChainAPI{logger, b}
 }
 
@@ -312,8 +113,14 @@ func (s *BlockChainAPI) ChainId() *hexutil.Big {
 	return (*hexutil.Big)(s.b.ChainConfig().ChainID)
 }
 
-func (s *BlockChainAPI) Coinbase() (sdktypes.AccAddress, error) {
-	return s.b.GetCoinbase()
+func (s *BlockChainAPI) Coinbase() (common.Address, error) {
+	// coinbase return the operator address of the validator node
+	coinbase, err := s.b.GetCoinbase()
+	if err != nil {
+		return common.Address{}, err
+	}
+	ethAddr := common.BytesToAddress(coinbase.Bytes())
+	return ethAddr, nil
 }
 
 // BlockNumber returns the block number of the chain head.
@@ -612,7 +419,7 @@ func (context *ChainContext) GetHeader(hash common.Hash, number uint64) *types.H
 //
 // Note, this function doesn't make and changes in the states/blockchain and is
 // useful to execute and retrieve values.
-func (s *BlockChainAPI) Call(_ context.Context, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, _ *StateOverride, _ *BlockOverrides) (hexutil.Bytes, error) {
+func (s *BlockChainAPI) Call(_ context.Context, args rpctypes.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, _ *StateOverride, _ *BlockOverrides) (hexutil.Bytes, error) {
 	data, err := s.b.DoCall(args, blockNrOrHash)
 	if err != nil {
 		return hexutil.Bytes{}, err
@@ -623,7 +430,7 @@ func (s *BlockChainAPI) Call(_ context.Context, args TransactionArgs, blockNrOrH
 
 // EstimateGas returns an estimate of the amount of gas needed to execute the
 // given transaction against the current pending block.
-func (s *BlockChainAPI) EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
+func (s *BlockChainAPI) EstimateGas(ctx context.Context, args rpctypes.TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
 	return s.b.EstimateGas(ctx, args, blockNrOrHash)
 }
 
@@ -673,7 +480,7 @@ func RPCMarshalBlock(block *rpctypes.Block, inclTx bool, fullTx bool, config *pa
 		}
 		if fullTx {
 			formatTx = func(idx int, tx *types.Transaction) interface{} {
-				return newRPCTransactionFromBlockIndex(block.EthBlock(), block.Hash(), uint64(idx), config)
+				return rpctypes.NewRPCTransactionFromBlockIndex(block.EthBlock(), block.Hash(), uint64(idx), config)
 			}
 		}
 		txs := block.Transactions()
@@ -709,138 +516,6 @@ func (s *BlockChainAPI) rpcMarshalBlock(_ context.Context, b *rpctypes.Block, in
 	return RPCMarshalBlock(b, inclTx, fullTx, s.b.ChainConfig())
 }
 
-// RPCTransaction represents a transaction that will serialize to the RPC representation of a transaction
-type RPCTransaction struct {
-	BlockHash        *common.Hash      `json:"blockHash"`
-	BlockNumber      *hexutil.Big      `json:"blockNumber"`
-	From             common.Address    `json:"from"`
-	Gas              hexutil.Uint64    `json:"gas"`
-	GasPrice         *hexutil.Big      `json:"gasPrice"`
-	GasFeeCap        *hexutil.Big      `json:"maxFeePerGas,omitempty"`
-	GasTipCap        *hexutil.Big      `json:"maxPriorityFeePerGas,omitempty"`
-	Hash             common.Hash       `json:"hash"`
-	Input            hexutil.Bytes     `json:"input"`
-	Nonce            hexutil.Uint64    `json:"nonce"`
-	To               *common.Address   `json:"to"`
-	TransactionIndex *hexutil.Uint64   `json:"transactionIndex"`
-	Value            *hexutil.Big      `json:"value"`
-	Type             hexutil.Uint64    `json:"type"`
-	Accesses         *types.AccessList `json:"accessList,omitempty"`
-	ChainID          *hexutil.Big      `json:"chainId,omitempty"`
-	V                *hexutil.Big      `json:"v"`
-	R                *hexutil.Big      `json:"r"`
-	S                *hexutil.Big      `json:"s"`
-}
-
-// newRPCTransaction returns a transaction that will serialize to the RPC
-// representation, with the given location metadata set (if available).
-func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber uint64, blockTime uint64, index uint64, baseFee *big.Int, config *params.ChainConfig) *RPCTransaction {
-	signer := types.MakeSigner(config, new(big.Int).SetUint64(blockNumber), blockTime)
-	from, _ := types.Sender(signer, tx)
-
-	return newRPCTransactionWithFrom(tx, blockHash, blockNumber, index, baseFee, from)
-}
-
-func newRPCTransactionWithFrom(tx *types.Transaction, blockHash common.Hash, blockNumber uint64, index uint64, baseFee *big.Int, from common.Address) *RPCTransaction {
-	v, r, s := tx.RawSignatureValues()
-	result := &RPCTransaction{
-		Type:     hexutil.Uint64(tx.Type()),
-		From:     from,
-		Gas:      hexutil.Uint64(tx.Gas()),
-		GasPrice: (*hexutil.Big)(tx.GasPrice()),
-		Hash:     tx.Hash(),
-		Input:    hexutil.Bytes(tx.Data()),
-		Nonce:    hexutil.Uint64(tx.Nonce()),
-		To:       tx.To(),
-		Value:    (*hexutil.Big)(tx.Value()),
-		V:        (*hexutil.Big)(v),
-		R:        (*hexutil.Big)(r),
-		S:        (*hexutil.Big)(s),
-	}
-	if blockHash != (common.Hash{}) {
-		result.BlockHash = &blockHash
-		result.BlockNumber = (*hexutil.Big)(new(big.Int).SetUint64(blockNumber))
-		result.TransactionIndex = (*hexutil.Uint64)(&index)
-	}
-	switch tx.Type() {
-	case types.LegacyTxType:
-		// if a legacy transaction has an EIP-155 chain id, include it explicitly
-		if id := tx.ChainId(); id.Sign() != 0 {
-			result.ChainID = (*hexutil.Big)(id)
-		}
-	case types.AccessListTxType:
-		al := tx.AccessList()
-		result.Accesses = &al
-		result.ChainID = (*hexutil.Big)(tx.ChainId())
-	case types.DynamicFeeTxType:
-		al := tx.AccessList()
-		result.Accesses = &al
-		result.ChainID = (*hexutil.Big)(tx.ChainId())
-		result.GasFeeCap = (*hexutil.Big)(tx.GasFeeCap())
-		result.GasTipCap = (*hexutil.Big)(tx.GasTipCap())
-		// if the transaction has been mined, compute the effective gas price
-		if baseFee != nil && blockHash != (common.Hash{}) {
-			// price = min(tip, gasFeeCap - baseFee) + baseFee
-			price := math.BigMin(new(big.Int).Add(tx.GasTipCap(), baseFee), tx.GasFeeCap())
-			result.GasPrice = (*hexutil.Big)(price)
-		} else {
-			result.GasPrice = (*hexutil.Big)(tx.GasFeeCap())
-		}
-	}
-	return result
-}
-
-// NewTransactionFromMsg returns a txs that will serialize to the RPC
-// representation, with the given location metadata set (if available).
-func NewTransactionFromMsg(
-	msg *txs.MsgEthereumTx,
-	blockHash common.Hash,
-	blockNumber, index uint64,
-	baseFee *big.Int,
-	cfg *params.ChainConfig,
-) *RPCTransaction {
-	tx := msg.AsTransaction()
-	// use latest singer, so use time.now as block time.
-	if msg.From != "" {
-		return newRPCTransactionWithFrom(tx, blockHash, blockNumber, index, baseFee, common.HexToAddress(msg.From))
-	}
-	return newRPCTransaction(tx, blockHash, blockNumber, uint64(time.Now().Unix()), index, baseFee, cfg)
-}
-
-// NewRPCPendingTransaction returns a pending transaction that will serialize to the RPC representation
-func NewRPCPendingTransaction(tx *types.Transaction, current *types.Header, config *params.ChainConfig) *RPCTransaction {
-	var (
-		baseFee     *big.Int
-		blockNumber = uint64(0)
-		blockTime   = uint64(0)
-	)
-	if current != nil {
-		baseFee = misc.CalcBaseFee(config, current)
-		blockNumber = current.Number.Uint64()
-		blockTime = current.Time
-	}
-	return newRPCTransaction(tx, common.Hash{}, blockNumber, blockTime, 0, baseFee, config)
-}
-
-// newRPCTransactionFromBlockIndex returns a transaction that will serialize to the RPC representation.
-func newRPCTransactionFromBlockIndex(b *types.Block, blockHash common.Hash, index uint64, config *params.ChainConfig) *RPCTransaction {
-	txs := b.Transactions()
-	if index >= uint64(len(txs)) {
-		return nil
-	}
-	return newRPCTransaction(txs[index], blockHash, b.NumberU64(), b.Time(), index, b.BaseFee(), config)
-}
-
-// newRPCRawTransactionFromBlockIndex returns the bytes of a transaction given a block and a transaction index.
-func newRPCRawTransactionFromBlockIndex(b *types.Block, index uint64) hexutil.Bytes {
-	txs := b.Transactions()
-	if index >= uint64(len(txs)) {
-		return nil
-	}
-	blob, _ := txs[index].MarshalBinary()
-	return blob
-}
-
 // AccessListResult returns an optional access list
 // It's the result of the `debug_createAccessList` RPC call.
 // It contains an error if the transaction itself failed.
@@ -852,19 +527,19 @@ type AccessListResult struct {
 
 // CreateAccessList creates an EIP-2930 type AccessList for the given transaction.
 // Reexec and BlockNrOrHash can be specified to create the accessList on top of a certain states.
-func (s *BlockChainAPI) CreateAccessList(_ context.Context, _ TransactionArgs, _ *rpc.BlockNumberOrHash) (*AccessListResult, error) {
+func (s *BlockChainAPI) CreateAccessList(_ context.Context, _ rpctypes.TransactionArgs, _ *rpc.BlockNumberOrHash) (*AccessListResult, error) {
 	return nil, errors.New("CreateAccessList is not implemented")
 }
 
 // TransactionAPI exposes methods for reading and creating transaction data.
 type TransactionAPI struct {
-	b         Backend
+	b         rpctypes.TrancsactionBackend
 	logger    log.Logger
 	nonceLock *AddrLocker
 }
 
 // NewTransactionAPI creates a new RPC service with methods for interacting with transactions.
-func NewTransactionAPI(b Backend, logger log.Logger, nonceLock *AddrLocker) *TransactionAPI {
+func NewTransactionAPI(b rpctypes.TrancsactionBackend, logger log.Logger, nonceLock *AddrLocker) *TransactionAPI {
 	// The signer used by the API should always be the 'latest' known one because we expect
 	// signers to be backwards-compatible with old transactions.
 	return &TransactionAPI{b, logger, nonceLock}
@@ -889,17 +564,17 @@ func (s *TransactionAPI) GetBlockTransactionCountByHash(ctx context.Context, blo
 }
 
 // GetTransactionByBlockNumberAndIndex returns the transaction for the given block number and index.
-func (s *TransactionAPI) GetTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) *RPCTransaction {
+func (s *TransactionAPI) GetTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) *rpctypes.RPCTransaction {
 	if block, _ := s.b.ArtBlockByNumber(ctx, blockNr); block != nil {
-		return newRPCTransactionFromBlockIndex(block.EthBlock(), block.Hash(), uint64(index), s.b.ChainConfig())
+		return rpctypes.NewRPCTransactionFromBlockIndex(block.EthBlock(), block.Hash(), uint64(index), s.b.ChainConfig())
 	}
 	return nil
 }
 
 // GetTransactionByBlockHashAndIndex returns the transaction for the given block hash and index.
-func (s *TransactionAPI) GetTransactionByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) *RPCTransaction {
+func (s *TransactionAPI) GetTransactionByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) *rpctypes.RPCTransaction {
 	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
-		return newRPCTransactionFromBlockIndex(block.EthBlock(), block.Hash(), uint64(index), s.b.ChainConfig())
+		return rpctypes.NewRPCTransactionFromBlockIndex(block.EthBlock(), block.Hash(), uint64(index), s.b.ChainConfig())
 	}
 	return nil
 }
@@ -907,7 +582,7 @@ func (s *TransactionAPI) GetTransactionByBlockHashAndIndex(ctx context.Context, 
 // GetRawTransactionByBlockNumberAndIndex returns the bytes of the transaction for the given block number and index.
 func (s *TransactionAPI) GetRawTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) hexutil.Bytes {
 	if block, _ := s.b.ArtBlockByNumber(ctx, blockNr); block != nil {
-		return newRPCRawTransactionFromBlockIndex(block.EthBlock(), uint64(index))
+		return rpctypes.NewRPCRawTransactionFromBlockIndex(block.EthBlock(), uint64(index))
 	}
 	return nil
 }
@@ -915,7 +590,7 @@ func (s *TransactionAPI) GetRawTransactionByBlockNumberAndIndex(ctx context.Cont
 // GetRawTransactionByBlockHashAndIndex returns the bytes of the transaction for the given block hash and index.
 func (s *TransactionAPI) GetRawTransactionByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) hexutil.Bytes {
 	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
-		return newRPCRawTransactionFromBlockIndex(block.EthBlock(), uint64(index))
+		return rpctypes.NewRPCRawTransactionFromBlockIndex(block.EthBlock(), uint64(index))
 	}
 	return nil
 }
@@ -926,14 +601,22 @@ func (s *TransactionAPI) GetTransactionCount(_ context.Context, address common.A
 }
 
 // GetTransactionByHash returns the transaction for the given hash
-func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) (*RPCTransaction, error) {
+func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) (*rpctypes.RPCTransaction, error) {
 	return s.b.GetTransaction(ctx, hash)
 }
 
 // GetRawTransactionByHash returns the bytes of the transaction for the given hash.
-func (s *TransactionAPI) GetRawTransactionByHash(_ context.Context, _ common.Hash) (hexutil.Bytes, error) {
-	// TODO
-	return nil, errors.New("GetRawTransactionByHash is not implemented")
+func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
+	msg, err := s.b.GetTxMsg(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	if msg == nil {
+		return nil, nil
+	}
+
+	return msg.AsTransaction().MarshalBinary()
 }
 
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
@@ -942,7 +625,7 @@ func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.
 }
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
-func SubmitTransaction(ctx context.Context, logger log.Logger, b Backend, tx *types.Transaction) (common.Hash, error) {
+func SubmitTransaction(ctx context.Context, logger log.Logger, b rpctypes.TrancsactionBackend, tx *types.Transaction) (common.Hash, error) {
 	// If the transaction fee cap is already specified, ensure the
 	// fee of the given transaction is _reasonable_.
 	if err := checkTxFee(tx.GasPrice(), tx.Gas(), b.RPCTxFeeCap()); err != nil {
@@ -985,13 +668,13 @@ func SubmitTransaction(ctx context.Context, logger log.Logger, b Backend, tx *ty
 
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
-func (s *TransactionAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
-	if err := args.setDefaults(ctx, s.b); err != nil {
+func (s *TransactionAPI) SendTransaction(ctx context.Context, args rpctypes.TransactionArgs) (common.Hash, error) {
+	if err := args.SetDefaults(ctx, s.b); err != nil {
 		return common.Hash{}, err
 	}
 	signed, err := s.b.SignTransaction(&args)
 	if err != nil {
-		log.Warn("Failed transaction send attempt", "from", args.from(), "to", args.To, "value", args.Value.ToInt(), "err", err)
+		log.Warn("Failed transaction send attempt", "from", args.FromAddr(), "to", args.To, "value", args.Value.ToInt(), "err", err)
 		return common.Hash{}, err
 	}
 	return SubmitTransaction(ctx, s.logger, s.b, signed)
@@ -1000,13 +683,13 @@ func (s *TransactionAPI) SendTransaction(ctx context.Context, args TransactionAr
 // FillTransaction fills the defaults (nonce, gas, gasPrice or 1559 fields)
 // on a given unsigned transaction, and returns it to the caller for further
 // processing (signing + broadcast).
-func (s *TransactionAPI) FillTransaction(ctx context.Context, args TransactionArgs) (*SignTransactionResult, error) {
+func (s *TransactionAPI) FillTransaction(ctx context.Context, args rpctypes.TransactionArgs) (*SignTransactionResult, error) {
 	// Set some sanity defaults and terminate on failure
-	if err := args.setDefaults(ctx, s.b); err != nil {
+	if err := args.SetDefaults(ctx, s.b); err != nil {
 		return nil, err
 	}
 	// Assemble the transaction and obtain rlp
-	tx := args.toTransaction()
+	tx := args.ToTransaction()
 	data, err := tx.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -1047,7 +730,7 @@ type SignTransactionResult struct {
 // SignTransaction will sign the given transaction with the from account.
 // The node needs to have the private key of the account corresponding with
 // the given from address and it needs to be unlocked.
-func (s *TransactionAPI) SignTransaction(ctx context.Context, args TransactionArgs) (*SignTransactionResult, error) {
+func (s *TransactionAPI) SignTransaction(ctx context.Context, args rpctypes.TransactionArgs) (*SignTransactionResult, error) {
 	// gas, gas limit, nonce checking are made in SignTransaction
 	signed, err := s.b.SignTransaction(&args)
 	if err != nil {
@@ -1063,131 +746,58 @@ func (s *TransactionAPI) SignTransaction(ctx context.Context, args TransactionAr
 
 // PendingTransactions returns the transactions that are in the transaction pool
 // and have a from address that is one of the accounts this node manages.
-func (s *TransactionAPI) PendingTransactions() ([]*RPCTransaction, error) {
-	// TODO
-	return nil, errors.New("PendingTransactions is not implemented")
+func (s *TransactionAPI) PendingTransactions() ([]*rpctypes.RPCTransaction, error) {
+	pendingTxs, err := s.b.PendingTransactions()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := s.b.ChainConfig()
+	if cfg == nil {
+		return nil, errors.New("failed to get chain config")
+	}
+	result := make([]*rpctypes.RPCTransaction, 0, len(pendingTxs))
+	for _, tx := range pendingTxs {
+		for _, msg := range (*tx).GetMsgs() {
+			if ethMsg, ok := msg.(*txs.MsgEthereumTx); ok {
+				rpctx := rpctypes.NewTransactionFromMsg(ethMsg, common.Hash{}, uint64(0), uint64(0), nil, cfg)
+				result = append(result, rpctx)
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // Resend accepts an existing transaction and a new gas price and limit. It will remove
 // the given transaction from the pool and reinsert it with the new gas price and limit.
-func (s *TransactionAPI) Resend(_ context.Context, _ TransactionArgs, _ *hexutil.Big, _ *hexutil.Uint64) (common.Hash, error) {
-	// TODO
-	return common.Hash{}, errors.New("Resend is not implemented")
-}
-
-// DebugAPI is the collection of Ethereum APIs exposed over the debugging
-// namespace.
-type DebugAPI struct {
-	b Backend
-}
-
-// NewDebugAPI creates a new instance of DebugAPI.
-func NewDebugAPI(b Backend) *DebugAPI {
-	return &DebugAPI{b: b}
-}
-
-// GetRawHeader retrieves the RLP encoding for a single header.
-func (api *DebugAPI) GetRawHeader(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	var hash common.Hash
-	if h, ok := blockNrOrHash.Hash(); ok {
-		hash = h
-	} else {
-		block, err := api.b.BlockByNumberOrHash(ctx, blockNrOrHash)
-		if err != nil {
-			return nil, err
-		}
-		hash = block.Hash()
+func (s *TransactionAPI) Resend(ctx context.Context, args rpctypes.TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (common.Hash, error) {
+	if args.Nonce == nil {
+		return common.Hash{}, fmt.Errorf("missing transaction nonce in transaction spec")
 	}
-	header, _ := api.b.HeaderByHash(ctx, hash)
-	if header == nil {
-		return nil, fmt.Errorf("header #%d not found", hash)
+
+	if err := args.SetDefaults(ctx, s.b); err != nil {
+		return common.Hash{}, err
 	}
-	return rlp.EncodeToBytes(header)
-}
 
-// GetRawBlock retrieves the RLP encoded for a single block.
-func (api *DebugAPI) GetRawBlock(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	var hash common.Hash
-	if h, ok := blockNrOrHash.Hash(); ok {
-		hash = h
-	} else {
-		block, err := api.b.BlockByNumberOrHash(ctx, blockNrOrHash)
-		if err != nil {
-			return nil, err
-		}
-		hash = block.Hash()
+	fixedArgs, err := s.b.GetResendArgs(args, gasPrice, gasLimit)
+	if err != nil {
+		return common.Hash{}, err
 	}
-	block, _ := api.b.BlockByHash(ctx, hash)
-	if block == nil {
-		return nil, fmt.Errorf("block #%d not found", hash)
-	}
-	return rlp.EncodeToBytes(block)
+
+	return s.SendTransaction(ctx, fixedArgs)
 }
 
-// GetRawReceipts retrieves the binary-encoded receipts of a single block.
-func (api *DebugAPI) GetRawReceipts(_ context.Context, _ rpc.BlockNumberOrHash) ([]hexutil.Bytes, error) {
-	return nil, errors.New("GetRawReceipts is not implemented")
-}
+// // DebugAPI is the collection of Ethereum APIs exposed over the debugging
+// // namespace.
+// type DebugAPI struct {
+// 	b Backend
+// }
 
-// GetRawTransaction returns the bytes of the transaction for the given hash.
-func (api *DebugAPI) GetRawTransaction(_ context.Context, _ common.Hash) (hexutil.Bytes, error) {
-	// TODO
-	return hexutil.Bytes{}, errors.New("GetRawTransaction is not implemented")
-}
-
-// PrintBlock retrieves a block and returns its pretty printed form.
-func (api *DebugAPI) PrintBlock(ctx context.Context, number uint64) (string, error) {
-	block, _ := api.b.ArtBlockByNumber(ctx, rpc.BlockNumber(number))
-	if block == nil {
-		return "", fmt.Errorf("block #%d not found", number)
-	}
-	return spew.Sdump(block), nil
-}
-
-// ChaindbProperty returns leveldb properties of the key-value database.
-func (api *DebugAPI) ChaindbProperty(_ string) (string, error) {
-	return "", errors.New("ChaindbProperty is not implemented")
-}
-
-// ChaindbCompact flattens the entire key-value database into a single level,
-// removing all unused slots and merging all keys.
-func (api *DebugAPI) ChaindbCompact() error {
-	return errors.New("ChaindbCompact is not implemented")
-}
-
-// SetHead rewinds the head of the blockchain to a previous block.
-func (api *DebugAPI) SetHead(_ hexutil.Uint64) {
-	// TODO
-}
-
-// NetAPI offers network related RPC methods
-type NetAPI struct {
-	net            *p2p.Server
-	networkVersion uint64
-}
-
-// NewNetAPI creates a new net API instance.
-func NewNetAPI(net *p2p.Server, networkVersion uint64) *NetAPI {
-	return &NetAPI{net, networkVersion}
-}
-
-// Listening returns an indication if the node is listening for network connections.
-func (s *NetAPI) Listening() bool {
-	return true // always listening
-}
-
-// PeerCount returns the number of connected peers
-func (s *NetAPI) PeerCount() hexutil.Uint {
-	if s.net == nil {
-		return 0
-	}
-	return hexutil.Uint(s.net.PeerCount())
-}
-
-// Version returns the current ethereum protocol version.
-func (s *NetAPI) Version() string {
-	return fmt.Sprintf("%d", s.networkVersion)
-}
+// // NewDebugAPI creates a new instance of DebugAPI.
+// func NewDebugAPI(b Backend) *DebugAPI {
+// 	return &DebugAPI{b: b}
+// }
 
 // checkTxFee is an internal function used to check whether the fee of
 // the given transaction is _reasonable_(under the cap).

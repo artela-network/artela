@@ -51,5 +51,6 @@ func DefaultGethNodeConfig() *node.Config {
 	nodeCfg.HTTPVirtualHosts = []string{"*"}
 	nodeCfg.GraphQLCors = []string{"*"}
 	nodeCfg.GraphQLVirtualHosts = []string{"*"}
+	nodeCfg.EnablePersonal = true
 	return &nodeCfg
 }

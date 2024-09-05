@@ -113,6 +113,7 @@ import (
 
 	"github.com/artela-network/artela/app/upgrades/v047rc7"
 	"github.com/artela-network/artela/app/upgrades/v048rc8"
+	"github.com/artela-network/artela/app/upgrades/v049rc9"
 	evmmodule "github.com/artela-network/artela/x/evm"
 	evmmodulekeeper "github.com/artela-network/artela/x/evm/keeper"
 	evmmoduletypes "github.com/artela-network/artela/x/evm/types"
@@ -130,10 +131,18 @@ import (
 	"github.com/artela-network/artela/docs"
 	srvflags "github.com/artela-network/artela/ethereum/server/flags"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/aspect/provider"
+	aspectmoduletypes "github.com/artela-network/artela/x/aspect/types"
+	aspectmodule "github.com/artela-network/artela/x/evm/artela/types"
 	aspecttypes "github.com/artela-network/aspect-core/types"
 
 	// do not remove this, this will register the native evm tracers
 	_ "github.com/artela-network/artela-evm/tracers/native"
+	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
+
+	// aspect related imports
+	_ "github.com/artela-network/artela/x/aspect/store/v0"
+	_ "github.com/artela-network/artela/x/aspect/store/v1"
 )
 
 const (
@@ -324,6 +333,7 @@ func NewArtela(
 		evmmoduletypes.StoreKey,
 		feemoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
+		aspectmoduletypes.StoreKey,
 	)
 	tkeys := cosmos.NewTransientStoreKeys(paramsmodule.TStoreKey, evmmoduletypes.TransientKey, feemoduletypes.TransientKey)
 	memKeys := cosmos.NewMemoryStoreKeys(capabilitymodule.MemStoreKey)
@@ -554,10 +564,12 @@ func NewArtela(
 	)
 	feeModule := feemodule.NewAppModule(app.FeeKeeper, app.GetSubspace(feemoduletypes.ModuleName))
 
+	aspectmodule.InitStoreKeys(keys[evmmoduletypes.StoreKey], keys[aspectmoduletypes.StoreKey])
+	aspect := provider.NewArtelaProvider(keys[evmmoduletypes.StoreKey], keys[aspectmoduletypes.StoreKey], app.LastBlockHeight)
 	app.EvmKeeper = evmmodulekeeper.NewKeeper(
 		appCodec, keys[evmmoduletypes.StoreKey], tkeys[evmmoduletypes.TransientKey], authmodule.NewModuleAddress(govmodule.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeKeeper,
-		"1", app.GetSubspace(evmmoduletypes.ModuleName), bApp, logger,
+		aspect, "1", app.GetSubspace(evmmoduletypes.ModuleName), bApp, logger,
 	)
 	evmModule := evmmodule.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmmoduletypes.ModuleName))
 
@@ -941,8 +953,6 @@ func (app *Artela) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICon
 
 	// register app's OpenAPI routes.
 	docs.RegisterOpenAPIService(Name, apiSvr.Router)
-
-	app.EvmKeeper.SetClientContext(clientCtx)
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
@@ -958,6 +968,8 @@ func (app *Artela) RegisterTendermintService(clientCtx client.Context) {
 		app.interfaceRegistry,
 		app.Query,
 	)
+	// register the node service here, which is used in estimatedGas, eth_call, traceTx
+	app.EvmKeeper.SetClientContext(clientCtx)
 }
 
 // RegisterNodeService implements the Application.RegisterNodeService method.
@@ -1015,6 +1027,14 @@ func (app *Artela) setupUpgradeHandlers() {
 		),
 	)
 
+	// v0.4.9-rc9 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v049rc9.UpgradeName,
+		v049rc9.CreateUpgradeHandler(
+			app.mm, app.configurator,
+		),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1034,6 +1054,12 @@ func (app *Artela) setupUpgradeHandlers() {
 		// no store upgrades
 	case v048rc8.UpgradeName:
 		// no store upgrades in v048rc8
+	case v049rc9.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				aspectmoduletypes.StoreKey,
+			},
+		}
 	default:
 		// no-op
 	}

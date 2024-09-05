@@ -9,7 +9,7 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/andybalholm/brotli v1.1.0
 	github.com/artela-network/artela-evm v0.4.8-rc8
-	github.com/artela-network/aspect-core v0.4.8-rc8
+	github.com/artela-network/aspect-core v0.4.9-rc9
 	github.com/artela-network/aspect-runtime v0.4.8-rc8
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft v0.37.2
@@ -18,6 +18,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.47.4
 	github.com/cosmos/gogoproto v1.4.10
 	github.com/cosmos/ibc-go/v7 v7.1.0
+	github.com/dgryski/go-metro v0.0.0-20200812162917-85c65e2d0165
 	github.com/emirpasic/gods v1.18.1
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/golang/protobuf v1.5.3
@@ -47,8 +48,11 @@ require (
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
+	github.com/dlclark/regexp2 v1.7.0 // indirect
+	github.com/dop251/goja v0.0.0-20230122112309-96b1610dd4f7 // indirect
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/getsentry/sentry-go v0.21.0 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
@@ -199,7 +203,7 @@ require (
 	github.com/zondax/ledger-go v0.14.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
+	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.2.0 // indirect
@@ -223,7 +227,7 @@ replace (
 	github.com/bytecodealliance/wasmtime-go/v20 => github.com/artela-network/wasmtime-go/v20 v20.0.3
 	github.com/cockroachdb/pebble => github.com/cockroachdb/pebble v0.0.0-20230525220056-bb4fc9527b3b
 	github.com/cometbft/cometbft-db => github.com/artela-network/cosmos-db v1.0.2-048-rc8
-	github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc8
+	github.com/cosmos/cosmos-sdk => github.com/artela-network/artela-cosmos-sdk v0.47.4-artela-rc9
 	github.com/cosmos/iavl => github.com/artela-network/iavl v0.20.0-048-rc8
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

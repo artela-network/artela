@@ -159,7 +159,7 @@ func startInProcess(cfg Config, val *Validator) error {
 			panic(err)
 		}
 
-		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, nil, cfg, node, log.Root())
+		val.artelaService = rpc2.NewArtelaService(val.Ctx, val.ClientCtx, nil, cfg, node, log.Root(), nil)
 		startErr := val.artelaService.Start()
 		if startErr != nil {
 			return startErr

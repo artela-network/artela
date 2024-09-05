@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/artela-network/artela/x/aspect/provider"
 	"math/big"
 	"sync"
 
@@ -24,7 +25,6 @@ import (
 	common2 "github.com/artela-network/artela/common"
 	artela "github.com/artela-network/artela/ethereum/types"
 	"github.com/artela-network/artela/x/evm/artela/api"
-	"github.com/artela-network/artela/x/evm/artela/provider"
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
@@ -72,9 +72,6 @@ type Keeper struct {
 	// legacy subspace
 	ss paramsmodule.Subspace
 
-	// keep the evm and matched stateDB instance just finished running
-	aspectRuntimeContext *artvmtype.AspectRuntimeContext
-
 	aspect *provider.ArtelaProvider
 
 	clientContext client.Context
@@ -95,6 +92,7 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	stakingKeeper types.StakingKeeper,
 	feeKeeper types.FeeKeeper,
+	aspectProvider *provider.ArtelaProvider,
 	tracer string,
 	subSpace paramsmodule.Subspace,
 	app *baseapp.BaseApp,
@@ -110,32 +108,25 @@ func NewKeeper(
 		panic(err)
 	}
 
-	// init aspect
-	aspect := provider.NewArtelaProvider(storeKey, app.LastBlockHeight, logger)
-	// new Aspect Runtime Context
-	aspectRuntimeContext := artvmtype.NewAspectRuntimeContext()
-	aspectRuntimeContext.Init(storeKey)
-
 	// pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	k := &Keeper{
-		logger:               logger.With("module", fmt.Sprintf("x/%s", types.ModuleName)),
-		cdc:                  cdc,
-		authority:            authority,
-		accountKeeper:        accountKeeper,
-		bankKeeper:           bankKeeper,
-		stakingKeeper:        stakingKeeper,
-		feeKeeper:            feeKeeper,
-		storeKey:             storeKey,
-		transientKey:         transientKey,
-		tracer:               tracer,
-		ss:                   subSpace,
-		aspectRuntimeContext: aspectRuntimeContext,
-		aspect:               aspect,
-		VerifySigCache:       &sync.Map{},
+		logger:         logger.With("module", fmt.Sprintf("x/%s", types.ModuleName)),
+		cdc:            cdc,
+		authority:      authority,
+		accountKeeper:  accountKeeper,
+		bankKeeper:     bankKeeper,
+		stakingKeeper:  stakingKeeper,
+		feeKeeper:      feeKeeper,
+		storeKey:       storeKey,
+		transientKey:   transientKey,
+		tracer:         tracer,
+		ss:             subSpace,
+		aspect:         aspectProvider,
+		VerifySigCache: &sync.Map{},
 	}
 	k.WithChainID(app.ChainId())
 
-	djpm.NewAspect(aspect, common2.WrapLogger(k.logger.With("module", "aspect")))
+	djpm.NewAspect(aspectProvider, common2.WrapLogger(k.logger.With("module", "aspect")))
 	api.InitAspectGlobals(k)
 
 	// init aspect host api factory
@@ -211,7 +202,7 @@ func (k Keeper) EmitBlockBloomEvent(ctx cosmos.Context, bloom ethereum.Bloom) {
 	encodedBloom := base64.StdEncoding.EncodeToString(bloom.Bytes())
 
 	sprintf := fmt.Sprintf("emit block event %d bloom %s header %d, ", len(bloom.Bytes()), encodedBloom, ctx.BlockHeight())
-	k.Logger(ctx).Info(sprintf)
+	k.Logger(ctx).Debug(sprintf)
 
 	ctx.EventManager().EmitEvent(
 		cosmos.NewEvent(
