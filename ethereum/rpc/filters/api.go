@@ -522,7 +522,7 @@ func (api *PublicFilterAPI) GetLogs(ctx context.Context, crit filters.FilterCrit
 			begin = crit.FromBlock.Int64()
 		}
 		end := rpc.LatestBlockNumber.Int64()
-		if crit.ToBlock != nil && crit.ToBlock.Int64() < end {
+		if crit.ToBlock != nil {
 			end = crit.ToBlock.Int64()
 		}
 		// Construct the range filter
@@ -584,8 +584,7 @@ func (api *PublicFilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*et
 			begin = f.crit.FromBlock.Int64()
 		}
 		end := rpc.LatestBlockNumber.Int64()
-		if f.crit.ToBlock != nil && f.crit.ToBlock.Int64() < end {
-
+		if f.crit.ToBlock != nil {
 			end = f.crit.ToBlock.Int64()
 		}
 		// Construct the range filter

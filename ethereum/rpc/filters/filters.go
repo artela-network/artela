@@ -49,7 +49,7 @@ func NewRangeFilter(logger log.Logger, backend Backend, begin, end int64, addres
 	// Flatten the address and topic filter clauses into a single bloombits filter
 	// system. Since the bloombits are not positional, nil topics are permitted,
 	// which get flattened into a nil byte slice.
-	var filtersBz [][][]byte //nolint: prealloc
+	var filtersBz [][][]byte // nolint: prealloc
 	if len(addresses) > 0 {
 		filter := make([][]byte, len(addresses))
 		for i, address := range addresses {
@@ -139,6 +139,8 @@ func (f *Filter) Logs(_ context.Context, logLimit int, blockLimit int64) ([]*eth
 		f.criteria.ToBlock = big.NewInt(head)
 	} else if f.criteria.ToBlock.Int64() == 0 {
 		f.criteria.ToBlock = big.NewInt(1)
+	} else if f.criteria.ToBlock.Int64() > head {
+		f.criteria.ToBlock = big.NewInt(head)
 	}
 
 	if f.criteria.ToBlock.Int64()-f.criteria.FromBlock.Int64() > blockLimit {
