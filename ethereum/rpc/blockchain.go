@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/artela-network/artela-evm/vm"
+
 	"github.com/artela-network/artela/ethereum/rpc/api"
 	rpctypes "github.com/artela-network/artela/ethereum/rpc/types"
 	"github.com/artela-network/artela/ethereum/rpc/utils"
@@ -481,9 +482,13 @@ func (b *BackendImpl) blockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethty
 
 		for _, attr := range event.Attributes {
 			if attr.Key == evmtypes.AttributeKeyEthereumBloom {
+				if len(attr.Value) == 0 || attr.Value == "" {
+					return ethtypes.Bloom{}, errors.New("block bloom event is not found")
+				}
+
 				encodedBloom, err := base64.StdEncoding.DecodeString(attr.Value)
 				if err != nil {
-					return ethtypes.Bloom{}, err
+					return ethtypes.BytesToBloom([]byte(attr.Value)), nil
 				}
 
 				return ethtypes.BytesToBloom(encodedBloom), nil

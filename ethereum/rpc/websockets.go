@@ -430,6 +430,7 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 
 					for _, attr := range et.Attributes {
 						if attr.Key == evmtypes.AttributeKeyEthereumBloom {
+
 							encodedBloom, deCodeErr := base64.StdEncoding.DecodeString(attr.Value)
 
 							sprintf := fmt.Sprintf("subscribeNewHeads event %d bloom %s header %d, ", len(bloom.Bytes()), attr.Value, data.Header.Height)
@@ -440,6 +441,8 @@ func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.Un
 							}
 							if deCodeErr == nil {
 								bloom = ethtypes.BytesToBloom(encodedBloom)
+							} else {
+								bloom = ethtypes.BytesToBloom([]byte(attr.Value))
 							}
 						}
 					}
