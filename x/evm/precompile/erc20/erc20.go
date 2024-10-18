@@ -25,10 +25,16 @@ var (
 	GlobalERC20Contract *ERC20Contract
 )
 
+type TokenPair struct {
+	address string `json:"Address"`
+	denom   string `json:"Denom"`
+}
+
 type ERC20Contract struct {
 	logger   log.Logger
 	storeKey storetypes.StoreKey
 
+	tokenPairs []*TokenPair
 	bankKeeper evmtypes.BankKeeper
 }
 
@@ -38,6 +44,9 @@ func InitERC20Contract(logger log.Logger, storeKey storetypes.StoreKey, bankKeep
 		storeKey:   storeKey,
 		bankKeeper: bankKeeper,
 	}
+	//TODO load token pairs
+	GlobalERC20Contract.tokenPairs = make([]*TokenPair, 1)
+	GlobalERC20Contract.tokenPairs[0] = &TokenPair{"0x318e534149567670d71fF7296356a63D0C23F670", "ibc/B249D1E86F588286FEA286AA8364FFCE69EC65604BD7869D824ADE40F00FA25B"}
 }
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
@@ -80,38 +89,49 @@ func (c *ERC20Contract) Run(ctx context.Context, input []byte) ([]byte, error) {
 	var caller common.Address // TODO
 	switch method.Name {
 	case types.Method_BalanceOf:
-		return c.handleBalanceOf(sdkCtx, input[4:], caller)
+		return c.handleBalanceOf(sdkCtx, caller, args)
 	case types.Method_Transfer:
-		return c.handleTransfer(sdkCtx, input[4:], caller)
+		return c.handleTransfer(sdkCtx, caller, args)
 	default:
 		return nil, errors.New("unknown method")
 	}
 }
 
-func (c *ERC20Contract) handleBalanceOf(ctx sdk.Context, input []byte, caller common.Address) ([]byte, error) {
-	if len(input) != 32 {
-		return nil, errors.New("invalid input length")
+func (c *ERC20Contract) handleBalanceOf(ctx sdk.Context, caller common.Address, args map[string]interface{}) ([]byte, error) {
+	if len(args) != 1 {
+		return nil, errors.New("invalid input")
 	}
-	address := common.BytesToAddress(input[12:])
-	_ = address
-	var balance *big.Int // TODO
+
+	addr, ok := args["account"].(common.Address)
+	if !ok {
+		return nil, errors.New("invalid input address")
+	}
+
+	accAddr := sdk.AccAddress(addr.Bytes())
+
+	// get registered denom for caller
+	var denom string
+	for _, tokenPair := range c.tokenPairs {
+		if caller.String() == tokenPair.address {
+			denom = tokenPair.denom
+		}
+	}
+
+	if len(denom) == 0 {
+		return nil, errors.New("mapping asset not found")
+	}
+
+	coin := c.bankKeeper.GetBalance(ctx, accAddr, denom)
+	balance := coin.Amount.BigInt()
 	if balance == nil {
 		balance = big.NewInt(0)
 	}
 	return balance.FillBytes(make([]byte, 32)), nil
 }
 
-func (c *ERC20Contract) handleTransfer(ctx sdk.Context, input []byte, caller common.Address) ([]byte, error) {
-	if len(input) != 64 {
-		return nil, errors.New("invalid input length")
-	}
-
-	to := common.BytesToAddress(input[12:32])
-	amount := new(big.Int).SetBytes(input[32:64])
+func (c *ERC20Contract) handleTransfer(ctx sdk.Context, caller common.Address, args map[string]interface{}) ([]byte, error) {
 
 	// TODO
-	_ = to
-	_ = amount
 
 	return nil, nil
 }
