@@ -3,7 +3,6 @@ package keeper
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/artela-network/artela/x/aspect/provider"
 	"math/big"
 	"sync"
 
@@ -24,8 +23,11 @@ import (
 	"github.com/artela-network/artela-evm/vm"
 	common2 "github.com/artela-network/artela/common"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/aspect/provider"
 	"github.com/artela-network/artela/x/evm/artela/api"
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
+	precompiled "github.com/artela-network/artela/x/evm/precompile"
+	"github.com/artela-network/artela/x/evm/precompile/erc20"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
@@ -143,6 +145,9 @@ func NewKeeper(
 
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	artelaType.IsCommit = k.IsCommit
+
+	erc20.InitERC20Contract(k.logger, k.storeKey, k.bankKeeper)
+	precompiled.RegisterPrecompiles()
 	return k
 }
 
