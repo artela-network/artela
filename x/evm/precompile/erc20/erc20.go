@@ -6,8 +6,10 @@ import (
 	"math/big"
 	"strings"
 
+	"cosmossdk.io/math"
 	"github.com/artela-network/artela-evm/vm"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
+	precompiled "github.com/artela-network/artela/x/evm/precompile"
 	"github.com/artela-network/artela/x/evm/precompile/erc20/proxy"
 	"github.com/artela-network/artela/x/evm/precompile/erc20/types"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
@@ -20,9 +22,6 @@ import (
 
 var (
 	_ vm.PrecompiledContract = (*ERC20Contract)(nil)
-
-	// global precompiled contracts
-	GlobalERC20Contract *ERC20Contract
 )
 
 type TokenPair struct {
@@ -39,14 +38,15 @@ type ERC20Contract struct {
 }
 
 func InitERC20Contract(logger log.Logger, storeKey storetypes.StoreKey, bankKeeper evmtypes.BankKeeper) {
-	GlobalERC20Contract = &ERC20Contract{
+	contract := &ERC20Contract{
 		logger:     logger,
 		storeKey:   storeKey,
 		bankKeeper: bankKeeper,
 	}
-	//TODO load token pairs
-	GlobalERC20Contract.tokenPairs = make([]*TokenPair, 1)
-	GlobalERC20Contract.tokenPairs[0] = &TokenPair{"0x318e534149567670d71fF7296356a63D0C23F670", "ibc/B249D1E86F588286FEA286AA8364FFCE69EC65604BD7869D824ADE40F00FA25B"}
+
+	contract.loadTokenPairs()
+	precompiled.RegisterPrecompiles(types.PrecompiledAddress, contract)
+
 }
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
@@ -64,6 +64,18 @@ func (c *ERC20Contract) Run(ctx context.Context, input []byte) ([]byte, error) {
 
 	if len(input) < 4 {
 		return nil, errors.New("invalid input")
+	}
+
+	// get tx.from, which is the proxy contract address
+	caller, ok := sdkCtx.Value("msgFrom").(common.Address)
+	if !ok {
+		return nil, errors.New("from address not valiad")
+	}
+
+	// get tx.To, which is the proxy contract address
+	msgTo, ok := sdkCtx.Value("msgTo").(common.Address)
+	if !ok {
+		return nil, errors.New("to address not valiad")
 	}
 
 	parsedABI, err := abi.JSON(strings.NewReader(proxy.ERC20ProxyAbi))
@@ -86,40 +98,59 @@ func (c *ERC20Contract) Run(ctx context.Context, input []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	var caller common.Address // TODO
 	switch method.Name {
+	case types.Method_Register:
+		return c.handleRegister(sdkCtx, msgTo, caller, args)
 	case types.Method_BalanceOf:
-		return c.handleBalanceOf(sdkCtx, caller, args)
+		return c.handleBalanceOf(sdkCtx, msgTo, caller, args)
 	case types.Method_Transfer:
-		return c.handleTransfer(sdkCtx, caller, args)
+		return c.handleTransfer(sdkCtx, msgTo, caller, args)
 	default:
 		return nil, errors.New("unknown method")
 	}
 }
 
-func (c *ERC20Contract) handleBalanceOf(ctx sdk.Context, caller common.Address, args map[string]interface{}) ([]byte, error) {
+func (c *ERC20Contract) handleRegister(_ sdk.Context, proxy common.Address, _ common.Address, args map[string]interface{}) ([]byte, error) {
+	if len(args) != 1 {
+		return types.False32Byte, errors.New("invalid input")
+	}
+
+	denom, ok := args["denom"].(string)
+	if !ok {
+		return types.False32Byte, errors.New("invalid input denom")
+	}
+
+	proxyAddress := proxy.String()
+	for _, tokenPair := range c.tokenPairs {
+		if tokenPair.address == proxyAddress {
+			return types.False32Byte, errors.New("proxy has been registered")
+		}
+	}
+
+	c.tokenPairs = append(c.tokenPairs, &TokenPair{proxy.String(), denom})
+	if err := c.storeTokenPairs(); err != nil {
+		return types.False32Byte, errors.New("failed to update token pairs")
+	}
+
+	return types.True32Byte, nil
+}
+
+func (c *ERC20Contract) handleBalanceOf(ctx sdk.Context, proxy common.Address, _ common.Address, args map[string]interface{}) ([]byte, error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid input")
 	}
 
+	denom, err := c.getDenom(proxy)
+	if err != nil {
+		return types.False32Byte, err
+	}
+
 	addr, ok := args["account"].(common.Address)
 	if !ok {
-		return nil, errors.New("invalid input address")
+		return nil, errors.New("invalid input account")
 	}
 
 	accAddr := sdk.AccAddress(addr.Bytes())
-
-	// get registered denom for caller
-	var denom string
-	for _, tokenPair := range c.tokenPairs {
-		if caller.String() == tokenPair.address {
-			denom = tokenPair.denom
-		}
-	}
-
-	if len(denom) == 0 {
-		return nil, errors.New("mapping asset not found")
-	}
 
 	coin := c.bankKeeper.GetBalance(ctx, accAddr, denom)
 	balance := coin.Amount.BigInt()
@@ -129,9 +160,56 @@ func (c *ERC20Contract) handleBalanceOf(ctx sdk.Context, caller common.Address, 
 	return balance.FillBytes(make([]byte, 32)), nil
 }
 
-func (c *ERC20Contract) handleTransfer(ctx sdk.Context, caller common.Address, args map[string]interface{}) ([]byte, error) {
+func (c *ERC20Contract) handleTransfer(ctx sdk.Context, proxy common.Address, caller common.Address, args map[string]interface{}) ([]byte, error) {
+	if len(args) != 2 {
+		return types.False32Byte, errors.New("invalid input")
+	}
 
-	// TODO
+	denom, err := c.getDenom(proxy)
+	if err != nil {
+		return types.False32Byte, err
+	}
 
-	return nil, nil
+	fromAccAddr := sdk.AccAddress(caller.Bytes())
+
+	to, ok := args["to"].(common.Address)
+	if !ok {
+		return types.False32Byte, errors.New("invalid input address")
+	}
+	toAccAddr := sdk.AccAddress(to.Bytes())
+
+	amount, ok := args["amount"].(*big.Int)
+	if !ok {
+		return types.False32Byte, errors.New("invalid input amount")
+	}
+
+	coins := sdk.NewCoins(sdk.NewCoin(denom, math.NewIntFromBigInt(amount)))
+	if err := c.bankKeeper.IsSendEnabledCoins(ctx, coins...); err != nil {
+		return types.False32Byte, err
+	}
+
+	err = c.bankKeeper.SendCoins(
+		ctx, fromAccAddr, toAccAddr, coins)
+	if err != nil {
+		return types.False32Byte, err
+	}
+
+	return types.True32Byte, nil
+}
+
+func (c *ERC20Contract) getDenom(proxy common.Address) (string, error) {
+	// get registered denom for the proxy address
+	var denom string
+	for _, tokenPair := range c.tokenPairs {
+		if proxy.String() == tokenPair.address {
+			denom = tokenPair.denom
+			break
+		}
+	}
+
+	if len(denom) == 0 {
+		return "", errors.New("no registered coin found")
+	}
+
+	return denom, nil
 }

@@ -26,7 +26,6 @@ import (
 	"github.com/artela-network/artela/x/aspect/provider"
 	"github.com/artela-network/artela/x/evm/artela/api"
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
-	precompiled "github.com/artela-network/artela/x/evm/precompile"
 	"github.com/artela-network/artela/x/evm/precompile/erc20"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
@@ -147,7 +146,6 @@ func NewKeeper(
 	artelaType.IsCommit = k.IsCommit
 
 	erc20.InitERC20Contract(k.logger, k.storeKey, k.bankKeeper)
-	precompiled.RegisterPrecompiles()
 	return k
 }
 
