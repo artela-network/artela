@@ -145,7 +145,7 @@ func NewKeeper(
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	artelaType.IsCommit = k.IsCommit
 
-	erc20.InitERC20Contract(k.logger, k.storeKey, k.bankKeeper)
+	erc20.InitERC20Contract(k.logger, cdc, k.storeKey, k.bankKeeper)
 	return k
 }
 

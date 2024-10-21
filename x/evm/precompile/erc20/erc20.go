@@ -14,6 +14,7 @@ import (
 	"github.com/artela-network/artela/x/evm/precompile/erc20/types"
 	evmtypes "github.com/artela-network/artela/x/evm/types"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -24,29 +25,24 @@ var (
 	_ vm.PrecompiledContract = (*ERC20Contract)(nil)
 )
 
-type TokenPair struct {
-	address string `json:"Address"`
-	denom   string `json:"Denom"`
-}
-
 type ERC20Contract struct {
 	logger   log.Logger
 	storeKey storetypes.StoreKey
+	cdc      codec.BinaryCodec
 
-	tokenPairs []*TokenPair
+	tokenPairs types.TokenPairs
 	bankKeeper evmtypes.BankKeeper
 }
 
-func InitERC20Contract(logger log.Logger, storeKey storetypes.StoreKey, bankKeeper evmtypes.BankKeeper) {
+func InitERC20Contract(logger log.Logger, cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper evmtypes.BankKeeper) {
 	contract := &ERC20Contract{
 		logger:     logger,
+		cdc:        cdc,
 		storeKey:   storeKey,
 		bankKeeper: bankKeeper,
 	}
 
-	contract.loadTokenPairs()
 	precompiled.RegisterPrecompiles(types.PrecompiledAddress, contract)
-
 }
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
@@ -110,7 +106,7 @@ func (c *ERC20Contract) Run(ctx context.Context, input []byte) ([]byte, error) {
 	}
 }
 
-func (c *ERC20Contract) handleRegister(_ sdk.Context, proxy common.Address, _ common.Address, args map[string]interface{}) ([]byte, error) {
+func (c *ERC20Contract) handleRegister(ctx sdk.Context, proxy common.Address, _ common.Address, args map[string]interface{}) ([]byte, error) {
 	if len(args) != 1 {
 		return types.False32Byte, errors.New("invalid input")
 	}
@@ -121,14 +117,20 @@ func (c *ERC20Contract) handleRegister(_ sdk.Context, proxy common.Address, _ co
 	}
 
 	proxyAddress := proxy.String()
-	for _, tokenPair := range c.tokenPairs {
-		if tokenPair.address == proxyAddress {
+
+	tokenPairs, err := c.getTokenPairs(ctx)
+	if err != nil {
+		return types.False32Byte, err
+	}
+
+	for _, tokenPair := range tokenPairs.TokenPairs {
+		if tokenPair.Address == proxyAddress {
 			return types.False32Byte, errors.New("proxy has been registered")
 		}
 	}
 
-	c.tokenPairs = append(c.tokenPairs, &TokenPair{proxy.String(), denom})
-	if err := c.storeTokenPairs(); err != nil {
+	c.tokenPairs.TokenPairs = append(c.tokenPairs.TokenPairs, &types.TokenPair{proxyAddress, denom})
+	if err := c.storeTokenPairs(ctx); err != nil {
 		return types.False32Byte, errors.New("failed to update token pairs")
 	}
 
@@ -140,7 +142,7 @@ func (c *ERC20Contract) handleBalanceOf(ctx sdk.Context, proxy common.Address, _
 		return nil, errors.New("invalid input")
 	}
 
-	denom, err := c.getDenom(proxy)
+	denom, err := c.getDenom(ctx, proxy)
 	if err != nil {
 		return types.False32Byte, err
 	}
@@ -165,7 +167,7 @@ func (c *ERC20Contract) handleTransfer(ctx sdk.Context, proxy common.Address, ca
 		return types.False32Byte, errors.New("invalid input")
 	}
 
-	denom, err := c.getDenom(proxy)
+	denom, err := c.getDenom(ctx, proxy)
 	if err != nil {
 		return types.False32Byte, err
 	}
@@ -197,12 +199,17 @@ func (c *ERC20Contract) handleTransfer(ctx sdk.Context, proxy common.Address, ca
 	return types.True32Byte, nil
 }
 
-func (c *ERC20Contract) getDenom(proxy common.Address) (string, error) {
+func (c *ERC20Contract) getDenom(ctx sdk.Context, proxy common.Address) (string, error) {
 	// get registered denom for the proxy address
 	var denom string
-	for _, tokenPair := range c.tokenPairs {
-		if proxy.String() == tokenPair.address {
-			denom = tokenPair.denom
+
+	tokenPairs, err := c.getTokenPairs(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, tokenPair := range tokenPairs.TokenPairs {
+		if proxy.String() == tokenPair.Address {
+			denom = tokenPair.Denom
 			break
 		}
 	}
@@ -212,4 +219,12 @@ func (c *ERC20Contract) getDenom(proxy common.Address) (string, error) {
 	}
 
 	return denom, nil
+}
+
+func (c *ERC20Contract) getTokenPairs(ctx sdk.Context) (types.TokenPairs, error) {
+	if len(c.tokenPairs.TokenPairs) > 0 {
+		return c.tokenPairs, nil
+	}
+
+	return c.loadTokenPairs(ctx)
 }
