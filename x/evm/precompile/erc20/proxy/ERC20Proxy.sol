@@ -5,6 +5,18 @@ contract ERC20Proxy2 {
     // Address of the precompiled ERC20 contract
     address public constant ERC20_PRECOMPILED_ADDRESS = address(0x0000000000000000000000000000000000001234);
 
+    // Event for successful registration
+    event RegistrationSuccess(bool success);
+
+    // ERC20 standard events
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
+    constructor(string memory denom) {
+        bool success = register(denom);
+        emit RegistrationSuccess(success);
+    }
+
     /**
      * @dev Fallback function that forwards all unknown calls to the precompiled ERC20 contract.
      */
@@ -31,6 +43,19 @@ contract ERC20Proxy2 {
     }
 
     /**
+     * @dev Registers the token with the specified denom in the precompiled ERC20 contract.
+     * @param denom The token denomination to register.
+     * @return success Whether the registration was successful.
+     */
+    function register(string memory denom) internal returns (bool) {
+        (bool success, ) = ERC20_PRECOMPILED_ADDRESS.delegatecall(
+            abi.encodeWithSignature("register(string)", denom)
+        );
+        require(success, "ERC20: registration failed");
+        return success;
+    }
+
+    /**
      * @dev Queries the token balance of an account.
      * @param account The address of the account to query.
      * @return balance The token balance of the account.
@@ -54,6 +79,8 @@ contract ERC20Proxy2 {
             abi.encodeWithSignature("transfer(address,uint256)", to, amount)
         );
         require(success, "ERC20: transfer failed");
+        
+        emit Transfer(msg.sender, to, amount); // Emit Transfer event
         return abi.decode(result, (bool));
     }
 
@@ -68,6 +95,8 @@ contract ERC20Proxy2 {
             abi.encodeWithSignature("approve(address,uint256)", spender, amount)
         );
         require(success, "ERC20: approve failed");
+
+        emit Approval(msg.sender, spender, amount); // Emit Approval event
         return abi.decode(result, (bool));
     }
 
