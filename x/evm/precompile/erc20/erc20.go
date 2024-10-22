@@ -25,13 +25,16 @@ var (
 	_ vm.PrecompiledContract = (*ERC20Contract)(nil)
 )
 
+type APIMethod func(sdk.Context, common.Address, common.Address, map[string]interface{}) ([]byte, error)
+
 type ERC20Contract struct {
 	logger   log.Logger
 	storeKey storetypes.StoreKey
 	cdc      codec.BinaryCodec
 
-	tokenPairs types.TokenPairs
+	tokenPairs types.TokenPairs // TODO cache the token pairs
 	bankKeeper evmtypes.BankKeeper
+	methods    map[string]APIMethod
 }
 
 func InitERC20Contract(logger log.Logger, cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper evmtypes.BankKeeper) {
@@ -40,7 +43,12 @@ func InitERC20Contract(logger log.Logger, cdc codec.BinaryCodec, storeKey storet
 		cdc:        cdc,
 		storeKey:   storeKey,
 		bankKeeper: bankKeeper,
+		methods:    make(map[string]APIMethod),
 	}
+
+	contract.methods[types.Method_BalanceOf] = contract.handleBalanceOf
+	contract.methods[types.Method_Register] = contract.handleRegister
+	contract.methods[types.Method_Transfer] = contract.handleTransfer
 
 	precompiled.RegisterPrecompiles(types.PrecompiledAddress, contract)
 }
@@ -89,21 +97,17 @@ func (c *ERC20Contract) Run(ctx context.Context, input []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	fn, ok := c.methods[method.Name]
+	if !ok {
+		return nil, errors.New("unknown method")
+	}
+
 	args := make(map[string]interface{})
 	if err := method.Inputs.UnpackIntoMap(args, inputData); err != nil {
 		return nil, err
 	}
 
-	switch method.Name {
-	case types.Method_Register:
-		return c.handleRegister(sdkCtx, msgTo, caller, args)
-	case types.Method_BalanceOf:
-		return c.handleBalanceOf(sdkCtx, msgTo, caller, args)
-	case types.Method_Transfer:
-		return c.handleTransfer(sdkCtx, msgTo, caller, args)
-	default:
-		return nil, errors.New("unknown method")
-	}
+	return fn(sdkCtx, msgTo, caller, args)
 }
 
 func (c *ERC20Contract) handleRegister(ctx sdk.Context, proxy common.Address, _ common.Address, args map[string]interface{}) ([]byte, error) {
@@ -112,28 +116,17 @@ func (c *ERC20Contract) handleRegister(ctx sdk.Context, proxy common.Address, _ 
 	}
 
 	denom, ok := args["denom"].(string)
-	if !ok {
+	if !ok || len(denom) == 0 {
 		return types.False32Byte, errors.New("invalid input denom")
 	}
 
-	proxyAddress := proxy.String()
+	if d := c.getDenomByProxy(ctx, proxy); len(d) > 0 {
+		return types.False32Byte, errors.New("proxy has been registered")
+	}
 
-	tokenPairs, err := c.getTokenPairs(ctx)
-	if err != nil {
+	if err := c.registerNewTokenPairs(ctx, denom, proxy); err != nil {
 		return types.False32Byte, err
 	}
-
-	for _, tokenPair := range tokenPairs.TokenPairs {
-		if tokenPair.Address == proxyAddress {
-			return types.False32Byte, errors.New("proxy has been registered")
-		}
-	}
-
-	c.tokenPairs.TokenPairs = append(c.tokenPairs.TokenPairs, &types.TokenPair{proxyAddress, denom})
-	if err := c.storeTokenPairs(ctx); err != nil {
-		return types.False32Byte, errors.New("failed to update token pairs")
-	}
-
 	return types.True32Byte, nil
 }
 
@@ -201,30 +194,10 @@ func (c *ERC20Contract) handleTransfer(ctx sdk.Context, proxy common.Address, ca
 
 func (c *ERC20Contract) getDenom(ctx sdk.Context, proxy common.Address) (string, error) {
 	// get registered denom for the proxy address
-	var denom string
-
-	tokenPairs, err := c.getTokenPairs(ctx)
-	if err != nil {
-		return "", err
-	}
-	for _, tokenPair := range tokenPairs.TokenPairs {
-		if proxy.String() == tokenPair.Address {
-			denom = tokenPair.Denom
-			break
-		}
-	}
-
+	denom := c.getDenomByProxy(ctx, proxy)
 	if len(denom) == 0 {
 		return "", errors.New("no registered coin found")
 	}
 
 	return denom, nil
-}
-
-func (c *ERC20Contract) getTokenPairs(ctx sdk.Context) (types.TokenPairs, error) {
-	if len(c.tokenPairs.TokenPairs) > 0 {
-		return c.tokenPairs, nil
-	}
-
-	return c.loadTokenPairs(ctx)
 }
