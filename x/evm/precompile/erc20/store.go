@@ -15,7 +15,7 @@ func (c *ERC20Contract) registerNewTokenPairs(ctx sdk.Context, denom string, pro
 	return c.appendProxyByDenom(ctx, denom, proxy)
 }
 
-func (c *ERC20Contract) getProxyByDenom(ctx sdk.Context, denom string) ([]common.Address, error) {
+func (c *ERC20Contract) GetProxyByDenom(ctx sdk.Context, denom string) ([]string, error) {
 	store := ctx.KVStore(c.storeKey)
 	store = prefix.NewStore(store, evmtypes.KeyPrefixERC20Denom)
 	data := store.Get([]byte(denom))
@@ -23,9 +23,9 @@ func (c *ERC20Contract) getProxyByDenom(ctx sdk.Context, denom string) ([]common
 		return nil, fmt.Errorf("failed to load proxy address, value: %x", data)
 	}
 
-	addrs := make([]common.Address, len(data)/common.AddressLength)
+	addrs := make([]string, len(data)/common.AddressLength)
 	for i := 0; i < len(data); i += common.AddressLength {
-		addrs[i] = common.BytesToAddress(data[i : i+common.AddressLength])
+		addrs[i/common.AddressLength] = common.BytesToAddress(data[i : i+common.AddressLength]).String()
 	}
 
 	return addrs, nil
@@ -50,7 +50,7 @@ func (c *ERC20Contract) appendProxyByDenom(ctx sdk.Context, denom string, proxy 
 	return nil
 }
 
-func (c *ERC20Contract) getDenomByProxy(ctx sdk.Context, proxy common.Address) string {
+func (c *ERC20Contract) GetDenomByProxy(ctx sdk.Context, proxy common.Address) string {
 	store := ctx.KVStore(c.storeKey)
 	store = prefix.NewStore(store, evmtypes.KeyPrefixERC20Address)
 	data := store.Get(proxy.Bytes())

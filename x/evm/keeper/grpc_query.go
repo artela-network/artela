@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/artela-network/artela/x/aspect/provider"
 	"math/big"
 	"time"
 
@@ -24,6 +23,7 @@ import (
 	"github.com/artela-network/artela-evm/tracers/logger"
 	"github.com/artela-network/artela-evm/vm"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/aspect/provider"
 	artelatypes "github.com/artela-network/artela/x/evm/artela/types"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
@@ -680,6 +680,22 @@ func (k Keeper) GetSender(c context.Context, in *txs.MsgEthereumTx) (*txs.GetSen
 		return nil, err
 	}
 	return &txs.GetSenderResponse{Sender: sender.String()}, nil
+}
+
+func (k Keeper) AddressByDenom(c context.Context, req *txs.AddressByDenomRequest) (*txs.AddressByDenomResponse, error) {
+	ctx := cosmos.UnwrapSDKContext(c)
+	addrs, err := k.erc20Contract.GetProxyByDenom(ctx, req.Denom)
+	if err != nil {
+		return nil, err
+	}
+
+	return &txs.AddressByDenomResponse{Address: addrs}, nil
+}
+
+func (k Keeper) DenomByAddress(c context.Context, req *txs.DenomByAddressRequest) (*txs.DenomByAddressResponse, error) {
+	ctx := cosmos.UnwrapSDKContext(c)
+	denom := k.erc20Contract.GetDenomByProxy(ctx, common.HexToAddress(req.Address))
+	return &txs.DenomByAddressResponse{Denom: denom}, nil
 }
 
 // WithAspectContext creates the Aspect Context and establishes the link to the SDK context.

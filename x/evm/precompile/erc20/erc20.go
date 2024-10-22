@@ -37,7 +37,7 @@ type ERC20Contract struct {
 	methods    map[string]APIMethod
 }
 
-func InitERC20Contract(logger log.Logger, cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper evmtypes.BankKeeper) {
+func InitERC20Contract(logger log.Logger, cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper evmtypes.BankKeeper) *ERC20Contract {
 	contract := &ERC20Contract{
 		logger:     logger,
 		cdc:        cdc,
@@ -51,6 +51,7 @@ func InitERC20Contract(logger log.Logger, cdc codec.BinaryCodec, storeKey storet
 	contract.methods[types.Method_Transfer] = contract.handleTransfer
 
 	precompiled.RegisterPrecompiles(types.PrecompiledAddress, contract)
+	return contract
 }
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
@@ -120,7 +121,7 @@ func (c *ERC20Contract) handleRegister(ctx sdk.Context, proxy common.Address, _ 
 		return types.False32Byte, errors.New("invalid input denom")
 	}
 
-	if d := c.getDenomByProxy(ctx, proxy); len(d) > 0 {
+	if d := c.GetDenomByProxy(ctx, proxy); len(d) > 0 {
 		return types.False32Byte, errors.New("proxy has been registered")
 	}
 
@@ -194,7 +195,7 @@ func (c *ERC20Contract) handleTransfer(ctx sdk.Context, proxy common.Address, ca
 
 func (c *ERC20Contract) getDenom(ctx sdk.Context, proxy common.Address) (string, error) {
 	// get registered denom for the proxy address
-	denom := c.getDenomByProxy(ctx, proxy)
+	denom := c.GetDenomByProxy(ctx, proxy)
 	if len(denom) == 0 {
 		return "", errors.New("no registered coin found")
 	}

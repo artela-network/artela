@@ -82,6 +82,8 @@ type Keeper struct {
 
 	// cache of aspect sig
 	VerifySigCache *sync.Map
+
+	erc20Contract *erc20.ERC20Contract
 }
 
 // NewKeeper generates new evm module keeper
@@ -145,7 +147,7 @@ func NewKeeper(
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	artelaType.IsCommit = k.IsCommit
 
-	erc20.InitERC20Contract(k.logger, cdc, k.storeKey, k.bankKeeper)
+	k.erc20Contract = erc20.InitERC20Contract(k.logger, cdc, k.storeKey, k.bankKeeper)
 	return k
 }
 

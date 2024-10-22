@@ -693,6 +693,46 @@ func (b *BackendImpl) processBlock(
 	return targetOneFeeHistory, nil
 }
 
+func (b *BackendImpl) GetDenomByAddress(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (string, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return "", err
+	}
+
+	req := txs.DenomByAddressRequest{
+		Address: address.String(),
+	}
+
+	// From ContextWithHeight: if the provided height is 0,
+	// it will return an empty context and the gRPC query will use
+	// the latest block height for querying.
+	res, err := b.queryClient.DenomByAddress(rpctypes.ContextWithHeight(blockNum.Int64()), &req)
+	if err != nil {
+		return "", err
+	}
+	return res.Denom, nil
+}
+
+func (b *BackendImpl) GetAddressByDenom(ctx context.Context, denom string, blockNrOrHash rpc.BlockNumberOrHash) ([]string, error) {
+	blockNum, err := b.blockNumberFromCosmos(blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	req := txs.AddressByDenomRequest{
+		Denom: denom,
+	}
+
+	// From ContextWithHeight: if the provided height is 0,
+	// it will return an empty context and the gRPC query will use
+	// the latest block height for querying.
+	res, err := b.queryClient.AddressByDenom(rpctypes.ContextWithHeight(blockNum.Int64()), &req)
+	if err != nil {
+		return nil, err
+	}
+	return res.Address, nil
+}
+
 type txGasAndReward struct {
 	gasUsed uint64
 	reward  *big.Int
