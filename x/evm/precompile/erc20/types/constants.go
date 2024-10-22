@@ -12,5 +12,5 @@ var (
 	True32Byte  = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 	False32Byte = make([]byte, 32)
 
-	PrecompiledAddress = common.HexToAddress("0x0000000000000000000000000000000000001234")
+	PrecompiledAddress = common.HexToAddress("0x0000000000000000000000000000000000000101")
 )
