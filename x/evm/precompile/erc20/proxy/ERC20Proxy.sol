@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 contract ERC20Proxy2 {
     // Address of the precompiled ERC20 contract
-    address public constant ERC20_PRECOMPILED_ADDRESS = address(0x0000000000000000000000000000000000001234);
+    address public constant ERC20_PRECOMPILED_ADDRESS = address(0x0000000000000000000000000000000000000101);
 
     // Event for successful registration
     event RegistrationSuccess(bool success);
