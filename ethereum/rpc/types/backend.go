@@ -60,6 +60,9 @@ type (
 		GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error)
 		GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error)
 		GetCoinbase() (sdk.AccAddress, error)
+
+		GetDenomByAddress(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (string, error)
+		GetAddressByDenom(ctx context.Context, denom string, blockNrOrHash rpc.BlockNumberOrHash) ([]string, error)
 	}
 
 	// TrancsactionBackend defines the block chain interfaces

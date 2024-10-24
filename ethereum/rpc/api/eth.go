@@ -286,6 +286,14 @@ func (s *BlockChainAPI) GetStorageAt(_ context.Context, address common.Address, 
 	return s.b.GetStorageAt(address, hexKey, blockNrOrHash)
 }
 
+func (s *BlockChainAPI) GetDenomByAddress(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (string, error) {
+	return s.b.GetDenomByAddress(ctx, address, blockNrOrHash)
+}
+
+func (s *BlockChainAPI) GetAddressByDenom(ctx context.Context, denom string, blockNrOrHash rpc.BlockNumberOrHash) ([]string, error) {
+	return s.b.GetAddressByDenom(ctx, denom, blockNrOrHash)
+}
+
 // OverrideAccount indicates the overriding fields of account during the execution
 // of a message call.
 // Note, states and stateDiff can't be specified at the same time. If states is

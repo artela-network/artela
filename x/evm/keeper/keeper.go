@@ -3,7 +3,6 @@ package keeper
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/artela-network/artela/x/aspect/provider"
 	"math/big"
 	"sync"
 
@@ -24,8 +23,10 @@ import (
 	"github.com/artela-network/artela-evm/vm"
 	common2 "github.com/artela-network/artela/common"
 	artela "github.com/artela-network/artela/ethereum/types"
+	"github.com/artela-network/artela/x/aspect/provider"
 	"github.com/artela-network/artela/x/evm/artela/api"
 	artvmtype "github.com/artela-network/artela/x/evm/artela/types"
+	"github.com/artela-network/artela/x/evm/precompile/erc20"
 	"github.com/artela-network/artela/x/evm/states"
 	"github.com/artela-network/artela/x/evm/txs"
 	"github.com/artela-network/artela/x/evm/txs/support"
@@ -81,6 +82,8 @@ type Keeper struct {
 
 	// cache of aspect sig
 	VerifySigCache *sync.Map
+
+	erc20Contract *erc20.ERC20Contract
 }
 
 // NewKeeper generates new evm module keeper
@@ -143,6 +146,8 @@ func NewKeeper(
 
 	artelaType.JITSenderAspectByContext = k.JITSenderAspectByContext
 	artelaType.IsCommit = k.IsCommit
+
+	k.erc20Contract = erc20.InitERC20Contract(k.logger, cdc, k.storeKey, k.bankKeeper)
 	return k
 }
 

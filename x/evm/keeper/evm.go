@@ -392,6 +392,12 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 		// - reset sender's nonce to msg.Nonce() before calling evm.
 		// - increase sender's nonce by one no matter the result.
 		stateDB.SetNonce(sender.Address(), msg.Nonce)
+
+		// calculate the contract address and set to context
+		contractAddr := crypto.CreateAddress(sender.Address(), evm.StateDB.GetNonce(sender.Address()))
+		aspectCtx.WithCosmosContext(aspectCtx.CosmosContext().WithValue("msgFrom", msg.From))
+		aspectCtx.WithCosmosContext(aspectCtx.CosmosContext().WithValue("msgTo", contractAddr))
+
 		ret, _, leftoverGas, vmErr = evm.Create(aspectCtx, sender, msg.Data, leftoverGas, msg.Value)
 		stateDB.SetNonce(sender.Address(), msg.Nonce+1)
 	} else {
@@ -415,6 +421,8 @@ func (k *Keeper) ApplyMessageWithConfig(ctx cosmos.Context,
 			}
 		} else {
 			// execute evm call
+			aspectCtx.WithCosmosContext(aspectCtx.CosmosContext().WithValue("msgFrom", msg.From))
+			aspectCtx.WithCosmosContext(aspectCtx.CosmosContext().WithValue("msgTo", *msg.To))
 			ret, leftoverGas, vmErr = evm.Call(aspectCtx, sender, *msg.To, msg.Data, leftoverGas, msg.Value)
 			status := ethereum.ReceiptStatusSuccessful
 			if vmErr != nil {

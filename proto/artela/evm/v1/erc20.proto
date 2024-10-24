@@ -1,0 +1,15 @@
+syntax = "proto3";
+package artela.evm.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/artela-network/artela/v1/x/evm/types";
+
+message TokenPair {
+    string address = 1;
+    string denom = 2;
+}
+
+message TokenPairs {
+    repeated TokenPair token_pairs = 1;
+}

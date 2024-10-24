@@ -79,6 +79,16 @@ service Query {
   rpc GetSender(MsgEthereumTx) returns (GetSenderResponse) {
     option (google.api.http).get = "/artela/evm/v1/get_sender";
   }
+
+  // DenomByAddress returns the denom mapping to address
+  rpc DenomByAddress(DenomByAddressRequest) returns (DenomByAddressResponse) {
+    option (google.api.http).get = "/artela/evm/v1/denom_by_address/{address}";
+  }
+
+  // DenomByAddress returns the denom mapping to address
+  rpc AddressByDenom(AddressByDenomRequest) returns (AddressByDenomResponse) {
+    option (google.api.http).get = "/artela/evm/v1/address_by_denom/{denom}";
+  }
 }
 
 // QueryAccountRequest is the request type for the Query/Account RPC method.
@@ -310,4 +320,20 @@ message QueryBaseFeeResponse {
 message GetSenderResponse {
   // sender defines the from address of the tx.
   string sender = 1;
+}
+
+message DenomByAddressRequest {
+  string address = 1;
+}
+
+message DenomByAddressResponse {
+  string denom = 1;
+}
+
+message AddressByDenomRequest {
+  string denom = 1;
+}
+
+message AddressByDenomResponse {
+  repeated string address = 1;
 }
