@@ -18,10 +18,15 @@ type EventBus interface {
 	Topics() []string
 }
 
+type subChan struct {
+	ch    chan<- coretypes.ResultEvent
+	unsub func()
+}
+
 type memEventBus struct {
 	topics          map[string]<-chan coretypes.ResultEvent
 	topicsMux       *sync.RWMutex
-	subscribers     map[string]map[uint64]chan<- coretypes.ResultEvent
+	subscribers     map[string]map[uint64]subChan
 	subscribersMux  *sync.RWMutex
 	currentUniqueID uint64
 }
@@ -30,7 +35,7 @@ func NewEventBus() EventBus {
 	return &memEventBus{
 		topics:         make(map[string]<-chan coretypes.ResultEvent),
 		topicsMux:      new(sync.RWMutex),
-		subscribers:    make(map[string]map[uint64]chan<- coretypes.ResultEvent),
+		subscribers:    make(map[string]map[uint64]subChan),
 		subscribersMux: new(sync.RWMutex),
 	}
 }
@@ -81,15 +86,15 @@ func (m *memEventBus) Subscribe(name string) (<-chan coretypes.ResultEvent, Unsu
 		return nil, nil, errors.Errorf("topic not found: %s", name)
 	}
 
+	var closeOnce sync.Once
 	ch := make(chan coretypes.ResultEvent)
 	m.subscribersMux.Lock()
 	defer m.subscribersMux.Unlock()
 
 	id := m.GenUniqueID()
 	if _, ok := m.subscribers[name]; !ok {
-		m.subscribers[name] = make(map[uint64]chan<- coretypes.ResultEvent)
+		m.subscribers[name] = make(map[uint64]subChan)
 	}
-	m.subscribers[name][id] = ch
 
 	unsubscribe := func() {
 		m.subscribersMux.Lock()
@@ -100,8 +105,9 @@ func (m *memEventBus) Subscribe(name string) (<-chan coretypes.ResultEvent, Unsu
 				delete(m.subscribers, name)
 			}
 		}
-		close(ch)
+		closeOnce.Do(func() { close(ch) })
 	}
+	m.subscribers[name][id] = subChan{ch: ch, unsub: unsubscribe}
 
 	return ch, unsubscribe, nil
 }
@@ -127,7 +133,7 @@ func (m *memEventBus) closeAllSubscribers(name string) {
 	if subscribers, ok := m.subscribers[name]; ok {
 		delete(m.subscribers, name)
 		for _, sub := range subscribers {
-			close(sub)
+			sub.unsub()
 		}
 	}
 }
@@ -139,7 +145,7 @@ func (m *memEventBus) publishAllSubscribers(name string, msg coretypes.ResultEve
 	if subscribers, ok := m.subscribers[name]; ok {
 		for _, sub := range subscribers {
 			select {
-			case sub <- msg:
+			case sub.ch <- msg:
 			default:
 				// Handle message drop if necessary
 			}
