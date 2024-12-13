@@ -34,17 +34,17 @@ As the first layer 1 network equipped with Aspects, Artela network aims to **max
 ## Build the source
 Artela is a blockchain built using Cosmos SDK and Cometbft and created with [Ignite CLI](https://ignite.com/cli).
 
-1). Set Up Your Go Development Environment<br />
+1. Set Up Your Go Development Environment<br />
 Make sure you have set up your Go programming language development environment.
 
-2). Download the Source Code<br />
+2. Download the Source Code<br />
 Obtain the project source code using the following method:
 
 ```
 git clone https://github.com/artela-network/artela.git
 ```
 
-3). Compile<br />
+3. Compile<br />
 Compile the source code and generate the executable using the Go compiler:
 
 ```
