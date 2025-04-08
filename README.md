@@ -6,7 +6,7 @@
   </a>
   <a href="https://twitter.com/Artela_Network" target="_blank">
     <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/Artela_Network">
-  <a href="https://discord.gg/artela">
+  <a href="https://discord.com/invite/artelanetwork">
    <img src="https://img.shields.io/badge/chat-discord-green?logo=discord&chat" alt="Discord">
   </a>
   <a href="https://www.artela.network/">
